@@ -32,3 +32,18 @@ describe('AudioManager match intensity', () => {
     expect(audio.currentEffectsVolume).toBe(1);
   });
 });
+
+describe('AudioManager event cues', () => {
+  it('keeps boss and terminal cues safe before audio is unlocked', () => {
+    const audio = new AudioManager();
+
+    expect(() => {
+      audio.playBossEntrance();
+      audio.playBossPhase('bloodRush');
+      audio.playBossPhase('desperation');
+      audio.playBossPhase(2);
+      audio.playVictory();
+      audio.playDefeat();
+    }).not.toThrow();
+  });
+});

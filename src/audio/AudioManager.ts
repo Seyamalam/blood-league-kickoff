@@ -14,6 +14,9 @@ export interface AudioManagerOptions {
 /** A match stage name or normalized 0–1 music intensity. */
 export type MatchMusicIntensity = MatchStage | 'menu' | 'paused' | number;
 
+/** Escalating Count Goalkeeper combat phases supported by the boss cue. */
+export type BossAudioPhase = 'bloodRush' | 'desperation' | number;
+
 type ToneOptions = {
   frequency: number;
   endFrequency?: number;
@@ -338,6 +341,135 @@ export class AudioManager {
     });
   }
 
+  /** Ominous brass-like reveal and heartbeat used when the Count enters the pitch. */
+  public playBossEntrance(): void {
+    const now = this.now();
+    if (now === null) return;
+
+    this.tone({
+      frequency: 92,
+      endFrequency: 46,
+      duration: 0.95,
+      gain: 0.2,
+      start: now,
+      type: 'sawtooth',
+    });
+    this.tone({
+      frequency: 138,
+      endFrequency: 69,
+      duration: 0.82,
+      gain: 0.1,
+      start: now + 0.06,
+      type: 'triangle',
+      detune: -9,
+    });
+    this.noise({
+      duration: 0.62,
+      gain: 0.13,
+      start: now,
+      filterFrequency: 1_800,
+      filterEndFrequency: 180,
+      filterType: 'lowpass',
+    });
+
+    for (const offset of [0.32, 0.58, 0.82]) {
+      this.tone({
+        frequency: 72,
+        endFrequency: 38,
+        duration: 0.16,
+        gain: 0.17,
+        start: now + offset,
+        type: 'sine',
+      });
+    }
+  }
+
+  /** Escalating warning sting for the Count's blood-rush and desperation phases. */
+  public playBossPhase(phase: BossAudioPhase = 'bloodRush'): void {
+    const now = this.now();
+    if (now === null) return;
+    const intensity = resolveBossPhaseIntensity(phase);
+    const root = 98 * 2 ** (intensity / 5);
+    const spacing = 0.09 - intensity * 0.018;
+
+    [1, 1.19, 1.5, 2].forEach((ratio, index) => {
+      const start = now + index * spacing;
+      this.tone({
+        frequency: root * ratio,
+        endFrequency: root * ratio * (1.25 + intensity * 0.2),
+        duration: 0.19,
+        gain: 0.085 + intensity * 0.025,
+        start,
+        type: index % 2 === 0 ? 'sawtooth' : 'triangle',
+      });
+    });
+    this.noise({
+      duration: 0.18 + intensity * 0.08,
+      gain: 0.09 + intensity * 0.04,
+      start: now + spacing * 2,
+      filterFrequency: 900 + intensity * 1_200,
+      filterEndFrequency: 3_200 + intensity * 1_400,
+      filterType: 'bandpass',
+    });
+  }
+
+  /** Resolving final-whistle fanfare for a completed run. */
+  public playVictory(): void {
+    const now = this.now();
+    if (now === null) return;
+    const notes = [196, 233.08, 293.66, 392, 493.88];
+    notes.forEach((frequency, index) => {
+      const start = now + index * 0.13;
+      this.tone({
+        frequency,
+        endFrequency: frequency * 1.01,
+        duration: index === notes.length - 1 ? 0.62 : 0.3,
+        gain: index === notes.length - 1 ? 0.15 : 0.1,
+        start,
+        type: 'triangle',
+      });
+      this.tone({
+        frequency: frequency * 2,
+        duration: 0.2,
+        gain: 0.03,
+        start: start + 0.015,
+        type: 'sine',
+      });
+    });
+    this.noise({
+      duration: 0.42,
+      gain: 0.08,
+      start: now + 0.5,
+      filterFrequency: 1_600,
+      filterEndFrequency: 5_800,
+      filterType: 'highpass',
+    });
+  }
+
+  /** Heavy downward cadence for player death or a lost match. */
+  public playDefeat(): void {
+    const now = this.now();
+    if (now === null) return;
+    [164.81, 138.59, 116.54, 82.41].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * 0.72,
+        duration: index === 3 ? 0.72 : 0.28,
+        gain: 0.11 + index * 0.012,
+        start: now + index * 0.14,
+        type: index === 3 ? 'sawtooth' : 'triangle',
+      });
+    });
+    this.noise({
+      duration: 0.75,
+      gain: 0.1,
+      start: now + 0.26,
+      filterFrequency: 620,
+      filterEndFrequency: 90,
+      filterType: 'lowpass',
+    });
+  }
+
   /** Stops all effects and closes the underlying browser audio device. */
   public async dispose(): Promise<void> {
     if (this.disposed) return;
@@ -639,4 +771,9 @@ function resolveMatchIntensity(intensity: MatchMusicIntensity): number {
     case 'dead':
       return 0;
   }
+}
+
+function resolveBossPhaseIntensity(phase: BossAudioPhase): number {
+  if (typeof phase === 'number') return clamp01(phase);
+  return phase === 'desperation' ? 1 : 0.55;
 }
