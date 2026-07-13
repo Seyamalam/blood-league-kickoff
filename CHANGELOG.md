@@ -2,6 +2,13 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## Unreleased
+
+- Replaced full-crowd separation and Coach scans with a reusable typed-array spatial grid.
+- Added phase-reactive procedural music with smoothly blended drone, tension, and pulse layers.
+- Added recovery regression tests for walls, corners, stalls, bounds, recall, catches, resets, and curves.
+- Fixed vertical bouncing preventing stall recovery and caught balls retaining velocity for one frame.
+
 ## v0.6.0 — 2026-07-14
 
 - Added a persistent six-step first-run tutorial driven by demonstrated gameplay actions.

@@ -57,7 +57,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add deliberate enemy/ball hit knockback.
 - [x] `P0` Add placeholder kick, hit, recall, damage, and death audio.
 - [x] `P0` Add restrained camera feedback, ball trail, and pooled impacts; evaluate hit pause during playtest.
-- [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
+- [x] `P0` Automate wall, corner, out-of-bounds, stall, recall, catch, reset, and curve recovery; retain goal/death cases for full-flow playtests.
 - [x] `P0` Add an FPS/enemy-count development readout in the HUD.
 - [x] `P0` Expand diagnostics with frame time, draw calls, triangles, fixed steps, enemies, and pool counts; isolate physics timing during profiling.
 - [x] `P0` Produce and test browser and desktop builds.
@@ -76,7 +76,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 - [ ] `P0` Implement reusable pools for effects, shards, projectiles, and UI feedback.
 - [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
-- [x] `P0` Implement crowd separation; add spatial queries when population profiling requires them.
+- [x] `P0` Implement crowd separation with reusable typed-array spatial queries.
 - [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [x] `P0` Implement pooled physical blood shard collection and XP levels.
 - [x] `P0` Implement three-choice upgrade selection.
@@ -153,7 +153,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Replace critical placeholder models/materials.
 - [x] `P0` Add stadium banners, goals, crowd silhouettes, and match-stage atmosphere changes; decals remain polish.
 - [ ] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
-- [ ] `P0` Add phase-based music intensity.
+- [x] `P0` Add phase-based procedural music intensity.
 - [ ] `P1` Add first-person Focus Kick ultimate.
 - [ ] `P1` Add Bat Swarm.
 - [ ] `P1` Add Leech Striker.

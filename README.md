@@ -135,6 +135,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
+- [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans
+- [x] Procedural match music blends drone, tension, and pulse layers across every phase
+- [x] Automated wall, corner, stall, out-of-bounds, recall, catch, reset, and curved-flight recovery coverage
+- [x] Planar stall detection and immediate catch-velocity cleanup close two ball recovery edge cases
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS

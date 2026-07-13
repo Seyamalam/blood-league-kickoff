@@ -111,6 +111,7 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   ├── pickups/BloodShardSystem.ts
 │   │   ├── combat/SecondaryWeaponSystem.ts
 │   │   ├── simulation/
+│   │       ├── EnemySpatialGrid.ts
 │   │       ├── gameState.ts
 │   │       ├── gameState.test.ts
 │   │       └── types.ts
@@ -156,7 +157,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 ### Current runtime boundaries
 
 - `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, combat-audio hooks, restart, and frame rendering
-- `AudioManager`: asset-free Web Audio effects, gesture unlock, volume/mute, polyphony limits, and cleanup
+- `AudioManager`: asset-free effects, smoothly blended phase music, gesture unlock, volume/mute, polyphony limits, and cleanup
 - `MatchDirector`: pure, data-configurable stage transitions, objectives, goal opportunity, and run outcomes
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
 - `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
@@ -172,6 +173,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, four weighted archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
+- `EnemySpatialGrid`: reusable typed-array neighborhood queries for crowd separation and Coach auras
 - `PhysicsWorld`: Rapier arena/player/ball bodies, charged/curved kicks, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, elite/shield/telegraph cues, and primitive visual lifecycles
 - `CameraController`: third-person orbit aim, arena-boundary collision, camera smoothing, sensitivity, and restrained impact feedback
