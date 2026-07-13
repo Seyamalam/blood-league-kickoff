@@ -17,6 +17,7 @@ import {
   createProgressionState,
   getUpgradeAvailability,
   grantBloodXp,
+  UPGRADE_IDS,
   type UpgradeId,
 } from './game/progression';
 import { createGameState, damageEnemiesWithBall, damageEnemiesWithSecondary, resetGameState, updateEnemies, updatePlayer } from './game/simulation/gameState';
@@ -31,6 +32,8 @@ import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
 import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
+import { PauseOverlay } from './ui/PauseOverlay';
+import { ResultsOverlay } from './ui/ResultsOverlay';
 import { SettingsOverlay } from './ui/SettingsOverlay';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 
@@ -73,6 +76,8 @@ async function bootstrap(): Promise<void> {
     playerSettings = settings;
     applyPlayerSettings(settings);
   });
+  const pauseOverlay = new PauseOverlay(root);
+  const resultsOverlay = new ResultsOverlay(root);
   const perf = new PerfMeter();
   const clock = new THREE.Clock();
   let accumulator = 0;
@@ -82,6 +87,7 @@ async function bootstrap(): Promise<void> {
   let goalLatched = false;
   let boss: CountGoalkeeperState | null = null;
   let lastRenderedAt = 0;
+  let resultsShown = false;
 
   const offerUpgrade = (): void => {
     if (upgradeOverlay.isVisible || settingsOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
@@ -96,6 +102,11 @@ async function bootstrap(): Promise<void> {
       if (!result.applied) return;
       progression = result.state;
       audio.playPhase(progression.level);
+      if (result.evolutionEvents.length > 0) {
+        audio.playGoal();
+        bridge.volleyBurst(state.player.position, 1.8);
+        cameraController.volleyImpulse(1.2);
+      }
       if (progression.pendingLevelUps > 0) window.setTimeout(offerUpgrade, 0);
       else input.requestPointerLock();
     });
@@ -140,11 +151,14 @@ async function bootstrap(): Promise<void> {
     secondaryRenderer.reset();
     upgradeOverlay.reset();
     settingsOverlay.hide();
+    pauseOverlay.hide();
+    resultsOverlay.reset();
     hud.reset();
     progression = createProgressionState();
     match = createMatchDirectorState();
     goalLatched = false;
     boss = null;
+    resultsShown = false;
     state.phase = 'playing';
     previousBallState = physics.ballState;
     audio.playPhase(0);
@@ -159,6 +173,35 @@ async function bootstrap(): Promise<void> {
   };
   hud.settingsButton.addEventListener('click', openSettings);
   hud.titleSettingsButton.addEventListener('click', openSettings);
+  const returnToMenu = (): void => {
+    resetGameState(state);
+    physics.reset(state.player.position);
+    bridge.reset();
+    bloodShards.reset();
+    secondaryWeapons.reset();
+    resultsOverlay.reset();
+    pauseOverlay.hide();
+    state.phase = 'ready';
+    progression = createProgressionState();
+    match = createMatchDirectorState();
+    boss = null;
+    resultsShown = false;
+    hud.showMenu();
+  };
+  const showPause = (): void => {
+    if (state.phase !== 'playing' || upgradeOverlay.isVisible || settingsOverlay.isVisible) return;
+    if (input.isLocked) void document.exitPointerLock();
+    pauseOverlay.show({
+      onResume: () => input.requestPointerLock(),
+      onSettings: openSettings,
+      onRestart: restart,
+      onMainMenu: returnToMenu,
+    });
+  };
+  const onGlobalKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && !pauseOverlay.isVisible) showPause();
+  };
+  window.addEventListener('keydown', onGlobalKeyDown);
   renderer.domElement.addEventListener('click', () => {
     if (state.phase === 'ready') begin();
     else if (state.phase === 'playing' && !input.isLocked && !settingsOverlay.isVisible) input.requestPointerLock();
@@ -197,7 +240,7 @@ async function bootstrap(): Promise<void> {
 
     accumulator += frameTime;
     while (accumulator >= FIXED_STEP) {
-      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible;
+      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
         updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP);
@@ -302,7 +345,7 @@ async function bootstrap(): Promise<void> {
 
         const ball = physics.ballPosition;
         const insideGoal = ball.z < -14 && Math.abs(ball.x) < 2.55 && ball.y < 3.2;
-        const scored = match.stage === 'goalOpportunity' && insideGoal && !goalLatched;
+        const scored = (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && insideGoal && !goalLatched;
         goalLatched = insideGoal;
         const matchUpdate = updateMatchDirector(match, {
           dt: FIXED_STEP,
@@ -337,7 +380,7 @@ async function bootstrap(): Promise<void> {
       accumulator -= FIXED_STEP;
     }
 
-    goalBeacon.setActive(match.stage === 'goalOpportunity');
+    goalBeacon.setActive(match.stage === 'goalOpportunity' || match.stage === 'finalGoal');
     goalBeacon.update(frameTime);
     offerUpgrade();
 
@@ -361,6 +404,18 @@ async function bootstrap(): Promise<void> {
       getMatchObjective(match),
       boss,
     );
+    if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
+      resultsShown = true;
+      resultsOverlay.show({
+        outcome: state.phase === 'won' ? 'victory' : 'defeat',
+        score: state.score,
+        kills: state.kills,
+        goals: match.goalsScored,
+        timeSeconds: state.elapsed,
+        level: progression.level,
+        upgrades: UPGRADE_IDS.map((upgradeId) => ({ upgradeId, stacks: progression.upgradeStacks[upgradeId] })),
+      }, { onRestart: restart, onMainMenu: returnToMenu });
+    }
     if ((state.phase === 'dead' || state.phase === 'won') && input.isLocked) void document.exitPointerLock();
     renderer.render(scene, cameraController.camera);
   });
@@ -372,6 +427,7 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextrestored', () => window.location.reload());
   window.addEventListener('beforeunload', () => {
     input.dispose();
+    window.removeEventListener('keydown', onGlobalKeyDown);
     void audio.dispose();
     goalBeacon.dispose();
     bossVisual.dispose();
@@ -379,6 +435,8 @@ async function bootstrap(): Promise<void> {
     secondaryRenderer.dispose();
     upgradeOverlay.dispose();
     settingsOverlay.dispose();
+    pauseOverlay.dispose();
+    resultsOverlay.dispose();
     bridge.dispose();
   }, { once: true });
 }

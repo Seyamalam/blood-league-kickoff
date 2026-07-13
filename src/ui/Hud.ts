@@ -167,6 +167,12 @@ export class Hud {
     window.setTimeout(() => this.hint.classList.add('faded'), 6500);
   }
 
+  showMenu(): void {
+    this.splash.classList.remove('hidden');
+    this.death.classList.add('hidden');
+    this.victory.classList.add('hidden');
+  }
+
   reset(): void {
     this.death.classList.add('hidden');
     this.victory.classList.add('hidden');

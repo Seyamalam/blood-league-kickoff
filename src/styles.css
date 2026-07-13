@@ -127,3 +127,45 @@ button { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .settings-overlay { transition: none; }
 }
+
+/* Pause and results foundations. Scoped to keep their action styles independent. */
+.pause-overlay,.results-overlay { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; padding: 22px; overflow-y: auto; color: #f4f1e9; background: radial-gradient(circle at 50% 35%,rgba(75,15,40,.42),rgba(4,4,9,.96) 58%); backdrop-filter: blur(6px); transition: opacity .18s ease,visibility .18s ease; }
+.pause-overlay.hidden,.results-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.pause-panel { width: min(100%,420px); padding: 34px 36px 28px; text-align: center; border: 1px solid rgba(241,59,96,.38); background: linear-gradient(160deg,rgba(42,18,36,.98),rgba(10,9,16,.99)); box-shadow: 0 24px 72px rgba(0,0,0,.66); }
+.pause-panel__eyebrow,.results-panel__eyebrow { margin: 0 0 7px; color: #e23b5e; font: 800 10px Arial,sans-serif; letter-spacing: .3em; }
+.pause-panel h2,.results-panel h2 { margin: 0; font: italic 900 clamp(43px,7vw,68px)/.88 Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif; letter-spacing: -.02em; text-shadow: 0 8px 30px #000; }
+.pause-panel__description { margin: 13px 0 24px; color: #958f9a; font: 12px/1.5 Arial,sans-serif; }
+.pause-panel__actions { display: grid; gap: 10px; }
+.pause-panel button,.results-panel button { min-height: 45px; padding: 11px 20px; color: #fff; border: 1px solid #d93156; border-radius: 2px; background: linear-gradient(135deg,#9d1838,#d33255); box-shadow: 0 8px 22px rgba(126,13,44,.25); cursor: pointer; font: 800 12px Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif; letter-spacing: .14em; }
+.pause-panel button:hover,.results-panel button:hover { filter: brightness(1.14); }
+.pause-panel button:focus-visible,.results-panel button:focus-visible { outline: 3px solid #f8d777; outline-offset: 3px; }
+.pause-panel button.pause-panel__secondary,.results-panel button.results-panel__secondary { color: #aaa4ae; border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.035); box-shadow: none; }
+.pause-panel small { display: block; margin-top: 18px; color: #65606a; font: 9px Arial,sans-serif; letter-spacing: .08em; }
+.results-overlay { z-index: 27; }
+.results-panel { width: min(100%,760px); padding: 30px; border: 1px solid rgba(241,59,96,.38); background: linear-gradient(155deg,rgba(43,17,36,.99),rgba(9,8,15,.99)); box-shadow: 0 26px 78px rgba(0,0,0,.7); }
+.results-panel__header { text-align: center; }
+.results-overlay--victory .results-panel { border-color: rgba(224,184,75,.55); background: linear-gradient(155deg,rgba(49,36,19,.98),rgba(9,9,14,.99)); }
+.results-overlay--victory .results-panel__eyebrow { color: #e4bd58; }
+.results-panel__summary { margin: 14px auto 22px; max-width: 530px; color: #a7a1ab; font: 12px/1.55 Arial,sans-serif; }
+.results-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.1); }
+.results-stats div { min-width: 0; padding: 13px; text-align: center; background: rgba(10,9,16,.94); }
+.results-stats dt { color: #77717c; font: 800 9px Arial,sans-serif; letter-spacing: .15em; text-transform: uppercase; }
+.results-stats dd { margin: 5px 0 0; color: #f3edf3; font: 800 20px Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif; font-variant-numeric: tabular-nums; }
+.results-upgrades { margin-top: 20px; }
+.results-upgrades h3 { margin: 0 0 9px; color: #8c8591; font: 800 9px Arial,sans-serif; letter-spacing: .2em; }
+.results-upgrades ul { max-height: 130px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 16px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.results-upgrades li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 9px; color: #c6c0c9; background: rgba(255,255,255,.035); font: 10px Arial,sans-serif; }
+.results-upgrades li strong { color: #e9c46f; }
+.results-upgrades li.results-upgrades__empty { grid-column: 1/-1; justify-content: center; color: #716b76; }
+.results-panel__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+
+@media (max-width: 600px) {
+  .pause-overlay,.results-overlay { place-items: start center; padding: 12px; }
+  .pause-panel,.results-panel { padding: 25px 19px; }
+  .results-stats { grid-template-columns: repeat(2,1fr); }
+  .results-upgrades ul,.results-panel__actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-overlay,.results-overlay { transition: none; }
+}
