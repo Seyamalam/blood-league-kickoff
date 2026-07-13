@@ -146,7 +146,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 ## Presentation and target content (`v0.8.0`)
 
 - [x] `P0` Lock the low-poly gothic visual palette.
-- [ ] `P0` Generate original key art, itch cover, and menu background.
+- [x] `P0` Generate original key art, itch cover, and menu background.
 - [ ] `P0` Generate readable upgrade/evolution icons.
 - [ ] `P0` Create or source licensed character and enemy models.
 - [ ] `P0` Record every external/generated asset source, author/tool, license, and changes.

@@ -2,6 +2,8 @@
 
 > A third-person football-combat horde-survival roguelite created for the IUT 12th ICT Fest 2026 GameJam.
 
+![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
+
 | Project   | Value                                                                |
 | --------- | -------------------------------------------------------------------- |
 | Status    | Complete nine-minute run alpha in active development                 |
@@ -9,6 +11,8 @@
 | Platforms | Web and macOS development first; Windows desktop at final submission |
 | Stack     | Three.js, TypeScript, Vite, Rapier, Electron                         |
 | Input     | Keyboard and mouse                                                   |
+
+### Current title screen
 
 ![Blood League: Kickoff title screen](docs/screenshots/title-screen.jpg)
 

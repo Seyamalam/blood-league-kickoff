@@ -4,17 +4,19 @@ This is the authoritative asset and license ledger. The submission-facing file i
 
 ## Project-Created Assets
 
-| Asset/path                                | Creator              | Tool                                 | Date              | Notes                                                                               |
-| ----------------------------------------- | -------------------- | ------------------------------------ | ----------------- | ----------------------------------------------------------------------------------- |
-| Game design and source code               | Team (names pending) | Codex and local development tools    | 2026-07-14 onward | AI assistance must not be required at runtime                                       |
-| Procedural visuals, UI, and audio systems | Team (names pending) | TypeScript, Three.js, CSS, Web Audio | 2026-07-14 onward | Generated at runtime from project source; no external media files                   |
-| `docs/screenshots/*.jpg`                  | Team (names pending) | Local browser capture                | 2026-07-14        | Three 1280×720 captures of the running game; no third-party or AI-generated imagery |
+| Asset/path                                | Creator              | Tool                                 | Date              | Notes                                                                                                                    |
+| ----------------------------------------- | -------------------- | ------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Game design and source code               | Team (names pending) | Codex and local development tools    | 2026-07-14 onward | AI assistance must not be required at runtime                                                                            |
+| Procedural visuals, UI, and audio systems | Team (names pending) | TypeScript, Three.js, CSS, Web Audio | 2026-07-14 onward | Generated at runtime from project source; no external media files                                                        |
+| `docs/screenshots/*.jpg`                  | Team (names pending) | Local browser capture                | 2026-07-14        | Three 1280×720 captures of the running game; the refreshed title capture composites the generated key art recorded below |
 
 ## AI-Generated Assets
 
-| Asset/path       | Generator/model | Prompt/brief record | Date | Human modifications | Notes |
-| ---------------- | --------------- | ------------------- | ---- | ------------------- | ----- |
-| _None added yet_ |                 |                     |      |                     |       |
+| Asset/path                                        | Generator/model                  | Prompt/brief record          | Date       | Human modifications                                                   | Notes                                                                                    |
+| ------------------------------------------------- | -------------------------------- | ---------------------------- | ---------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `docs/art/source/blood-league-key-art-master.png` | OpenAI built-in image generation | `docs/art/KEY_ART_PROMPT.md` | 2026-07-14 | None; preserved source output                                         | Original project key art; generated without logos, typography, or third-party likenesses |
+| `src/assets/key-art/menu-background.jpg`          | Derived from the source above    | `docs/art/KEY_ART_PROMPT.md` | 2026-07-14 | JPEG export at 1536×1024 with FFmpeg; no crop or semantic edit        | Optimized runtime title background                                                       |
+| `docs/marketing/itch-cover.jpg`                   | Derived from the source above    | `docs/art/KEY_ART_PROMPT.md` | 2026-07-14 | Center crop to 1290×1024, resized to 630×500, JPEG export with FFmpeg | README and itch.io cover candidate                                                       |
 
 Store enough prompt/brief information to reproduce or explain each generated asset. Record edits such as paint-over, cropping, texture conversion, typography, and compositing. Never imply a generated image is a licensed third-party logo or character.
 

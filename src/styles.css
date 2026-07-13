@@ -408,6 +408,22 @@ button {
   visibility: hidden;
   pointer-events: none;
 }
+.modal.splash {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(4, 4, 9, 0.56),
+      rgba(4, 4, 9, 0.2) 32%,
+      rgba(4, 4, 9, 0.2) 68%,
+      rgba(4, 4, 9, 0.56)
+    ),
+    radial-gradient(circle at 50% 45%, rgba(5, 5, 10, 0.38), rgba(5, 5, 10, 0.9) 78%),
+    url('./assets/key-art/menu-background.jpg') center / cover no-repeat;
+}
+.modal.splash > * {
+  position: relative;
+  z-index: 1;
+}
 .crest {
   width: 55px;
   height: 62px;
@@ -518,6 +534,9 @@ button {
   }
   .perf {
     display: none;
+  }
+  .modal.splash {
+    background-position: 46% center;
   }
 }
 
