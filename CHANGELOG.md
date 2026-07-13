@@ -23,6 +23,10 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added a speed-reactive ball trail, pooled impact/volley particles, and bounded camera feedback.
 - Added persistent audio, sensitivity, quality, render-scale, frame-rate, and reduced-shake settings for browser and macOS.
 - Added the Count Goalkeeper final encounter with deterministic phases, charges, contact damage, boss health HUD, visuals, and boss-defeat victory integration.
+- Added Vitest coverage for progression, match, boss, pickups, and secondary weapons.
+- Replaced direct kill XP with pooled physical blood shards that bounce, magnetize, collect, and preserve rewards at capacity.
+- Activated all eight guaranteed upgrade choices, including Garlic Trail, orbiting spectral balls, Blood Bomb, Ghost Pass, and shield-piercing studs.
+- Added Defender frontal blocks/rebounds, vulnerable rear shots, velocity knockback, and telegraphed Winger lunges.
 
 ## v0.0.0 — 2026-07-14
 

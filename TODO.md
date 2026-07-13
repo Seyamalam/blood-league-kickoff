@@ -30,7 +30,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Run type-check and the production web build locally.
 - [x] `P0` Boot the production Electron desktop build locally.
 - [x] `P0` Add GitHub Actions clean install and web/type-check build coverage.
-- [ ] `P0` Add automated tests to the workflow after test tooling exists.
+- [x] `P0` Add Vitest and initial progression, pickup, combat, match, and boss tests.
 - [x] `P0` Add electron-builder portable/ZIP configuration and a Windows runner workflow.
 - [x] `P0` Keep Windows packaging manual-only until the game is content-complete.
 - [x] `P0` Update README current progress and exact commands.
@@ -78,7 +78,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
 - [x] `P0` Implement crowd separation; add spatial queries when population profiling requires them.
 - [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
-- [ ] `P0` Implement blood shard collection and XP levels.
+- [x] `P0` Implement pooled physical blood shard collection and XP levels.
 - [x] `P0` Implement three-choice upgrade selection.
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [ ] `P0` Implement first goal opening, scoring, reset, and new kickoff.
@@ -101,8 +101,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 ### Enemies
 
 - [x] `P0` Blood Fan crowd behavior and visual variant.
-- [ ] `P0` Vampire Winger behavior and readable telegraph.
-- [ ] `P0` Undead Defender shield and rebound/curve weakness.
+- [x] `P0` Vampire Winger chase, readable telegraph, lunge, and recovery behavior.
+- [x] `P0` Undead Defender frontal shield, rebound response, and rear-shot weakness.
 - [x] `P0` Blood Coach buff and priority indicator.
 - [x] `P0` Typed/data-driven enemy archetypes.
 - [ ] `P0` Elite modifiers that reuse proven behaviors.
@@ -112,11 +112,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Silver Ball.
 - [x] `P0` Power Kick.
 - [x] `P0` Rapid Recall.
-- [ ] `P0` Piercing Studs.
-- [ ] `P0` Garlic Trail.
-- [ ] `P0` Orbiting Spectral Ball.
-- [ ] `P0` Blood Bomb.
-- [ ] `P0` Ghost Pass.
+- [x] `P0` Piercing Studs.
+- [x] `P0` Garlic Trail.
+- [x] `P0` Orbiting Spectral Ball.
+- [x] `P0` Blood Bomb.
+- [x] `P0` Ghost Pass.
 - [ ] `P0` Moon Breaker evolution.
 - [ ] `P0` Crimson Meteor evolution.
 - [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.

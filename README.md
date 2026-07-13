@@ -114,6 +114,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
+- [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection
+- [x] Piercing Studs, Garlic Trail, Orbiting Spectral Ball, Blood Bomb, and Ghost Pass work in live combat
+- [x] Defender shields, rear-shot weakness, deliberate knockback, and telegraphed Winger lunges
+- [x] Automated progression, pickup, secondary-weapon, match, and boss tests
 - [x] Three-minute match director with objectives, a timed goal window, final wave, and victory screen
 - [x] On-pitch animated goal beacon during scoring opportunities
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
@@ -128,7 +132,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
-- [ ] Remaining five defined upgrades connected to their live secondary effects
+- [ ] Moon Breaker and Crimson Meteor evolution combinations
 - [ ] Final Windows portable build after the game is content-complete
 
 ### Project documents

@@ -108,6 +108,8 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   │   ├── progression.ts
 │   │   │   ├── types.ts
 │   │   │   └── upgradeDefinitions.ts
+│   │   ├── pickups/BloodShardSystem.ts
+│   │   ├── combat/SecondaryWeaponSystem.ts
 │   │   └── simulation/
 │   │       ├── gameState.ts
 │   │       └── types.ts
@@ -147,6 +149,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `AudioManager`: asset-free Web Audio effects, gesture unlock, volume/mute, polyphony limits, and cleanup
 - `MatchDirector`: pure, data-configurable stage transitions, objectives, goal opportunity, and run outcomes
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
+- `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
+- `SecondaryWeaponSystem`: pooled garlic zones, orbiting balls, blood bombs, and ghost passes
 - `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
