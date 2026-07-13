@@ -43,7 +43,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | Kick / charge | Hold and release left mouse button | Implemented |
 | Recall ball | Right mouse button or `E` | Implemented |
 | Restart after kickoff | `R` | Implemented |
-| Dash | `Space` | Planned |
+| Dash | `Space` | Implemented with cooldown and brief invulnerability |
 | Focus Kick ultimate | `Q` | Target scope |
 | Pause | `Esc` | Planned; exits desktop fullscreen today |
 
@@ -101,6 +101,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
+- [x] Blood XP levels and a paused three-card upgrade choice flow
+- [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
+- [x] Three-minute match director with objectives, a timed goal window, final wave, and victory screen
+- [x] On-pitch animated goal beacon during scoring opportunities
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
@@ -109,6 +113,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
+- [ ] Remaining five defined upgrades connected to their live secondary effects
 - [ ] Final Windows portable build after the game is content-complete
 
 ### Project documents

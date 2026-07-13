@@ -43,7 +43,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement third-person camera-relative movement.
 - [x] `P0` Implement pointer-lock mouse orbit and pitch limits.
 - [ ] `P0` Implement camera collision and configurable sensitivity.
-- [ ] `P0` Implement dash, cooldown, and invulnerability decision.
+- [x] `P0` Implement dash, cooldown, and brief invulnerability.
 - [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
 - [x] `P0` Implement aim indicator and charged kick.
 - [x] `P0` Implement Rapier wall/floor rebounds with CCD.
@@ -79,10 +79,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement crowd separation; add spatial queries when population profiling requires them.
 - [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [ ] `P0` Implement blood shard collection and XP levels.
-- [ ] `P0` Implement three-choice upgrade selection.
-- [ ] `P0` Implement health, XP, clock, objective, and ball-state HUD.
+- [x] `P0` Implement three-choice upgrade selection.
+- [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [ ] `P0` Implement first goal opening, scoring, reset, and new kickoff.
-- [ ] `P0` Create a three-minute mini-run with a clear win state.
+- [x] `P0` Create a three-minute mini-run with a clear win state.
 - [ ] `P0` Add tutorial prompts that clear after demonstrated actions.
 - [ ] `P0` Persist audio, sensitivity, and quality settings.
 - [ ] `P0` Conduct at least one external playtest.
@@ -109,9 +109,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ### Upgrades
 
-- [ ] `P0` Silver Ball.
-- [ ] `P0` Power Kick.
-- [ ] `P0` Rapid Recall.
+- [x] `P0` Silver Ball.
+- [x] `P0` Power Kick.
+- [x] `P0` Rapid Recall.
 - [ ] `P0` Piercing Studs.
 - [ ] `P0` Garlic Trail.
 - [ ] `P0` Orbiting Spectral Ball.
@@ -123,11 +123,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ### Complete run
 
-- [ ] `P0` Opening Kickoff phase.
-- [ ] `P0` First Goal transition.
+- [x] `P0` Opening Kickoff phase.
+- [x] `P0` First Goal transition in the prototype match director.
 - [ ] `P0` Halftime major choice.
 - [ ] `P0` Blood Moon phase.
-- [ ] `P0` Final Goal transition.
+- [x] `P0` Final-wave transition and prototype victory condition.
 - [ ] `P0` Count Goalkeeper or stable final elite-wave fallback.
 - [ ] `P0` Victory and defeat sequences.
 - [ ] `P0` Results with time, kills, goals, level, and upgrades.

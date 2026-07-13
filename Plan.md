@@ -96,6 +96,14 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   └── index.ts
 │   ├── game/
 │   │   ├── input/InputController.ts
+│   │   ├── match/
+│   │   │   ├── config.ts
+│   │   │   ├── matchDirector.ts
+│   │   │   └── types.ts
+│   │   ├── progression/
+│   │   │   ├── progression.ts
+│   │   │   ├── types.ts
+│   │   │   └── upgradeDefinitions.ts
 │   │   └── simulation/
 │   │       ├── gameState.ts
 │   │       └── types.ts
@@ -106,8 +114,12 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   │   ├── CameraController.ts
 │   │   │   ├── createRenderer.ts
 │   │   │   └── createScene.ts
-│   │   └── objects/createStadium.ts
-│   ├── ui/Hud.ts
+│   │   └── objects/
+│   │       ├── createStadium.ts
+│   │       └── GoalBeacon.ts
+│   ├── ui/
+│   │   ├── Hud.ts
+│   │   └── UpgradeOverlay.ts
 │   ├── main.ts
 │   └── styles.css
 ├── electron-builder.yml
@@ -126,7 +138,11 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 
 - `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, combat-audio hooks, restart, and frame rendering
 - `AudioManager`: asset-free Web Audio effects, gesture unlock, volume/mute, polyphony limits, and cleanup
-- `InputController`: keyboard/mouse state and pointer lock
+- `MatchDirector`: pure, data-configurable stage transitions, objectives, goal opportunity, and run outcomes
+- `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
+- `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
+- `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
+- `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, four weighted enemy archetypes, crowd separation, coach buffs, damage, death, combo, and score
 - `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, recall states, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, and primitive visual lifecycles

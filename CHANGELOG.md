@@ -15,6 +15,10 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added Blood Fan, Winger, Defender, and Coach archetypes with escalating spawn weights, crowd separation, distinct shared visuals, and a Coach speed aura.
 - Added original procedural audio feedback for kicks, volleys, recalls, hits, kills, and player damage.
 - Re-verified the production web build, live browser kickoff flow, and macOS Electron boot after the combat update.
+- Added a directional dash with cooldown, HUD state, and a short invulnerability window.
+- Added a typed blood-XP and upgrade core covering all eight guaranteed upgrade definitions; Silver Ball, Power Kick, and Rapid Recall now affect live combat.
+- Added an accessible three-card level-up overlay with mouse and keyboard selection.
+- Added a data-configurable match director, live objectives, animated goal opportunity, final wave, and victory flow for a three-minute vertical slice.
 
 ## v0.0.0 — 2026-07-14
 
