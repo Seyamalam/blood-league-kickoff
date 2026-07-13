@@ -45,23 +45,23 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Implement camera collision and configurable sensitivity.
 - [ ] `P0` Implement dash, cooldown, and invulnerability decision.
 - [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
-- [ ] `P0` Implement aim indicator and charged kick.
+- [x] `P0` Implement aim indicator and charged kick.
 - [x] `P0` Implement Rapier wall/floor rebounds with CCD.
-- [ ] `P0` Add explicit ball speed limits and tune controlled rebound behavior.
+- [x] `P0` Add explicit ball speed limits and tune controlled rebound behavior.
 - [ ] `P0` Implement optional kick curve.
 - [x] `P0` Implement manual and automatic recall.
-- [ ] `P0` Implement perfect-volley timing and feedback.
+- [x] `P0` Implement perfect-volley timing and feedback.
 - [x] `P0` Add stalled, timeout, invalid-number, and out-of-bounds ball recovery.
 - [x] `P0` Implement one basic vampire that spawns, approaches, and damages the player.
 - [x] `P0` Implement ball hits, enemy damage/death, player damage/death, score/combo, and restart.
 - [ ] `P0` Add deliberate enemy/ball hit knockback.
-- [ ] `P0` Add placeholder kick, hit, recall, damage, and death audio.
+- [x] `P0` Add placeholder kick, hit, recall, damage, and death audio.
 - [ ] `P0` Add restrained hit pause, camera shake, ball trail, and impacts.
 - [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
 - [x] `P0` Add an FPS/enemy-count development readout in the HUD.
 - [ ] `P0` Expand diagnostics with frame time, draw calls, physics time, and pool counts.
-- [ ] `P0` Produce and test browser and desktop builds.
-- [ ] `P0` Update README/game docs with implemented controls and known issues.
+- [x] `P0` Produce and test browser and desktop builds.
+- [x] `P0` Update README/game docs with implemented controls and known issues.
 - [ ] `P0` Commit and push coherent combat slices during implementation.
 - [ ] `P0` Tag `v0.2.0` and publish/test the combat prototype release.
 
@@ -76,7 +76,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 - [ ] `P0` Implement reusable pools for effects, shards, projectiles, and UI feedback.
 - [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
-- [ ] `P0` Implement crowd separation and nearby-target spatial queries.
+- [x] `P0` Implement crowd separation; add spatial queries when population profiling requires them.
 - [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [ ] `P0` Implement blood shard collection and XP levels.
 - [ ] `P0` Implement three-choice upgrade selection.
@@ -100,11 +100,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ### Enemies
 
-- [ ] `P0` Blood Fan crowd behavior and visual variant.
+- [x] `P0` Blood Fan crowd behavior and visual variant.
 - [ ] `P0` Vampire Winger behavior and readable telegraph.
 - [ ] `P0` Undead Defender shield and rebound/curve weakness.
-- [ ] `P0` Blood Coach buff and priority indicator.
-- [ ] `P0` Typed/data-driven enemy archetypes.
+- [x] `P0` Blood Coach buff and priority indicator.
+- [x] `P0` Typed/data-driven enemy archetypes.
 - [ ] `P0` Elite modifiers that reuse proven behaviors.
 
 ### Upgrades

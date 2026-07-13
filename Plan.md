@@ -91,6 +91,9 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   └── preload.cjs
 ├── src/
 │   ├── diagnostics/PerfMeter.ts
+│   ├── audio/
+│   │   ├── AudioManager.ts
+│   │   └── index.ts
 │   ├── game/
 │   │   ├── input/InputController.ts
 │   │   └── simulation/
@@ -121,11 +124,12 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 
 ### Current runtime boundaries
 
-- `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, restart, and frame rendering
+- `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, combat-audio hooks, restart, and frame rendering
+- `AudioManager`: asset-free Web Audio effects, gesture unlock, volume/mute, polyphony limits, and cleanup
 - `InputController`: keyboard/mouse state and pointer lock
-- `gameState.ts`: player/enemy simulation, random enemy spawning, damage, death, combo, and score
-- `PhysicsWorld`: Rapier arena/player/ball bodies, kick, recall, stepping, and ball recovery
-- `RenderBridge`: interpolated player/enemy/ball presentation and primitive visual lifecycles
+- `gameState.ts`: player simulation, four weighted enemy archetypes, crowd separation, coach buffs, damage, death, combo, and score
+- `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, recall states, speed limiting, stepping, and ball recovery
+- `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, and primitive visual lifecycles
 - `CameraController`: third-person orbit aim and camera smoothing
 - `Hud`: kickoff/death overlays and live combat/performance readouts
 - `electron/main.cjs` and `preload.cjs`: secured desktop shell

@@ -4,7 +4,7 @@
 
 | Project | Value |
 | --- | --- |
-| Status | Foundation in progress |
+| Status | Playable combat prototype in active development |
 | Theme | Kickoff |
 | Platforms | Web and macOS development first; Windows desktop at final submission |
 | Stack | Three.js, TypeScript, Vite, Rapier, Electron |
@@ -40,7 +40,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | --- | --- | --- |
 | Move | `WASD` | Implemented |
 | Aim / camera | Mouse | Implemented after entering the pitch/pointer lock |
-| Kick | Left mouse button | Implemented |
+| Kick / charge | Hold and release left mouse button | Implemented |
 | Recall ball | Right mouse button or `E` | Implemented |
 | Restart after kickoff | `R` | Implemented |
 | Dash | `Space` | Planned |
@@ -96,13 +96,17 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Three.js/Vite/Rapier source scaffold created
 - [x] Fixed-step simulation with interpolated player, enemy, and ball rendering
 - [x] Third-person movement, pointer-lock camera, kick, rebound, and manual/automatic recall
-- [x] Basic enemy spawning, pursuit, damage, death, scoring/combo, player death, and restart
+- [x] Charged kicks, a capped 36-unit ball speed, recall states, and perfect-return volleys
+- [x] Blood Fan, Winger, Defender, and Coach enemy archetypes with escalating spawn weights
+- [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
+- [x] Enemy damage/death, scoring/combo, player damage/death, and restart
+- [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
 - [x] Windows workflow retained as a manual-only final-submission task
 - [x] Type-check and production web build pass locally
-- [x] Browser visual smoke test passes start, spawning, death, and restart flows
+- [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
 - [ ] Final Windows portable build after the game is content-complete
@@ -119,7 +123,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 
 ### Local development
 
-The scaffold currently exposes browser, desktop, and Windows-package workflows:
+Active development uses the browser and macOS Electron workflows:
 
 ```bash
 npm install
@@ -128,11 +132,9 @@ npm run build
 npm run typecheck
 npm run desktop
 npm run desktop:dev
-# Authoritative Windows packaging runs on GitHub Actions:
-npm run package:win
 ```
 
-The web build will be emitted to `dist/`. The Windows package will be emitted to `release/` and must be tested on Windows before submission.
+The web build is emitted to `dist/`. Windows packaging remains dormant until the game is content-complete; it will then be run manually and tested on real Windows hardware before submission.
 
 ## Versioning and Releases
 

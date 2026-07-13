@@ -11,6 +11,10 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Verified local TypeScript checking and the production web build.
 - Browser-smoke-tested the styled kickoff, timed spawning, death, and restart flows; booted the production Electron shell locally on macOS.
 - Deferred Windows packaging to a manual-only final submission task so active development can focus on completing and polishing gameplay on macOS/browser.
+- Added release-to-fire charged kicks, explicit ball states, a 36-unit speed cap, automatic recovery, and perfect-return volleys.
+- Added Blood Fan, Winger, Defender, and Coach archetypes with escalating spawn weights, crowd separation, distinct shared visuals, and a Coach speed aura.
+- Added original procedural audio feedback for kicks, volleys, recalls, hits, kills, and player damage.
+- Re-verified the production web build, live browser kickoff flow, and macOS Electron boot after the combat update.
 
 ## v0.0.0 — 2026-07-14
 
