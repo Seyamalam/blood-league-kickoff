@@ -14,7 +14,7 @@ extraMetadata:
   main: electron/main.cjs
 
 asar: true
-compression: maximum
+compression: normal
 artifactName: "${productName}-${version}-Windows-${arch}.${ext}"
 
 win:
@@ -31,4 +31,3 @@ win:
 portable:
   artifactName: "${productName}-${version}-Portable-${arch}.${ext}"
   requestExecutionLevel: user
-
