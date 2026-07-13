@@ -1,7 +1,7 @@
 {
   "name": "blood-league-kickoff",
   "private": true,
-  "version": "0.8.0-alpha.3",
+  "version": "0.8.0-alpha.4",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
@@ -23,9 +23,9 @@
     "desktop": "electron .",
     "desktop:dev": "concurrently --kill-others --success first \"npm:dev\" \"npm:desktop:dev:app\"",
     "desktop:dev:app": "wait-on http://127.0.0.1:5173 && cross-env ELECTRON_DEV_URL=http://127.0.0.1:5173 electron .",
-    "package:win": "electron-builder --config electron-builder.yml --win --x64",
-    "package:mac": "electron-builder --config electron-builder.yml --mac --x64 --arm64",
-    "package:linux": "electron-builder --config electron-builder.yml --linux --x64"
+    "package:win": "electron-builder --config electron-builder.yml --win --x64 --publish never",
+    "package:mac": "electron-builder --config electron-builder.yml --mac --x64 --arm64 --publish never",
+    "package:linux": "electron-builder --config electron-builder.yml --linux --x64 --publish never"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",

@@ -4,6 +4,11 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+## v0.8.0-alpha.4 — 2026-07-14
+
+- Disabled electron-builder's implicit tag publishing so native runner jobs hand completed artifacts to the explicit, least-privilege release publisher.
+- Updated checkout and Node setup actions to their Node 24-compatible major versions.
+
 ## v0.8.0-alpha.3 — 2026-07-14
 
 - Added native GitHub Actions release builds for Windows x64, macOS Intel/Apple silicon, Linux x64, and the static web game, with a combined SHA-256 manifest.
