@@ -6,7 +6,7 @@
 - Fixed-step, testable simulation independent of monitor refresh
 - GPU-efficient repeated visuals and lightweight enemy crowds
 - Predictable ball combat with physics-assisted collision, not uncontrolled simulation
-- Fast failure recovery, deterministic cleanup, and no runtime AI dependency
+- Fast failure recovery, explicit cleanup ownership, and no runtime AI dependency
 
 ## Stack
 
@@ -22,44 +22,39 @@
 
 ## Current Source Baseline
 
-The foundation currently contains early modules for input, simulation state/types, Rapier world setup, renderer creation, and camera control. These are scaffolding boundaries, not frozen APIs. New code should converge on the ownership below instead of creating competing loops or global state.
+The foundation contains a playable single-page loop: input, player/enemy simulation, Rapier ball physics, render synchronization, a third-person camera, primitive stadium/actors, HUD, performance readout, and Electron packaging. Enemy spawn positions and elite rolls currently use `Math.random()`, so runs are intentionally not deterministic or replay-synchronized. These are scaffolding boundaries, not frozen APIs.
 
 ## Runtime Flow
 
 ```text
 Input events -> InputController snapshot
                      |
-requestAnimationFrame v
-Accumulator -> fixed simulation steps -> interpolated render -> HUD update
+Three.js setAnimationLoop v
+Accumulator -> 60 Hz simulation steps -> interpolated world render -> HUD update
                   |              |
-             RapierWorld    GameState/events
+             PhysicsWorld    mutable GameState
                   |              |
-                  +------> Renderer/pools/audio
+                  +------> RenderBridge + camera + HUD
 ```
 
-`requestAnimationFrame` controls presentation only. Elapsed time is clamped after focus loss. An accumulator advances zero or more fixed simulation steps; rendering interpolates between previous/current transforms. UI and audio consume state/events without mutating core simulation.
+Three's `setAnimationLoop` drives presentation. Frame delta is clamped to 100 ms after stalls/focus changes. An accumulator advances the player, enemies, and Rapier world at 60 Hz. The player, enemies, and ball retain previous/current positions and are interpolated for rendering; the camera then follows the interpolated player with exponential smoothing. HUD values read current simulation state rather than interpolated values. There is no networking, rollback, replay, or deterministic lockstep layer.
 
 ## Ownership Boundaries
 
-- **App:** lifecycle, scene switching, focus, resize, pause, and disposal.
-- **GameLoop:** clock, accumulator, fixed updates, interpolation, and diagnostics.
+- **Current `main.ts`:** bootstrap, resize, pointer-lock start/restart events, fixed-step accumulator, interpolation, HUD updates, and rendering.
 - **InputController:** DOM listeners and action snapshot; gameplay never reads raw DOM events.
-- **GameState:** authoritative run state and entity data.
-- **PhysicsWorld:** Rapier initialization, bodies, colliders, steps, queries, and event draining.
-- **PlayerController:** movement intent, dash, facing, damage, and animation signals.
-- **CameraController:** orbit, pitch/yaw limits, collision, interpolation, and shake.
-- **BallController:** explicit state machine, kick/recall/volley, recovery, and damage metadata.
-- **EnemySimulation:** movement/attacks in lightweight data, with spatial queries.
-- **EnemyRenderer:** instanced/pool visuals synchronized from simulation.
-- **MatchDirector:** time phases, goals, kickoffs, boss, win, and loss.
-- **UpgradeSystem:** definitions, offers, stacks, prerequisites, evolutions, and derived stats.
-- **AudioManager/UI:** consume events and state; no gameplay authority.
+- **Current `gameState.ts`:** authoritative player/enemy data, movement, random spawning, contact damage, ball-hit tests, death, score, and combo.
+- **Current `PhysicsWorld`:** Rapier initialization, static arena, kinematic player body, dynamic ball, kick/recall, fixed stepping, interpolation positions, and recovery fail-safes.
+- **Current `CameraController`:** mouse orbit, pitch limits, aim vector, and smoothed follow.
+- **Current `RenderBridge`:** primitive player/ball/enemy visuals synchronized from simulation; it creates/disposes enemy groups as IDs appear/disappear.
+- **Current `Hud`:** kickoff/death overlays plus health, timer, score, enemy, ball, combo, and FPS views.
+- **Planned modules:** dedicated app lifecycle/disposal, ball/player controllers, spawn/match/upgrade directors, pools/instancing, audio, quality, and settings.
 
 ## Physics Policy
 
-Rapier should own the arena, player collision, ball collision/query support, and exceptional important bodies. Ordinary crowd enemies should not each receive a full dynamic rigid body. Use a spatial hash/grid, planar movement, simple radius separation, and targeted collision queries.
+Rapier currently owns the static arena colliders, a synchronized kinematic player body, and the dynamic ball. Ordinary enemies are lightweight planar state and ball hits use direct distance checks; enemies do not have Rapier bodies. A spatial grid and crowd separation remain planned for larger populations.
 
-The ball uses an explicit state machine. Physics collision normals inform rebounds, while code clamps speed, corrects tunneling, applies aim/recall steering, and recovers invalid states. Collision groups distinguish arena, player, ball, enemy hurt regions, goal triggers, and pickups.
+The current ball tracks possessed, kicked, and recall behavior through `PhysicsWorld` flags rather than the full planned state machine. Rapier provides CCD and material restitution for rebounds. Code applies recall impulses and automatically recalls or resets stalled, overdue, out-of-bounds, or non-finite balls. Explicit speed clamping, curve control, volley/disabled states, collision groups, goal triggers, and pickup queries remain planned.
 
 ## Rendering Policy
 
@@ -93,7 +88,7 @@ The Three.js canvas owns the world. HTML/CSS owns menus, HUD, upgrade choices, p
 - Do not load remote scripts or depend on a network connection.
 - Keep browser behavior as the portability baseline.
 
-The Windows GitHub Actions runner installs from the lockfile, runs checks, builds Vite output, packages Electron, and uploads checksummed artifacts. Release candidates must run on a real Windows machine.
+The Windows GitHub Actions definition installs from the lockfile, builds Vite output (including TypeScript compilation), packages Electron portable/ZIP artifacts, creates checksums, and uploads workflow artifacts. Tags are configured to publish those assets. The workflow and actual Windows artifacts still require verification, and release candidates must run on a real Windows machine.
 
 ## Performance Targets
 
@@ -109,7 +104,8 @@ The debug overlay should expose render FPS/frame time, fixed-step time, enemy co
 
 ## Test Strategy
 
-- Unit-test pure ball state transitions, upgrade prerequisites, match phases, and deterministic calculations.
+- Unit-test pure ball state transitions, upgrade prerequisites, match phases, and fixed-step calculations.
+- Introduce a seeded random source only if reproducible balance tests or replays become a real requirement.
 - Add simulation checks for out-of-bounds recovery and fixed-step invariants.
 - Smoke-test production web output and packaged Electron output.
 - Test focus loss, resize, pause, low frame rate, high refresh, and clean first launch.
@@ -117,9 +113,9 @@ The debug overlay should expose render FPS/frame time, fixed-step time, enemy co
 
 ## Near-Term Implementation Order
 
-1. Make clean install, type-check, and production build pass.
-2. Verify renderer, camera, input, Rapier, and disposal in one boot path.
-3. Add graybox stadium and player controller.
-4. Add ball states, kick, rebound, recall, and recovery.
-5. Add one basic enemy and damage/death/restart.
-6. Verify web and Electron builds before content expansion.
+1. Playtest the production web build and Electron shell; fix control/feel blockers.
+2. Add explicit cleanup/disposal and verify resize/focus/context-loss behavior.
+3. Tune kick, rebound, recall, damage, and ball recovery through Gate A playtests.
+4. Add charge, volley, controlled speed limits, feedback, and deliberate knockback.
+5. Verify the Windows workflow artifact on real Windows hardware.
+6. Only then expand enemies, progression, and match flow.

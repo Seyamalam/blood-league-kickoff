@@ -16,42 +16,50 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Milestone 0 — Project foundation (`v0.1.0`)
 
-- [ ] `P0` Scaffold Vite and strict TypeScript without overwriting jam documentation.
-- [ ] `P0` Install Three.js and Rapier dependencies.
-- [ ] `P0` Add lint, formatting, type-check, unit-test, dev, and production-build scripts.
-- [ ] `P0` Add `.gitignore` for Node, builds, Electron outputs, logs, and local files.
-- [ ] `P0` Create the source/assets/test layout from `Plan.md`.
-- [ ] `P0` Initialize Rapier WASM and step it through a fixed-timestep game loop.
-- [ ] `P0` Create the WebGL renderer with resize, render scale, and clean disposal.
-- [ ] `P0` Add a boot/loading surface and visible error fallback.
-- [ ] `P0` Add the Electron main/preload shell with secure renderer defaults.
-- [ ] `P0` Run the production web build locally.
-- [ ] `P0` Run the Electron desktop development build locally.
-- [ ] `P0` Add GitHub Actions checks for install, type-check, tests, and web build.
-- [ ] `P0` Add a Windows workflow using electron-builder on a Windows runner.
-- [ ] `P0` Update README current progress and exact commands.
-- [ ] `P0` Commit and push the verified foundation.
+- [x] `P0` Scaffold Vite and strict TypeScript without overwriting jam documentation.
+- [x] `P0` Install Three.js, Rapier, Electron, and electron-builder dependencies.
+- [x] `P0` Add type-check, dev, production-build, desktop, and packaging scripts.
+- [ ] `P0` Add lint, formatting, and unit-test tooling/scripts.
+- [x] `P0` Add `.gitignore` for Node, builds, Electron outputs, logs, and local files.
+- [x] `P0` Create the current source layout documented in `Plan.md`.
+- [x] `P0` Initialize Rapier WASM and step it through a fixed-timestep game loop.
+- [x] `P0` Create the high-performance WebGL renderer with resize and capped pixel ratio.
+- [ ] `P0` Add complete renderer/listener/resource disposal for shutdown and hot reload.
+- [x] `P0` Add a kickoff/boot surface and visible bootstrap error fallback.
+- [x] `P0` Add the Electron main/preload shell with secure renderer defaults.
+- [x] `P0` Run type-check and the production web build locally.
+- [x] `P0` Boot the production Electron desktop build locally.
+- [x] `P0` Add GitHub Actions clean install and web/type-check build coverage.
+- [ ] `P0` Add automated tests to the workflow after test tooling exists.
+- [x] `P0` Add electron-builder portable/ZIP configuration and a Windows runner workflow.
+- [x] `P0` Configure tagged releases to publish checksummed workflow artifacts.
+- [x] `P0` Update README current progress and exact commands.
+- [x] `P0` Commit and push the verified foundation runtime and packaging.
 - [ ] `P0` Tag `v0.1.0` and publish a GitHub Release with available artifacts and known issues.
 
 ## Milestone A — Combat feel (`v0.2.0`)
 
-- [ ] `P0` Graybox the stadium, rebound walls, center circle, and one goal.
-- [ ] `P0` Implement third-person camera-relative movement.
-- [ ] `P0` Implement mouse orbit, pitch limits, camera collision, and sensitivity.
+- [x] `P0` Graybox the stadium, rebound walls, center circle, goals, stands, and banners.
+- [x] `P0` Implement third-person camera-relative movement.
+- [x] `P0` Implement pointer-lock mouse orbit and pitch limits.
+- [ ] `P0` Implement camera collision and configurable sensitivity.
 - [ ] `P0` Implement dash, cooldown, and invulnerability decision.
 - [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
 - [ ] `P0` Implement aim indicator and charged kick.
-- [ ] `P0` Implement deterministic velocity limits and controlled rebounds.
+- [x] `P0` Implement Rapier wall/floor rebounds with CCD.
+- [ ] `P0` Add explicit ball speed limits and tune controlled rebound behavior.
 - [ ] `P0` Implement optional kick curve.
-- [ ] `P0` Implement manual and automatic recall.
+- [x] `P0` Implement manual and automatic recall.
 - [ ] `P0` Implement perfect-volley timing and feedback.
-- [ ] `P0` Add ball timeout/out-of-bounds recovery.
-- [ ] `P0` Implement one Blood Fan that approaches and damages the player.
-- [ ] `P0` Implement hits, knockback, enemy death, player death, and restart.
+- [x] `P0` Add stalled, timeout, invalid-number, and out-of-bounds ball recovery.
+- [x] `P0` Implement one basic vampire that spawns, approaches, and damages the player.
+- [x] `P0` Implement ball hits, enemy damage/death, player damage/death, score/combo, and restart.
+- [ ] `P0` Add deliberate enemy/ball hit knockback.
 - [ ] `P0` Add placeholder kick, hit, recall, damage, and death audio.
 - [ ] `P0` Add restrained hit pause, camera shake, ball trail, and impacts.
 - [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
-- [ ] `P0` Add a development overlay for FPS, frame time, enemies, and pools.
+- [x] `P0` Add an FPS/enemy-count development readout in the HUD.
+- [ ] `P0` Expand diagnostics with frame time, draw calls, physics time, and pool counts.
 - [ ] `P0` Produce and test browser and desktop builds.
 - [ ] `P0` Update README/game docs with implemented controls and known issues.
 - [ ] `P0` Commit and push coherent combat slices during implementation.
@@ -111,7 +119,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Ghost Pass.
 - [ ] `P0` Moon Breaker evolution.
 - [ ] `P0` Crimson Meteor evolution.
-- [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and deterministic offers.
+- [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
 
 ### Complete run
 

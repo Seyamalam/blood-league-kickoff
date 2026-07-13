@@ -34,19 +34,20 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 6. Survive the more dangerous kickoff phase.
 7. Defeat Count Goalkeeper or fall and begin a new run.
 
-## Planned Controls
+## Controls
 
-| Action | Input |
-| --- | --- |
-| Move | `WASD` |
-| Aim / camera | Mouse |
-| Kick / charged kick | Left mouse button |
-| Recall ball | Right mouse button |
-| Dash | `Space` |
-| Focus Kick ultimate | `Q` |
-| Pause | `Esc` |
+| Action | Input | Status |
+| --- | --- | --- |
+| Move | `WASD` | Implemented |
+| Aim / camera | Mouse | Implemented after entering the pitch/pointer lock |
+| Kick | Left mouse button | Implemented |
+| Recall ball | Right mouse button or `E` | Implemented |
+| Restart after kickoff | `R` | Implemented |
+| Dash | `Space` | Planned |
+| Focus Kick ultimate | `Q` | Target scope |
+| Pause | `Esc` | Planned; exits desktop fullscreen today |
 
-Controls may change during playtesting.
+Controls and bindings may change during playtesting.
 
 ## Submission Scope
 
@@ -75,7 +76,7 @@ Target features remain gated until the guaranteed vertical slice is fun, stable,
 
 - **Three.js / WebGL 2:** GPU-accelerated 3D rendering
 - **TypeScript + Vite:** code-first development and browser builds
-- **Rapier:** deterministic WASM physics for the player, ball, arena, and important collisions
+- **Rapier:** fixed-step WASM physics for the player, ball, arena, and important collisions
 - **HTML/CSS:** menus, HUD, upgrade cards, and settings
 - **Web Audio:** music, effects, and phase transitions
 - **Electron:** self-contained GPU-accelerated Windows desktop build
@@ -93,10 +94,16 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] GitHub remote configured at `Seyamalam/blood-league-kickoff`
 - [x] Documentation baseline committed
 - [x] Three.js/Vite/Rapier source scaffold created
-- [x] Initial renderer, camera, input, physics, and simulation modules created
+- [x] Fixed-step simulation with interpolated player, enemy, and ball rendering
+- [x] Third-person movement, pointer-lock camera, kick, rebound, and manual/automatic recall
+- [x] Basic enemy spawning, pursuit, damage, death, scoring/combo, player death, and restart
+- [x] Ball stall/timeout/out-of-bounds recovery fail-safes
+- [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell and Windows workflow files created
-- [ ] Browser and Electron builds verified from a clean install
-- [ ] First player–ball–enemy playable prototype
+- [x] Type-check and production web build pass locally
+- [x] Browser visual smoke test passes start, spawning, death, and restart flows
+- [x] Production Electron shell boots locally on macOS
+- [ ] Pointer-lock combat feel accepted through a manual playtest
 - [ ] Automated Windows portable build
 
 ### Project documents
@@ -111,13 +118,17 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 
 ### Local development
 
-The scaffold currently exposes the browser workflow below. Desktop/package commands are added and documented during the foundation milestone.
+The scaffold currently exposes browser, desktop, and Windows-package workflows:
 
 ```bash
 npm install
 npm run dev
 npm run build
 npm run typecheck
+npm run desktop
+npm run desktop:dev
+# Authoritative Windows packaging runs on GitHub Actions:
+npm run package:win
 ```
 
 The web build will be emitted to `dist/`. The Windows package will be emitted to `release/` and must be tested on Windows before submission.

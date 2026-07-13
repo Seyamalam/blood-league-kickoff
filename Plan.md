@@ -80,43 +80,57 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 
 ## 7. Technical Architecture
 
-### Proposed layout
+### Current layout
 
 ```text
 .
+├── .gitignore
+├── .github/workflows/build-windows.yml
 ├── electron/
-│   ├── main.ts
-│   └── preload.ts
-├── public/
-│   ├── assets/
-│   │   ├── audio/
-│   │   ├── models/
-│   │   └── textures/
-│   └── icons/
+│   ├── main.cjs
+│   └── preload.cjs
 ├── src/
-│   ├── core/
+│   ├── diagnostics/PerfMeter.ts
 │   ├── game/
-│   │   ├── ball/
-│   │   ├── combat/
-│   │   ├── enemies/
-│   │   ├── player/
-│   │   ├── progression/
-│   │   └── spawning/
-│   ├── rendering/
-│   ├── scenes/
-│   ├── ui/
-│   ├── data/
-│   ├── styles/
-│   └── main.ts
-├── tests/
-├── .github/workflows/
+│   │   ├── input/InputController.ts
+│   │   └── simulation/
+│   │       ├── gameState.ts
+│   │       └── types.ts
+│   ├── physics/PhysicsWorld.ts
+│   ├── render/
+│   │   ├── adapters/RenderBridge.ts
+│   │   ├── app/
+│   │   │   ├── CameraController.ts
+│   │   │   ├── createRenderer.ts
+│   │   │   └── createScene.ts
+│   │   └── objects/createStadium.ts
+│   ├── ui/Hud.ts
+│   ├── main.ts
+│   └── styles.css
+├── electron-builder.yml
 ├── index.html
+├── package-lock.json
 ├── package.json
+├── tsconfig.app.json
 ├── tsconfig.json
+├── tsconfig.node.json
 └── vite.config.ts
 ```
 
-### Runtime boundaries
+Asset directories, automated tests, data definitions, and specialized gameplay modules will be added when their milestone needs them; empty aspirational folders are not required.
+
+### Current runtime boundaries
+
+- `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, restart, and frame rendering
+- `InputController`: keyboard/mouse state and pointer lock
+- `gameState.ts`: player/enemy simulation, random enemy spawning, damage, death, combo, and score
+- `PhysicsWorld`: Rapier arena/player/ball bodies, kick, recall, stepping, and ball recovery
+- `RenderBridge`: interpolated player/enemy/ball presentation and primitive visual lifecycles
+- `CameraController`: third-person orbit aim and camera smoothing
+- `Hud`: kickoff/death overlays and live combat/performance readouts
+- `electron/main.cjs` and `preload.cjs`: secured desktop shell
+
+### Target module boundaries
 
 - `App`: boot, disposal, resize, focus, pause, and scene transitions
 - `GameLoop`: fixed-step simulation with interpolated rendering
@@ -260,4 +274,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the repository and GitHub remote exist and the initial design documentation is committed. The code scaffold, local browser build, Electron shell, Windows CI artifact, and playable prototype are the next foundation tasks. README progress must be updated as each lands.
+As of July 14, 2026, the early playable scaffold implements a graybox stadium, movement/camera controls, physics ball kicking/rebounds/recall, basic vampire pressure, combat/death/restart, HUD, fixed-step simulation with render interpolation, and ball recovery fail-safes. The project type-checks and produces a local web build. Browser visual smoke testing passes the start, spawn, death, and restart flows, and the production Electron shell boots locally on macOS. Pointer-lock combat feel and an actual Windows workflow artifact remain unverified; the prototype does not pass Gate A yet.
