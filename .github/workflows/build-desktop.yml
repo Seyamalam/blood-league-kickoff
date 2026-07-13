@@ -49,7 +49,7 @@ jobs:
             Set-Content -Encoding ascii release/desktop/SHA256SUMS-Windows.txt
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Blood-League-Kickoff-Windows-x64
           path: |
@@ -90,7 +90,7 @@ jobs:
         run: shasum -a 256 ./*.dmg ./*.zip | sort -k 2 > SHA256SUMS-macOS.txt
 
       - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Blood-League-Kickoff-macOS
           path: |
@@ -135,7 +135,7 @@ jobs:
         run: sha256sum ./*.AppImage ./*.zip | sort -k 2 > SHA256SUMS-Linux.txt
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Blood-League-Kickoff-Linux-x64
           path: |
@@ -158,7 +158,7 @@ jobs:
 
     steps:
       - name: Download desktop artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: Blood-League-Kickoff-*
           path: desktop-artifacts
