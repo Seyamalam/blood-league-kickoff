@@ -1,5 +1,6 @@
 export type RenderQuality = 'performance' | 'balanced' | 'quality';
 export type FpsLimit = 60 | 120 | 'unlimited';
+export type AimAssistStrength = 'off' | 'low' | 'high';
 
 export interface PlayerSettings {
   masterVolume: number;
@@ -9,12 +10,13 @@ export interface PlayerSettings {
   renderQuality: RenderQuality;
   renderScale: number;
   fpsLimit: FpsLimit;
+  aimAssistStrength: AimAssistStrength;
   reducedCameraShake: boolean;
 }
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
@@ -25,6 +27,7 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   renderQuality: 'balanced',
   renderScale: 1,
   fpsLimit: 120,
+  aimAssistStrength: 'low',
   reducedCameraShake: false,
 });
 
@@ -79,7 +82,9 @@ export class SettingsStore {
       if (!isRecord(parsed)) return { ...DEFAULT_PLAYER_SETTINGS };
       const version = parsed.version;
       const wrappedSettings =
-        (version === 1 || version === SETTINGS_VERSION) && isRecord(parsed.settings) ? parsed.settings : null;
+        (version === 1 || version === 2 || version === SETTINGS_VERSION) && isRecord(parsed.settings)
+          ? parsed.settings
+          : null;
       if ('version' in parsed && !wrappedSettings) return { ...DEFAULT_PLAYER_SETTINGS };
       return sanitizePlayerSettings(wrappedSettings ?? parsed);
     } catch {
@@ -122,6 +127,9 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       : DEFAULT_PLAYER_SETTINGS.renderQuality,
     renderScale: boundedNumber(source.renderScale, 0.5, 1.25, DEFAULT_PLAYER_SETTINGS.renderScale),
     fpsLimit: isFpsLimit(source.fpsLimit) ? source.fpsLimit : DEFAULT_PLAYER_SETTINGS.fpsLimit,
+    aimAssistStrength: isAimAssistStrength(source.aimAssistStrength)
+      ? source.aimAssistStrength
+      : DEFAULT_PLAYER_SETTINGS.aimAssistStrength,
     reducedCameraShake:
       typeof source.reducedCameraShake === 'boolean'
         ? source.reducedCameraShake
@@ -143,6 +151,10 @@ function isFpsLimit(value: unknown): value is FpsLimit {
   return value === 60 || value === 120 || value === 'unlimited';
 }
 
+function isAimAssistStrength(value: unknown): value is AimAssistStrength {
+  return value === 'off' || value === 'low' || value === 'high';
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -156,6 +168,7 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.renderQuality === right.renderQuality &&
     left.renderScale === right.renderScale &&
     left.fpsLimit === right.fpsLimit &&
+    left.aimAssistStrength === right.aimAssistStrength &&
     left.reducedCameraShake === right.reducedCameraShake
   );
 }

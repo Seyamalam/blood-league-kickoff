@@ -1,4 +1,5 @@
 import {
+  type AimAssistStrength,
   type FpsLimit,
   type PlayerSettings,
   type RenderQuality,
@@ -22,6 +23,7 @@ export class SettingsOverlay {
   private readonly renderScale: HTMLInputElement;
   private readonly renderScaleValue: HTMLOutputElement;
   private readonly fpsLimit: HTMLSelectElement;
+  private readonly aimAssistStrength: HTMLSelectElement;
   private readonly reducedCameraShake: HTMLInputElement;
   private readonly closeButton: HTMLButtonElement;
   private readonly desktopSettings: HTMLElement;
@@ -89,6 +91,14 @@ export class SettingsOverlay {
               <option value="unlimited">Unlimited</option>
             </select>
           </div>
+          <div class="settings-field">
+            <label for="setting-aim-assist">Aim assist</label>
+            <select id="setting-aim-assist">
+              <option value="off">Off</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </select>
+          </div>
           <label class="settings-toggle" for="setting-reduced-shake">
             <span><strong>Reduced camera shake</strong><small>Limits impact movement and intense screen feedback.</small></span>
             <input id="setting-reduced-shake" type="checkbox">
@@ -124,6 +134,7 @@ export class SettingsOverlay {
     this.renderScale = requiredInput(this.element, '#setting-render-scale');
     this.renderScaleValue = requiredOutput(this.element, '[for="setting-render-scale"]');
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
+    this.aimAssistStrength = requiredSelect(this.element, '#setting-aim-assist');
     this.reducedCameraShake = requiredInput(this.element, '#setting-reduced-shake');
     this.closeButton = requiredButton(this.element, '.settings-panel__close');
     this.desktopSettings = requiredElement(this.element, '#settings-desktop');
@@ -208,6 +219,7 @@ export class SettingsOverlay {
     this.renderScale.value = String(settings.renderScale);
     this.renderScaleValue.value = `${Math.round(settings.renderScale * 100)}%`;
     this.fpsLimit.value = String(settings.fpsLimit);
+    this.aimAssistStrength.value = settings.aimAssistStrength;
     this.reducedCameraShake.checked = settings.reducedCameraShake;
   }
 
@@ -233,6 +245,8 @@ export class SettingsOverlay {
       patch = { renderQuality: this.renderQuality.value as RenderQuality };
     else if (target === this.renderScale) patch = { renderScale: this.renderScale.valueAsNumber };
     else if (target === this.fpsLimit) patch = { fpsLimit: parseFpsLimit(this.fpsLimit.value) };
+    else if (target === this.aimAssistStrength)
+      patch = { aimAssistStrength: this.aimAssistStrength.value as AimAssistStrength };
     else if (target === this.reducedCameraShake)
       patch = { reducedCameraShake: this.reducedCameraShake.checked };
     if (!patch) return;
