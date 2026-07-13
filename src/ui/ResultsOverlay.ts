@@ -1,5 +1,6 @@
 import type { UpgradeId } from '../game/progression';
 import { UPGRADE_DEFINITIONS } from '../game/progression';
+import { BUILD_METADATA } from '../build/buildMetadata';
 
 export type GameResultOutcome = 'victory' | 'defeat';
 
@@ -67,6 +68,7 @@ export class ResultsOverlay {
           <button type="button" data-action="restart">KICK OFF AGAIN</button>
           <button type="button" data-action="menu" class="results-panel__secondary">MAIN MENU</button>
         </div>
+        <p class="results-panel__build" aria-label="Build ${BUILD_METADATA.label}">${BUILD_METADATA.label}</p>
       </div>
     `;
     this.eyebrow = requiredElement(this.element, '.results-panel__eyebrow');

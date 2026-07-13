@@ -1135,6 +1135,16 @@ button {
   gap: 10px;
   margin-top: 22px;
 }
+.results-panel__build {
+  margin: 13px 0 -11px;
+  color: #5e5963;
+  text-align: center;
+  font:
+    8px Arial,
+    sans-serif;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 600px) {
   .pause-overlay,
