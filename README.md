@@ -187,6 +187,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
 - [x] Native CI packaging matrix added for Windows x64, macOS Intel/Apple silicon, Linux x64, and web
+- [x] `v0.8.0-alpha.4` published with nine CI-built artifacts and a verified combined SHA-256 manifest
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS

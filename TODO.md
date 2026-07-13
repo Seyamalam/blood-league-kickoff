@@ -206,7 +206,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Pin the Node/package-manager version used by local and CI builds.
 - [x] `P0` Make clean installs reproducible from the lockfile.
 - [x] `P0` Run format/lint/tests/type-check/web build on pushes to main and pull requests.
-- [ ] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
+- [x] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
 - [x] `P0` Add tag-triggered native Windows, macOS, Linux, and web release packaging with checksums.
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
@@ -235,7 +235,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Resolve release blockers and cut unstable target features.
 - [ ] `P0` Complete credits, licenses, controls, known issues, and asset inventory.
 - [ ] `P0` Verify README and itch.io description exactly match the build.
-- [ ] `P0` Generate web, Windows, macOS, and Linux release artifacts in CI.
+- [x] `P0` Generate web, Windows, macOS, and Linux release artifacts in CI (`v0.8.0-alpha.4`).
 - [ ] `P0` Test downloaded artifacts on clean target systems and a fresh browser.
 - [ ] `P0` Tag/publish `v0.9.0` with checksums and test notes.
 

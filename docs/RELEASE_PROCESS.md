@@ -63,6 +63,8 @@ Pushing the version tag runs the release workflow on native GitHub-hosted runner
 
 Download the published files and smoke-test them. A successful CI job alone is not release acceptance.
 
+If only the final attachment job fails after all native artifact jobs pass, run **Publish Existing Release Artifacts** with the original desktop run ID and matching release tag. The recovery workflow validates its inputs, downloads the original CI artifacts, verifies every platform checksum, and attaches the unchanged files; never rebuild a tagged release from a different commit.
+
 ## Artifact Naming
 
 Use predictable names:
