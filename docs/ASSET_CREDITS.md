@@ -1,12 +1,14 @@
 # Blood League: Kickoff — Asset Credits
 
-This is the authoritative asset and license inventory. Record an asset **before or when it enters the repository**, not at submission time. Do not use an asset if redistribution/modification rights are unclear.
+This is the authoritative asset and license ledger. The submission-facing file inventory and freeze status live in `ASSET_INVENTORY.md`. Record an asset **before or when it enters the repository**, not at submission time. Do not use an asset if redistribution/modification rights are unclear.
 
 ## Project-Created Assets
 
-| Asset/path                  | Creator              | Tool                              | Date              | Notes                                         |
-| --------------------------- | -------------------- | --------------------------------- | ----------------- | --------------------------------------------- |
-| Game design and source code | Team (names pending) | Codex and local development tools | 2026-07-14 onward | AI assistance must not be required at runtime |
+| Asset/path                                | Creator              | Tool                                 | Date              | Notes                                                                               |
+| ----------------------------------------- | -------------------- | ------------------------------------ | ----------------- | ----------------------------------------------------------------------------------- |
+| Game design and source code               | Team (names pending) | Codex and local development tools    | 2026-07-14 onward | AI assistance must not be required at runtime                                       |
+| Procedural visuals, UI, and audio systems | Team (names pending) | TypeScript, Three.js, CSS, Web Audio | 2026-07-14 onward | Generated at runtime from project source; no external media files                   |
+| `docs/screenshots/*.jpg`                  | Team (names pending) | Local browser capture                | 2026-07-14        | Three 1280×720 captures of the running game; no third-party or AI-generated imagery |
 
 ## AI-Generated Assets
 
@@ -14,7 +16,7 @@ This is the authoritative asset and license inventory. Record an asset **before 
 | ---------------- | --------------- | ------------------- | ---- | ------------------- | ----- |
 | _None added yet_ |                 |                     |      |                     |       |
 
-Store enough prompt/brief information to reproduce or explain each generated asset. Record edits such as paint-over, cropping, texture conversion, typography, and compositing. Never imply an generated image is a licensed third-party logo or character.
+Store enough prompt/brief information to reproduce or explain each generated asset. Record edits such as paint-over, cropping, texture conversion, typography, and compositing. Never imply a generated image is a licensed third-party logo or character.
 
 ## Third-Party Visual Assets
 
