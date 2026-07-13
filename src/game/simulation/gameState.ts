@@ -1,4 +1,4 @@
-import type { EnemyState, GameState, Vec3 } from './types';
+import type { EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
 
 const ARENA_HALF_WIDTH = 22;
 const ARENA_HALF_DEPTH = 14;
@@ -60,10 +60,10 @@ export function updateEnemies(state: GameState, dt: number): void {
   state.comboTimer -= dt;
   if (state.comboTimer <= 0) state.combo = 0;
 
-  const cap = Math.min(42, 12 + Math.floor(state.elapsed / 8) * 3);
+  const cap = Math.min(72, 14 + Math.floor(state.elapsed / 8) * 3);
   if (state.spawnTimer <= 0 && state.enemies.length < cap) {
     state.enemies.push(spawnEnemy(state));
-    state.spawnTimer = Math.max(0.28, 1.05 - state.elapsed * 0.012);
+    state.spawnTimer = Math.max(0.2, 0.95 - state.elapsed * 0.008);
   }
 
   const player = state.player;
@@ -71,15 +71,60 @@ export function updateEnemies(state: GameState, dt: number): void {
     copyVec3(enemy.previousPosition, enemy.position);
     enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
     enemy.lastBallHit = Math.max(0, enemy.lastBallHit - dt);
-    const dx = player.position.x - enemy.position.x;
-    const dz = player.position.z - enemy.position.z;
+    let dx = player.position.x - enemy.position.x;
+    let dz = player.position.z - enemy.position.z;
     const distance = Math.max(0.001, Math.hypot(dx, dz));
-    const crowdSlow = distance < 1.5 ? 0.45 : 1;
-    enemy.position.x += (dx / distance) * enemy.speed * crowdSlow * dt;
-    enemy.position.z += (dz / distance) * enemy.speed * crowdSlow * dt;
+    const crowdSlow = distance < 1.45 ? 0.5 : 1;
+
+    // Coaches accelerate nearby allies. This is deliberately a cheap radius check
+    // rather than a persistent buff object, so removing the coach removes its aura.
+    enemy.buffed = false;
+    if (enemy.archetype !== 'coach') {
+      for (const ally of state.enemies) {
+        if (ally.archetype !== 'coach') continue;
+        const coachDx = ally.position.x - enemy.position.x;
+        const coachDz = ally.position.z - enemy.position.z;
+        if (coachDx * coachDx + coachDz * coachDz < 30.25) {
+          enemy.buffed = true;
+          break;
+        }
+      }
+    }
+
+    // Local separation keeps the crowd readable and prevents enemies occupying
+    // the same point. No temporary vectors or arrays are created in this loop.
+    let separationX = 0;
+    let separationZ = 0;
+    for (const other of state.enemies) {
+      if (other === enemy) continue;
+      const awayX = enemy.position.x - other.position.x;
+      const awayZ = enemy.position.z - other.position.z;
+      const separationRadius = enemy.radius + other.radius + 0.18;
+      const distanceSquared = awayX * awayX + awayZ * awayZ;
+      if (distanceSquared <= 0.0001 || distanceSquared >= separationRadius * separationRadius) continue;
+      const neighbourDistance = Math.sqrt(distanceSquared);
+      const pressure = (separationRadius - neighbourDistance) / separationRadius;
+      separationX += (awayX / neighbourDistance) * pressure;
+      separationZ += (awayZ / neighbourDistance) * pressure;
+    }
+
+    const speedBuff = enemy.buffed ? 1.28 : 1;
+    dx = dx / distance + separationX * 1.35;
+    dz = dz / distance + separationZ * 1.35;
+    const moveLength = Math.max(1, Math.hypot(dx, dz));
+    enemy.position.x = clamp(
+      enemy.position.x + (dx / moveLength) * enemy.speed * speedBuff * crowdSlow * dt,
+      -ARENA_HALF_WIDTH,
+      ARENA_HALF_WIDTH,
+    );
+    enemy.position.z = clamp(
+      enemy.position.z + (dz / moveLength) * enemy.speed * speedBuff * crowdSlow * dt,
+      -ARENA_HALF_DEPTH,
+      ARENA_HALF_DEPTH,
+    );
 
     if (distance < enemy.radius + 0.58 && player.invulnerability <= 0) {
-      player.health = Math.max(0, player.health - 14);
+      player.health = Math.max(0, player.health - enemy.attackDamage);
       player.invulnerability = 0.62;
       enemy.position.x -= (dx / distance) * 1.4;
       enemy.position.z -= (dz / distance) * 1.4;
@@ -102,9 +147,13 @@ export function damageEnemiesWithBall(state: GameState, ball: Vec3, speed: numbe
     }
   }
 
-  const before = state.enemies.length;
-  state.enemies = state.enemies.filter((enemy) => enemy.hitPoints > 0);
-  const kills = before - state.enemies.length;
+  let kills = 0;
+  // Remove dead enemies in-place to avoid allocating a new crowd array on hits.
+  for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
+    if (state.enemies[index]!.hitPoints > 0) continue;
+    state.enemies.splice(index, 1);
+    kills += 1;
+  }
   if (kills > 0) {
     state.combo += kills;
     state.comboTimer = 2.2;
@@ -123,18 +172,58 @@ function spawnEnemy(state: GameState): EnemyState {
   if (side === 1) x = edgeX;
   if (side === 2) z = -edgeZ;
   if (side === 3) z = edgeZ;
-  const elite = Math.random() < Math.min(0.28, state.elapsed / 100);
-  const position = { x, y: elite ? 1.05 : 0.9, z };
+  const archetype = pickArchetype(state.elapsed);
+  const stats = enemyStats(archetype, state.elapsed);
+  const position = { x, y: stats.y, z };
   return {
     id: state.nextEnemyId++,
+    archetype,
     position,
     previousPosition: { ...position },
-    radius: elite ? 0.72 : 0.52,
-    speed: elite ? 1.55 : 2.15 + Math.min(1.35, state.elapsed * 0.018),
-    hitPoints: elite ? 2 : 1,
+    radius: stats.radius,
+    speed: stats.speed,
+    attackDamage: stats.attackDamage,
+    hitPoints: stats.hitPoints,
+    maxHitPoints: stats.hitPoints,
     hitFlash: 0,
     lastBallHit: 0,
+    buffed: false,
   };
+}
+
+function pickArchetype(elapsed: number): EnemyArchetype {
+  // Availability and weights ramp with match time, keeping the opening readable.
+  const fanWeight = Math.max(38, 72 - elapsed * 0.16);
+  const wingerWeight = elapsed < 10 ? 0 : Math.min(30, 10 + (elapsed - 10) * 0.18);
+  const defenderWeight = elapsed < 24 ? 0 : Math.min(24, 5 + (elapsed - 24) * 0.15);
+  const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
+  let roll = Math.random() * (fanWeight + wingerWeight + defenderWeight + coachWeight);
+  if ((roll -= fanWeight) < 0) return 'bloodFan';
+  if ((roll -= wingerWeight) < 0) return 'winger';
+  if ((roll -= defenderWeight) < 0) return 'defender';
+  return 'coach';
+}
+
+function enemyStats(archetype: EnemyArchetype, elapsed: number): {
+  radius: number;
+  speed: number;
+  attackDamage: number;
+  hitPoints: number;
+  y: number;
+} {
+  const pace = Math.min(0.75, elapsed * 0.006);
+  switch (archetype) {
+    case 'winger':
+      return { radius: 0.42, speed: 3.65 + pace, attackDamage: 10, hitPoints: 1, y: 0.82 };
+    case 'defender':
+      // Defender is the durable archetype. Directional shielding can be added once
+      // the combat API exposes the ball velocity, rather than only its speed.
+      return { radius: 0.76, speed: 1.35 + pace * 0.35, attackDamage: 22, hitPoints: 4, y: 1.02 };
+    case 'coach':
+      return { radius: 0.6, speed: 1.7 + pace * 0.5, attackDamage: 12, hitPoints: 2, y: 0.98 };
+    case 'bloodFan':
+      return { radius: 0.52, speed: 2.1 + pace, attackDamage: 14, hitPoints: 1, y: 0.9 };
+  }
 }
 
 function clamp(value: number, min: number, max: number): number {

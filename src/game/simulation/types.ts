@@ -14,15 +14,21 @@ export interface PlayerState {
   invulnerability: number;
 }
 
+export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach';
+
 export interface EnemyState {
   id: number;
+  archetype: EnemyArchetype;
   position: Vec3;
   previousPosition: Vec3;
   radius: number;
   speed: number;
+  attackDamage: number;
   hitPoints: number;
+  maxHitPoints: number;
   hitFlash: number;
   lastBallHit: number;
+  buffed: boolean;
 }
 
 export type MatchPhase = 'ready' | 'playing' | 'dead';

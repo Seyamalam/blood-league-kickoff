@@ -1,8 +1,11 @@
 export class InputController {
+  static readonly maxKickChargeSeconds = 1.1;
+
   private readonly keys = new Set<string>();
   private mouseDx = 0;
   private mouseDy = 0;
-  private kickQueued = false;
+  private kickStartedAt: number | null = null;
+  private kickReleaseQueued: { charge: number } | null = null;
   private recallHeld = false;
   private restartQueued = false;
 
@@ -45,9 +48,14 @@ export class InputController {
     return delta;
   }
 
-  consumeKick(): boolean {
-    const queued = this.kickQueued;
-    this.kickQueued = false;
+  get kickCharge(): number {
+    if (this.kickStartedAt === null) return 0;
+    return Math.min(1, (performance.now() - this.kickStartedAt) / (InputController.maxKickChargeSeconds * 1000));
+  }
+
+  consumeKick(): { charge: number } | null {
+    const queued = this.kickReleaseQueued;
+    this.kickReleaseQueued = null;
     return queued;
   }
 
@@ -62,6 +70,7 @@ export class InputController {
   }
 
   dispose(): void {
+    this.clearHeldInput();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('mousemove', this.onMouseMove);
@@ -90,18 +99,26 @@ export class InputController {
 
   private readonly onMouseDown = (event: MouseEvent): void => {
     if (!this.isLocked) return;
-    if (event.button === 0) this.kickQueued = true;
+    if (event.button === 0 && this.kickStartedAt === null) this.kickStartedAt = performance.now();
     if (event.button === 2) this.recallHeld = true;
   };
 
   private readonly onMouseUp = (event: MouseEvent): void => {
+    if (event.button === 0 && this.kickStartedAt !== null) {
+      const heldSeconds = (performance.now() - this.kickStartedAt) / 1000;
+      this.kickReleaseQueued = {
+        charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
+      };
+      this.kickStartedAt = null;
+    }
     if (event.button === 2) this.recallHeld = false;
   };
 
   private readonly clearHeldInput = (): void => {
     this.keys.clear();
     this.recallHeld = false;
-    this.kickQueued = false;
+    this.kickStartedAt = null;
+    this.kickReleaseQueued = null;
     this.mouseDx = 0;
     this.mouseDy = 0;
   };

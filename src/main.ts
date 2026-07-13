@@ -1,5 +1,6 @@
 import './styles.css';
 import * as THREE from 'three';
+import { AudioManager } from './audio';
 import { PerfMeter } from './diagnostics/PerfMeter';
 import { InputController } from './game/input/InputController';
 import { createGameState, damageEnemiesWithBall, resetGameState, updateEnemies, updatePlayer } from './game/simulation/gameState';
@@ -21,6 +22,7 @@ async function bootstrap(): Promise<void> {
   const scene = createScene();
   const cameraController = new CameraController();
   const input = new InputController(renderer.domElement);
+  const audio = new AudioManager();
   const physics = await PhysicsWorld.create();
   const state = createGameState();
   const bridge = new RenderBridge(scene);
@@ -28,6 +30,7 @@ async function bootstrap(): Promise<void> {
   const perf = new PerfMeter();
   const clock = new THREE.Clock();
   let accumulator = 0;
+  let previousBallState = physics.ballState;
 
   const resize = (): void => {
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -39,16 +42,21 @@ async function bootstrap(): Promise<void> {
   cameraController.update(state.player.position, 1);
 
   const begin = (): void => {
+    void audio.unlock();
     if (state.phase === 'ready') state.phase = 'playing';
+    audio.playPhase(0);
     hud.start();
     input.requestPointerLock();
   };
   const restart = (): void => {
+    void audio.unlock();
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
     hud.reset();
     state.phase = 'playing';
+    previousBallState = physics.ballState;
+    audio.playPhase(0);
     input.requestPointerLock();
   };
   hud.kickoffButton.addEventListener('click', begin);
@@ -64,24 +72,38 @@ async function bootstrap(): Promise<void> {
     cameraController.applyMouseDelta(mouse.x, mouse.y);
 
     if (input.consumeRestart() && state.phase !== 'ready') restart();
-    if (state.phase === 'playing' && input.consumeKick()) {
-      physics.kick(state.player.position, cameraController.aimDirection());
-    } else {
-      input.consumeKick();
+    const kick = input.consumeKick();
+    if (state.phase === 'playing' && kick) {
+      const result = physics.kick(state.player.position, cameraController.aimDirection(), kick.charge);
+      if (result) {
+        audio.playKick(result.charge);
+        if (result.perfectVolley) audio.playVolley();
+      }
     }
     physics.setRecall(state.phase === 'playing' && input.recall);
 
     accumulator += frameTime;
     while (accumulator >= FIXED_STEP) {
       if (state.phase === 'playing') {
+        const healthBeforeUpdate = state.player.health;
         updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP);
         updateEnemies(state, FIXED_STEP);
+        if (state.player.health < healthBeforeUpdate) audio.playPlayerHurt();
       }
       physics.syncPlayer(state.player.position);
       physics.step(state.player.position, state.player.facing, FIXED_STEP);
       if (state.phase === 'playing') {
-        damageEnemiesWithBall(state, physics.ballPosition, physics.ballSpeed);
+        const comboBeforeHit = state.combo;
+        const hits = damageEnemiesWithBall(state, physics.ballPosition, physics.ballSpeed);
+        if (hits > 0) audio.playHit(Math.min(1, physics.ballSpeed / physics.maxBallSpeed));
+        if (state.combo > comboBeforeHit) audio.playKill(state.combo);
       }
+      const recallStarted =
+        (physics.ballState === 'recalling' || physics.ballState === 'recovering')
+        && previousBallState !== 'recalling'
+        && previousBallState !== 'recovering';
+      if (recallStarted) audio.playRecall();
+      previousBallState = physics.ballState;
       accumulator -= FIXED_STEP;
     }
 
@@ -93,7 +115,7 @@ async function bootstrap(): Promise<void> {
     );
     cameraController.update(renderPlayerPosition, frameTime);
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
-    hud.update(state, physics.ballPossessed, perf.update(frameTime));
+    hud.update(state, physics.ballState, perf.update(frameTime), input.kickCharge);
     if (state.phase === 'dead' && input.isLocked) void document.exitPointerLock();
     renderer.render(scene, cameraController.camera);
   });
@@ -103,6 +125,10 @@ async function bootstrap(): Promise<void> {
     renderer.setAnimationLoop(null);
   });
   renderer.domElement.addEventListener('webglcontextrestored', () => window.location.reload());
+  window.addEventListener('beforeunload', () => {
+    input.dispose();
+    void audio.dispose();
+  }, { once: true });
 }
 
 function interpolatePosition(
