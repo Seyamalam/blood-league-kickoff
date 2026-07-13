@@ -1,16 +1,18 @@
 import type { ProgressionModifiers } from '../progression';
 import type { Vec3 } from '../simulation/types';
 
-export type SecondaryCombatModifiers = Readonly<Pick<
-  ProgressionModifiers,
-  | 'garlicTrailDamage'
-  | 'orbitingBallCount'
-  | 'orbitingBallDamage'
-  | 'bloodBombDamage'
-  | 'bloodBombRadius'
-  | 'ghostPassCount'
-  | 'ghostPassDamageMultiplier'
->>;
+export type SecondaryCombatModifiers = Readonly<
+  Pick<
+    ProgressionModifiers,
+    | 'garlicTrailDamage'
+    | 'orbitingBallCount'
+    | 'orbitingBallDamage'
+    | 'bloodBombDamage'
+    | 'bloodBombRadius'
+    | 'ghostPassCount'
+    | 'ghostPassDamageMultiplier'
+  >
+>;
 
 export interface CombatTarget {
   id: number;

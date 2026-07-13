@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  TutorialTracker,
-  createTutorialState,
-  getActiveTutorialPrompt,
-  reduceTutorialState,
-} from './index';
+import { TutorialTracker, createTutorialState, getActiveTutorialPrompt, reduceTutorialState } from './index';
 
 describe('tutorial tracker', () => {
   it('advances past each demonstrated action', () => {

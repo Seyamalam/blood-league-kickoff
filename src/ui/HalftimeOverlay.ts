@@ -101,10 +101,7 @@ export class HalftimeOverlay {
   }
 
   /** Opens halftime and optionally reports the selected tactic through a callback. */
-  public show(
-    countdownSeconds = 15,
-    onSelect?: HalftimeChoiceCallback,
-  ): Promise<HalftimeChoice | null> {
+  public show(countdownSeconds = 15, onSelect?: HalftimeChoiceCallback): Promise<HalftimeChoice | null> {
     if (this.open) this.hide();
     this.callback = onSelect ?? null;
     this.previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -125,9 +122,7 @@ export class HalftimeOverlay {
   public updateCountdown(secondsRemaining: number): void {
     const seconds = Number.isFinite(secondsRemaining) ? Math.max(0, secondsRemaining) : 0;
     const rounded = Math.ceil(seconds);
-    this.countdownElement.textContent = rounded > 0
-      ? `AUTO CHOICE IN ${rounded}s`
-      : 'AUTO CHOICE NOW';
+    this.countdownElement.textContent = rounded > 0 ? `AUTO CHOICE IN ${rounded}s` : 'AUTO CHOICE NOW';
     this.countdownElement.classList.toggle('halftime-overlay__countdown--urgent', seconds <= 3);
   }
 
@@ -150,9 +145,10 @@ export class HalftimeOverlay {
   }
 
   private readonly handleClick = (event: MouseEvent): void => {
-    const button = event.target instanceof Element
-      ? event.target.closest<HTMLButtonElement>('button[data-halftime-choice]')
-      : null;
+    const button =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('button[data-halftime-choice]')
+        : null;
     if (!button || !this.choicesElement.contains(button)) return;
     const choice = button.dataset.halftimeChoice as HalftimeChoice | undefined;
     if (choice && isHalftimeChoice(choice)) this.select(choice);

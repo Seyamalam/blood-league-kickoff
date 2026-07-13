@@ -2,13 +2,13 @@
 
 > A third-person football-combat horde-survival roguelite created for the IUT 12th ICT Fest 2026 GameJam.
 
-| Project | Value |
-| --- | --- |
-| Status | Complete nine-minute run alpha in active development |
-| Theme | Kickoff |
+| Project   | Value                                                                |
+| --------- | -------------------------------------------------------------------- |
+| Status    | Complete nine-minute run alpha in active development                 |
+| Theme     | Kickoff                                                              |
 | Platforms | Web and macOS development first; Windows desktop at final submission |
-| Stack | Three.js, TypeScript, Vite, Rapier, Electron |
-| Input | Keyboard and mouse |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron                         |
+| Input     | Keyboard and mouse                                                   |
 
 ![Blood League: Kickoff title screen](docs/screenshots/title-screen.jpg)
 
@@ -46,17 +46,17 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ## Controls
 
-| Action | Input | Status |
-| --- | --- | --- |
-| Move | `WASD` | Implemented |
-| Aim / camera | Mouse | Implemented after entering the pitch/pointer lock |
-| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented |
-| Recall ball | Right mouse button or `E` | Implemented |
-| Restart after kickoff | `R` | Implemented |
-| Dash | `Space` | Implemented with cooldown and brief invulnerability |
-| Focus Kick ultimate | `Q` | Target scope |
-| Pause | `Esc` | Implemented; also activates when the game loses focus |
-| Settings | Title-screen or in-game `⚙ SETTINGS` button | Implemented and persistent |
+| Action                | Input                                                                          | Status                                                |
+| --------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Move                  | `WASD`                                                                         | Implemented                                           |
+| Aim / camera          | Mouse                                                                          | Implemented after entering the pitch/pointer lock     |
+| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented                                           |
+| Recall ball           | Right mouse button or `E`                                                      | Implemented                                           |
+| Restart after kickoff | `R`                                                                            | Implemented                                           |
+| Dash                  | `Space`                                                                        | Implemented with cooldown and brief invulnerability   |
+| Focus Kick ultimate   | `Q`                                                                            | Target scope                                          |
+| Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus |
+| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                            |
 
 Controls and bindings may change during playtesting.
 
@@ -139,6 +139,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Procedural match music blends drone, tension, and pulse layers across every phase
 - [x] Automated wall, corner, stall, out-of-bounds, recall, catch, reset, and curved-flight recovery coverage
 - [x] Planar stall detection and immediate catch-velocity cleanup close two ball recovery edge cases
+- [x] Independent persistent master, music, and effects volume controls with safe schema migration
+- [x] Secure macOS Electron window-size, fullscreen/windowed, and Quit controls verified in the real app
+- [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
+- [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
@@ -170,6 +174,9 @@ npm install
 npm run dev
 npm run build
 npm run typecheck
+npm run lint
+npm run format:check
+npm run check
 npm run desktop
 npm run desktop:dev
 ```
@@ -187,17 +194,17 @@ Development history is part of the jam submission, so changes are committed in s
 
 Planned release line:
 
-| Version | Milestone |
-| --- | --- |
-| `v0.1.0` | Foundation scaffold |
-| `v0.2.0` | Player–ball combat prototype |
-| `v0.3.0` | Three-minute vertical slice |
-| `v0.5.0` | Complete guaranteed run |
+| Version  | Milestone                                                |
+| -------- | -------------------------------------------------------- |
+| `v0.1.0` | Foundation scaffold                                      |
+| `v0.2.0` | Player–ball combat prototype                             |
+| `v0.3.0` | Three-minute vertical slice                              |
+| `v0.5.0` | Complete guaranteed run                                  |
 | `v0.6.0` | First-run onboarding, curved kicks, and live diagnostics |
-| `v0.7.0` | Crowd scaling, recovery hardening, and phase music |
-| `v0.8.0` | Content and presentation complete |
-| `v0.9.0` | Release candidate |
-| `v1.0.0` | Jam submission freeze |
+| `v0.7.0` | Crowd scaling, recovery hardening, and phase music       |
+| `v0.8.0` | Content and presentation complete                        |
+| `v0.9.0` | Release candidate                                        |
+| `v1.0.0` | Jam submission freeze                                    |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.
 

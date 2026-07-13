@@ -222,11 +222,15 @@ export class SecondaryWeaponSystem {
     zone.radius = GARLIC_RADIUS;
     zone.damage = damage;
     copyPosition(zone.position, position);
-    pushCapped(this.events, {
-      type: 'garlic-zone-spawned',
-      position: zone.position,
-      radius: zone.radius,
-    }, EVENT_CAP_PER_STEP);
+    pushCapped(
+      this.events,
+      {
+        type: 'garlic-zone-spawned',
+        position: zone.position,
+        radius: zone.radius,
+      },
+      EVENT_CAP_PER_STEP,
+    );
   }
 
   private updateOrbitingBalls(input: Readonly<SecondaryWeaponStepInput>, dt: number): void {
@@ -254,11 +258,15 @@ export class SecondaryWeaponSystem {
         this.pushHit(target, damage, 'spectral-ball', orbit.position);
         orbit.hitTimes.set(target.id, ORBIT_HIT_COOLDOWN);
         trimMap(orbit.hitTimes, 128);
-        pushCapped(this.events, {
-          type: 'spectral-ball-hit',
-          position: orbit.position,
-          targetId: target.id,
-        }, EVENT_CAP_PER_STEP);
+        pushCapped(
+          this.events,
+          {
+            type: 'spectral-ball-hit',
+            position: orbit.position,
+            targetId: target.id,
+          },
+          EVENT_CAP_PER_STEP,
+        );
       }
     }
   }
@@ -267,11 +275,15 @@ export class SecondaryWeaponSystem {
     for (const bomb of this.bloodBombs) {
       if (!bomb.active) continue;
       bomb.active = false;
-      pushCapped(this.events, {
-        type: 'blood-bomb-triggered',
-        position: bomb.position,
-        radius: bomb.radius,
-      }, EVENT_CAP_PER_STEP);
+      pushCapped(
+        this.events,
+        {
+          type: 'blood-bomb-triggered',
+          position: bomb.position,
+          radius: bomb.radius,
+        },
+        EVENT_CAP_PER_STEP,
+      );
       this.queryRadius(targets, bomb.position, bomb.radius, bomb.damage, 'blood-bomb');
     }
   }
@@ -280,11 +292,15 @@ export class SecondaryWeaponSystem {
     for (const ghost of this.ghostPasses) {
       if (!ghost.active) continue;
       if (ghost.spawnEventCount > 0) {
-        pushCapped(this.events, {
-          type: 'ghost-pass-spawned',
-          position: ghost.position,
-          count: ghost.spawnEventCount,
-        }, EVENT_CAP_PER_STEP);
+        pushCapped(
+          this.events,
+          {
+            type: 'ghost-pass-spawned',
+            position: ghost.position,
+            count: ghost.spawnEventCount,
+          },
+          EVENT_CAP_PER_STEP,
+        );
         ghost.spawnEventCount = 0;
       }
       ghost.age += dt;
@@ -300,11 +316,15 @@ export class SecondaryWeaponSystem {
         if (!overlaps(ghost.position, ghost.radius, target)) continue;
         this.pushHit(target, ghost.damage, 'ghost-pass', ghost.position);
         ghost.hitTargets.add(target.id);
-        pushCapped(this.events, {
-          type: 'ghost-pass-hit',
-          position: ghost.position,
-          targetId: target.id,
-        }, EVENT_CAP_PER_STEP);
+        pushCapped(
+          this.events,
+          {
+            type: 'ghost-pass-hit',
+            position: ghost.position,
+            targetId: target.id,
+          },
+          EVENT_CAP_PER_STEP,
+        );
       }
     }
   }

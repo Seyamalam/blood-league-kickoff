@@ -19,8 +19,10 @@ export function createStadium(scene: THREE.Scene): void {
 
   const lineMaterial = new THREE.LineBasicMaterial({ color: 0x8ca697, transparent: true, opacity: 0.72 });
   const boundaryPoints = [
-    new THREE.Vector3(-22, 0.025, -14), new THREE.Vector3(22, 0.025, -14),
-    new THREE.Vector3(22, 0.025, 14), new THREE.Vector3(-22, 0.025, 14),
+    new THREE.Vector3(-22, 0.025, -14),
+    new THREE.Vector3(22, 0.025, -14),
+    new THREE.Vector3(22, 0.025, 14),
+    new THREE.Vector3(-22, 0.025, 14),
     new THREE.Vector3(-22, 0.025, -14),
   ];
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(boundaryPoints), lineMaterial));
@@ -60,7 +62,11 @@ export function createStadium(scene: THREE.Scene): void {
 
 function addGoal(scene: THREE.Scene, side: -1 | 1): void {
   const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({ color: side === -1 ? 0xb7c6ce : 0xa52843, metalness: 0.75, roughness: 0.25 });
+  const material = new THREE.MeshStandardMaterial({
+    color: side === -1 ? 0xb7c6ce : 0xa52843,
+    metalness: 0.75,
+    roughness: 0.25,
+  });
   const postGeometry = new THREE.CylinderGeometry(0.12, 0.12, 3, 10);
   for (const x of [-2.5, 2.5]) {
     const post = new THREE.Mesh(postGeometry, material);

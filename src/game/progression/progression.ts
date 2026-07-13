@@ -130,10 +130,7 @@ export function createUpgradeOffer(
  * Applies one offered upgrade and consumes one queued level-up. Invalid choices
  * return a reason without mutating or replacing the provided state.
  */
-export function chooseUpgrade(
-  state: Readonly<ProgressionState>,
-  upgradeId: UpgradeId,
-): UpgradeChoiceResult {
+export function chooseUpgrade(state: Readonly<ProgressionState>, upgradeId: UpgradeId): UpgradeChoiceResult {
   if (state.pendingLevelUps <= 0) {
     return { applied: false, state: cloneState(state), reason: 'no-pending-level-up', evolutionEvents: [] };
   }
@@ -182,9 +179,7 @@ export function getEligibleEvolutionIds(
   });
 }
 
-export function getUnlockedEvolutionIds(
-  state: Pick<ProgressionState, 'evolutions'>,
-): EvolutionId[] {
+export function getUnlockedEvolutionIds(state: Pick<ProgressionState, 'evolutions'>): EvolutionId[] {
   return EVOLUTION_IDS.filter((evolutionId) => state.evolutions[evolutionId]);
 }
 

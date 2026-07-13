@@ -122,15 +122,23 @@ export function damageCountGoalkeeper(
   config: CountGoalkeeperConfig = DEFAULT_COUNT_GOALKEEPER_CONFIG,
 ): BossDamageResult {
   validateConfig(config);
-  if (!Number.isFinite(hit.amount) || hit.amount < 0) throw new Error('Boss damage must be finite and non-negative.');
-  if (state.phase === 'entrance' || state.phase === 'defeated' || state.hitInvulnerability > 0 || hit.amount === 0) {
+  if (!Number.isFinite(hit.amount) || hit.amount < 0)
+    throw new Error('Boss damage must be finite and non-negative.');
+  if (
+    state.phase === 'entrance' ||
+    state.phase === 'defeated' ||
+    state.hitInvulnerability > 0 ||
+    hit.amount === 0
+  ) {
     return { state, events: [], appliedDamage: 0 };
   }
 
   const multiplier = hit.source === 'ball' ? config.ballDamageMultiplier : 1;
   const appliedDamage = Math.min(state.health, hit.amount * multiplier);
   const health = Math.max(0, state.health - appliedDamage);
-  const events: CountGoalkeeperEvent[] = [{ type: 'damaged', amount: appliedDamage, remainingHealth: health }];
+  const events: CountGoalkeeperEvent[] = [
+    { type: 'damaged', amount: appliedDamage, remainingHealth: health },
+  ];
   let next: CountGoalkeeperState = { ...state, health, hitInvulnerability: config.hitInvulnerability };
 
   if (health <= 0) {
@@ -176,7 +184,13 @@ function updateChargeCycle(
     return { ...state, position };
   }
   if (state.action === 'recover' && state.actionElapsed >= config.recoverDuration) {
-    return { ...state, action: 'idle', actionElapsed: 0, actionCooldown: config.chargeCooldown, velocity: ZERO };
+    return {
+      ...state,
+      action: 'idle',
+      actionElapsed: 0,
+      actionCooldown: config.chargeCooldown,
+      velocity: ZERO,
+    };
   }
   return state;
 }
@@ -224,15 +238,17 @@ function nextRandom(seed: number): { value: number; state: number } {
 
 function normalizeSeed(seed: number): number {
   if (!Number.isFinite(seed)) throw new Error('Boss RNG seed must be finite.');
-  return (Math.floor(seed) >>> 0) || 1;
+  return Math.floor(seed) >>> 0 || 1;
 }
 
 function validateStep(dt: number): void {
-  if (!Number.isFinite(dt) || dt < 0 || dt > 0.1) throw new Error('Boss dt must be between 0 and 0.1 seconds.');
+  if (!Number.isFinite(dt) || dt < 0 || dt > 0.1)
+    throw new Error('Boss dt must be between 0 and 0.1 seconds.');
 }
 
 function validateConfig(config: CountGoalkeeperConfig): void {
-  if (config.maxHealth <= 0 || config.radius <= 0 || config.chargeSpeed <= 0) throw new Error('Invalid boss config.');
+  if (config.maxHealth <= 0 || config.radius <= 0 || config.chargeSpeed <= 0)
+    throw new Error('Invalid boss config.');
   if (config.desperationHealthRatio <= 0 || config.desperationHealthRatio >= config.bloodRushHealthRatio) {
     throw new Error('Boss health phase ratios must be ordered between zero and one.');
   }

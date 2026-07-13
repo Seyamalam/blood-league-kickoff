@@ -6,15 +6,15 @@ Every major playable milestone receives a reproducible, documented snapshot. Fre
 
 ## Version Line
 
-| Version | Exit condition |
-| --- | --- |
+| Version  | Exit condition                                                      |
+| -------- | ------------------------------------------------------------------- |
 | `v0.1.0` | Foundation builds in browser; Electron/Windows pipeline established |
-| `v0.2.0` | Player–ball–enemy combat prototype passes Gate A |
-| `v0.3.0` | Three-minute vertical slice passes Gate B |
-| `v0.5.0` | Full guaranteed run passes Gate C |
-| `v0.8.0` | Presentation/content complete |
-| `v0.9.0` | Tested release candidate; features frozen |
-| `v1.0.0` | Exact itch.io submission revision and repository freeze |
+| `v0.2.0` | Player–ball–enemy combat prototype passes Gate A                    |
+| `v0.3.0` | Three-minute vertical slice passes Gate B                           |
+| `v0.5.0` | Full guaranteed run passes Gate C                                   |
+| `v0.8.0` | Presentation/content complete                                       |
+| `v0.9.0` | Tested release candidate; features frozen                           |
+| `v1.0.0` | Exact itch.io submission revision and repository freeze             |
 
 Patch releases may fix verified blockers between milestones. Do not tag broken or untested revisions merely to match a schedule.
 

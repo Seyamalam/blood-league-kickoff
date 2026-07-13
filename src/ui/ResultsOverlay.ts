@@ -139,7 +139,10 @@ export class ResultsOverlay {
       ['Goals', integer(stats.goals).toLocaleString()],
       ['Time', formatTime(stats.timeSeconds)],
       ['Level', String(Math.max(1, integer(stats.level)))],
-      ['Upgrades', String(stats.upgrades.reduce((total, upgrade) => total + Math.max(0, integer(upgrade.stacks)), 0))],
+      [
+        'Upgrades',
+        String(stats.upgrades.reduce((total, upgrade) => total + Math.max(0, integer(upgrade.stacks)), 0)),
+      ],
     ];
     const statNodes: HTMLElement[] = [];
     for (const [label, value] of statEntries) {

@@ -141,11 +141,17 @@ export class EnemySpatialGrid {
   }
 
   private column(x: number): number {
-    return Math.max(0, Math.min(this.columns - 1, Math.floor((clamp(x, this.minX, this.maxX) - this.minX) / this.cellSize)));
+    return Math.max(
+      0,
+      Math.min(this.columns - 1, Math.floor((clamp(x, this.minX, this.maxX) - this.minX) / this.cellSize)),
+    );
   }
 
   private row(z: number): number {
-    return Math.max(0, Math.min(this.rows - 1, Math.floor((clamp(z, this.minZ, this.maxZ) - this.minZ) / this.cellSize)));
+    return Math.max(
+      0,
+      Math.min(this.rows - 1, Math.floor((clamp(z, this.minZ, this.maxZ) - this.minZ) / this.cellSize)),
+    );
   }
 }
 

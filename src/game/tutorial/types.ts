@@ -1,11 +1,4 @@
-export const TUTORIAL_STEP_IDS = [
-  'movement',
-  'kick',
-  'recall',
-  'dash',
-  'progression',
-  'scoring',
-] as const;
+export const TUTORIAL_STEP_IDS = ['movement', 'kick', 'recall', 'dash', 'progression', 'scoring'] as const;
 
 export type TutorialStepId = (typeof TUTORIAL_STEP_IDS)[number];
 

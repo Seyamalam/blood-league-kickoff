@@ -23,16 +23,16 @@ The player is the last human striker in a supernatural match. The verbs are move
 
 ## 4. Run Structure
 
-| Time | Phase | Purpose |
-| --- | --- | --- |
-| 0:00 | Opening Kickoff | Teach movement, kicking, recall, and collection |
-| 0:00–3:00 | First Half | Introduce basic crowds, flankers, and upgrades |
-| 3:00 | First Goal | Score; enemy tier and stadium state change |
-| 3:00–5:00 | Escalation | Add shields, ranged pressure, and evolutions |
-| 5:00 | Halftime | Major choice and a brief pacing reset |
-| 5:00–8:00 | Blood Moon | Denser waves, elites, and dangerous combinations |
-| 8:00 | Final Goal | Summon Count Goalkeeper |
-| 8:00–10:00 | Final Match | Boss encounter, victory, or defeat |
+| Time       | Phase           | Purpose                                          |
+| ---------- | --------------- | ------------------------------------------------ |
+| 0:00       | Opening Kickoff | Teach movement, kicking, recall, and collection  |
+| 0:00–3:00  | First Half      | Introduce basic crowds, flankers, and upgrades   |
+| 3:00       | First Goal      | Score; enemy tier and stadium state change       |
+| 3:00–5:00  | Escalation      | Add shields, ranged pressure, and evolutions     |
+| 5:00       | Halftime        | Major choice and a brief pacing reset            |
+| 5:00–8:00  | Blood Moon      | Denser waves, elites, and dangerous combinations |
+| 8:00       | Final Goal      | Summon Count Goalkeeper                          |
+| 8:00–10:00 | Final Match     | Boss encounter, victory, or defeat               |
 
 Timings and balance values live in data files and remain easy to shorten during playtests.
 
@@ -69,12 +69,12 @@ Target paths include lightning, frost, black hole, multiball, holy zones, dash s
 
 ## 6. Enemy Roster
 
-| Guaranteed enemy | Gameplay role |
-| --- | --- |
-| Blood Fan | Basic crowd pressure and readable fodder |
-| Vampire Winger | Fast flanker that punishes standing still |
-| Undead Defender | Blocks frontal shots and rewards curves/rebounds |
-| Blood Coach | Buffs nearby enemies and becomes a priority target |
+| Guaranteed enemy | Gameplay role                                      |
+| ---------------- | -------------------------------------------------- |
+| Blood Fan        | Basic crowd pressure and readable fodder           |
+| Vampire Winger   | Fast flanker that punishes standing still          |
+| Undead Defender  | Blocks frontal shots and rewards curves/rebounds   |
+| Blood Coach      | Buffs nearby enemies and becomes a priority target |
 
 Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brutes, and the multi-phase Count Goalkeeper. Visual variants reuse behavior, geometry, materials, and animation wherever possible.
 
@@ -171,6 +171,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
+- `desktopRuntime`: fixed-channel Electron IPC for window state, safe size presets, fullscreen, and explicit quit
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, four weighted archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
 - `EnemySpatialGrid`: reusable typed-array neighborhood queries for crowd separation and Coach auras
@@ -258,6 +259,8 @@ Modal surfaces: upgrade selection, halftime choice, pause/settings, and results.
 ### Continuous integration
 
 Development and gameplay validation run locally on macOS and in the browser. Milestone tags may publish verified web snapshots. The Windows workflow is manual-only and will not run during active gameplay development; it is reserved for the content-complete submission candidate. Release metadata must state controls, included content, known issues, test status, and commit SHA.
+
+Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. This workflow is separate from—and cannot trigger—the manual-only Windows packaging job.
 
 ### Commit and documentation policy
 

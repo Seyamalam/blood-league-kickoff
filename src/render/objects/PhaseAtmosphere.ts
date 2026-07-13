@@ -154,9 +154,9 @@ function seedParticles(positions: Float32Array, speeds: Float32Array): void {
   for (let index = 0; index < PARTICLE_COUNT; index += 1) {
     const offset = index * 3;
     const angle = (index / PARTICLE_COUNT) * Math.PI * 2 + (index % 5) * 0.23;
-    const radius = 5 + (index * 7 % 17) * 1.05;
+    const radius = 5 + ((index * 7) % 17) * 1.05;
     positions[offset] = Math.cos(angle) * radius;
-    positions[offset + 1] = 0.1 + (index * 13 % 31) * 0.21;
+    positions[offset + 1] = 0.1 + ((index * 13) % 31) * 0.21;
     positions[offset + 2] = Math.sin(angle) * radius;
     speeds[index] = 0.35 + (index % 9) * 0.075;
   }

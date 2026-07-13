@@ -20,10 +20,9 @@ export type KickResult = {
 };
 
 /** Upgrade values consumed by ball physics. Full ProgressionModifiers is structurally compatible. */
-export type BallCombatModifiers = Partial<Pick<
-  ProgressionModifiers,
-  'kickPowerMultiplier' | 'ballSpeedMultiplier' | 'recallSpeedMultiplier'
->>;
+export type BallCombatModifiers = Partial<
+  Pick<ProgressionModifiers, 'kickPowerMultiplier' | 'ballSpeedMultiplier' | 'recallSpeedMultiplier'>
+>;
 
 export class PhysicsWorld {
   private readonly world: RAPIER.World;
@@ -48,7 +47,10 @@ export class PhysicsWorld {
 
     const floor = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(23, 0.1, 15).setTranslation(0, -0.1, 0).setFriction(0.65).setRestitution(0.38),
+      RAPIER.ColliderDesc.cuboid(23, 0.1, 15)
+        .setTranslation(0, -0.1, 0)
+        .setFriction(0.65)
+        .setRestitution(0.38),
       floor,
     );
     this.addWall(0, 1.5, -15.2, 23.5, 1.5, 0.2);
@@ -167,25 +169,38 @@ export class PhysicsWorld {
       true,
     );
     this.ballBody.setAngvel({ x: direction.z * 20, y: normalizedCurve * 13, z: -direction.x * 20 }, true);
-    return { kind: 'kick', charge: normalizedCharge, perfectVolley, speed: launchSpeed, curve: normalizedCurve };
+    return {
+      kind: 'kick',
+      charge: normalizedCharge,
+      perfectVolley,
+      speed: launchSpeed,
+      curve: normalizedCurve,
+    };
   }
 
   setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}, volleyWindowBonus = 0): void {
     this.recallRequested = active;
     this.recallSpeedMultiplier = safeMultiplier(modifiers.recallSpeedMultiplier, 0.5, 2);
-    this.volleyWindowBonus = Number.isFinite(volleyWindowBonus) ? Math.max(0, Math.min(0.8, volleyWindowBonus)) : 0;
+    this.volleyWindowBonus = Number.isFinite(volleyWindowBonus)
+      ? Math.max(0, Math.min(0.8, volleyWindowBonus))
+      : 0;
   }
 
   applyBallRebound(normal: Readonly<Vec3>, velocityMultiplier = 0.82): void {
     if (this.possessed) return;
     const velocity = this.ballBody.linvel();
     const dot = velocity.x * normal.x + velocity.y * normal.y + velocity.z * normal.z;
-    const scale = Number.isFinite(velocityMultiplier) ? Math.max(0.25, Math.min(1.2, velocityMultiplier)) : 0.82;
-    this.ballBody.setLinvel({
-      x: (velocity.x - 2 * dot * normal.x) * scale,
-      y: Math.max(1.8, (velocity.y - 2 * dot * normal.y) * scale),
-      z: (velocity.z - 2 * dot * normal.z) * scale,
-    }, true);
+    const scale = Number.isFinite(velocityMultiplier)
+      ? Math.max(0.25, Math.min(1.2, velocityMultiplier))
+      : 0.82;
+    this.ballBody.setLinvel(
+      {
+        x: (velocity.x - 2 * dot * normal.x) * scale,
+        y: Math.max(1.8, (velocity.y - 2 * dot * normal.y) * scale),
+        z: (velocity.z - 2 * dot * normal.z) * scale,
+      },
+      true,
+    );
   }
 
   step(playerPosition: Vec3, playerFacing: number, dt: number): void {
@@ -211,7 +226,10 @@ export class PhysicsWorld {
       const dz = playerPosition.z - ball.z;
       const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
       const pull = Math.min(70, (19 + distance * 2.8) * this.recallSpeedMultiplier);
-      this.ballBody.applyImpulse({ x: (dx / distance) * pull * dt, y: (dy / distance) * pull * dt, z: (dz / distance) * pull * dt }, true);
+      this.ballBody.applyImpulse(
+        { x: (dx / distance) * pull * dt, y: (dy / distance) * pull * dt, z: (dz / distance) * pull * dt },
+        true,
+      );
       this.volleyWindow = distance <= VOLLEY_WINDOW_DISTANCE + this.volleyWindowBonus;
       if (distance < CATCH_DISTANCE) {
         this.possessed = true;
@@ -253,8 +271,12 @@ export class PhysicsWorld {
 
     const ball = this.ballBody.translation();
     if (
-      !Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.z)
-      || ball.y < -4 || Math.abs(ball.x) > 30 || Math.abs(ball.z) > 22
+      !Number.isFinite(ball.x) ||
+      !Number.isFinite(ball.y) ||
+      !Number.isFinite(ball.z) ||
+      ball.y < -4 ||
+      Math.abs(ball.x) > 30 ||
+      Math.abs(ball.z) > 22
     ) {
       this.reset(playerPosition);
     }
@@ -291,10 +313,7 @@ export class PhysicsWorld {
     const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
     if (speed <= this.speedCap || speed === 0) return;
     const scale = this.speedCap / speed;
-    this.ballBody.setLinvel(
-      { x: velocity.x * scale, y: velocity.y * scale, z: velocity.z * scale },
-      true,
-    );
+    this.ballBody.setLinvel({ x: velocity.x * scale, y: velocity.y * scale, z: velocity.z * scale }, true);
   }
 }
 

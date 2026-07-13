@@ -4,48 +4,48 @@ This is the authoritative asset and license inventory. Record an asset **before 
 
 ## Project-Created Assets
 
-| Asset/path | Creator | Tool | Date | Notes |
-| --- | --- | --- | --- | --- |
+| Asset/path                  | Creator              | Tool                              | Date              | Notes                                         |
+| --------------------------- | -------------------- | --------------------------------- | ----------------- | --------------------------------------------- |
 | Game design and source code | Team (names pending) | Codex and local development tools | 2026-07-14 onward | AI assistance must not be required at runtime |
 
 ## AI-Generated Assets
 
-| Asset/path | Generator/model | Prompt/brief record | Date | Human modifications | Notes |
-| --- | --- | --- | --- | --- | --- |
-| _None added yet_ |  |  |  |  |  |
+| Asset/path       | Generator/model | Prompt/brief record | Date | Human modifications | Notes |
+| ---------------- | --------------- | ------------------- | ---- | ------------------- | ----- |
+| _None added yet_ |                 |                     |      |                     |       |
 
 Store enough prompt/brief information to reproduce or explain each generated asset. Record edits such as paint-over, cropping, texture conversion, typography, and compositing. Never imply an generated image is a licensed third-party logo or character.
 
 ## Third-Party Visual Assets
 
-| Asset/path | Title | Author | Source URL | License | Modifications |
-| --- | --- | --- | --- | --- | --- |
-| _None added yet_ |  |  |  |  |  |
+| Asset/path       | Title | Author | Source URL | License | Modifications |
+| ---------------- | ----- | ------ | ---------- | ------- | ------------- |
+| _None added yet_ |       |        |            |         |               |
 
 ## Third-Party Audio
 
-| Asset/path | Title | Author | Source URL | License | Modifications |
-| --- | --- | --- | --- | --- | --- |
-| _None added yet_ |  |  |  |  |  |
+| Asset/path       | Title | Author | Source URL | License | Modifications |
+| ---------------- | ----- | ------ | ---------- | ------- | ------------- |
+| _None added yet_ |       |        |            |         |               |
 
 ## Fonts
 
-| Asset/path | Font/foundry | Source URL | License | Use |
-| --- | --- | --- | --- | --- |
-| _None added yet_ |  |  |  |  |
+| Asset/path       | Font/foundry | Source URL | License | Use |
+| ---------------- | ------------ | ---------- | ------- | --- |
+| _None added yet_ |              |            |         |     |
 
 ## Runtime Libraries and Tools
 
 Exact versions are tracked by `package.json` and the lockfile. Verify transitive notices during release packaging.
 
-| Package/tool | Purpose | License/source |
-| --- | --- | --- |
-| Three.js | WebGL 3D rendering | MIT — package repository/license |
-| Rapier (`@dimforge/rapier3d-compat`) | WASM physics | Apache-2.0 — package repository/license |
-| TypeScript | Language/tooling | Apache-2.0 — package repository/license |
-| Vite | Development/build tooling | MIT — package repository/license |
-| Electron | Desktop runtime | MIT — package repository/license |
-| electron-builder | Desktop packaging | MIT — package repository/license |
+| Package/tool                         | Purpose                   | License/source                          |
+| ------------------------------------ | ------------------------- | --------------------------------------- |
+| Three.js                             | WebGL 3D rendering        | MIT — package repository/license        |
+| Rapier (`@dimforge/rapier3d-compat`) | WASM physics              | Apache-2.0 — package repository/license |
+| TypeScript                           | Language/tooling          | Apache-2.0 — package repository/license |
+| Vite                                 | Development/build tooling | MIT — package repository/license        |
+| Electron                             | Desktop runtime           | MIT — package repository/license        |
+| electron-builder                     | Desktop packaging         | MIT — package repository/license        |
 
 ## Release Credit Checklist
 

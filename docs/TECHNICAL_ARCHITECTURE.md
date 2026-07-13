@@ -10,15 +10,15 @@
 
 ## Stack
 
-| Layer | Choice | Responsibility |
-| --- | --- | --- |
-| Tooling | Vite + TypeScript | Development, bundling, type safety |
-| Rendering | Three.js / WebGL 2 | Scene, camera, models, lighting, VFX |
-| Physics | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events |
-| UI | HTML/CSS | Menus, HUD, upgrade cards, settings |
-| Desktop | Electron | Self-contained GPU-accelerated Windows application |
-| Packaging | electron-builder | Portable Windows executable |
-| Automation | GitHub Actions | Manual-only final Windows artifacts |
+| Layer      | Choice                      | Responsibility                                     |
+| ---------- | --------------------------- | -------------------------------------------------- |
+| Tooling    | Vite + TypeScript           | Development, bundling, type safety                 |
+| Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX               |
+| Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events |
+| UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                |
+| Desktop    | Electron                    | Self-contained GPU-accelerated Windows application |
+| Packaging  | electron-builder            | Portable Windows executable                        |
+| Automation | GitHub Actions              | Manual-only final Windows artifacts                |
 
 ## Current Source Baseline
 
@@ -88,17 +88,19 @@ The Three.js canvas owns the world. HTML/CSS owns menus, HUD, upgrade choices, p
 - Do not load remote scripts or depend on a network connection.
 - Keep browser behavior as the portability baseline.
 
+The preload exposes only fixed, validated desktop operations: read window state, select one of three safe content sizes, enter or leave fullscreen, subscribe to fullscreen changes, and quit. It never exposes `ipcRenderer` or a generic channel invocation to game code. Main-process handlers reject requests unless they originate from the trusted active game window and its local production or configured development URL.
+
 The Windows GitHub Actions definition is intentionally manual-only during gameplay development. When invoked for the content-complete candidate, it installs from the lockfile, builds Vite output, packages Electron portable/ZIP artifacts, creates checksums, and uploads workflow artifacts. The workflow and actual Windows artifacts still require verification, and release candidates must run on a real Windows machine.
 
 ## Performance Targets
 
-| Target | Budget/acceptance |
-| --- | --- |
-| Guaranteed | Stable 60 FPS during densest required wave on reference system |
-| High refresh | Stable 120 FPS on capable system/performance preset |
-| Simulation | 60 fixed steps/sec initially; measured before changing |
-| Enemy cap | Start at 80 performance / 120 balanced |
-| Recovery | No unrecoverable ball or invalid run state |
+| Target       | Budget/acceptance                                              |
+| ------------ | -------------------------------------------------------------- |
+| Guaranteed   | Stable 60 FPS during densest required wave on reference system |
+| High refresh | Stable 120 FPS on capable system/performance preset            |
+| Simulation   | 60 fixed steps/sec initially; measured before changing         |
+| Enemy cap    | Start at 80 performance / 120 balanced                         |
+| Recovery     | No unrecoverable ball or invalid run state                     |
 
 The debug overlay should expose render FPS/frame time, fixed-step time, enemy count, draw calls, triangles, pool usage, physics time, and quality preset. Optimize measured bottlenecks, not guesses.
 

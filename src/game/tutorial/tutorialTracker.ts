@@ -8,44 +8,45 @@ import {
   type TutorialUpdate,
 } from './types';
 
-const PROMPTS: Readonly<Record<TutorialStepId, Omit<TutorialPromptDefinition, 'stepNumber' | 'totalSteps'>>> = {
-  movement: {
-    id: 'movement',
-    title: 'Find Your Feet',
-    description: 'Move across the pitch and keep space between yourself and the crowd.',
-    control: 'W A S D',
-  },
-  kick: {
-    id: 'kick',
-    title: 'Weaponize the Ball',
-    description: 'Hold to charge, then release to launch the ball through vampires.',
-    control: 'HOLD LMB',
-  },
-  recall: {
-    id: 'recall',
-    title: 'Call It Home',
-    description: 'Recall a loose ball. Its returning path can strike enemies again.',
-    control: 'RMB / E',
-  },
-  dash: {
-    id: 'dash',
-    title: 'Break Through',
-    description: 'Dash out of a closing crowd. The first instant protects you from damage.',
-    control: 'SPACE',
-  },
-  progression: {
-    id: 'progression',
-    title: 'Drink Their Power',
-    description: 'Collect blood shards, level up, and choose one upgrade for your build.',
-    control: 'COLLECT + CHOOSE',
-  },
-  scoring: {
-    id: 'scoring',
-    title: 'Seize the Kickoff',
-    description: 'When the cursed goal opens, drive the ball into it before time expires.',
-    control: 'SCORE A GOAL',
-  },
-};
+const PROMPTS: Readonly<Record<TutorialStepId, Omit<TutorialPromptDefinition, 'stepNumber' | 'totalSteps'>>> =
+  {
+    movement: {
+      id: 'movement',
+      title: 'Find Your Feet',
+      description: 'Move across the pitch and keep space between yourself and the crowd.',
+      control: 'W A S D',
+    },
+    kick: {
+      id: 'kick',
+      title: 'Weaponize the Ball',
+      description: 'Hold to charge, then release to launch the ball through vampires.',
+      control: 'HOLD LMB',
+    },
+    recall: {
+      id: 'recall',
+      title: 'Call It Home',
+      description: 'Recall a loose ball. Its returning path can strike enemies again.',
+      control: 'RMB / E',
+    },
+    dash: {
+      id: 'dash',
+      title: 'Break Through',
+      description: 'Dash out of a closing crowd. The first instant protects you from damage.',
+      control: 'SPACE',
+    },
+    progression: {
+      id: 'progression',
+      title: 'Drink Their Power',
+      description: 'Collect blood shards, level up, and choose one upgrade for your build.',
+      control: 'COLLECT + CHOOSE',
+    },
+    scoring: {
+      id: 'scoring',
+      title: 'Seize the Kickoff',
+      description: 'When the cursed goal opens, drive the ball into it before time expires.',
+      control: 'SCORE A GOAL',
+    },
+  };
 
 /** Creates a fresh tutorial or an already-complete state for returning players. */
 export function createTutorialState(alreadyCompleted = false): TutorialState {
@@ -99,9 +100,7 @@ export function reduceTutorialState(
   return { state, completedNow, tutorialCompleted: isTutorialComplete(state) };
 }
 
-export function getActiveTutorialPrompt(
-  state: Readonly<TutorialState>,
-): TutorialPromptDefinition | null {
+export function getActiveTutorialPrompt(state: Readonly<TutorialState>): TutorialPromptDefinition | null {
   if (state.skipped) return null;
   const stepIndex = TUTORIAL_STEP_IDS.findIndex((stepId) => !state.completed[stepId]);
   if (stepIndex < 0) return null;

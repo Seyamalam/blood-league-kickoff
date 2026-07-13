@@ -3,7 +3,12 @@ import type { PickupSystemState } from '../../game/pickups';
 
 export class BloodShardRenderer {
   private readonly geometry = new THREE.OctahedronGeometry(0.13, 0);
-  private readonly material = new THREE.MeshStandardMaterial({ color: 0xd62d58, emissive: 0x7d0a2d, emissiveIntensity: 1.4, roughness: 0.3 });
+  private readonly material = new THREE.MeshStandardMaterial({
+    color: 0xd62d58,
+    emissive: 0x7d0a2d,
+    emissiveIntensity: 1.4,
+    roughness: 0.3,
+  });
   private readonly mesh: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
@@ -39,6 +44,12 @@ export class BloodShardRenderer {
     if (visible > 0) this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  reset(): void { this.mesh.count = 0; }
-  dispose(): void { this.mesh.removeFromParent(); this.geometry.dispose(); this.material.dispose(); }
+  reset(): void {
+    this.mesh.count = 0;
+  }
+  dispose(): void {
+    this.mesh.removeFromParent();
+    this.geometry.dispose();
+    this.material.dispose();
+  }
 }

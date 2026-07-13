@@ -64,7 +64,10 @@ export class InputController {
 
   get kickCharge(): number {
     if (this.kickStartedAt === null) return 0;
-    return Math.min(1, (performance.now() - this.kickStartedAt) / (InputController.maxKickChargeSeconds * 1000));
+    return Math.min(
+      1,
+      (performance.now() - this.kickStartedAt) / (InputController.maxKickChargeSeconds * 1000),
+    );
   }
 
   consumeKick(): KickInput | null {
@@ -171,5 +174,5 @@ export function normalizeKickCurveIntent(horizontalPixels: number): number {
   const bounded = Math.max(-1, Math.min(1, horizontalPixels / FULL_CURVE_MOUSE_PIXELS));
   const magnitude = Math.abs(bounded);
   if (magnitude <= CURVE_DEADZONE) return 0;
-  return Math.sign(bounded) * (magnitude - CURVE_DEADZONE) / (1 - CURVE_DEADZONE);
+  return (Math.sign(bounded) * (magnitude - CURVE_DEADZONE)) / (1 - CURVE_DEADZONE);
 }

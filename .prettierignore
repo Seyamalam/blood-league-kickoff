@@ -1,0 +1,7 @@
+dist
+release
+node_modules
+coverage
+docs/screenshots
+*.zip
+RuleBook for GameJam_IUT_12th_ICT_Fest.md

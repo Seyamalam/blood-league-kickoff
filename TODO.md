@@ -19,7 +19,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Scaffold Vite and strict TypeScript without overwriting jam documentation.
 - [x] `P0` Install Three.js, Rapier, Electron, and electron-builder dependencies.
 - [x] `P0` Add type-check, dev, production-build, desktop, and packaging scripts.
-- [ ] `P0` Add lint, formatting, and unit-test tooling/scripts.
+- [x] `P0` Add lint, formatting, and unit-test tooling/scripts.
 - [x] `P0` Add `.gitignore` for Node, builds, Electron outputs, logs, and local files.
 - [x] `P0` Create the current source layout documented in `Plan.md`.
 - [x] `P0` Initialize Rapier WASM and step it through a fixed-timestep game loop.
@@ -29,7 +29,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add the Electron main/preload shell with secure renderer defaults.
 - [x] `P0` Run type-check and the production web build locally.
 - [x] `P0` Boot the production Electron desktop build locally.
-- [x] `P0` Add GitHub Actions clean install and web/type-check build coverage.
+- [x] `P0` Add GitHub Actions clean install, formatting, lint, tests, type-check, and web-build coverage.
 - [x] `P0` Add Vitest and initial progression, pickup, combat, match, and boss tests.
 - [x] `P0` Add electron-builder portable/ZIP configuration and a Windows runner workflow.
 - [x] `P0` Keep Windows packaging manual-only until the game is content-complete.
@@ -172,10 +172,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Main menu and start flow.
 - [x] `P0` Pause menu and focus-loss pause behavior.
 - [x] `P0` Results, restart, and return-to-menu flow.
-- [x] `P0` Persistent master volume control; split music/effects buses when music lands.
+- [x] `P0` Persistent independent master, music, and effects volume controls.
 - [x] `P0` Mouse sensitivity.
 - [x] `P0` Quality presets and render-scale control.
-- [ ] `P0` Desktop resolution, fullscreen/windowed, and quit behavior.
+- [x] `P0` Desktop window-size, fullscreen/windowed, and quit behavior verified on macOS.
 - [x] `P0` 60, 120, and unlimited frame-rate options where supported.
 - [x] `P1` Reduced camera-shake option.
 - [ ] `P1` Aim-assist strength.
@@ -199,9 +199,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## CI, packaging, and releases
 
-- [ ] `P0` Pin the Node/package-manager version used by local and CI builds.
-- [ ] `P0` Make clean installs reproducible from the lockfile.
-- [ ] `P0` Run type-check/tests/web build on every pushed branch.
+- [x] `P0` Pin the Node/package-manager version used by local and CI builds.
+- [x] `P0` Make clean installs reproducible from the lockfile.
+- [x] `P0` Run format/lint/tests/type-check/web build on pushes to main and pull requests.
 - [ ] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
@@ -212,14 +212,14 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 ## Testing
 
 - [ ] `P0` Test fresh browser cache and first desktop launch.
-- [ ] `P0` Test Chrome/Chromium web build and packaged Electron build.
+- [x] `P0` Test Chrome/Chromium web build and production Electron shell on macOS.
 - [ ] `P0` Test 1080p and one lower resolution/aspect ratio.
 - [ ] `P0` Test ball recovery from walls, corners, goals, death, pause, and boss control.
 - [ ] `P0` Test pool/population-cap exhaustion behavior.
 - [ ] `P0` Test every upgrade/evolution alone and in combinations.
 - [ ] `P0` Test every enemy alone and in mixed waves.
 - [ ] `P0` Test pause/focus loss during combat and upgrade selection.
-- [ ] `P0` Test settings persistence after restart.
+- [x] `P0` Test audio settings persistence after reload and legacy schema migration.
 - [ ] `P0` Run at least three complete external playtests.
 - [ ] `P0` Classify bugs as release-blocking, major, or cosmetic.
 - [ ] `P0` Retest every release-blocking fix from a clean production build.

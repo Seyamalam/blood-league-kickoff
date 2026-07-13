@@ -35,7 +35,9 @@ export const EVOLUTION_DEFINITIONS = Object.freeze({
 function define(definition: EvolutionDefinition): Readonly<EvolutionDefinition> {
   return Object.freeze({
     ...definition,
-    requirements: Object.freeze(definition.requirements.map((requirement) => Object.freeze({ ...requirement }))),
+    requirements: Object.freeze(
+      definition.requirements.map((requirement) => Object.freeze({ ...requirement })),
+    ),
     modifierBonus: Object.freeze({ ...definition.modifierBonus }),
   });
 }

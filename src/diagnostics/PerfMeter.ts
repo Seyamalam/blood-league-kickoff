@@ -26,7 +26,9 @@ export interface PerformanceSnapshot extends PerformanceCounters {
   readonly pooledObjectsCapacity: number;
 }
 
-export type MutablePerformanceCounters = { -readonly [Key in keyof PerformanceCounters]: PerformanceCounters[Key] };
+export type MutablePerformanceCounters = {
+  -readonly [Key in keyof PerformanceCounters]: PerformanceCounters[Key];
+};
 type WritablePerformanceSnapshot = { -readonly [Key in keyof PerformanceSnapshot]: PerformanceSnapshot[Key] };
 
 const EMPTY_COUNTERS: PerformanceCounters = {
@@ -96,14 +98,13 @@ export class PerfMeter {
     value.orbitPoolCapacity = nonNegativeInteger(counters.orbitPoolCapacity);
     value.ghostPassPoolActive = nonNegativeInteger(counters.ghostPassPoolActive);
     value.ghostPassPoolCapacity = nonNegativeInteger(counters.ghostPassPoolCapacity);
-    value.pooledObjectsActive = value.bloodShardPoolActive
-      + value.garlicPoolActive
-      + value.orbitPoolActive
-      + value.ghostPassPoolActive;
-    value.pooledObjectsCapacity = value.bloodShardPoolCapacity
-      + value.garlicPoolCapacity
-      + value.orbitPoolCapacity
-      + value.ghostPassPoolCapacity;
+    value.pooledObjectsActive =
+      value.bloodShardPoolActive + value.garlicPoolActive + value.orbitPoolActive + value.ghostPassPoolActive;
+    value.pooledObjectsCapacity =
+      value.bloodShardPoolCapacity +
+      value.garlicPoolCapacity +
+      value.orbitPoolCapacity +
+      value.ghostPassPoolCapacity;
   }
 
   reset(): void {

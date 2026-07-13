@@ -31,7 +31,9 @@ export class Hud {
   private readonly bossFill: HTMLElement;
 
   constructor(root: HTMLElement) {
-    root.insertAdjacentHTML('beforeend', `
+    root.insertAdjacentHTML(
+      'beforeend',
+      `
       <div class="vignette"></div>
       <div class="hud" aria-live="polite">
         <header class="topbar">
@@ -80,7 +82,8 @@ export class Hud {
         <button type="button" id="victory-restart-button">PLAY ANOTHER MATCH</button>
         <small>or press R</small>
       </section>
-    `);
+    `,
+    );
     this.healthFill = required('health-fill');
     this.healthValue = required('health-value');
     this.timer = required('timer');
@@ -151,7 +154,8 @@ export class Hud {
     this.dashStatus.classList.toggle('warn', !dashReady);
     const currentLevelXp = totalXpRequiredForLevel(progression.level);
     const nextLevelXp = totalXpRequiredForLevel(progression.level + 1);
-    const xpProgress = (progression.totalBloodXp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp);
+    const xpProgress =
+      (progression.totalBloodXp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp);
     this.xpFill.style.width = `${Math.max(0, Math.min(1, xpProgress)) * 100}%`;
     this.levelValue.textContent = String(progression.level);
     this.objective.textContent = `${objective.title} · ${objective.detail}`.toUpperCase();
@@ -159,9 +163,8 @@ export class Hud {
     if (boss) this.bossFill.style.width = `${Math.max(0, boss.health / boss.maxHealth) * 100}%`;
     const fps = Math.round(performance.smoothedFps);
     this.fps.textContent = fps > 0 ? `${fps} FPS` : '-- FPS';
-    this.frameTime.textContent = performance.smoothedFrameMs > 0
-      ? `${performance.smoothedFrameMs.toFixed(1)} MS`
-      : '-- MS';
+    this.frameTime.textContent =
+      performance.smoothedFrameMs > 0 ? `${performance.smoothedFrameMs.toFixed(1)} MS` : '-- MS';
     this.renderStats.textContent = `${performance.rendererCalls} DC · ${formatCompact(performance.rendererTriangles)} TRI`;
     this.poolStats.textContent = `${performance.pooledObjectsActive}/${performance.pooledObjectsCapacity} POOL`;
     this.combo.textContent = state.combo > 1 && state.comboTimer > 0 ? `${state.combo}× BLOOD COMBO` : '';
@@ -169,10 +172,14 @@ export class Hud {
 
     const dead = state.phase === 'dead';
     this.death.classList.toggle('hidden', !dead);
-    if (dead) required('final-score').textContent = `Score ${state.score.toLocaleString()} · Survived ${formatTime(state.elapsed)}`;
+    if (dead)
+      required('final-score').textContent =
+        `Score ${state.score.toLocaleString()} · Survived ${formatTime(state.elapsed)}`;
     const won = state.phase === 'won';
     this.victory.classList.toggle('hidden', !won);
-    if (won) required('victory-score').textContent = `Score ${state.score.toLocaleString()} · ${state.kills} vampires defeated`;
+    if (won)
+      required('victory-score').textContent =
+        `Score ${state.score.toLocaleString()} · ${state.kills} vampires defeated`;
   }
 
   start(): void {
@@ -200,11 +207,16 @@ function required(id: string): HTMLElement {
 
 function ballStatusLabel(state: BallState): string {
   switch (state) {
-    case 'possessed': return 'BALL READY';
-    case 'recalling': return 'BALL RETURNING';
-    case 'volley-window': return 'PERFECT VOLLEY!';
-    case 'recovering': return 'AUTO RECOVERY';
-    case 'free': return 'HOLD E TO RECALL';
+    case 'possessed':
+      return 'BALL READY';
+    case 'recalling':
+      return 'BALL RETURNING';
+    case 'volley-window':
+      return 'PERFECT VOLLEY!';
+    case 'recovering':
+      return 'AUTO RECOVERY';
+    case 'free':
+      return 'HOLD E TO RECALL';
   }
 }
 

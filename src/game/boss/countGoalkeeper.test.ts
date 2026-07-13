@@ -17,7 +17,10 @@ describe('Count Goalkeeper', () => {
     state = { ...state, phase: 'guarding', phaseElapsed: 0 };
     const rush = damageCountGoalkeeper(state, { amount: 50, source: 'ball' });
     expect(rush.state.phase).toBe('bloodRush');
-    const defeated = damageCountGoalkeeper({ ...rush.state, hitInvulnerability: 0 }, { amount: 1_000, source: 'ball' });
+    const defeated = damageCountGoalkeeper(
+      { ...rush.state, hitInvulnerability: 0 },
+      { amount: 1_000, source: 'ball' },
+    );
     expect(defeated.state.phase).toBe('defeated');
     expect(defeated.events.some((event) => event.type === 'defeated')).toBe(true);
   });

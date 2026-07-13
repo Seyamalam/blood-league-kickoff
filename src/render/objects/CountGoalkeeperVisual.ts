@@ -3,8 +3,17 @@ import type { CountGoalkeeperState } from '../../game/boss';
 
 export class CountGoalkeeperVisual {
   private readonly group = new THREE.Group();
-  private readonly bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x39091d, emissive: 0x5b071f, emissiveIntensity: 0.8, roughness: 0.42 });
-  private readonly armorMaterial = new THREE.MeshStandardMaterial({ color: 0x17131d, metalness: 0.72, roughness: 0.28 });
+  private readonly bodyMaterial = new THREE.MeshStandardMaterial({
+    color: 0x39091d,
+    emissive: 0x5b071f,
+    emissiveIntensity: 0.8,
+    roughness: 0.42,
+  });
+  private readonly armorMaterial = new THREE.MeshStandardMaterial({
+    color: 0x17131d,
+    metalness: 0.72,
+    roughness: 0.28,
+  });
   private readonly eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff315f });
   private readonly geometries: THREE.BufferGeometry[] = [];
 
@@ -33,10 +42,13 @@ export class CountGoalkeeperVisual {
       THREE.MathUtils.lerp(state.previousPosition.z, state.position.z, t),
     );
     this.group.rotation.y = state.action === 'telegraph' ? Math.sin(state.actionElapsed * 28) * 0.08 : 0;
-    this.bodyMaterial.emissiveIntensity = state.phase === 'desperation' ? 2 : state.phase === 'bloodRush' ? 1.35 : 0.8;
+    this.bodyMaterial.emissiveIntensity =
+      state.phase === 'desperation' ? 2 : state.phase === 'bloodRush' ? 1.35 : 0.8;
   }
 
-  reset(): void { this.group.visible = false; }
+  reset(): void {
+    this.group.visible = false;
+  }
 
   dispose(): void {
     this.group.removeFromParent();

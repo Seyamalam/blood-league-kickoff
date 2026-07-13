@@ -159,7 +159,10 @@ export class UpgradeOverlay {
   }
 
   private readonly handleClick = (event: MouseEvent): void => {
-    const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('button[data-upgrade-id]') : null;
+    const target =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('button[data-upgrade-id]')
+        : null;
     if (!target || !this.choicesElement.contains(target)) return;
     const upgradeId = target.dataset.upgradeId as UpgradeId | undefined;
     if (upgradeId && this.offeredIds.includes(upgradeId)) this.select(upgradeId);
@@ -224,13 +227,21 @@ function keyboardChoiceIndex(event: KeyboardEvent): number | null {
 
 function upgradeGlyph(upgradeId: UpgradeId): string {
   switch (upgradeId) {
-    case 'silverBall': return '●';
-    case 'powerKick': return '↗';
-    case 'rapidRecall': return '↶';
-    case 'piercingStuds': return '◆';
-    case 'garlicTrail': return '✦';
-    case 'orbitingSpectralBall': return '◉';
-    case 'bloodBomb': return '✹';
-    case 'ghostPass': return '♢';
+    case 'silverBall':
+      return '●';
+    case 'powerKick':
+      return '↗';
+    case 'rapidRecall':
+      return '↶';
+    case 'piercingStuds':
+      return '◆';
+    case 'garlicTrail':
+      return '✦';
+    case 'orbitingSpectralBall':
+      return '◉';
+    case 'bloodBomb':
+      return '✹';
+    case 'ghostPass':
+      return '♢';
   }
 }

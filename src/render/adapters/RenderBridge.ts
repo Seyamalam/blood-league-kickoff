@@ -49,7 +49,9 @@ export class RenderBridge {
       THREE.MathUtils.lerp(previousPlayer.z, p.z, alpha),
     );
     this.player.rotation.y = state.player.facing;
-    this.player.visible = !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0);
+    this.player.visible = !(
+      state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0
+    );
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
@@ -74,9 +76,7 @@ export class RenderBridge {
       mesh.lookAt(p.x, 0, p.z);
       const pulse = enemy.hitFlash > 0 ? 1.28 : 1;
       const coachPulse = enemy.archetype === 'coach' ? 1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.025 : 1;
-      const telegraphPulse = enemy.attackState === 'telegraph'
-        ? 1 + Math.sin(state.elapsed * 34) * 0.08
-        : 1;
+      const telegraphPulse = enemy.attackState === 'telegraph' ? 1 + Math.sin(state.elapsed * 34) * 0.08 : 1;
       const eliteScale = enemy.elite ? 1.18 : 1;
       mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * eliteScale);
 
@@ -209,7 +209,10 @@ export class RenderBridge {
   }
 }
 
-function createBallTrail(): { line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>; positions: Float32Array } {
+function createBallTrail(): {
+  line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+  positions: Float32Array;
+} {
   const positions = new Float32Array(TRAIL_POINTS * 3);
   const colors = new Float32Array(TRAIL_POINTS * 3);
   for (let index = 0; index < TRAIL_POINTS; index += 1) {

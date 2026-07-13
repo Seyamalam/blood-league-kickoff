@@ -26,7 +26,9 @@ describe('SecondaryWeaponSystem', () => {
       modifiers,
       targets: [{ id: 1, position: { x: 0.4, y: 0.9, z: 0 }, radius: 0.5 }],
     });
-    expect(result.hits).toContainEqual(expect.objectContaining({ targetId: 1, damage: 8, source: 'blood-bomb' }));
+    expect(result.hits).toContainEqual(
+      expect.objectContaining({ targetId: 1, damage: 8, source: 'blood-bomb' }),
+    );
   });
 
   it('spawns ghost passes on recall edge', () => {

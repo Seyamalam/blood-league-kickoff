@@ -95,7 +95,9 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
 function define(definition: UpgradeDefinition): Readonly<UpgradeDefinition> {
   return Object.freeze({
     ...definition,
-    prerequisites: Object.freeze(definition.prerequisites.map((requirement) => Object.freeze({ ...requirement }))),
+    prerequisites: Object.freeze(
+      definition.prerequisites.map((requirement) => Object.freeze({ ...requirement })),
+    ),
     modifierPerStack: Object.freeze({ ...definition.modifierPerStack }),
   });
 }

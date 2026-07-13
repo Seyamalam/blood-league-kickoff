@@ -50,7 +50,15 @@ export function updateMatchDirector(
     events.push({ type: 'playerDied' });
     transition(events, stage, 'dead');
     return {
-      state: { stage: 'dead', matchElapsed, stageElapsed: 0, totalKills, goalScored, goalsScored, halftimeChoice },
+      state: {
+        stage: 'dead',
+        matchElapsed,
+        stageElapsed: 0,
+        totalKills,
+        goalScored,
+        goalsScored,
+        halftimeChoice,
+      },
       events,
     };
   }
@@ -72,8 +80,9 @@ export function updateMatchDirector(
       stage = next;
     }
   } else if (stage === 'halftimeChoice') {
-    const selected = input.halftimeChoice
-      ?? (stageElapsed >= config.halftimeChoiceDuration ? config.defaultHalftimeChoice : null);
+    const selected =
+      input.halftimeChoice ??
+      (stageElapsed >= config.halftimeChoiceDuration ? config.defaultHalftimeChoice : null);
     if (selected) {
       halftimeChoice = selected;
       events.push({
@@ -86,9 +95,10 @@ export function updateMatchDirector(
       stage = 'bloodMoon';
     }
   } else {
-    const next = stage === 'finalWave' && input.bossDefeated
-      ? 'victory'
-      : nextCombatStage(stage, matchElapsed, totalKills, config);
+    const next =
+      stage === 'finalWave' && input.bossDefeated
+        ? 'victory'
+        : nextCombatStage(stage, matchElapsed, totalKills, config);
     if (next !== stage) {
       transition(events, stage, next);
       stage = next;
@@ -167,17 +177,21 @@ function nextCombatStage(
 ): MatchStage {
   if (!stageComplete(config[stage], elapsed, kills)) return stage;
   switch (stage) {
-    case 'opening': return 'firstHalf';
-    case 'firstHalf': return 'goalOpportunity';
-    case 'escalation': return 'halftimeChoice';
-    case 'bloodMoon': return 'finalGoal';
-    case 'finalWave': return 'victory';
+    case 'opening':
+      return 'firstHalf';
+    case 'firstHalf':
+      return 'goalOpportunity';
+    case 'escalation':
+      return 'halftimeChoice';
+    case 'bloodMoon':
+      return 'finalGoal';
+    case 'finalWave':
+      return 'victory';
   }
 }
 
 function stageComplete(rule: CombatStageRule, elapsed: number, kills: number): boolean {
-  return elapsed >= rule.deadlineMatchTime
-    || (elapsed >= rule.minimumMatchTime && kills >= rule.killTarget);
+  return elapsed >= rule.deadlineMatchTime || (elapsed >= rule.minimumMatchTime && kills >= rule.killTarget);
 }
 
 function emitStageStartEvent(
@@ -202,11 +216,16 @@ function transition(events: MatchDirectorEvent[], from: MatchStage, to: MatchSta
 
 function objectiveCopy(stage: ActiveCombatStage): { title: string; detail: string } {
   switch (stage) {
-    case 'opening': return { title: 'Kickoff', detail: 'Break through the opening rush.' };
-    case 'firstHalf': return { title: 'Hold the pitch', detail: 'Build your attack and survive the first half.' };
-    case 'escalation': return { title: 'Pressure rising', detail: 'Stronger opponents have entered the pitch.' };
-    case 'bloodMoon': return { title: 'Blood Moon', detail: 'Survive the empowered vampire assault.' };
-    case 'finalWave': return { title: 'Final wave', detail: 'Defeat Count Goalkeeper before full time.' };
+    case 'opening':
+      return { title: 'Kickoff', detail: 'Break through the opening rush.' };
+    case 'firstHalf':
+      return { title: 'Hold the pitch', detail: 'Build your attack and survive the first half.' };
+    case 'escalation':
+      return { title: 'Pressure rising', detail: 'Stronger opponents have entered the pitch.' };
+    case 'bloodMoon':
+      return { title: 'Blood Moon', detail: 'Survive the empowered vampire assault.' };
+    case 'finalWave':
+      return { title: 'Final wave', detail: 'Defeat Count Goalkeeper before full time.' };
   }
 }
 
@@ -220,7 +239,8 @@ function outcomeObjective(
 }
 
 function validateInput(input: MatchDirectorInput): void {
-  if (!Number.isFinite(input.dt) || input.dt < 0) throw new Error('Match director dt must be finite and non-negative.');
+  if (!Number.isFinite(input.dt) || input.dt < 0)
+    throw new Error('Match director dt must be finite and non-negative.');
   if (!Number.isFinite(input.totalKills) || input.totalKills < 0) {
     throw new Error('Match director totalKills must be finite and non-negative.');
   }
@@ -230,13 +250,23 @@ function validateInput(input: MatchDirectorInput): void {
 }
 
 function validateMatchConfig(config: MatchDirectorConfig): void {
-  const stages: readonly ActiveCombatStage[] = ['opening', 'firstHalf', 'escalation', 'bloodMoon', 'finalWave'];
+  const stages: readonly ActiveCombatStage[] = [
+    'opening',
+    'firstHalf',
+    'escalation',
+    'bloodMoon',
+    'finalWave',
+  ];
   let lastDeadline = 0;
   let lastKills = 0;
   for (const stage of stages) {
     const rule = config[stage];
-    if (!Number.isFinite(rule.minimumMatchTime) || !Number.isFinite(rule.deadlineMatchTime)
-      || rule.minimumMatchTime < 0 || rule.deadlineMatchTime < rule.minimumMatchTime) {
+    if (
+      !Number.isFinite(rule.minimumMatchTime) ||
+      !Number.isFinite(rule.deadlineMatchTime) ||
+      rule.minimumMatchTime < 0 ||
+      rule.deadlineMatchTime < rule.minimumMatchTime
+    ) {
       throw new Error(`Invalid timing for match stage: ${stage}.`);
     }
     if (!Number.isInteger(rule.killTarget) || rule.killTarget < 0) {
@@ -252,5 +282,6 @@ function validateMatchConfig(config: MatchDirectorConfig): void {
   if (durations.some((duration) => !Number.isFinite(duration) || duration <= 0)) {
     throw new Error('Match opportunity durations must be positive and finite.');
   }
-  if (!HALFTIME_CHOICES.includes(config.defaultHalftimeChoice)) throw new Error('Invalid default halftime choice.');
+  if (!HALFTIME_CHOICES.includes(config.defaultHalftimeChoice))
+    throw new Error('Invalid default halftime choice.');
 }

@@ -1,10 +1,5 @@
 export type MatchAnnouncementKind =
-  | 'kickoff'
-  | 'goal'
-  | 'halftime'
-  | 'bloodMoon'
-  | 'finalGoal'
-  | 'finalWhistle';
+  'kickoff' | 'goal' | 'halftime' | 'bloodMoon' | 'finalGoal' | 'finalWhistle';
 
 interface AnnouncementStyle {
   title: string;
@@ -183,9 +178,7 @@ export class MatchAnnouncement {
 }
 
 function safeDuration(value: number | undefined, fallback: number): number {
-  return value === undefined || !Number.isFinite(value)
-    ? fallback
-    : Math.max(0.6, Math.min(8, value));
+  return value === undefined || !Number.isFinite(value) ? fallback : Math.max(0.6, Math.min(8, value));
 }
 
 function easeOutCubic(value: number): number {

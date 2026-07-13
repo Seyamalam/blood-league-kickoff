@@ -4,10 +4,10 @@
 
 The final human striker survives a cursed football match against vampire hordes. The enchanted ball is both weapon and objective: the player kicks it through crowds, recalls it, redirects rebounds, and scores to begin increasingly dangerous kickoff phases.
 
-| Design fact | Decision |
-| --- | --- |
-| Genre | Third-person action horde-survival roguelite |
-| Session target | 8–10 minutes |
+| Design fact          | Decision                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| Genre                | Third-person action horde-survival roguelite                                                              |
+| Session target       | 8–10 minutes                                                                                              |
 | Theme interpretation | A literal match kickoff, every goal causing another kickoff, and each run beginning a new chain of events |
 
 ## Player Experience
@@ -26,15 +26,15 @@ The game is not a football simulation. No passing rules, fouls, offside, or team
 
 ## Controls and Camera
 
-| Action | Default |
-| --- | --- |
-| Move | `WASD` |
-| Orbit/aim | Mouse |
-| Charge/release kick | Left mouse |
-| Recall | Right mouse |
-| Dash | `Space` |
-| Focus Kick | `Q` (target scope) |
-| Pause | `Esc` |
+| Action              | Default            |
+| ------------------- | ------------------ |
+| Move                | `WASD`             |
+| Orbit/aim           | Mouse              |
+| Charge/release kick | Left mouse         |
+| Recall              | Right mouse        |
+| Dash                | `Space`            |
+| Focus Kick          | `Q` (target scope) |
+| Pause               | `Esc`              |
 
 Normal play uses a third-person orbit camera with camera-relative movement. Aim direction should be readable on the pitch. The optional Focus Kick briefly enters first person/time dilation, fires one precise shot, then restores third person automatically.
 
@@ -62,13 +62,13 @@ The aim preview may communicate direction and charge but should not solve every 
 
 ## Enemies
 
-| Enemy | Behavior | Counterplay |
-| --- | --- | --- |
-| Blood Fan | Direct crowd pressure | Any clean kick; use for satisfying chains |
-| Vampire Winger | Fast flank and committed lunge | Reposition, intercept, or recall through it |
-| Undead Defender | Frontal shield | Curve, rebound, attack side/back, or special upgrade |
-| Blood Coach | Buffs nearby enemies | Prioritize at range and create a lane to it |
-| Count Goalkeeper | Final ball-control boss | Read catches/returns and exploit openings |
+| Enemy            | Behavior                       | Counterplay                                          |
+| ---------------- | ------------------------------ | ---------------------------------------------------- |
+| Blood Fan        | Direct crowd pressure          | Any clean kick; use for satisfying chains            |
+| Vampire Winger   | Fast flank and committed lunge | Reposition, intercept, or recall through it          |
+| Undead Defender  | Frontal shield                 | Curve, rebound, attack side/back, or special upgrade |
+| Blood Coach      | Buffs nearby enemies           | Prioritize at range and create a lane to it          |
+| Count Goalkeeper | Final ball-control boss        | Read catches/returns and exploit openings            |
 
 Target enemies add airborne pressure, dashes, area denial, and ball interception only after the guaranteed roster is stable.
 
@@ -78,16 +78,16 @@ Enemies drop blood shards. Crossing an XP threshold pauses or slows play and off
 
 Guaranteed upgrades:
 
-| Upgrade | Function |
-| --- | --- |
-| Silver Ball | Baseline ball damage path |
-| Power Kick | Charge power, speed, and knockback |
-| Rapid Recall | Recall speed/cooldown improvements |
-| Piercing Studs | Additional enemy penetrations |
-| Garlic Trail | Damage trail along the ball path |
-| Orbiting Spectral Ball | Automatic close-range protection |
-| Blood Bomb | Defeated enemies or ball impacts explode |
-| Ghost Pass | Spectral teammate redirects/duplicates a shot |
+| Upgrade                | Function                                      |
+| ---------------------- | --------------------------------------------- |
+| Silver Ball            | Baseline ball damage path                     |
+| Power Kick             | Charge power, speed, and knockback            |
+| Rapid Recall           | Recall speed/cooldown improvements            |
+| Piercing Studs         | Additional enemy penetrations                 |
+| Garlic Trail           | Damage trail along the ball path              |
+| Orbiting Spectral Ball | Automatic close-range protection              |
+| Blood Bomb             | Defeated enemies or ball impacts explode      |
+| Ghost Pass             | Spectral teammate redirects/duplicates a shot |
 
 Evolutions require both components plus a defined level threshold. Guaranteed examples are **Moon Breaker** (Silver Ball + Piercing Studs) and **Crimson Meteor** (Blood Bomb + Power Kick).
 

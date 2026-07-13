@@ -32,7 +32,10 @@ describe('progression', () => {
 
   it('enforces prerequisites and produces deterministic offers', () => {
     const levelTwo = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(2)).state;
-    expect(getUpgradeAvailability(levelTwo, 'piercingStuds')).toEqual({ available: false, reason: 'prerequisite' });
+    expect(getUpgradeAvailability(levelTwo, 'piercingStuds')).toEqual({
+      available: false,
+      reason: 'prerequisite',
+    });
     const offerA = createUpgradeOffer(levelTwo, createSeededRandom(42));
     const offerB = createUpgradeOffer(levelTwo, createSeededRandom(42));
     expect(offerA).toEqual(offerB);

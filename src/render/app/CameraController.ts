@@ -59,16 +59,8 @@ export class CameraController {
     // deliberately deterministic and cheaper than a per-frame scene raycast;
     // it prevents the common boundary case where the camera clips outside the
     // stadium while the player hugs a touchline or goal line.
-    this.desired.x = THREE.MathUtils.clamp(
-      this.desired.x,
-      -CAMERA_ARENA_HALF_WIDTH,
-      CAMERA_ARENA_HALF_WIDTH,
-    );
-    this.desired.z = THREE.MathUtils.clamp(
-      this.desired.z,
-      -CAMERA_ARENA_HALF_DEPTH,
-      CAMERA_ARENA_HALF_DEPTH,
-    );
+    this.desired.x = THREE.MathUtils.clamp(this.desired.x, -CAMERA_ARENA_HALF_WIDTH, CAMERA_ARENA_HALF_WIDTH);
+    this.desired.z = THREE.MathUtils.clamp(this.desired.z, -CAMERA_ARENA_HALF_DEPTH, CAMERA_ARENA_HALF_DEPTH);
     this.impulseTime += dt;
     this.trauma = Math.max(0, this.trauma - dt * 2.6);
     const shake = this.trauma * this.trauma;

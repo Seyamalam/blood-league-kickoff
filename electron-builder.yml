@@ -15,7 +15,7 @@ extraMetadata:
 
 asar: true
 compression: normal
-artifactName: "${productName}-${version}-Windows-${arch}.${ext}"
+artifactName: '${productName}-${version}-Windows-${arch}.${ext}'
 
 win:
   executableName: BloodLeagueKickoff
@@ -29,5 +29,5 @@ win:
   verifyUpdateCodeSignature: false
 
 portable:
-  artifactName: "${productName}-${version}-Portable-${arch}.${ext}"
+  artifactName: '${productName}-${version}-Portable-${arch}.${ext}'
   requestExecutionLevel: user
