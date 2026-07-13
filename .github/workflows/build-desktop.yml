@@ -1,0 +1,182 @@
+name: Build Desktop Releases
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Build production game
+        run: npm run build:web
+
+      - name: Package Windows desktop builds
+        run: npm run package:win
+
+      - name: Generate Windows checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem release/desktop -File |
+            Where-Object { $_.Extension -in '.exe', '.zip' } |
+            Sort-Object Name |
+            Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower()) *$(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Encoding ascii release/desktop/SHA256SUMS-Windows.txt
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blood-League-Kickoff-Windows-x64
+          path: |
+            release/desktop/*.exe
+            release/desktop/*.zip
+            release/desktop/SHA256SUMS-Windows.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS x64 and Apple silicon
+    runs-on: macos-15
+    timeout-minutes: 35
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Build production game
+        run: npm run build:web
+
+      - name: Package macOS desktop builds
+        run: npm run package:mac
+
+      - name: Generate macOS checksums
+        working-directory: release/desktop
+        run: shasum -a 256 ./*.dmg ./*.zip | sort -k 2 > SHA256SUMS-macOS.txt
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blood-League-Kickoff-macOS
+          path: |
+            release/desktop/*.dmg
+            release/desktop/*.zip
+            release/desktop/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    name: Linux x64
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Build production game
+        run: npm run build:web
+
+      - name: Package static web build
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p release/desktop
+          (cd dist && zip -qr "../release/desktop/Blood-League-Kickoff-${VERSION}-Web.zip" .)
+
+      - name: Package Linux desktop builds
+        run: npm run package:linux
+
+      - name: Generate Linux checksums
+        working-directory: release/desktop
+        run: sha256sum ./*.AppImage ./*.zip | sort -k 2 > SHA256SUMS-Linux.txt
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blood-League-Kickoff-Linux-x64
+          path: |
+            release/desktop/*.AppImage
+            release/desktop/*.zip
+            release/desktop/SHA256SUMS-Linux.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-release:
+    name: Attach desktop builds to tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - windows
+      - macos
+      - linux
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: Blood-League-Kickoff-*
+          path: desktop-artifacts
+          merge-multiple: true
+
+      - name: Create combined checksum manifest
+        run: cat desktop-artifacts/SHA256SUMS-*.txt | sort -k 2 > desktop-artifacts/SHA256SUMS.txt
+
+      - name: Create release if needed and attach builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Blood League: Kickoff $GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" \
+            desktop-artifacts/*.dmg \
+            desktop-artifacts/*.zip \
+            desktop-artifacts/*.exe \
+            desktop-artifacts/*.AppImage \
+            desktop-artifacts/SHA256SUMS.txt \
+            --clobber

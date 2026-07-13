@@ -34,8 +34,8 @@ Patch releases may fix verified blockers between milestones. Do not tag broken o
 3. Install from the lockfile in a clean environment.
 4. Run type-check, tests, and production web build.
 5. Smoke-test the web build from a static server.
-6. Build the Electron artifact on the Windows workflow.
-7. Download and run the artifact on Windows.
+6. Build the Electron artifacts on the native Windows, macOS, and Linux workflow runners.
+7. Download and run each artifact on its target operating system.
 8. Verify menu, controls, gameplay loop, pause, settings, win/loss, and restart appropriate to the milestone.
 9. Update README current content, documentation, credits, known issues, and changelog.
 10. Commit/push documentation and fixes; rerun checks if the revision changed.
@@ -51,7 +51,7 @@ git tag -a vX.Y.Z -m "Blood League: Kickoff vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Create the GitHub Release from that tag. Attach the generated web ZIP and portable Windows artifact when available, plus checksums. Release notes must include:
+Pushing the version tag runs the desktop workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the Windows, macOS, and Linux builds plus a combined SHA-256 manifest. Attach the separately verified web ZIP when available. Release notes must include:
 
 - milestone and commit SHA;
 - implemented gameplay/content;
@@ -68,12 +68,19 @@ Download the published files and smoke-test them. A successful CI job alone is n
 Use predictable names:
 
 ```text
-Blood-League-Kickoff-vX.Y.Z-Web.zip
-Blood-League-Kickoff-vX.Y.Z-Windows-Portable.zip
-Blood-League-Kickoff-vX.Y.Z-SHA256.txt
+Blood-League-Kickoff-X.Y.Z-Web.zip
+Blood-League-Kickoff-X.Y.Z-Windows-Portable-x64.exe
+Blood-League-Kickoff-X.Y.Z-Windows-x64.zip
+Blood-League-Kickoff-X.Y.Z-macOS-arm64.zip
+Blood-League-Kickoff-X.Y.Z-macOS-x64.zip
+Blood-League-Kickoff-X.Y.Z-Linux-x64.AppImage
+Blood-League-Kickoff-X.Y.Z-Linux-x64.zip
+SHA256SUMS.txt
 ```
 
-The web ZIP should contain the contents of `dist/` at its root, not a nested development repository. The Windows ZIP should contain only player-facing runtime files and required licenses/readme.
+The web ZIP contains the contents of `dist/` at its root, not a nested development repository. Desktop archives should contain only player-facing runtime files and required licenses/readme.
+
+The automated macOS builds are unsigned and unnotarized because the project does not yet have an Apple Developer signing identity. On first launch, testers may need to control-click the app and choose **Open**, or approve it under **System Settings → Privacy & Security**. Signing and notarization should replace this workaround before broad distribution if credentials become available.
 
 ## Rollback and Failed Releases
 
