@@ -74,6 +74,73 @@ describe('game state match helpers', () => {
     expect(state.enemies).toHaveLength(72);
   });
 
+  it('keeps ordinary enemies at full decision fidelity through the near-distance boundary', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+    const fan = spawnEliteEnemy(state, 'winger', 1);
+    fan.archetype = 'bloodFan';
+    fan.position = { x: 10, y: 0.9, z: 0 };
+    fan.previousPosition = { ...fan.position };
+    const coach = spawnEliteEnemy(state, 'winger', 1);
+    coach.archetype = 'coach';
+    coach.position = { x: 10, y: 0.98, z: 0.5 };
+    coach.previousPosition = { ...coach.position };
+
+    updateEnemies(state, 1 / 60);
+
+    expect(fan.buffed).toBe(true);
+  });
+
+  it('stagger-refreshes far ordinary decisions without stalling chase movement', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+    const fan = spawnEliteEnemy(state, 'winger', 1);
+    fan.archetype = 'bloodFan';
+    fan.position = { x: 15, y: 0.9, z: 0 };
+    fan.previousPosition = { ...fan.position };
+    const coach = spawnEliteEnemy(state, 'winger', 1);
+    coach.archetype = 'coach';
+    coach.position = { x: 15, y: 0.98, z: 0.5 };
+    coach.previousPosition = { ...coach.position };
+    const positions: number[] = [];
+
+    updateEnemies(state, 1 / 60);
+    positions.push(fan.position.x);
+    expect(fan.buffed).toBe(false);
+    updateEnemies(state, 1 / 60);
+    positions.push(fan.position.x);
+    expect(fan.buffed).toBe(false);
+    updateEnemies(state, 1 / 60);
+    positions.push(fan.position.x);
+
+    expect(fan.buffed).toBe(true);
+    expect(positions[0]).toBeLessThan(15);
+    expect(positions[1]).toBeLessThan(positions[0]!);
+    expect(positions[2]).toBeLessThan(positions[1]!);
+  });
+
+  it('keeps far special attackers on full-rate coach and separation decisions', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+    const winger = spawnEliteEnemy(state, 'winger', 1);
+    winger.position = { x: 15, y: 0.82, z: 0 };
+    winger.previousPosition = { ...winger.position };
+    const coach = spawnEliteEnemy(state, 'winger', 1);
+    coach.archetype = 'coach';
+    coach.position = { x: 15, y: 0.98, z: 0.5 };
+    coach.previousPosition = { ...coach.position };
+
+    updateEnemies(state, 1 / 60);
+
+    expect(winger.buffed).toBe(true);
+  });
+
   it('unlocks fragile bat swarms in the later enemy mix', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.999);
     const state = createGameState();

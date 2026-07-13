@@ -9,6 +9,8 @@ const PLAYER_DASH_SPEED = 22;
 const PLAYER_DASH_DURATION = 0.16;
 const PLAYER_DASH_COOLDOWN = 1.35;
 const PLAYER_DASH_INVULNERABILITY = 0.18;
+const FAR_ENEMY_DECISION_DISTANCE = 10;
+const FAR_ENEMY_DECISION_SLICES = 4;
 const enemySpatialGrid = new EnemySpatialGrid();
 
 export function createGameState(): GameState {
@@ -126,19 +128,24 @@ export function updateEnemies(state: GameState, dt: number): void {
     let dz = player.position.z - enemy.position.z;
     const distance = Math.max(0.001, Math.hypot(dx, dz));
     const crowdSlow = distance < 1.45 ? 0.5 : 1;
+    const refreshDecision = shouldRefreshEnemyDecision(enemy, distance, state.elapsed);
 
     // Coaches accelerate nearby allies. This is deliberately a cheap radius check
     // rather than a persistent buff object, so removing the coach removes its aura.
-    enemy.buffed = false;
-    if (enemy.archetype !== 'coach') {
-      enemy.buffed = enemySpatialGrid.hasNearbyCoach(state.enemies, enemyIndex, 5.5);
+    // Far ordinary bodies retain the last result for at most three fixed ticks.
+    if (refreshDecision) {
+      enemy.buffed = false;
+      if (enemy.archetype !== 'coach') {
+        enemy.buffed = enemySpatialGrid.hasNearbyCoach(state.enemies, enemyIndex, 5.5);
+      }
     }
 
     // Local separation keeps the crowd readable and prevents enemies occupying
-    // the same point. No temporary vectors or arrays are created in this loop.
-    enemySpatialGrid.accumulateSeparation(state.enemies, enemyIndex, 0.18);
-    const separationX = enemySpatialGrid.separationX;
-    const separationZ = enemySpatialGrid.separationZ;
+    // the same point. Far ordinary bodies stagger this decision while continuing
+    // to chase every tick, avoiding both crowd stalls and temporary allocations.
+    if (refreshDecision) enemySpatialGrid.accumulateSeparation(state.enemies, enemyIndex, 0.18);
+    const separationX = refreshDecision ? enemySpatialGrid.separationX : 0;
+    const separationZ = refreshDecision ? enemySpatialGrid.separationZ : 0;
 
     const speedBuff = enemy.buffed ? 1.28 : 1;
     const chaseX = dx / distance;
@@ -224,6 +231,19 @@ export function updateEnemies(state: GameState, dt: number): void {
       if (player.health <= 0) state.phase = 'dead';
     }
   }
+}
+
+function shouldRefreshEnemyDecision(enemy: EnemyState, distance: number, elapsed: number): boolean {
+  if (distance <= FAR_ENEMY_DECISION_DISTANCE) return true;
+  if (
+    enemy.archetype !== 'bloodFan' &&
+    enemy.archetype !== 'defender' &&
+    enemy.archetype !== 'goalkeeperBrute'
+  ) {
+    return true;
+  }
+  const fixedTick = Math.round(elapsed * 60);
+  return (fixedTick + enemy.id) % FAR_ENEMY_DECISION_SLICES === 0;
 }
 
 export interface BallDamageResult {
