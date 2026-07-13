@@ -202,6 +202,7 @@ Planned release line:
 | `v0.5.0` | Complete guaranteed run                                  |
 | `v0.6.0` | First-run onboarding, curved kicks, and live diagnostics |
 | `v0.7.0` | Crowd scaling, recovery hardening, and phase music       |
+| `v0.7.1` | macOS controls, audio mixing, and CI hardening           |
 | `v0.8.0` | Content and presentation complete                        |
 | `v0.9.0` | Release candidate                                        |
 | `v1.0.0` | Jam submission freeze                                    |

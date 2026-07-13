@@ -4,6 +4,8 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+## v0.7.1 — 2026-07-14
+
 - Split audio into independently persisted master, music, and effects controls with v1-to-v2 migration.
 - Added secure Electron IPC and in-game controls for safe window sizes, fullscreen/windowed mode, and Quit.
 - Added deterministic full-match deadline/outcome coverage and dense 72/257-enemy stress tests.
