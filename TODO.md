@@ -205,7 +205,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
-- [ ] `P0` Include commit SHA/version in the debug or results metadata.
+- [x] `P0` Include commit SHA/version in the results metadata.
 - [x] `P0` Attach checksums and concise notes to milestone releases.
 - [x] `P0` Download and smoke-test each major release artifact.
 
