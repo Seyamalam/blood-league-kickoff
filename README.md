@@ -234,6 +234,7 @@ Planned release line:
 | `v0.7.0`         | Crowd scaling, recovery hardening, and phase music       |
 | `v0.7.1`         | macOS controls, audio mixing, and CI hardening           |
 | `v0.8.0-alpha.1` | Target gameplay/content checkpoint                       |
+| `v0.8.0-alpha.2` | Presentation, progression UI, and macOS QA checkpoint    |
 | `v0.8.0`         | Content and presentation complete                        |
 | `v0.9.0`         | Release candidate                                        |
 | `v1.0.0`         | Jam submission freeze                                    |

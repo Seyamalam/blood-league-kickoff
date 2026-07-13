@@ -4,6 +4,16 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+## v0.8.0-alpha.2 — 2026-07-14
+
+- Added original generated key art, an optimized title background, an itch.io cover candidate, and a complete prompt/derivation record.
+- Added fourteen original SVG upgrade/evolution icons, accessible icon-backed upgrade cards, and queued evolution-unlock presentation.
+- Fixed later level-ups potentially passing more than three choices to the upgrade modal by using the tested randomized offer sampler.
+- Added development-only upgrade, evolution, victory, and defeat QA routes that exercise the real integrated overlays while remaining unavailable in production.
+- Improved arena, enemy, and player readability with measured palette, fill-light, and tone-mapping adjustments without adding another shadow pass.
+- Added a deterministic 72-enemy profiling route, corrected capped frame pacing, and recorded the first Metal-backed macOS baseline.
+- Refreshed seven 1280×720 title, gameplay, settings, pause, upgrade, evolution, and victory screenshots.
+
 ## v0.8.0-alpha.1 — 2026-07-14
 
 - Added fast, fragile Bat Swarms with deterministic weaving behavior and a distinct animated airborne silhouette.
