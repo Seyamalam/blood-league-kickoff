@@ -7,6 +7,8 @@ const MAX_BALL_SPEED = 36;
 const MAX_UPGRADED_BALL_SPEED = 54;
 const VOLLEY_WINDOW_DISTANCE = 2.35;
 const CATCH_DISTANCE = 0.95;
+const CURVE_ACCELERATION = 7.5;
+const CURVE_DURATION = 1.25;
 
 export type BallState = 'possessed' | 'free' | 'recalling' | 'volley-window' | 'recovering';
 export type KickResult = {
@@ -14,6 +16,7 @@ export type KickResult = {
   charge: number;
   perfectVolley: boolean;
   speed: number;
+  curve: number;
 };
 
 /** Upgrade values consumed by ball physics. Full ProgressionModifiers is structurally compatible. */
@@ -33,6 +36,8 @@ export class PhysicsWorld {
   private speedCap = MAX_BALL_SPEED;
   private recallSpeedMultiplier = 1;
   private volleyWindowBonus = 0;
+  private curve = 0;
+  private curveAge = 0;
   private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
   private unpossessedTime = 0;
   private stalledTime = 0;
@@ -125,12 +130,14 @@ export class PhysicsWorld {
     direction: Vec3,
     charge = 0,
     modifiers: Readonly<BallCombatModifiers> = {},
+    curve = 0,
   ): KickResult | null {
     const perfectVolley = !this.possessed && this.volleyWindow;
     if (!this.possessed && !perfectVolley) return null;
     const normalizedCharge = Math.max(0, Math.min(1, charge));
     const kickPowerMultiplier = safeMultiplier(modifiers.kickPowerMultiplier, 0.5, 2);
     const ballSpeedMultiplier = safeMultiplier(modifiers.ballSpeedMultiplier, 0.5, 1.5);
+    const normalizedCurve = normalizeCurve(curve);
     this.speedCap = Math.min(MAX_UPGRADED_BALL_SPEED, MAX_BALL_SPEED * ballSpeedMultiplier);
     const launchSpeed = Math.min(
       this.speedCap,
@@ -140,6 +147,8 @@ export class PhysicsWorld {
     this.recallRequested = false;
     this.automaticRecall = false;
     this.volleyWindow = false;
+    this.curve = normalizedCurve;
+    this.curveAge = 0;
     this.ballBody.setTranslation(
       { x: origin.x + direction.x * 1.15, y: 0.62, z: origin.z + direction.z * 1.15 },
       true,
@@ -152,8 +161,8 @@ export class PhysicsWorld {
       },
       true,
     );
-    this.ballBody.setAngvel({ x: direction.z * 20, y: 0, z: -direction.x * 20 }, true);
-    return { kind: 'kick', charge: normalizedCharge, perfectVolley, speed: launchSpeed };
+    this.ballBody.setAngvel({ x: direction.z * 20, y: normalizedCurve * 13, z: -direction.x * 20 }, true);
+    return { kind: 'kick', charge: normalizedCharge, perfectVolley, speed: launchSpeed, curve: normalizedCurve };
   }
 
   setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}, volleyWindowBonus = 0): void {
@@ -181,6 +190,8 @@ export class PhysicsWorld {
       this.unpossessedTime = 0;
       this.stalledTime = 0;
       this.volleyWindow = false;
+      this.curve = 0;
+      this.curveAge = 0;
       this.ballBody.setTranslation(
         { x: playerPosition.x + forward.x * 1.08, y: BALL_RADIUS, z: playerPosition.z + forward.z * 1.08 },
         true,
@@ -188,6 +199,7 @@ export class PhysicsWorld {
       this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
       this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
     } else if (this.recallRequested || this.automaticRecall) {
+      this.curve = 0;
       const ball = this.ballBody.translation();
       const dx = playerPosition.x - ball.x;
       const dy = 0.75 - ball.y;
@@ -212,6 +224,13 @@ export class PhysicsWorld {
       if (this.unpossessedTime > 7 || this.stalledTime > 1.35) this.automaticRecall = true;
     }
 
+    if (!this.possessed && !this.recallRequested && !this.automaticRecall && this.curve !== 0) {
+      const impulse = calculateCurveImpulse(this.ballBody.linvel(), this.curve, this.curveAge, dt);
+      if (impulse.x !== 0 || impulse.z !== 0) this.ballBody.applyImpulse(impulse, true);
+      this.curveAge += dt;
+      if (this.curveAge >= CURVE_DURATION) this.curve = 0;
+    }
+
     this.world.integrationParameters.dt = dt;
     this.world.step();
     this.limitBallSpeed();
@@ -233,6 +252,8 @@ export class PhysicsWorld {
     this.speedCap = MAX_BALL_SPEED;
     this.recallSpeedMultiplier = 1;
     this.volleyWindowBonus = 0;
+    this.curve = 0;
+    this.curveAge = 0;
     this.unpossessedTime = 0;
     this.stalledTime = 0;
     this.previousBallPosition = { x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 };
@@ -265,4 +286,33 @@ function safeMultiplier(value: number | undefined, min: number, max: number): nu
   if (value === undefined) return 1;
   if (!Number.isFinite(value)) return 1;
   return Math.max(min, Math.min(max, value));
+}
+
+function normalizeCurve(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const bounded = Math.max(-1, Math.min(1, value));
+  return Math.abs(bounded) < 0.02 ? 0 : bounded;
+}
+
+/** Pure Magnus-style lateral impulse used by the fixed-step ball simulation. */
+export function calculateCurveImpulse(
+  velocity: Readonly<Vec3>,
+  curve: number,
+  age: number,
+  dt: number,
+): Vec3 {
+  const normalizedCurve = normalizeCurve(curve);
+  const safeAge = Number.isFinite(age) ? Math.max(0, age) : CURVE_DURATION;
+  const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(0.1, dt)) : 0;
+  const horizontalSpeed = Math.hypot(velocity.x, velocity.z);
+  if (normalizedCurve === 0 || horizontalSpeed < 4 || safeAge >= CURVE_DURATION || safeDt === 0) {
+    return { x: 0, y: 0, z: 0 };
+  }
+  const fade = 1 - safeAge / CURVE_DURATION;
+  const impulse = normalizedCurve * CURVE_ACCELERATION * fade * safeDt;
+  return {
+    x: (-velocity.z / horizontalSpeed) * impulse,
+    y: 0,
+    z: (velocity.x / horizontalSpeed) * impulse,
+  };
 }

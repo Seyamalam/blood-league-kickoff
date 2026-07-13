@@ -1,7 +1,7 @@
 import './styles.css';
 import * as THREE from 'three';
 import { AudioManager } from './audio';
-import { PerfMeter } from './diagnostics/PerfMeter';
+import { countActivePoolItems, createPerformanceCounters, PerfMeter } from './diagnostics/PerfMeter';
 import { InputController } from './game/input/InputController';
 import {
   damageCountGoalkeeper,
@@ -21,6 +21,7 @@ import {
   type UpgradeId,
 } from './game/progression';
 import { createGameState, damageEnemiesWithBall, damageEnemiesWithSecondary, resetGameState, resetKickoffFormation, spawnEliteEnemy, updateEnemies, updatePlayer } from './game/simulation/gameState';
+import { TutorialTracker, type TutorialSignal } from './game/tutorial';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
 import { CameraController } from './render/app/CameraController';
@@ -38,11 +39,13 @@ import { MatchAnnouncement } from './ui/MatchAnnouncement';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { ResultsOverlay } from './ui/ResultsOverlay';
 import { SettingsOverlay } from './ui/SettingsOverlay';
+import { TutorialPrompt } from './ui/TutorialPrompt';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
 const MATCH_CONFIG = FULL_MATCH_CONFIG;
+const TUTORIAL_STORAGE_KEY = 'blood-league-kickoff:tutorial-complete';
 const PLAYABLE_UPGRADES = [
   'silverBall',
   'powerKick',
@@ -85,7 +88,10 @@ async function bootstrap(): Promise<void> {
   const resultsOverlay = new ResultsOverlay(root);
   const halftimeOverlay = new HalftimeOverlay(root);
   const announcement = new MatchAnnouncement(root);
+  const tutorialTracker = new TutorialTracker(hasCompletedTutorial());
+  const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
+  const perfCounters = createPerformanceCounters();
   const clock = new THREE.Clock();
   let accumulator = 0;
   let previousBallState = physics.ballState;
@@ -102,6 +108,16 @@ async function bootstrap(): Promise<void> {
   let ballDamageMultiplier = 1;
   let recallSpeedMultiplier = 1;
   let volleyWindowBonus = 0;
+  let fixedStepsThisFrame = 0;
+  const tutorialSignals = new Set<TutorialSignal>();
+
+  const signalTutorial = (signal: TutorialSignal): void => {
+    if (tutorialTracker.complete || tutorialSignals.has(signal)) return;
+    tutorialSignals.add(signal);
+    const update = tutorialTracker.signal(signal);
+    tutorialPrompt.update(update.state);
+    if (update.tutorialCompleted) persistTutorialCompletion();
+  };
 
   const offerUpgrade = (): void => {
     if (upgradeOverlay.isVisible || settingsOverlay.isVisible || halftimeOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
@@ -115,6 +131,7 @@ async function bootstrap(): Promise<void> {
       const result = chooseUpgrade(progression, upgradeId);
       if (!result.applied) return;
       progression = result.state;
+      signalTutorial('upgrade-selected');
       audio.playPhase(progression.level);
       if (result.evolutionEvents.length > 0) {
         audio.playGoal();
@@ -150,6 +167,7 @@ async function bootstrap(): Promise<void> {
     if (state.phase === 'ready') state.phase = 'playing';
     audio.playPhase(0);
     announcement.show('kickoff');
+    tutorialPrompt.update(tutorialTracker.state);
     hud.start();
     input.requestPointerLock();
   };
@@ -177,6 +195,10 @@ async function bootstrap(): Promise<void> {
     goalLatched = false;
     boss = null;
     resultsShown = false;
+    perf.reset();
+    tutorialSignals.clear();
+    tutorialTracker.reset(hasCompletedTutorial());
+    tutorialPrompt.reset();
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
     kickPowerMultiplier = 1;
@@ -187,6 +209,7 @@ async function bootstrap(): Promise<void> {
     previousBallState = physics.ballState;
     audio.playPhase(0);
     announcement.show('kickoff');
+    tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
   };
   hud.kickoffButton.addEventListener('click', begin);
@@ -216,6 +239,10 @@ async function bootstrap(): Promise<void> {
     match = createMatchDirectorState();
     boss = null;
     resultsShown = false;
+    perf.reset();
+    tutorialSignals.clear();
+    tutorialTracker.reset(hasCompletedTutorial());
+    tutorialPrompt.reset();
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
     kickPowerMultiplier = 1;
@@ -251,6 +278,7 @@ async function bootstrap(): Promise<void> {
     const frameInterval = playerSettings.fpsLimit === 'unlimited' ? 0 : 1_000 / playerSettings.fpsLimit;
     if (frameInterval > 0 && time - lastRenderedAt < frameInterval - 0.25) return;
     lastRenderedAt = time;
+    fixedStepsThisFrame = 0;
     const frameTime = Math.min(MAX_FRAME_TIME, clock.getDelta());
     const mouse = input.consumeMouseDelta();
     cameraController.applyMouseDelta(mouse.x, mouse.y);
@@ -266,8 +294,10 @@ async function bootstrap(): Promise<void> {
           ...progression.modifiers,
           kickPowerMultiplier: progression.modifiers.kickPowerMultiplier * kickPowerMultiplier,
         },
+        kick.curve,
       );
       if (result) {
+        signalTutorial('kick-demonstrated');
         audio.playKick(result.charge);
         if (result.perfectVolley) {
           audio.playVolley();
@@ -289,7 +319,10 @@ async function bootstrap(): Promise<void> {
       const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible && !halftimeOverlay.isVisible;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
-        updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
+        const movement = input.movement(cameraController.yaw);
+        if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
+        if (movement.dash) signalTutorial('dash-demonstrated');
+        updatePlayer(state, movement, cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
         updateEnemies(state, FIXED_STEP);
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
@@ -350,7 +383,10 @@ async function bootstrap(): Promise<void> {
         }
 
         const collectedXp = bloodShards.update(state.player.position, FIXED_STEP);
-        if (collectedXp > 0) progression = grantBloodXp(progression, collectedXp).state;
+        if (collectedXp > 0) {
+          progression = grantBloodXp(progression, collectedXp).state;
+          signalTutorial('xp-collected');
+        }
 
         let bossDefeatedThisStep = false;
         if (boss && boss.phase !== 'defeated') {
@@ -377,7 +413,9 @@ async function bootstrap(): Promise<void> {
           );
           if (physics.ballSpeed >= 7 && bossDistance < 1.7 && Math.abs(physics.ballPosition.y - 1.15) < 1.8) {
             const damage = damageCountGoalkeeper(boss, {
-              amount: (physics.ballSpeed > 20 ? 10 : 6) * progression.modifiers.ballDamageMultiplier,
+              amount: (physics.ballSpeed > 20 ? 10 : 6)
+                * progression.modifiers.ballDamageMultiplier
+                * ballDamageMultiplier,
               source: 'ball',
             });
             boss = damage.state;
@@ -411,6 +449,7 @@ async function bootstrap(): Promise<void> {
             if (event.to === 'finalWave' && !boss) boss = spawnCountGoalkeeper();
           }
           if (event.type === 'goalScored') {
+            signalTutorial('goal-scored');
             state.score += 1_000;
             audio.playGoal();
             announcement.show('goal', event.goal === 'final' ? 'THE FINAL KEEPER AWAKENS' : undefined);
@@ -457,8 +496,10 @@ async function bootstrap(): Promise<void> {
         && previousBallState !== 'recalling'
         && previousBallState !== 'recovering';
       if (recallStarted) audio.playRecall();
+      if (recallStarted) signalTutorial('recall-demonstrated');
       previousBallState = physics.ballState;
       accumulator -= FIXED_STEP;
+      fixedStepsThisFrame += 1;
     }
 
     goalBeacon.setActive(match.stage === 'goalOpportunity' || match.stage === 'finalGoal');
@@ -489,7 +530,7 @@ async function bootstrap(): Promise<void> {
     hud.update(
       state,
       physics.ballState,
-      perf.update(frameTime),
+      perf.snapshot,
       input.kickCharge,
       progression,
       getMatchObjective(match, MATCH_CONFIG),
@@ -509,6 +550,19 @@ async function bootstrap(): Promise<void> {
     }
     if ((state.phase === 'dead' || state.phase === 'won') && input.isLocked) void document.exitPointerLock();
     renderer.render(scene, cameraController.camera);
+    perfCounters.rendererCalls = renderer.info.render.calls;
+    perfCounters.rendererTriangles = renderer.info.render.triangles;
+    perfCounters.enemyCount = state.enemies.length;
+    perfCounters.fixedSteps = fixedStepsThisFrame;
+    perfCounters.bloodShardPoolActive = bloodShards.state.activeCount;
+    perfCounters.bloodShardPoolCapacity = bloodShards.state.capacity;
+    perfCounters.garlicPoolActive = countActivePoolItems(secondaryWeapons.renderState.garlicZones);
+    perfCounters.garlicPoolCapacity = secondaryWeapons.renderState.garlicZones.length;
+    perfCounters.orbitPoolActive = countActivePoolItems(secondaryWeapons.renderState.orbitingBalls);
+    perfCounters.orbitPoolCapacity = secondaryWeapons.renderState.orbitingBalls.length;
+    perfCounters.ghostPassPoolActive = countActivePoolItems(secondaryWeapons.renderState.ghostPasses);
+    perfCounters.ghostPassPoolCapacity = secondaryWeapons.renderState.ghostPasses.length;
+    perf.update(frameTime, perfCounters);
   });
 
   renderer.domElement.addEventListener('webglcontextlost', (event) => {
@@ -532,9 +586,26 @@ async function bootstrap(): Promise<void> {
     resultsOverlay.dispose();
     halftimeOverlay.dispose();
     announcement.dispose();
+    tutorialPrompt.dispose();
     atmosphere.dispose();
     bridge.dispose();
   }, { once: true });
+}
+
+function hasCompletedTutorial(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function persistTutorialCompletion(): void {
+  try {
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+  } catch {
+    // Storage can be disabled in privacy-restricted embeds; the run stays playable.
+  }
 }
 
 function interpolatePosition(

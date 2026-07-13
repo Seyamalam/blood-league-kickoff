@@ -3,6 +3,7 @@ import type { MatchObjective } from '../game/match';
 import type { CountGoalkeeperState } from '../game/boss';
 import { totalXpRequiredForLevel, type ProgressionState } from '../game/progression';
 import type { BallState } from '../physics/PhysicsWorld';
+import type { PerformanceSnapshot } from '../diagnostics/PerfMeter';
 
 export class Hud {
   private readonly healthFill: HTMLElement;
@@ -12,6 +13,9 @@ export class Hud {
   private readonly enemies: HTMLElement;
   private readonly ball: HTMLElement;
   private readonly fps: HTMLElement;
+  private readonly frameTime: HTMLElement;
+  private readonly renderStats: HTMLElement;
+  private readonly poolStats: HTMLElement;
   private readonly splash: HTMLElement;
   private readonly death: HTMLElement;
   private readonly combo: HTMLElement;
@@ -50,7 +54,7 @@ export class Hud {
         <div class="crosshair"><span></span><span></span><span></span><span></span></div>
         <div id="combo" class="combo"></div>
         <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL</div>
-        <div class="perf"><span id="fps">-- FPS</span><span>WEBGL 2</span></div>
+        <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
         <button type="button" id="settings-button" class="settings-open" aria-label="Open settings">⚙ SETTINGS</button>
       </div>
       <section id="splash" class="modal splash">
@@ -84,6 +88,9 @@ export class Hud {
     this.enemies = required('enemies');
     this.ball = required('ball-status');
     this.fps = required('fps');
+    this.frameTime = required('frame-time');
+    this.renderStats = required('render-stats');
+    this.poolStats = required('pool-stats');
     this.splash = required('splash');
     this.death = required('death');
     this.combo = required('combo');
@@ -122,7 +129,7 @@ export class Hud {
   update(
     state: GameState,
     ballState: BallState,
-    fps: number,
+    performance: Readonly<PerformanceSnapshot>,
     kickCharge: number,
     progression: Readonly<ProgressionState>,
     objective: Readonly<MatchObjective>,
@@ -150,7 +157,13 @@ export class Hud {
     this.objective.textContent = `${objective.title} · ${objective.detail}`.toUpperCase();
     this.bossPanel.classList.toggle('hidden', !boss || boss.phase === 'defeated');
     if (boss) this.bossFill.style.width = `${Math.max(0, boss.health / boss.maxHealth) * 100}%`;
+    const fps = Math.round(performance.smoothedFps);
     this.fps.textContent = fps > 0 ? `${fps} FPS` : '-- FPS';
+    this.frameTime.textContent = performance.smoothedFrameMs > 0
+      ? `${performance.smoothedFrameMs.toFixed(1)} MS`
+      : '-- MS';
+    this.renderStats.textContent = `${performance.rendererCalls} DC · ${formatCompact(performance.rendererTriangles)} TRI`;
+    this.poolStats.textContent = `${performance.pooledObjectsActive}/${performance.pooledObjectsCapacity} POOL`;
     this.combo.textContent = state.combo > 1 && state.comboTimer > 0 ? `${state.combo}× BLOOD COMBO` : '';
     this.combo.classList.toggle('visible', state.combo > 1 && state.comboTimer > 0);
 
@@ -198,4 +211,9 @@ function ballStatusLabel(state: BallState): string {
 function formatTime(seconds: number): string {
   const whole = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+function formatCompact(value: number): string {
+  if (value < 1_000) return String(value);
+  return `${(value / 1_000).toFixed(value < 10_000 ? 1 : 0)}K`;
 }

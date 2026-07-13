@@ -1,3 +1,12 @@
+export interface KickInput {
+  charge: number;
+  /** Normalized horizontal bend: -1 curves left, +1 curves right. */
+  curve: number;
+}
+
+const FULL_CURVE_MOUSE_PIXELS = 140;
+const CURVE_DEADZONE = 0.12;
+
 export class InputController {
   static readonly maxKickChargeSeconds = 1.1;
 
@@ -5,7 +14,8 @@ export class InputController {
   private mouseDx = 0;
   private mouseDy = 0;
   private kickStartedAt: number | null = null;
-  private kickReleaseQueued: { charge: number } | null = null;
+  private kickReleaseQueued: KickInput | null = null;
+  private kickCurvePixels = 0;
   private recallHeld = false;
   private restartQueued = false;
   private dashQueued = false;
@@ -57,7 +67,7 @@ export class InputController {
     return Math.min(1, (performance.now() - this.kickStartedAt) / (InputController.maxKickChargeSeconds * 1000));
   }
 
-  consumeKick(): { charge: number } | null {
+  consumeKick(): KickInput | null {
     const queued = this.kickReleaseQueued;
     this.kickReleaseQueued = null;
     return queued;
@@ -103,11 +113,20 @@ export class InputController {
     if (!this.isLocked) return;
     this.mouseDx += event.movementX;
     this.mouseDy += event.movementY;
+    if (this.kickStartedAt !== null) {
+      this.kickCurvePixels = Math.max(
+        -FULL_CURVE_MOUSE_PIXELS,
+        Math.min(FULL_CURVE_MOUSE_PIXELS, this.kickCurvePixels + event.movementX),
+      );
+    }
   };
 
   private readonly onMouseDown = (event: MouseEvent): void => {
     if (!this.isLocked) return;
-    if (event.button === 0 && this.kickStartedAt === null) this.kickStartedAt = performance.now();
+    if (event.button === 0 && this.kickStartedAt === null) {
+      this.kickStartedAt = performance.now();
+      this.kickCurvePixels = 0;
+    }
     if (event.button === 2) this.recallHeld = true;
   };
 
@@ -116,8 +135,10 @@ export class InputController {
       const heldSeconds = (performance.now() - this.kickStartedAt) / 1000;
       this.kickReleaseQueued = {
         charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
+        curve: normalizeKickCurveIntent(this.kickCurvePixels),
       };
       this.kickStartedAt = null;
+      this.kickCurvePixels = 0;
     }
     if (event.button === 2) this.recallHeld = false;
   };
@@ -127,6 +148,7 @@ export class InputController {
     this.recallHeld = false;
     this.kickStartedAt = null;
     this.kickReleaseQueued = null;
+    this.kickCurvePixels = 0;
     this.dashQueued = false;
     this.mouseDx = 0;
     this.mouseDy = 0;
@@ -141,4 +163,13 @@ export class InputController {
   };
 
   private readonly preventContextMenu = (event: Event): void => event.preventDefault();
+}
+
+/** Pure normalization shared with tests and alternate input adapters. */
+export function normalizeKickCurveIntent(horizontalPixels: number): number {
+  if (!Number.isFinite(horizontalPixels)) return 0;
+  const bounded = Math.max(-1, Math.min(1, horizontalPixels / FULL_CURVE_MOUSE_PIXELS));
+  const magnitude = Math.abs(bounded);
+  if (magnitude <= CURVE_DEADZONE) return 0;
+  return Math.sign(bounded) * (magnitude - CURVE_DEADZONE) / (1 - CURVE_DEADZONE);
 }

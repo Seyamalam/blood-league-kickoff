@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import type { Vec3 } from '../../game/simulation/types';
 
+const CAMERA_ARENA_HALF_WIDTH = 22.45;
+const CAMERA_ARENA_HALF_DEPTH = 14.45;
+
 export class CameraController {
   readonly camera = new THREE.PerspectiveCamera(64, 1, 0.08, 180);
   yaw = Math.PI;
@@ -51,6 +54,20 @@ export class CameraController {
       player.x + Math.sin(this.yaw) * horizontal,
       player.y + 1.1 + Math.sin(this.pitch) * distance,
       player.z + Math.cos(this.yaw) * horizontal,
+    );
+    // Keep the orbit rig on the playable side of the collision walls. This is
+    // deliberately deterministic and cheaper than a per-frame scene raycast;
+    // it prevents the common boundary case where the camera clips outside the
+    // stadium while the player hugs a touchline or goal line.
+    this.desired.x = THREE.MathUtils.clamp(
+      this.desired.x,
+      -CAMERA_ARENA_HALF_WIDTH,
+      CAMERA_ARENA_HALF_WIDTH,
+    );
+    this.desired.z = THREE.MathUtils.clamp(
+      this.desired.z,
+      -CAMERA_ARENA_HALF_DEPTH,
+      CAMERA_ARENA_HALF_DEPTH,
     );
     this.impulseTime += dt;
     this.trauma = Math.max(0, this.trauma - dt * 2.6);
