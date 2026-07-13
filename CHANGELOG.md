@@ -2,7 +2,7 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
-## Unreleased
+## v0.7.0 — 2026-07-14
 
 - Replaced full-crowd separation and Coach scans with a reusable typed-array spatial grid.
 - Added phase-reactive procedural music with smoothly blended drone, tension, and pulse layers.
