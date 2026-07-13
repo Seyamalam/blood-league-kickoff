@@ -147,6 +147,61 @@ button {
 .status-row .warn {
   color: #ffcc6c;
 }
+.ball-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 19px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  line-height: 1.25;
+}
+.ball-state::before {
+  display: inline-grid;
+  width: 13px;
+  height: 13px;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+.ball-state[data-state='possessed'] {
+  border-style: solid;
+}
+.ball-state[data-state='possessed']::before {
+  content: '●';
+}
+.ball-state[data-state='free'] {
+  border-style: dashed;
+}
+.ball-state[data-state='free']::before {
+  content: '◇';
+  font-size: 15px;
+}
+.ball-state[data-state='recalling'] {
+  border-style: double;
+}
+.ball-state[data-state='recalling']::before {
+  content: '↶';
+  font-size: 16px;
+}
+.ball-state[data-state='volley-window'] {
+  border-width: 2px;
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+.ball-state[data-state='volley-window']::before {
+  content: '✦';
+  font-size: 16px;
+}
+.ball-state[data-state='recovering'] {
+  border-style: dotted;
+}
+.ball-state[data-state='recovering']::before {
+  content: '▰';
+  font-size: 11px;
+}
 .dot {
   display: inline-block;
   width: 6px;

@@ -50,7 +50,7 @@ export class Hud {
           <div class="health-track"><div id="health-fill" class="health-fill"></div></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>KICK POWER</span><span id="charge-label">TAP / HOLD</span></div>
           <div class="health-track" style="margin-top:4px"><div id="charge-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#d6a632,#fff0a6);box-shadow:0 0 14px rgba(255,214,90,.45);transition:none"></div></div>
-          <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status">BALL READY</span></div>
+          <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status" class="ball-state" data-state="possessed">POSSESSED · READY</span></div>
           <div class="status-row" style="margin-top:6px"><span>MOBILITY</span><span id="dash-status">DASH READY</span></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>FOCUS KICK</span><span id="focus-status">0%</span></div>
           <div class="health-track" style="margin-top:4px"><div id="focus-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#b89526,#fff0a6);box-shadow:0 0 14px rgba(255,207,64,.4)"></div></div>
@@ -154,6 +154,8 @@ export class Hud {
     this.score.textContent = state.score.toString().padStart(6, '0');
     this.enemies.textContent = String(state.enemies.length);
     this.ball.textContent = ballStatusLabel(ballState);
+    this.ball.dataset.state = ballState;
+    this.ball.setAttribute('aria-label', `Ball state: ${ballStatusLabel(ballState)}`);
     this.ball.classList.toggle('warn', ballState !== 'possessed');
     const chargePercent = Math.round(Math.max(0, Math.min(1, kickCharge)) * 100);
     this.chargeFill.style.width = `${chargePercent}%`;
@@ -234,18 +236,18 @@ function required(id: string): HTMLElement {
   return element;
 }
 
-function ballStatusLabel(state: BallState): string {
+export function ballStatusLabel(state: BallState): string {
   switch (state) {
     case 'possessed':
-      return 'BALL READY';
+      return 'POSSESSED · READY';
     case 'recalling':
-      return 'BALL RETURNING';
+      return 'RECALLING · RETURNING';
     case 'volley-window':
-      return 'PERFECT VOLLEY!';
+      return 'VOLLEY · KICK NOW!';
     case 'recovering':
-      return 'AUTO RECOVERY';
+      return 'RECOVERING · AUTO RETURN';
     case 'free':
-      return 'HOLD E TO RECALL';
+      return 'FREE · HOLD E TO RECALL';
   }
 }
 

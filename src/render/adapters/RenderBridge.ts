@@ -86,6 +86,18 @@ export class RenderBridge {
       const eliteScale = enemy.elite ? 1.18 : 1;
       mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * eliteScale);
 
+      const threatMarker = mesh.getObjectByName('enemy-threat-marker');
+      if (threatMarker) {
+        threatMarker.visible =
+          enemy.attackState === 'telegraph' ||
+          enemy.attackState === 'drain' ||
+          enemy.attackState === 'whistle';
+        threatMarker.position.y = 2.3 + Math.sin(state.elapsed * 13 + enemy.id) * 0.12;
+        threatMarker.rotation.y += dt * 7;
+        threatMarker.rotation.z -= dt * 4;
+        threatMarker.scale.setScalar(enemy.attackState === 'whistle' ? 1.55 : 1);
+      }
+
       const shield = mesh.getObjectByName('defender-shield');
       if (shield) {
         const shieldPulse = enemy.shieldFlash > 0 ? 1.18 + Math.sin(state.elapsed * 48) * 0.08 : 1;
@@ -347,6 +359,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   else if (enemy.archetype === 'corruptReferee') addCorruptReferee(group);
   else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(group);
   else addBloodFan(group);
+  addThreatMarker(group);
   if (enemy.elite) addEliteMarker(group);
   return group;
 }
@@ -374,6 +387,7 @@ const enemyGeometry = {
   bruteBody: new THREE.BoxGeometry(1.45, 1.65, 0.82),
   bruteGlove: new THREE.SphereGeometry(0.34, 8, 6),
   bruteCatchRing: new THREE.TorusGeometry(1.02, 0.07, 6, 24),
+  threatMarker: new THREE.OctahedronGeometry(0.16, 0),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
@@ -413,6 +427,7 @@ const enemyMaterial = {
     opacity: 0.9,
     depthWrite: false,
   }),
+  threatMarker: new THREE.MeshBasicMaterial({ color: 0xffffff }),
   aura: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
     transparent: true,
@@ -565,4 +580,13 @@ function addGoalkeeperBrute(group: THREE.Group): void {
   catchRing.castShadow = false;
   catchRing.visible = false;
   group.add(leftGlove, rightGlove, catchRing);
+}
+
+function addThreatMarker(group: THREE.Group): void {
+  const marker = mesh(enemyGeometry.threatMarker, enemyMaterial.threatMarker, 2.3);
+  marker.name = 'enemy-threat-marker';
+  marker.rotation.set(Math.PI / 4, 0, Math.PI / 4);
+  marker.castShadow = false;
+  marker.visible = false;
+  group.add(marker);
 }
