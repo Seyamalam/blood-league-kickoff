@@ -8,6 +8,7 @@ export class InputController {
   private kickReleaseQueued: { charge: number } | null = null;
   private recallHeld = false;
   private restartQueued = false;
+  private dashQueued = false;
 
   constructor(private readonly target: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -32,13 +33,16 @@ export class InputController {
     });
   }
 
-  movement(yaw: number): { x: number; z: number } {
+  movement(yaw: number): { x: number; z: number; dash: boolean } {
     const forward = Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS'));
     const strafe = Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'));
-    return {
+    const movement = {
       x: -Math.sin(yaw) * forward + Math.cos(yaw) * strafe,
       z: -Math.cos(yaw) * forward - Math.sin(yaw) * strafe,
+      dash: this.dashQueued,
     };
+    this.dashQueued = false;
+    return movement;
   }
 
   consumeMouseDelta(): { x: number; y: number } {
@@ -85,6 +89,10 @@ export class InputController {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     this.keys.add(event.code);
     if (event.code === 'KeyR') this.restartQueued = true;
+    if (event.code === 'Space' && this.isLocked) {
+      event.preventDefault();
+      if (!event.repeat) this.dashQueued = true;
+    }
   };
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
@@ -119,6 +127,7 @@ export class InputController {
     this.recallHeld = false;
     this.kickStartedAt = null;
     this.kickReleaseQueued = null;
+    this.dashQueued = false;
     this.mouseDx = 0;
     this.mouseDy = 0;
   };

@@ -3,6 +3,10 @@ import type { EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
 const ARENA_HALF_WIDTH = 22;
 const ARENA_HALF_DEPTH = 14;
 const PLAYER_SPEED = 8.2;
+const PLAYER_DASH_SPEED = 22;
+const PLAYER_DASH_DURATION = 0.16;
+const PLAYER_DASH_COOLDOWN = 1.35;
+const PLAYER_DASH_INVULNERABILITY = 0.18;
 
 export function createGameState(): GameState {
   return {
@@ -21,6 +25,9 @@ export function createGameState(): GameState {
       health: 100,
       maxHealth: 100,
       invulnerability: 0,
+      dashCooldown: 0,
+      dashTime: 0,
+      dashDirection: { x: 0, y: 0, z: -1 },
     },
     enemies: [],
   };
@@ -32,7 +39,7 @@ export function resetGameState(state: GameState): void {
 
 export function updatePlayer(
   state: GameState,
-  movement: { x: number; z: number },
+  movement: { x: number; z: number; dash?: boolean },
   facing: number,
   dt: number,
 ): void {
@@ -40,12 +47,28 @@ export function updatePlayer(
   copyVec3(player.previousPosition, player.position);
   const length = Math.hypot(movement.x, movement.z);
   const scale = length > 1 ? 1 / length : 1;
-  const targetX = movement.x * scale * PLAYER_SPEED;
-  const targetZ = movement.z * scale * PLAYER_SPEED;
-  const acceleration = 1 - Math.exp(-14 * dt);
+  player.dashCooldown = Math.max(0, player.dashCooldown - dt);
 
-  player.velocity.x += (targetX - player.velocity.x) * acceleration;
-  player.velocity.z += (targetZ - player.velocity.z) * acceleration;
+  if (movement.dash && player.dashCooldown <= 0) {
+    const hasMoveDirection = length > 0.001;
+    player.dashDirection.x = hasMoveDirection ? movement.x * scale : -Math.sin(facing);
+    player.dashDirection.z = hasMoveDirection ? movement.z * scale : -Math.cos(facing);
+    player.dashTime = PLAYER_DASH_DURATION;
+    player.dashCooldown = PLAYER_DASH_COOLDOWN;
+    player.invulnerability = Math.max(player.invulnerability, PLAYER_DASH_INVULNERABILITY);
+  }
+
+  if (player.dashTime > 0) {
+    player.velocity.x = player.dashDirection.x * PLAYER_DASH_SPEED;
+    player.velocity.z = player.dashDirection.z * PLAYER_DASH_SPEED;
+    player.dashTime = Math.max(0, player.dashTime - dt);
+  } else {
+    const targetX = movement.x * scale * PLAYER_SPEED;
+    const targetZ = movement.z * scale * PLAYER_SPEED;
+    const acceleration = 1 - Math.exp(-14 * dt);
+    player.velocity.x += (targetX - player.velocity.x) * acceleration;
+    player.velocity.z += (targetZ - player.velocity.z) * acceleration;
+  }
   player.position.x = clamp(player.position.x + player.velocity.x * dt, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
   player.position.z = clamp(player.position.z + player.velocity.z * dt, -ARENA_HALF_DEPTH, ARENA_HALF_DEPTH);
   player.facing = facing;

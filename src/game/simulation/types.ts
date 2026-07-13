@@ -12,6 +12,9 @@ export interface PlayerState {
   health: number;
   maxHealth: number;
   invulnerability: number;
+  dashCooldown: number;
+  dashTime: number;
+  dashDirection: Vec3;
 }
 
 export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach';

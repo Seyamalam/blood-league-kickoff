@@ -15,6 +15,7 @@ export class Hud {
   private readonly hint: HTMLElement;
   private readonly chargeFill: HTMLElement;
   private readonly chargeLabel: HTMLElement;
+  private readonly dashStatus: HTMLElement;
 
   constructor(root: HTMLElement) {
     root.insertAdjacentHTML('beforeend', `
@@ -31,10 +32,11 @@ export class Hud {
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>KICK POWER</span><span id="charge-label">TAP / HOLD</span></div>
           <div class="health-track" style="margin-top:4px"><div id="charge-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#d6a632,#fff0a6);box-shadow:0 0 14px rgba(255,214,90,.45);transition:none"></div></div>
           <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status">BALL READY</span></div>
+          <div class="status-row" style="margin-top:6px"><span>MOBILITY</span><span id="dash-status">DASH READY</span></div>
         </div>
         <div class="crosshair"><span></span><span></span><span></span><span></span></div>
         <div id="combo" class="combo"></div>
-        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL</div>
+        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL</div>
         <div class="perf"><span id="fps">-- FPS</span><span>WEBGL 2</span></div>
       </div>
       <section id="splash" class="modal splash">
@@ -66,6 +68,7 @@ export class Hud {
     this.hint = required('controls-hint');
     this.chargeFill = required('charge-fill');
     this.chargeLabel = required('charge-label');
+    this.dashStatus = required('dash-status');
   }
 
   get kickoffButton(): HTMLElement {
@@ -88,6 +91,9 @@ export class Hud {
     const chargePercent = Math.round(Math.max(0, Math.min(1, kickCharge)) * 100);
     this.chargeFill.style.width = `${chargePercent}%`;
     this.chargeLabel.textContent = chargePercent > 0 ? `${chargePercent}%` : 'TAP / HOLD';
+    const dashReady = state.player.dashCooldown <= 0;
+    this.dashStatus.textContent = dashReady ? 'DASH READY' : `DASH ${state.player.dashCooldown.toFixed(1)}s`;
+    this.dashStatus.classList.toggle('warn', !dashReady);
     this.fps.textContent = fps > 0 ? `${fps} FPS` : '-- FPS';
     this.combo.textContent = state.combo > 1 && state.comboTimer > 0 ? `${state.combo}× BLOOD COMBO` : '';
     this.combo.classList.toggle('visible', state.combo > 1 && state.comboTimer > 0);
