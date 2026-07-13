@@ -6,7 +6,7 @@ Inventory status as of 2026-07-14:
 
 - All current gameplay visuals are generated at runtime from authored TypeScript, Three.js primitives, materials, lights, and particles.
 - All current music and sound effects are synthesized at runtime with the Web Audio API.
-- The repository contains three authored JPEG screenshots, one generated key-art master, and two optimized key-art derivatives.
+- The repository contains fourteen authored SVG progression icons, three authored JPEG screenshots, one generated key-art master, and two optimized key-art derivatives.
 - No imported 3D model, recorded audio, bundled font, or third-party player-facing asset is currently present.
 
 ## Field Definitions
@@ -36,11 +36,12 @@ These assets do not exist as standalone image or model files. Their geometry and
 
 ## Authored Interface Assets
 
-| Category                                                                      | Source                                | Tool                                   | License/ownership                         | Changes/current state                                                                                                                                                                |
-| ----------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| HUD, title screen, pause, halftime, upgrades, tutorial, settings, and results | `src/ui/`, `src/styles.css`           | TypeScript, HTML DOM, CSS              | Project-created code                      | Layout, typography, gradients, borders, icons/glyphs, animation, and reduced-motion behavior are authored directly; the title screen composites the generated key art recorded below |
-| BL favicon                                                                    | Inline SVG data URL in `index.html`   | Authored SVG path and CSS color values | Project-created code                      | Embedded at build time; not stored as a separate image file                                                                                                                          |
-| Typography                                                                    | CSS system stacks in `src/styles.css` | Host operating-system fonts            | No font file redistributed by the project | Uses fallbacks including Impact/Haettenschweiler/Arial; appearance can vary by platform and must be checked on the target macOS build                                                |
+| Category                                                                      | Source                                | Tool                                   | License/ownership                         | Changes/current state                                                                                                                                                                 |
+| ----------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HUD, title screen, pause, halftime, upgrades, tutorial, settings, and results | `src/ui/`, `src/styles.css`           | TypeScript, HTML DOM, CSS              | Project-created code                      | Layout, typography, gradients, borders, icons/glyphs, animation, and reduced-motion behavior are authored directly; the title screen composites the generated key art recorded below  |
+| Upgrade and evolution icons                                                   | `src/assets/progression/**/*.svg`     | Authored SVG/XML                       | Project-created original vector art       | Twelve upgrade and two evolution icons use the locked bone/semantic palette, transparent backgrounds, and distinct silhouettes; Vite imports and inlines them for offline runtime use |
+| BL favicon                                                                    | Inline SVG data URL in `index.html`   | Authored SVG path and CSS color values | Project-created code                      | Embedded at build time; not stored as a separate image file                                                                                                                           |
+| Typography                                                                    | CSS system stacks in `src/styles.css` | Host operating-system fonts            | No font file redistributed by the project | Uses fallbacks including Impact/Haettenschweiler/Arial; appearance can vary by platform and must be checked on the target macOS build                                                 |
 
 ## Procedural Audio Assets
 

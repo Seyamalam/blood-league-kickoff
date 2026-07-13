@@ -1,5 +1,6 @@
 import type { ProgressionState, UpgradeId } from '../game/progression';
 import { UPGRADE_DEFINITIONS } from '../game/progression';
+import { UPGRADE_ICON_URLS } from './progressionIcons';
 
 export type UpgradeSelectionCallback = (upgradeId: UpgradeId) => void;
 
@@ -118,17 +119,12 @@ export class UpgradeOverlay {
 
   private renderChoices(state: Readonly<ProgressionState>): void {
     const cards = this.offeredIds.map((upgradeId, index) => {
-      const definition = UPGRADE_DEFINITIONS[upgradeId];
-      const currentStack = state.upgradeStacks[upgradeId];
-      const nextStack = Math.min(currentStack + 1, definition.maxStacks);
+      const presentation = getUpgradeCardPresentation(upgradeId, index, state);
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'upgrade-card';
       button.dataset.upgradeId = upgradeId;
-      button.setAttribute(
-        'aria-label',
-        `${index + 1}. ${definition.name}. ${definition.description} Stack ${currentStack} to ${nextStack} of ${definition.maxStacks}.`,
-      );
+      button.setAttribute('aria-label', presentation.ariaLabel);
 
       const number = document.createElement('span');
       number.className = 'upgrade-card__number';
@@ -138,19 +134,24 @@ export class UpgradeOverlay {
       const icon = document.createElement('span');
       icon.className = `upgrade-card__icon upgrade-card__icon--${upgradeId}`;
       icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = upgradeGlyph(upgradeId);
+      const iconImage = document.createElement('img');
+      iconImage.src = presentation.iconUrl;
+      iconImage.alt = '';
+      iconImage.draggable = false;
+      iconImage.decoding = 'async';
+      icon.append(iconImage);
 
       const name = document.createElement('strong');
       name.className = 'upgrade-card__name';
-      name.textContent = definition.name;
+      name.textContent = presentation.name;
 
       const description = document.createElement('span');
       description.className = 'upgrade-card__description';
-      description.textContent = definition.description;
+      description.textContent = presentation.description;
 
       const stack = document.createElement('span');
       stack.className = 'upgrade-card__stack';
-      stack.textContent = `STACK ${currentStack} → ${nextStack} / ${definition.maxStacks}`;
+      stack.textContent = presentation.stackLabel;
 
       button.append(number, icon, name, description, stack);
       return button;
@@ -225,31 +226,25 @@ function keyboardChoiceIndex(event: KeyboardEvent): number | null {
   return null;
 }
 
-function upgradeGlyph(upgradeId: UpgradeId): string {
-  switch (upgradeId) {
-    case 'silverBall':
-      return '●';
-    case 'powerKick':
-      return '↗';
-    case 'rapidRecall':
-      return '↶';
-    case 'piercingStuds':
-      return '◆';
-    case 'garlicTrail':
-      return '✦';
-    case 'orbitingSpectralBall':
-      return '◉';
-    case 'bloodBomb':
-      return '✹';
-    case 'ghostPass':
-      return '♢';
-    case 'stormStuds':
-      return 'ϟ';
-    case 'frostCleats':
-      return '❄';
-    case 'spectralVolley':
-      return '✣';
-    case 'voidGoal':
-      return '◌';
-  }
+export function getUpgradeCardPresentation(
+  upgradeId: UpgradeId,
+  index: number,
+  state: Pick<ProgressionState, 'upgradeStacks'>,
+): Readonly<{
+  ariaLabel: string;
+  description: string;
+  iconUrl: string;
+  name: string;
+  stackLabel: string;
+}> {
+  const definition = UPGRADE_DEFINITIONS[upgradeId];
+  const currentStack = state.upgradeStacks[upgradeId];
+  const nextStack = Math.min(currentStack + 1, definition.maxStacks);
+  return {
+    ariaLabel: `${index + 1}. ${definition.name}. ${definition.description} Stack ${currentStack} to ${nextStack} of ${definition.maxStacks}.`,
+    description: definition.description,
+    iconUrl: UPGRADE_ICON_URLS[upgradeId],
+    name: definition.name,
+    stackLabel: `STACK ${currentStack} → ${nextStack} / ${definition.maxStacks}`,
+  };
 }
