@@ -178,6 +178,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [Release process](docs/RELEASE_PROCESS.md)
 - [Asset credits](docs/ASSET_CREDITS.md)
 - [Submission asset inventory](docs/ASSET_INVENTORY.md)
+- [Performance baseline](docs/PERFORMANCE_BASELINE.md)
 - [Changelog](CHANGELOG.md)
 
 ### Local development

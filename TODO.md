@@ -187,7 +187,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Performance
 
-- [ ] `P0` Select and document the reference machine/browser/GPU.
+- [x] `P0` Select and document the reference machine/browser/GPU.
 - [x] `P0` Track FPS, frame time, draw calls, triangles, enemies, fixed steps, and pools; add isolated physics timing during profiling.
 - [ ] `P0` Confirm no recurring allocation/GC spikes during steady combat.
 - [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
