@@ -68,6 +68,7 @@ async function bootstrap(): Promise<void> {
   const cameraController = new CameraController();
   const input = new InputController(renderer.domElement);
   const audio = new AudioManager();
+  audio.setMatchIntensity('menu');
   const physics = await PhysicsWorld.create();
   const state = createGameState();
   const bridge = new RenderBridge(scene);
@@ -166,6 +167,7 @@ async function bootstrap(): Promise<void> {
     void audio.unlock();
     if (state.phase === 'ready') state.phase = 'playing';
     audio.playPhase(0);
+    audio.setMatchIntensity('opening');
     announcement.show('kickoff');
     tutorialPrompt.update(tutorialTracker.state);
     hud.start();
@@ -208,6 +210,7 @@ async function bootstrap(): Promise<void> {
     state.phase = 'playing';
     previousBallState = physics.ballState;
     audio.playPhase(0);
+    audio.setMatchIntensity('opening');
     announcement.show('kickoff');
     tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
@@ -243,6 +246,7 @@ async function bootstrap(): Promise<void> {
     tutorialSignals.clear();
     tutorialTracker.reset(hasCompletedTutorial());
     tutorialPrompt.reset();
+    audio.setMatchIntensity('menu');
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
     kickPowerMultiplier = 1;
@@ -255,11 +259,15 @@ async function bootstrap(): Promise<void> {
     if (state.phase !== 'playing' || upgradeOverlay.isVisible || settingsOverlay.isVisible || halftimeOverlay.isVisible) return;
     if (input.isLocked) void document.exitPointerLock();
     pauseOverlay.show({
-      onResume: () => input.requestPointerLock(),
+      onResume: () => {
+        audio.setMatchIntensity(match.stage);
+        input.requestPointerLock();
+      },
       onSettings: openSettings,
       onRestart: restart,
       onMainMenu: returnToMenu,
     });
+    audio.setMatchIntensity('paused');
   };
   const onGlobalKeyDown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && !pauseOverlay.isVisible) showPause();
@@ -445,6 +453,7 @@ async function bootstrap(): Promise<void> {
         for (const event of matchUpdate.events) {
           if (event.type === 'stageChanged') {
             audio.playPhase(matchUpdate.state.matchElapsed);
+            audio.setMatchIntensity(event.to);
             atmosphere.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) boss = spawnCountGoalkeeper();
           }

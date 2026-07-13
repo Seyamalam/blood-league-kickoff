@@ -1,9 +1,14 @@
+import type { MatchStage } from '../game/match';
+
 /** Options for the game's procedural audio bus. */
 export interface AudioManagerOptions {
   /** Master volume in the range 0–1. The default is deliberately conservative. */
   volume?: number;
   muted?: boolean;
 }
+
+/** A match stage name or normalized 0–1 music intensity. */
+export type MatchMusicIntensity = MatchStage | 'menu' | 'paused' | number;
 
 type ToneOptions = {
   frequency: number;
@@ -24,6 +29,18 @@ type NoiseOptions = {
   filterType?: BiquadFilterType;
 };
 
+type ProceduralMusicGraph = {
+  output: GainNode;
+  droneGain: GainNode;
+  tensionGain: GainNode;
+  pulseGain: GainNode;
+  pulseDepth: GainNode;
+  filter: BiquadFilterNode;
+  pulseLfo: OscillatorNode;
+  sources: OscillatorNode[];
+  nodes: AudioNode[];
+};
+
 const DEFAULT_VOLUME = 0.42;
 const MAX_ACTIVE_SOURCES = 48;
 
@@ -41,9 +58,11 @@ export class AudioManager {
   private context: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private musicGraph: ProceduralMusicGraph | null = null;
   private readonly activeSources = new Set<AudioScheduledSourceNode>();
   private volume: number;
   private muted: boolean;
+  private matchIntensity = 0;
   private disposed = false;
 
   public constructor(options: AudioManagerOptions = {}) {
@@ -87,6 +106,20 @@ export class AudioManager {
   public setMuted(muted: boolean): void {
     this.muted = muted;
     this.updateMasterGain();
+  }
+
+  /** Current normalized procedural music intensity. */
+  public get currentMatchIntensity(): number {
+    return this.matchIntensity;
+  }
+
+  /**
+   * Smoothly adjusts the procedural score for a match stage or normalized tier.
+   * Safe before `unlock()`; the requested layer mix is applied when audio starts.
+   */
+  public setMatchIntensity(intensity: MatchMusicIntensity): void {
+    this.matchIntensity = resolveMatchIntensity(intensity);
+    this.updateMusicIntensity();
   }
 
   /** Low impact plus a metallic snap. Charge is normalized to 0–1. */
@@ -218,6 +251,7 @@ export class AudioManager {
       }
     }
     this.activeSources.clear();
+    this.disposeMusicGraph();
     const context = this.context;
     this.context = null;
     this.masterGain = null;
@@ -244,13 +278,102 @@ export class AudioManager {
     compressor.connect(context.destination);
     this.context = context;
     this.masterGain = master;
+    this.musicGraph = this.createMusicGraph(context, master);
     this.updateMasterGain();
+    this.updateMusicIntensity();
   }
 
   private updateMasterGain(): void {
     if (!this.context || !this.masterGain) return;
     const target = this.muted ? 0 : this.volume;
     this.masterGain.gain.setTargetAtTime(target, this.context.currentTime, 0.012);
+  }
+
+  private createMusicGraph(context: AudioContext, output: AudioNode): ProceduralMusicGraph {
+    const musicOutput = context.createGain();
+    const filter = context.createBiquadFilter();
+    const drone = context.createOscillator();
+    const droneGain = context.createGain();
+    const tension = context.createOscillator();
+    const tensionGain = context.createGain();
+    const pulse = context.createOscillator();
+    const pulseGain = context.createGain();
+    const pulseLfo = context.createOscillator();
+    const pulseDepth = context.createGain();
+
+    musicOutput.gain.value = 0;
+    filter.type = 'lowpass';
+    filter.frequency.value = 280;
+    filter.Q.value = 1.4;
+    drone.type = 'sine';
+    drone.frequency.value = 55;
+    droneGain.gain.value = 0;
+    tension.type = 'triangle';
+    tension.frequency.value = 82.41;
+    tension.detune.value = -6;
+    tensionGain.gain.value = 0;
+    pulse.type = 'sawtooth';
+    pulse.frequency.value = 41.2;
+    pulseGain.gain.value = 0;
+    pulseLfo.type = 'sine';
+    pulseLfo.frequency.value = 1.6;
+    pulseDepth.gain.value = 0;
+
+    drone.connect(droneGain);
+    droneGain.connect(filter);
+    tension.connect(tensionGain);
+    tensionGain.connect(filter);
+    pulse.connect(pulseGain);
+    pulseGain.connect(filter);
+    pulseLfo.connect(pulseDepth);
+    pulseDepth.connect(pulseGain.gain);
+    filter.connect(musicOutput);
+    musicOutput.connect(output);
+
+    const sources = [drone, tension, pulse, pulseLfo];
+    for (const source of sources) source.start();
+    return {
+      output: musicOutput,
+      droneGain,
+      tensionGain,
+      pulseGain,
+      pulseDepth,
+      filter,
+      pulseLfo,
+      sources,
+      nodes: [drone, droneGain, tension, tensionGain, pulse, pulseGain, pulseLfo, pulseDepth, filter, musicOutput],
+    };
+  }
+
+  private updateMusicIntensity(): void {
+    const context = this.context;
+    const music = this.musicGraph;
+    if (!context || !music || context.state === 'closed') return;
+    const now = context.currentTime;
+    const intensity = this.matchIntensity;
+    const active = intensity > 0.001 ? 1 : 0;
+    rampTarget(music.output.gain, active * (0.58 + intensity * 0.12), now, 0.32);
+    rampTarget(music.droneGain.gain, active * (0.018 + intensity * 0.018), now, 0.38);
+    rampTarget(music.tensionGain.gain, active * Math.max(0, intensity - 0.22) * 0.027, now, 0.38);
+    const pulseLevel = active * Math.max(0, intensity - 0.34) * 0.022;
+    rampTarget(music.pulseGain.gain, pulseLevel, now, 0.26);
+    rampTarget(music.pulseDepth.gain, pulseLevel * 0.82, now, 0.26);
+    rampTarget(music.filter.frequency, 260 + intensity * 940, now, 0.42);
+    rampTarget(music.pulseLfo.frequency, 1.55 + intensity * 2.45, now, 0.35);
+  }
+
+  private disposeMusicGraph(): void {
+    const music = this.musicGraph;
+    this.musicGraph = null;
+    if (!music) return;
+    for (const source of music.sources) {
+      try {
+        source.stop();
+      } catch {
+        // A closing context may already have stopped its persistent sources.
+      }
+    }
+    for (const node of music.nodes) node.disconnect();
   }
 
   private now(): number | null {
@@ -352,4 +475,27 @@ function applyEnvelope(parameter: AudioParam, start: number, end: number, peak: 
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+function rampTarget(parameter: AudioParam, value: number, now: number, timeConstant: number): void {
+  parameter.cancelScheduledValues(now);
+  parameter.setTargetAtTime(value, now, timeConstant);
+}
+
+function resolveMatchIntensity(intensity: MatchMusicIntensity): number {
+  if (typeof intensity === 'number') return clamp01(intensity);
+  switch (intensity) {
+    case 'menu': return 0.12;
+    case 'paused': return 0.08;
+    case 'opening': return 0.24;
+    case 'firstHalf': return 0.38;
+    case 'goalOpportunity': return 0.62;
+    case 'escalation': return 0.55;
+    case 'halftimeChoice': return 0.18;
+    case 'bloodMoon': return 0.78;
+    case 'finalGoal': return 0.9;
+    case 'finalWave': return 1;
+    case 'victory': return 0.14;
+    case 'dead': return 0;
+  }
 }

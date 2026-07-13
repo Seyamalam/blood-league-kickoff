@@ -1,4 +1,5 @@
 import type { EliteEnemyArchetype, EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
+import { EnemySpatialGrid } from './EnemySpatialGrid';
 import type { SecondaryDamageHit } from '../combat';
 
 const ARENA_HALF_WIDTH = 22;
@@ -8,6 +9,7 @@ const PLAYER_DASH_SPEED = 22;
 const PLAYER_DASH_DURATION = 0.16;
 const PLAYER_DASH_COOLDOWN = 1.35;
 const PLAYER_DASH_INVULNERABILITY = 0.18;
+const enemySpatialGrid = new EnemySpatialGrid();
 
 export function createGameState(): GameState {
   return {
@@ -111,7 +113,9 @@ export function updateEnemies(state: GameState, dt: number): void {
   }
 
   const player = state.player;
-  for (const enemy of state.enemies) {
+  enemySpatialGrid.rebuild(state.enemies);
+  for (let enemyIndex = 0; enemyIndex < state.enemies.length; enemyIndex += 1) {
+    const enemy = state.enemies[enemyIndex]!;
     copyVec3(enemy.previousPosition, enemy.position);
     enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
     enemy.shieldFlash = Math.max(0, enemy.shieldFlash - dt);
@@ -126,33 +130,14 @@ export function updateEnemies(state: GameState, dt: number): void {
     // rather than a persistent buff object, so removing the coach removes its aura.
     enemy.buffed = false;
     if (enemy.archetype !== 'coach') {
-      for (const ally of state.enemies) {
-        if (ally.archetype !== 'coach') continue;
-        const coachDx = ally.position.x - enemy.position.x;
-        const coachDz = ally.position.z - enemy.position.z;
-        if (coachDx * coachDx + coachDz * coachDz < 30.25) {
-          enemy.buffed = true;
-          break;
-        }
-      }
+      enemy.buffed = enemySpatialGrid.hasNearbyCoach(state.enemies, enemyIndex, 5.5);
     }
 
     // Local separation keeps the crowd readable and prevents enemies occupying
     // the same point. No temporary vectors or arrays are created in this loop.
-    let separationX = 0;
-    let separationZ = 0;
-    for (const other of state.enemies) {
-      if (other === enemy) continue;
-      const awayX = enemy.position.x - other.position.x;
-      const awayZ = enemy.position.z - other.position.z;
-      const separationRadius = enemy.radius + other.radius + 0.18;
-      const distanceSquared = awayX * awayX + awayZ * awayZ;
-      if (distanceSquared <= 0.0001 || distanceSquared >= separationRadius * separationRadius) continue;
-      const neighbourDistance = Math.sqrt(distanceSquared);
-      const pressure = (separationRadius - neighbourDistance) / separationRadius;
-      separationX += (awayX / neighbourDistance) * pressure;
-      separationZ += (awayZ / neighbourDistance) * pressure;
-    }
+    enemySpatialGrid.accumulateSeparation(state.enemies, enemyIndex, 0.18);
+    const separationX = enemySpatialGrid.separationX;
+    const separationZ = enemySpatialGrid.separationZ;
 
     const speedBuff = enemy.buffed ? 1.28 : 1;
     dx = dx / distance + separationX * 1.35;

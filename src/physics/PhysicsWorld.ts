@@ -96,6 +96,11 @@ export class PhysicsWorld {
     return this.speedCap;
   }
 
+  /** Read-only presentation/diagnostic signal; curve state remains physics-owned. */
+  get ballCurveActive(): boolean {
+    return this.curve !== 0;
+  }
+
   get ballPosition(): Vec3 {
     const p = this.ballBody.translation();
     return { x: p.x, y: p.y, z: p.z };
@@ -220,7 +225,11 @@ export class PhysicsWorld {
 
     if (!this.possessed) {
       this.unpossessedTime += dt;
-      this.stalledTime = this.ballSpeed < 0.4 ? this.stalledTime + dt : 0;
+      const ballVelocity = this.ballBody.linvel();
+      // A ball bouncing vertically in place is still unreachable gameplay-wise;
+      // use planar travel so floor restitution cannot defeat stall recovery.
+      const planarSpeed = Math.hypot(ballVelocity.x, ballVelocity.z);
+      this.stalledTime = planarSpeed < 0.4 ? this.stalledTime + dt : 0;
       if (this.unpossessedTime > 7 || this.stalledTime > 1.35) this.automaticRecall = true;
     }
 
@@ -233,7 +242,14 @@ export class PhysicsWorld {
 
     this.world.integrationParameters.dt = dt;
     this.world.step();
-    this.limitBallSpeed();
+    if (this.possessed) {
+      // Dynamic integration still applies gravity during the catch step. Keep
+      // the public possessed-state invariant at zero velocity immediately.
+      this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    } else {
+      this.limitBallSpeed();
+    }
 
     const ball = this.ballBody.translation();
     if (
