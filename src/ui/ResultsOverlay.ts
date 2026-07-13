@@ -24,6 +24,14 @@ export interface ResultsOverlayCallbacks {
   onMainMenu: () => void;
 }
 
+export type RunGradeLetter = 'S' | 'A' | 'B' | 'C' | 'D';
+
+export interface RunGrade {
+  letter: RunGradeLetter;
+  label: string;
+  score: number;
+}
+
 const NOOP_CALLBACKS: ResultsOverlayCallbacks = {
   onRestart: () => undefined,
   onMainMenu: () => undefined,
@@ -35,6 +43,10 @@ export class ResultsOverlay {
   private readonly eyebrow: HTMLElement;
   private readonly title: HTMLElement;
   private readonly summary: HTMLElement;
+  private readonly outcomeMark: HTMLElement;
+  private readonly grade: HTMLElement;
+  private readonly gradeLetter: HTMLElement;
+  private readonly gradeLabel: HTMLElement;
   private readonly statsGrid: HTMLElement;
   private readonly upgradesList: HTMLElement;
   private readonly restartButton: HTMLButtonElement;
@@ -55,9 +67,17 @@ export class ResultsOverlay {
     this.element.innerHTML = `
       <div class="results-panel">
         <header class="results-panel__header">
-          <p class="results-panel__eyebrow"></p>
-          <h2 id="results-overlay-title"></h2>
-          <p id="results-overlay-summary" class="results-panel__summary"></p>
+          <div class="results-panel__outcome" aria-hidden="true"></div>
+          <div class="results-panel__headline">
+            <p class="results-panel__eyebrow"></p>
+            <h2 id="results-overlay-title"></h2>
+            <p id="results-overlay-summary" class="results-panel__summary"></p>
+          </div>
+          <div class="results-grade" role="img">
+            <span>RUN GRADE</span>
+            <strong></strong>
+            <small></small>
+          </div>
         </header>
         <dl class="results-stats" aria-label="Run statistics"></dl>
         <section class="results-upgrades" aria-labelledby="results-upgrades-title">
@@ -74,6 +94,10 @@ export class ResultsOverlay {
     this.eyebrow = requiredElement(this.element, '.results-panel__eyebrow');
     this.title = requiredElement(this.element, '#results-overlay-title');
     this.summary = requiredElement(this.element, '#results-overlay-summary');
+    this.outcomeMark = requiredElement(this.element, '.results-panel__outcome');
+    this.grade = requiredElement(this.element, '.results-grade');
+    this.gradeLetter = requiredElement(this.element, '.results-grade strong');
+    this.gradeLabel = requiredElement(this.element, '.results-grade small');
     this.statsGrid = requiredElement(this.element, '.results-stats');
     this.upgradesList = requiredElement(this.element, '.results-upgrades ul');
     this.restartButton = requiredButton(this.element, '[data-action="restart"]');
@@ -134,6 +158,11 @@ export class ResultsOverlay {
     this.summary.textContent = victory
       ? 'Count Goalkeeper has fallen. The stadium belongs to the living.'
       : 'The match ends here, but every new run begins with another kickoff.';
+    this.outcomeMark.textContent = victory ? '✦' : '×';
+    const grade = calculateRunGrade(stats);
+    this.gradeLetter.textContent = grade.letter;
+    this.gradeLabel.textContent = grade.label;
+    this.grade.setAttribute('aria-label', `Run grade ${grade.letter}: ${grade.label}`);
 
     const statEntries: ReadonlyArray<readonly [string, string]> = [
       ['Score', integer(stats.score).toLocaleString()],
@@ -202,8 +231,35 @@ export class ResultsOverlay {
   };
 }
 
+/** Deterministic result grade. Victory guarantees a meaningful outcome bonus. */
+export function calculateRunGrade(stats: Readonly<GameResultStats>): RunGrade {
+  const upgradeStacks = stats.upgrades.reduce(
+    (total, upgrade) => total + Math.max(0, integer(upgrade.stacks)),
+    0,
+  );
+  const score = Math.round(
+    (stats.outcome === 'victory' ? 35 : 0) +
+      normalized(stats.score, 20_000) * 15 +
+      normalized(stats.kills, 150) * 20 +
+      normalized(stats.goals, 2) * 10 +
+      normalized(stats.timeSeconds, 540) * 10 +
+      normalized(Math.max(0, integer(stats.level) - 1), 11) * 10 +
+      normalized(upgradeStacks, 15) * 5,
+  );
+  const boundedScore = Math.min(100, score);
+  if (boundedScore >= 90) return { letter: 'S', label: 'LEGENDARY', score: boundedScore };
+  if (boundedScore >= 75) return { letter: 'A', label: 'DOMINANT', score: boundedScore };
+  if (boundedScore >= 55) return { letter: 'B', label: 'RESOLUTE', score: boundedScore };
+  if (boundedScore >= 35) return { letter: 'C', label: 'BLOODIED', score: boundedScore };
+  return { letter: 'D', label: 'FALLEN', score: boundedScore };
+}
+
 function integer(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function normalized(value: number, maximum: number): number {
+  return Math.min(1, integer(value) / maximum);
 }
 
 function formatTime(seconds: number): string {
