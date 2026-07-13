@@ -156,7 +156,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add phase-based procedural music intensity.
 - [ ] `P1` Add first-person Focus Kick ultimate.
 - [x] `P1` Add Bat Swarm.
-- [ ] `P1` Add Leech Striker.
+- [x] `P1` Add Leech Striker.
 - [ ] `P1` Add Corrupt Referee.
 - [ ] `P1` Add Goalkeeper Brute.
 - [ ] `P1` Add lightning, frost, multiball, and black-hole paths.

@@ -99,6 +99,12 @@ export class RenderBridge {
         leftBatWing.rotation.z = -0.72 - flap;
         rightBatWing.rotation.z = 0.72 + flap;
       }
+      const drainRing = mesh.getObjectByName('leech-drain-ring');
+      if (drainRing) {
+        drainRing.visible = enemy.attackState === 'drain';
+        drainRing.scale.setScalar(1 + Math.sin(state.elapsed * 30) * 0.16);
+        drainRing.rotation.z += dt * 2.8;
+      }
     }
     for (const [id, mesh] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
@@ -309,6 +315,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   else if (enemy.archetype === 'defender') addDefender(group);
   else if (enemy.archetype === 'coach') addCoach(group);
   else if (enemy.archetype === 'batSwarm') addBatSwarm(group);
+  else if (enemy.archetype === 'leechStriker') addLeechStriker(group);
   else addBloodFan(group);
   if (enemy.elite) addEliteMarker(group);
   return group;
@@ -327,6 +334,9 @@ const enemyGeometry = {
   batBody: new THREE.SphereGeometry(0.25, 7, 5),
   batWing: new THREE.ConeGeometry(0.3, 0.7, 3),
   batEar: new THREE.ConeGeometry(0.07, 0.22, 4),
+  leechBody: new THREE.CapsuleGeometry(0.38, 0.72, 4, 7),
+  leechMouth: new THREE.TorusGeometry(0.2, 0.07, 5, 12),
+  leechDrainRing: new THREE.TorusGeometry(0.62, 0.045, 5, 18),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
@@ -341,6 +351,14 @@ const enemyMaterial = {
   coach: new THREE.MeshStandardMaterial({ color: 0xb89526, roughness: 0.58 }),
   bat: new THREE.MeshStandardMaterial({ color: 0x17101f, roughness: 0.78 }),
   batWing: new THREE.MeshStandardMaterial({ color: 0x6e204f, roughness: 0.66, side: THREE.DoubleSide }),
+  leech: new THREE.MeshStandardMaterial({ color: 0x4a1838, roughness: 0.72 }),
+  leechMouth: new THREE.MeshBasicMaterial({ color: 0xf2b5cf }),
+  leechDrain: new THREE.MeshBasicMaterial({
+    color: 0xffcf40,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+  }),
   aura: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
     transparent: true,
@@ -437,4 +455,20 @@ function addBatSwarm(group: THREE.Group): void {
   eyes.position.z = 0.24;
   eyes.castShadow = false;
   group.add(leftWing, rightWing, leftEar, rightEar, eyes);
+}
+
+function addLeechStriker(group: THREE.Group): void {
+  const body = mesh(enemyGeometry.leechBody, enemyMaterial.leech, 0.78);
+  body.rotation.x = -0.38;
+  body.scale.set(1.05, 1, 1.2);
+  const mouth = mesh(enemyGeometry.leechMouth, enemyMaterial.leechMouth, 0.96);
+  mouth.position.z = 0.42;
+  mouth.rotation.x = Math.PI / 2;
+  mouth.castShadow = false;
+  const drainRing = mesh(enemyGeometry.leechDrainRing, enemyMaterial.leechDrain, 0.08);
+  drainRing.name = 'leech-drain-ring';
+  drainRing.rotation.x = -Math.PI / 2;
+  drainRing.castShadow = false;
+  drainRing.visible = false;
+  group.add(body, mouth, drainRing);
 }

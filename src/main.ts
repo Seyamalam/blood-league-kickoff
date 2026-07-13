@@ -157,7 +157,7 @@ async function bootstrap(): Promise<void> {
       signalTutorial('upgrade-selected');
       audio.playPhase(progression.level);
       if (result.evolutionEvents.length > 0) {
-        audio.playGoal();
+        audio.playEvolutionUnlock();
         bridge.volleyBurst(state.player.position, 1.8);
         cameraController.volleyImpulse(1.2);
       }

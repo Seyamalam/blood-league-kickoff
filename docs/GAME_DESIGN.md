@@ -62,14 +62,15 @@ The aim preview may communicate direction and charge but should not solve every 
 
 ## Enemies
 
-| Enemy            | Behavior                       | Counterplay                                          |
-| ---------------- | ------------------------------ | ---------------------------------------------------- |
-| Blood Fan        | Direct crowd pressure          | Any clean kick; use for satisfying chains            |
-| Vampire Winger   | Fast flank and committed lunge | Reposition, intercept, or recall through it          |
-| Undead Defender  | Frontal shield                 | Curve, rebound, attack side/back, or special upgrade |
-| Blood Coach      | Buffs nearby enemies           | Prioritize at range and create a lane to it          |
-| Bat Swarm        | Fast airborne weaving pressure | Track its lateral rhythm; one clean hit destroys it  |
-| Count Goalkeeper | Final ball-control boss        | Read catches/returns and exploit openings            |
+| Enemy            | Behavior                        | Counterplay                                          |
+| ---------------- | ------------------------------- | ---------------------------------------------------- |
+| Blood Fan        | Direct crowd pressure           | Any clean kick; use for satisfying chains            |
+| Vampire Winger   | Fast flank and committed lunge  | Reposition, intercept, or recall through it          |
+| Undead Defender  | Frontal shield                  | Curve, rebound, attack side/back, or special upgrade |
+| Blood Coach      | Buffs nearby enemies            | Prioritize at range and create a lane to it          |
+| Bat Swarm        | Fast airborne weaving pressure  | Track its lateral rhythm; one clean hit destroys it  |
+| Leech Striker    | Latches, drains, and self-heals | Break contact during drain, then punish its recovery |
+| Count Goalkeeper | Final ball-control boss         | Read catches/returns and exploit openings            |
 
 Target enemies add airborne pressure, dashes, area denial, and ball interception only after the guaranteed roster is stable.
 
