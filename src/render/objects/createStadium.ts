@@ -3,13 +3,13 @@ import * as THREE from 'three';
 export function createStadium(scene: THREE.Scene): void {
   const field = new THREE.Mesh(
     new THREE.PlaneGeometry(46, 30),
-    new THREE.MeshStandardMaterial({ color: 0x18261f, roughness: 0.92, metalness: 0.02 }),
+    new THREE.MeshStandardMaterial({ color: 0x1d2f27, roughness: 0.92, metalness: 0.02 }),
   );
   field.rotation.x = -Math.PI / 2;
   field.receiveShadow = true;
   scene.add(field);
 
-  const stripeMaterial = new THREE.MeshBasicMaterial({ color: 0x26372e, transparent: true, opacity: 0.55 });
+  const stripeMaterial = new THREE.MeshBasicMaterial({ color: 0x31483c, transparent: true, opacity: 0.52 });
   for (let x = -20; x <= 20; x += 8) {
     const stripe = new THREE.Mesh(new THREE.PlaneGeometry(4, 29.8), stripeMaterial);
     stripe.rotation.x = -Math.PI / 2;
@@ -37,7 +37,7 @@ export function createStadium(scene: THREE.Scene): void {
   );
   scene.add(centerCircle);
 
-  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x221822, roughness: 0.7, metalness: 0.28 });
+  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x2c1d2a, roughness: 0.7, metalness: 0.28 });
   const wallGeometryX = new THREE.BoxGeometry(47, 3, 0.4);
   const wallGeometryZ = new THREE.BoxGeometry(0.4, 3, 30);
   for (const z of [-15.2, 15.2]) {
@@ -84,7 +84,7 @@ function addGoal(scene: THREE.Scene, side: -1 | 1): void {
 }
 
 function addStands(scene: THREE.Scene): void {
-  const concrete = new THREE.MeshStandardMaterial({ color: 0x111119, roughness: 0.88 });
+  const concrete = new THREE.MeshStandardMaterial({ color: 0x191822, roughness: 0.88 });
   for (const zSide of [-1, 1]) {
     for (let row = 0; row < 4; row += 1) {
       const stand = new THREE.Mesh(new THREE.BoxGeometry(49 - row * 1.5, 0.75, 2), concrete);
