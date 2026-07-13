@@ -206,7 +206,7 @@ Modal surfaces: upgrade selection, halftime choice, pause/settings, and results.
 
 ### Continuous integration
 
-GitHub Actions runs type checking, tests, and a production web build on pushes and pull requests. Version tags trigger a Windows runner to package artifacts and attach them to a GitHub Release. Release metadata must state controls, included content, known issues, test status, and commit SHA.
+Development and gameplay validation run locally on macOS and in the browser. Milestone tags may publish verified web snapshots. The Windows workflow is manual-only and will not run during active gameplay development; it is reserved for the content-complete submission candidate. Release metadata must state controls, included content, known issues, test status, and commit SHA.
 
 ### Commit and documentation policy
 
@@ -226,7 +226,7 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 - Scaffold Three.js, TypeScript, Vite, Rapier, lint/type checks, and Electron.
 - Add browser and desktop development commands.
 - Graybox a stadium and implement player, camera, ball, one enemy, damage, death, and restart.
-- Build web locally and establish the Windows CI package.
+- Build and playtest the web and Electron versions locally on macOS; keep Windows packaging dormant.
 
 **Gate A:** Do not expand scope unless kicking, rebounding, recalling, and defeating enemies are fun in a build.
 
@@ -274,4 +274,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the early playable scaffold implements a graybox stadium, movement/camera controls, physics ball kicking/rebounds/recall, basic vampire pressure, combat/death/restart, HUD, fixed-step simulation with render interpolation, and ball recovery fail-safes. The project type-checks and produces a local web build. Browser visual smoke testing passes the start, spawn, death, and restart flows, and the production Electron shell boots locally on macOS. Pointer-lock combat feel and an actual Windows workflow artifact remain unverified; the prototype does not pass Gate A yet.
+As of July 14, 2026, the early playable scaffold implements a graybox stadium, movement/camera controls, physics ball kicking/rebounds/recall, basic vampire pressure, combat/death/restart, HUD, fixed-step simulation with render interpolation, and ball recovery fail-safes. The project type-checks and produces a local web build. Browser visual smoke testing passes the start, spawn, death, and restart flows, and the production Electron shell boots locally on macOS. Pointer-lock combat feel remains unverified; Windows packaging is intentionally deferred until the game is content-complete, and the prototype does not pass Gate A yet.

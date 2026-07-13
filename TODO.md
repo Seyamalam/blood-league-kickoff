@@ -32,7 +32,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add GitHub Actions clean install and web/type-check build coverage.
 - [ ] `P0` Add automated tests to the workflow after test tooling exists.
 - [x] `P0` Add electron-builder portable/ZIP configuration and a Windows runner workflow.
-- [x] `P0` Configure tagged releases to publish checksummed workflow artifacts.
+- [x] `P0` Keep Windows packaging manual-only until the game is content-complete.
 - [x] `P0` Update README current progress and exact commands.
 - [x] `P0` Commit and push the verified foundation runtime and packaging.
 - [ ] `P0` Tag `v0.1.0` and publish a GitHub Release with available artifacts and known issues.

@@ -18,7 +18,7 @@
 | UI | HTML/CSS | Menus, HUD, upgrade cards, settings |
 | Desktop | Electron | Self-contained GPU-accelerated Windows application |
 | Packaging | electron-builder | Portable Windows executable |
-| Automation | GitHub Actions | Checks and authoritative Windows artifacts |
+| Automation | GitHub Actions | Manual-only final Windows artifacts |
 
 ## Current Source Baseline
 
@@ -88,7 +88,7 @@ The Three.js canvas owns the world. HTML/CSS owns menus, HUD, upgrade choices, p
 - Do not load remote scripts or depend on a network connection.
 - Keep browser behavior as the portability baseline.
 
-The Windows GitHub Actions definition installs from the lockfile, builds Vite output (including TypeScript compilation), packages Electron portable/ZIP artifacts, creates checksums, and uploads workflow artifacts. Tags are configured to publish those assets. The workflow and actual Windows artifacts still require verification, and release candidates must run on a real Windows machine.
+The Windows GitHub Actions definition is intentionally manual-only during gameplay development. When invoked for the content-complete candidate, it installs from the lockfile, builds Vite output, packages Electron portable/ZIP artifacts, creates checksums, and uploads workflow artifacts. The workflow and actual Windows artifacts still require verification, and release candidates must run on a real Windows machine.
 
 ## Performance Targets
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Foundation in progress |
 | Theme | Kickoff |
-| Platforms | Web and Windows desktop |
+| Platforms | Web and macOS development first; Windows desktop at final submission |
 | Stack | Three.js, TypeScript, Vite, Rapier, Electron |
 | Input | Keyboard and mouse |
 
@@ -79,9 +79,9 @@ Target features remain gated until the guaranteed vertical slice is fun, stable,
 - **Rapier:** fixed-step WASM physics for the player, ball, arena, and important collisions
 - **HTML/CSS:** menus, HUD, upgrade cards, and settings
 - **Web Audio:** music, effects, and phase transitions
-- **Electron:** self-contained GPU-accelerated Windows desktop build
+- **Electron:** self-contained GPU-accelerated desktop build for local macOS testing and final Windows delivery
 - **electron-builder:** portable `.exe` packaging
-- **GitHub Actions:** reproducible Windows build and release artifacts
+- **GitHub Actions:** manual-only final Windows packaging
 
 The game uses no AI service at runtime. Browser and desktop releases share the same gameplay code.
 
@@ -99,12 +99,13 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Basic enemy spawning, pursuit, damage, death, scoring/combo, player death, and restart
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
-- [x] Electron shell and Windows workflow files created
+- [x] Electron shell created and booted on macOS
+- [x] Windows workflow retained as a manual-only final-submission task
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke test passes start, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
-- [ ] Automated Windows portable build
+- [ ] Final Windows portable build after the game is content-complete
 
 ### Project documents
 
@@ -140,7 +141,7 @@ Development history is part of the jam submission, so changes are committed in s
 1. Updated README progress and game documentation
 2. A verified production build
 3. A milestone commit pushed to GitHub
-4. A version tag and GitHub Release with web and/or Windows artifacts
+4. A version tag and GitHub Release with the verified web snapshot; Windows artifacts are reserved for the final submission release
 
 Planned release line:
 

@@ -10,6 +10,7 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added a secured Electron shell, electron-builder portable/ZIP targets, and a tagged Windows GitHub Actions release workflow; Windows artifacts remain unverified.
 - Verified local TypeScript checking and the production web build.
 - Browser-smoke-tested the styled kickoff, timed spawning, death, and restart flows; booted the production Electron shell locally on macOS.
+- Deferred Windows packaging to a manual-only final submission task so active development can focus on completing and polishing gameplay on macOS/browser.
 
 ## v0.0.0 — 2026-07-14
 
