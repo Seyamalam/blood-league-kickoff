@@ -8,6 +8,7 @@ import {
   readDenseWaveStressMode,
 } from './diagnostics/DenseWaveStress';
 import { PresentationFrameScheduler } from './diagnostics/PresentationFrameScheduler';
+import { createQaTerminalFixture, installQaSnapshotHook, readQaScenario } from './diagnostics/QaScenario';
 import { InputController } from './game/input/InputController';
 import {
   damageCountGoalkeeper,
@@ -111,6 +112,16 @@ async function bootstrap(): Promise<void> {
   const state = createGameState();
   const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
+  const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
+  const qaTerminalFixture = qaScenario ? createQaTerminalFixture(qaScenario) : null;
+  if (qaTerminalFixture) {
+    state.phase = qaTerminalFixture.gamePhase;
+    state.elapsed = qaTerminalFixture.elapsed;
+    state.score = qaTerminalFixture.score;
+    state.kills = qaTerminalFixture.kills;
+    state.player.health = qaScenario === 'victory' ? 42 : 0;
+    state.enemies.length = 0;
+  }
   const bridge = new RenderBridge(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
@@ -152,7 +163,17 @@ async function bootstrap(): Promise<void> {
   let previousBallState = physics.ballState;
   let progression = createProgressionState();
   let focusKick = createFocusKickState();
-  let match = createMatchDirectorState();
+  let match = qaTerminalFixture
+    ? {
+        ...createMatchDirectorState(),
+        stage: qaTerminalFixture.matchStage,
+        matchElapsed: qaTerminalFixture.elapsed,
+        totalKills: qaTerminalFixture.kills,
+        goalScored: qaTerminalFixture.goals > 0,
+        goalsScored: qaTerminalFixture.goals,
+        halftimeChoice: 'power' as const,
+      }
+    : createMatchDirectorState();
   let goalLatched = false;
   let boss: CountGoalkeeperState | null = null;
   let resultsShown = false;
@@ -166,6 +187,21 @@ async function bootstrap(): Promise<void> {
   let fixedStepsThisFrame = 0;
   let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
+  const uninstallQaSnapshotHook = qaScenario
+    ? installQaSnapshotHook(window, () => ({
+        scenario: qaScenario,
+        gamePhase: state.phase,
+        matchStage: match.stage,
+        resultsVisible: resultsOverlay.isVisible,
+        resultsOutcome:
+          resultsOverlay.isVisible && state.phase === 'won'
+            ? 'victory'
+            : resultsOverlay.isVisible && state.phase === 'dead'
+              ? 'defeat'
+              : null,
+        pointerLocked: input.isLocked,
+      }))
+    : () => undefined;
 
   const chargeFocusKick = (action: FocusKickCombatAction, count = 1): void => {
     for (let index = 0; index < count; index += 1) {
@@ -810,7 +846,7 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
-  if (denseWaveStress) hud.start();
+  if (denseWaveStress || qaScenario) hud.start();
 
   const dispose = (): void => {
     if (disposed) return;
@@ -845,6 +881,7 @@ async function bootstrap(): Promise<void> {
     tutorialPrompt.dispose();
     hud.dispose();
     uninstallDenseWavePerformanceHook();
+    uninstallQaSnapshotHook();
     atmosphere.dispose();
     bridge.dispose();
     physics.dispose();
