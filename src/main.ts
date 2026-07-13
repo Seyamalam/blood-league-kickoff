@@ -2,6 +2,11 @@ import './styles.css';
 import * as THREE from 'three';
 import { AudioManager } from './audio';
 import { countActivePoolItems, createPerformanceCounters, PerfMeter } from './diagnostics/PerfMeter';
+import {
+  applyDenseWaveStressFormation,
+  installDenseWavePerformanceHook,
+  readDenseWaveStressMode,
+} from './diagnostics/DenseWaveStress';
 import { InputController } from './game/input/InputController';
 import {
   damageCountGoalkeeper,
@@ -103,6 +108,8 @@ async function bootstrap(): Promise<void> {
   audio.setMatchIntensity('menu');
   const physics = await PhysicsWorld.create();
   const state = createGameState();
+  const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
+  if (denseWaveStress) applyDenseWaveStressFormation(state);
   const bridge = new RenderBridge(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
@@ -125,6 +132,19 @@ async function bootstrap(): Promise<void> {
   const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
   const perfCounters = createPerformanceCounters();
+  const uninstallDenseWavePerformanceHook = denseWaveStress
+    ? installDenseWavePerformanceHook(window, () => ({
+        ...perf.snapshot,
+        mode: 'dense-wave',
+        frozenSimulation: true,
+        renderQuality: playerSettings.renderQuality,
+        renderScale: playerSettings.renderScale,
+        fpsLimit: playerSettings.fpsLimit,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        pixelRatio: renderer.getPixelRatio(),
+      }))
+    : () => undefined;
   const clock = new THREE.Clock();
   let accumulator = 0;
   let previousBallState = physics.ballState;
@@ -385,6 +405,7 @@ async function bootstrap(): Promise<void> {
     bridge.setFirstPerson(focusKick.phase === 'aiming');
 
     if (
+      !denseWaveStress &&
       input.consumeRestart() &&
       state.phase !== 'ready' &&
       !upgradeOverlay.isVisible &&
@@ -463,6 +484,7 @@ async function bootstrap(): Promise<void> {
     accumulator += frameTime * getFocusKickTimeScale(focusKick);
     while (accumulator >= FIXED_STEP) {
       const simulationActive =
+        !denseWaveStress &&
         state.phase === 'playing' &&
         !upgradeOverlay.isVisible &&
         !settingsOverlay.isVisible &&
@@ -789,6 +811,8 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
+  if (denseWaveStress) hud.start();
+
   const dispose = (): void => {
     if (disposed) return;
     disposed = true;
@@ -821,6 +845,7 @@ async function bootstrap(): Promise<void> {
     announcement.dispose();
     tutorialPrompt.dispose();
     hud.dispose();
+    uninstallDenseWavePerformanceHook();
     atmosphere.dispose();
     bridge.dispose();
     physics.dispose();

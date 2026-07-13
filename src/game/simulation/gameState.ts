@@ -425,6 +425,13 @@ function spawnEnemy(state: GameState): EnemyState {
   return createEnemyState(state, archetype, { x, y: stats.y, z }, false);
 }
 
+/** Adds an ordinary enemy at an explicit position for deterministic diagnostics and tests. */
+export function spawnEnemyAt(state: GameState, archetype: EnemyArchetype, position: Vec3): EnemyState {
+  const enemy = createEnemyState(state, archetype, position, false);
+  state.enemies.push(enemy);
+  return enemy;
+}
+
 /** Adds a boss-requested elite near the opponent goal and returns its live state. */
 export function spawnEliteEnemy(state: GameState, archetype: EliteEnemyArchetype, side: -1 | 1): EnemyState {
   const stats = enemyStats(archetype, state.elapsed);

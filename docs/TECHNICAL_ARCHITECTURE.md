@@ -104,6 +104,12 @@ The Windows GitHub Actions definition is intentionally manual-only during gamepl
 
 The debug overlay should expose render FPS/frame time, fixed-step time, enemy count, draw calls, triangles, pool usage, physics time, and quality preset. Optimize measured bottlenecks, not guesses.
 
+During local development, open `http://localhost:5173/?stress=72` to boot directly into a frozen,
+deterministic mixed-archetype crowd. Normal and production builds ignore this query. Profiling automation can
+call `window.__bloodLeaguePerfSnapshot()` to receive a fresh frozen copy of the current frame, renderer, pool,
+viewport, and quality counters. Use a production build for final acceptance measurements; this development mode
+exists to make comparisons repeatable before capturing the corresponding production trace.
+
 ## Test Strategy
 
 - Unit-test pure ball state transitions, upgrade prerequisites, match phases, and fixed-step calculations.

@@ -154,6 +154,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
 - [x] Secure macOS Electron window-size, fullscreen/windowed, and Quit controls verified in the real app
 - [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
+- [x] Development-only deterministic 72-enemy profiling scene with a read-only automation snapshot
 - [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
