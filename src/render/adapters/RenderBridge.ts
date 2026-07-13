@@ -185,7 +185,6 @@ export class RenderBridge {
     this.disposed = true;
     this.reset();
     this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
-    disposeObject(this.player);
     this.ball.geometry.dispose();
     this.ballMaterial.dispose();
     this.trail.geometry.dispose();
@@ -196,7 +195,7 @@ export class RenderBridge {
       burst.points.material.dispose();
     }
     activeBridgeCount = Math.max(0, activeBridgeCount - 1);
-    if (activeBridgeCount === 0) disposeSharedEnemyResources();
+    if (activeBridgeCount === 0) disposeSharedRenderResources();
   }
 
   private updateBallEnergy(position: Vec3, speed: number): void {
@@ -321,32 +320,99 @@ function createHitBurst(index: number): HitBurst {
   return { points, positions, velocities, age: 1, duration: 1 };
 }
 
-function disposeObject(root: THREE.Object3D): void {
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.geometry.dispose();
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) material.dispose();
-  });
+const playerGeometry = {
+  torso: new THREE.CylinderGeometry(0.5, 0.34, 0.92, 6),
+  sash: new THREE.BoxGeometry(0.12, 0.72, 0.035),
+  shorts: new THREE.BoxGeometry(0.68, 0.34, 0.48),
+  head: new THREE.DodecahedronGeometry(0.3, 0),
+  eyes: new THREE.BoxGeometry(0.22, 0.038, 0.028),
+  arm: new THREE.CapsuleGeometry(0.12, 0.48, 2, 5),
+  leg: new THREE.CapsuleGeometry(0.13, 0.4, 2, 5),
+  supportBoot: new THREE.BoxGeometry(0.34, 0.2, 0.52),
+  bootUpper: new THREE.BoxGeometry(0.62, 0.3, 0.82),
+  bootToe: new THREE.DodecahedronGeometry(0.35, 0),
+  bootSole: new THREE.BoxGeometry(0.68, 0.1, 1.22),
+};
+
+const playerMaterial = {
+  jersey: new THREE.MeshStandardMaterial({ color: 0xe1ded0, roughness: 0.72 }),
+  skin: new THREE.MeshStandardMaterial({ color: 0xc8b9ae, roughness: 0.82 }),
+  shorts: new THREE.MeshStandardMaterial({ color: 0x251a30, roughness: 0.84 }),
+  crimson: new THREE.MeshStandardMaterial({ color: 0xb5123f, roughness: 0.4, metalness: 0.12 }),
+  sole: new THREE.MeshStandardMaterial({ color: 0x4b1029, roughness: 0.7 }),
+  eyes: new THREE.MeshBasicMaterial({ color: 0xffd66b }),
+};
+
+function playerMesh(geometry: THREE.BufferGeometry, material: THREE.Material, name: string): THREE.Mesh {
+  const result = new THREE.Mesh(geometry, material);
+  result.name = name;
+  result.castShadow = true;
+  return result;
 }
 
 function createPlayer(): THREE.Group {
   const group = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.45, 0.9, 5, 10),
-    new THREE.MeshStandardMaterial({ color: 0xd9d5c8, roughness: 0.68 }),
-  );
-  body.position.y = 0.9;
-  body.castShadow = true;
-  group.add(body);
+  group.name = 'player-striker';
 
-  const boot = new THREE.Mesh(
-    new THREE.BoxGeometry(0.6, 0.32, 0.95),
-    new THREE.MeshStandardMaterial({ color: 0xa7193b, roughness: 0.38, metalness: 0.18 }),
+  const torso = playerMesh(playerGeometry.torso, playerMaterial.jersey, 'player-torso');
+  torso.position.y = 1.2;
+
+  const sash = playerMesh(playerGeometry.sash, playerMaterial.crimson, 'player-sash');
+  sash.position.set(0.12, 1.22, -0.405);
+  sash.rotation.z = -0.25;
+  sash.castShadow = false;
+
+  const shorts = playerMesh(playerGeometry.shorts, playerMaterial.shorts, 'player-shorts');
+  shorts.position.y = 0.72;
+
+  const head = playerMesh(playerGeometry.head, playerMaterial.skin, 'player-head');
+  head.position.y = 1.9;
+  const eyes = playerMesh(playerGeometry.eyes, playerMaterial.eyes, 'player-eyes');
+  eyes.position.set(0, 1.94, -0.282);
+  eyes.castShadow = false;
+
+  const leftArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-left');
+  leftArm.position.set(-0.53, 1.18, 0);
+  leftArm.rotation.z = -0.18;
+  const rightArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-right');
+  rightArm.position.set(0.53, 1.18, 0);
+  rightArm.rotation.z = 0.18;
+
+  const supportLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-support-leg');
+  supportLeg.position.set(-0.2, 0.39, 0.05);
+  const supportBoot = playerMesh(playerGeometry.supportBoot, playerMaterial.sole, 'player-support-boot');
+  supportBoot.position.set(-0.2, 0.13, -0.08);
+
+  const kickingLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-kicking-leg');
+  kickingLeg.position.set(0.2, 0.46, -0.23);
+  kickingLeg.rotation.x = -0.5;
+
+  // Local -Z is gameplay-forward. The layered upper, toe and sole keep the
+  // signature boot readable from both the chase camera and lateral angles.
+  const bootUpper = playerMesh(playerGeometry.bootUpper, playerMaterial.crimson, 'player-crimson-boot');
+  bootUpper.position.set(0.2, 0.25, -0.75);
+  bootUpper.rotation.x = -0.09;
+  const bootToe = playerMesh(playerGeometry.bootToe, playerMaterial.crimson, 'player-crimson-boot-toe');
+  bootToe.position.set(0.2, 0.23, -1.15);
+  bootToe.scale.set(1.05, 0.58, 1.08);
+  const bootSole = playerMesh(playerGeometry.bootSole, playerMaterial.sole, 'player-crimson-boot-sole');
+  bootSole.position.set(0.2, 0.085, -0.83);
+
+  group.add(
+    torso,
+    sash,
+    shorts,
+    head,
+    eyes,
+    leftArm,
+    rightArm,
+    supportLeg,
+    supportBoot,
+    kickingLeg,
+    bootUpper,
+    bootToe,
+    bootSole,
   );
-  boot.position.set(0, 0.22, -0.38);
-  boot.castShadow = true;
-  group.add(boot);
   return group;
 }
 
@@ -451,7 +517,9 @@ const enemyMaterial = {
   }),
 };
 
-function disposeSharedEnemyResources(): void {
+function disposeSharedRenderResources(): void {
+  for (const geometry of Object.values(playerGeometry)) geometry.dispose();
+  for (const material of Object.values(playerMaterial)) material.dispose();
   for (const geometry of Object.values(enemyGeometry)) geometry.dispose();
   for (const material of Object.values(enemyMaterial)) material.dispose();
 }
