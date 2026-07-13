@@ -234,6 +234,7 @@ function createEmptyStacks(): UpgradeStacks {
     orbitingSpectralBall: 0,
     bloodBomb: 0,
     ghostPass: 0,
+    stormStuds: 0,
   };
 }
 

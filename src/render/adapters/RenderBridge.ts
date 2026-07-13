@@ -4,6 +4,7 @@ import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
 const BURST_PARTICLES = 14;
+let activeBridgeCount = 0;
 
 interface HitBurst {
   points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
@@ -27,8 +28,10 @@ export class RenderBridge {
   private trailInitialized = false;
   private nextBurst = 0;
   private firstPerson = false;
+  private disposed = false;
 
   constructor(private readonly scene: THREE.Scene) {
+    activeBridgeCount += 1;
     this.player = createPlayer();
     this.ball = createBall();
     this.ballMaterial = this.ball.material as THREE.MeshStandardMaterial;
@@ -113,6 +116,11 @@ export class RenderBridge {
         whistleRing.scale.setScalar(whistlePulse);
         whistleRing.rotation.z += dt * 1.8;
       }
+      const bruteCatchRing = mesh.getObjectByName('brute-catch-ring');
+      if (bruteCatchRing) {
+        bruteCatchRing.visible = enemy.shieldFlash > 0;
+        bruteCatchRing.scale.setScalar(1 + Math.sin(state.elapsed * 42) * 0.12);
+      }
     }
     for (const [id, mesh] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
@@ -148,7 +156,13 @@ export class RenderBridge {
     this.startBurst(position, intensity * 1.25, 0xffd66b);
   }
 
+  lightningBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity, 0x66d9ff);
+  }
+
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.reset();
     this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
     disposeObject(this.player);
@@ -161,6 +175,8 @@ export class RenderBridge {
       burst.points.geometry.dispose();
       burst.points.material.dispose();
     }
+    activeBridgeCount = Math.max(0, activeBridgeCount - 1);
+    if (activeBridgeCount === 0) disposeSharedEnemyResources();
   }
 
   private updateBallEnergy(position: Vec3, speed: number): void {
@@ -329,6 +345,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   else if (enemy.archetype === 'batSwarm') addBatSwarm(group);
   else if (enemy.archetype === 'leechStriker') addLeechStriker(group);
   else if (enemy.archetype === 'corruptReferee') addCorruptReferee(group);
+  else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(group);
   else addBloodFan(group);
   if (enemy.elite) addEliteMarker(group);
   return group;
@@ -354,6 +371,9 @@ const enemyGeometry = {
   refereeStripe: new THREE.BoxGeometry(0.13, 1.2, 0.03),
   refereeWhistle: new THREE.ConeGeometry(0.1, 0.26, 5),
   refereeWhistleRing: new THREE.TorusGeometry(0.74, 0.055, 5, 20),
+  bruteBody: new THREE.BoxGeometry(1.45, 1.65, 0.82),
+  bruteGlove: new THREE.SphereGeometry(0.34, 8, 6),
+  bruteCatchRing: new THREE.TorusGeometry(1.02, 0.07, 6, 24),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
@@ -385,6 +405,14 @@ const enemyMaterial = {
     opacity: 0.88,
     depthWrite: false,
   }),
+  brute: new THREE.MeshStandardMaterial({ color: 0x241a37, roughness: 0.76 }),
+  bruteGlove: new THREE.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.58 }),
+  bruteCatch: new THREE.MeshBasicMaterial({
+    color: 0xffcf40,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+  }),
   aura: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
     transparent: true,
@@ -399,6 +427,11 @@ const enemyMaterial = {
     depthWrite: false,
   }),
 };
+
+function disposeSharedEnemyResources(): void {
+  for (const geometry of Object.values(enemyGeometry)) geometry.dispose();
+  for (const material of Object.values(enemyMaterial)) material.dispose();
+}
 
 function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, y: number): THREE.Mesh {
   const result = new THREE.Mesh(geometry, material);
@@ -516,4 +549,20 @@ function addCorruptReferee(group: THREE.Group): void {
   ring.castShadow = false;
   ring.visible = false;
   group.add(whistle, ring);
+}
+
+function addGoalkeeperBrute(group: THREE.Group): void {
+  group.add(mesh(enemyGeometry.bruteBody, enemyMaterial.brute, 0.9));
+  addFace(group, 1.95);
+  const leftGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02);
+  leftGlove.position.set(-0.92, 1.02, 0.28);
+  const rightGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02);
+  rightGlove.position.set(0.92, 1.02, 0.28);
+  const catchRing = mesh(enemyGeometry.bruteCatchRing, enemyMaterial.bruteCatch, 1.05);
+  catchRing.name = 'brute-catch-ring';
+  catchRing.rotation.x = Math.PI / 2;
+  catchRing.position.z = 0.48;
+  catchRing.castShadow = false;
+  catchRing.visible = false;
+  group.add(leftGlove, rightGlove, catchRing);
 }

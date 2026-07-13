@@ -7,12 +7,15 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added fast, fragile Bat Swarms with deterministic weaving behavior and a distinct animated airborne silhouette.
 - Added Leech Strikers with contact-range latching, pulsed health drain, self-healing, recovery windows, and a shape-based drain tell.
 - Added Corrupt Referees with ranged whistle telegraphs, standoff movement, retreat behavior, and a shape-based pulse tell.
+- Added Goalkeeper Brutes that catch ordinary shots and require power-speed breakthroughs, with oversized gloves and a catch-ring tell.
 - Added persisted Off/Low/High aim assist and connected it to nearby on-reticle enemies and the active boss.
 - Added procedural Count entrance/phase cues plus distinct victory and defeat sequences.
 - Added a dedicated procedural evolution-unlock cue and build version/optional commit metadata to results.
 - Injected the validated Git commit SHA into production builds so results identify the exact revision.
 - Added a combat-charged first-person Focus Kick with real-time slow aiming, one empowered shot, HUD state, and cooldown.
 - Locked the low-poly gothic palette, silhouettes, lighting, VFX grammar, accessibility rules, and performance budgets.
+- Added selectable Storm Studs with bounded deterministic chain-lightning hops and cyan impact feedback.
+- Added idempotent shutdown/HMR cleanup across listeners, UI, WebGL resources, shared enemy assets, and Rapier WASM.
 - Downloaded v0.7.1, corrected its portable checksum path, and verified both the checksum and ZIP contents.
 
 ## v0.7.1 — 2026-07-14

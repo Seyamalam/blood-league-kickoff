@@ -60,6 +60,8 @@ All characters should read at gameplay camera distance before surface detail is 
 | Coach            | Tapered cylinder with a wide ground aura                   | Support unit; aura shows influence radius independently of body color     |
 | Bat Swarm        | Low compact body, triangular wings, pointed ears           | Small aerial rush; wingbeat and height distinguish it from ground units   |
 | Leech Striker    | Forward-leaning capsule, circular mouth, ground drain ring | Close-range drain threat; circular mouth faces the player                 |
+| Corrupt Referee  | Striped box torso, raised whistle, expanding ground ring   | Ranged disruption; ring communicates the attack without color             |
+| Goalkeeper Brute | Oversized square torso, wide gloves, forward catch ring    | Slow interceptor; glove span and catch ring dominate its contour          |
 | Elite            | Base silhouette at `1.18x` scale plus gold overhead ring   | Stronger variant; never rely on a recolor alone                           |
 | Count Goalkeeper | Tall capsule, wide armored shoulders, five-point crown     | Boss; crown and shoulder bar remain visible in every phase                |
 

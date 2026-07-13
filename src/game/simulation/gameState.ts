@@ -225,6 +225,7 @@ export interface BallDamageResult {
   hits: number;
   kills: number;
   blockedHits: number;
+  firstHitEnemyId?: number;
   rebound?: {
     enemyId: number;
     normal: Vec3;
@@ -246,6 +247,7 @@ export function damageEnemiesWithBall(
     : 1;
   let hits = 0;
   let blockedHits = 0;
+  let firstHitEnemyId: number | undefined;
   let rebound: BallDamageResult['rebound'];
   const velocityLength = ballVelocity ? Math.hypot(ballVelocity.x, ballVelocity.z) : 0;
   const velocityX = velocityLength > 0.001 ? ballVelocity!.x / velocityLength : 0;
@@ -254,6 +256,7 @@ export function damageEnemiesWithBall(
     if (enemy.lastBallHit > 0) continue;
     const distance = Math.hypot(ball.x - enemy.position.x, ball.z - enemy.position.z);
     if (distance < enemy.radius + 0.52 && Math.abs(ball.y - 0.75) < 1.35) {
+      firstHitEnemyId ??= enemy.id;
       const baseDamage = (speed > 17 ? 2 : 1) * safeDamageMultiplier;
       let damage = baseDamage;
       let knockbackScale =
@@ -330,7 +333,10 @@ export function damageEnemiesWithBall(
     kills += 1;
   }
   awardKills(state, kills);
-  return rebound ? { hits, kills, blockedHits, rebound } : { hits, kills, blockedHits };
+  const result: BallDamageResult = { hits, kills, blockedHits };
+  if (firstHitEnemyId !== undefined) result.firstHitEnemyId = firstHitEnemyId;
+  if (rebound) result.rebound = rebound;
+  return result;
 }
 
 export function damageEnemiesWithSecondary(

@@ -32,6 +32,7 @@ export class Hud {
   private readonly victory: HTMLElement;
   private readonly bossPanel: HTMLElement;
   private readonly bossFill: HTMLElement;
+  private hintFadeTimeout: number | null = null;
 
   constructor(root: HTMLElement) {
     root.insertAdjacentHTML(
@@ -203,7 +204,11 @@ export class Hud {
 
   start(): void {
     this.splash.classList.add('hidden');
-    window.setTimeout(() => this.hint.classList.add('faded'), 6500);
+    if (this.hintFadeTimeout !== null) window.clearTimeout(this.hintFadeTimeout);
+    this.hintFadeTimeout = window.setTimeout(() => {
+      this.hintFadeTimeout = null;
+      this.hint.classList.add('faded');
+    }, 6500);
   }
 
   showMenu(): void {
@@ -215,6 +220,11 @@ export class Hud {
   reset(): void {
     this.death.classList.add('hidden');
     this.victory.classList.add('hidden');
+  }
+
+  dispose(): void {
+    if (this.hintFadeTimeout !== null) window.clearTimeout(this.hintFadeTimeout);
+    this.hintFadeTimeout = null;
   }
 }
 

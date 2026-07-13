@@ -67,8 +67,8 @@ Controls and bindings may change during playtesting.
 - One playable striker and one gothic stadium
 - One complete 8–10 minute run
 - Kick, rebound, recall, curve, and perfect-volley mechanics
-- Seven normal enemy behaviors plus a final boss or fallback final elite wave
-- Eight upgrades and two evolved combinations
+- Eight normal enemy behaviors plus a final boss or fallback final elite wave
+- Nine upgrades and two evolved combinations
 - Menus, settings, tutorial prompts, win, loss, pause, and restart
 - Playable web build and tested portable Windows `.exe`
 
@@ -108,7 +108,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Fixed-step simulation with interpolated player, enemy, and ball rendering
 - [x] Third-person movement, pointer-lock camera, kick, rebound, and manual/automatic recall
 - [x] Charged kicks, a capped 36-unit ball speed, recall states, and perfect-return volleys
-- [x] Seven enemy archetypes through Bat Swarm, Leech Striker, and ranged Corrupt Referee
+- [x] Eight enemy archetypes through Bat Swarm, Leech Striker, Corrupt Referee, and Goalkeeper Brute
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
@@ -144,6 +144,8 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Distinct procedural boss entrance, phase escalation, victory, and defeat cues
 - [x] Dedicated procedural evolution cue and version/commit metadata on run results
 - [x] First-person Focus Kick ultimate with combat-built meter, slow-time aim, empowered shot, and cooldown
+- [x] Storm Studs chain lightning with deterministic bounded hops and cyan impact feedback
+- [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
 - [x] Secure macOS Electron window-size, fullscreen/windowed, and Quit controls verified in the real app
 - [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
 - [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow

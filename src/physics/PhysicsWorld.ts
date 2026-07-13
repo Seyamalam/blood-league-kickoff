@@ -40,6 +40,7 @@ export class PhysicsWorld {
   private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
   private unpossessedTime = 0;
   private stalledTime = 0;
+  private disposed = false;
 
   private constructor() {
     this.world = new RAPIER.World({ x: 0, y: -12, z: 0 });
@@ -298,6 +299,13 @@ export class PhysicsWorld {
     this.ballBody.setTranslation({ x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 }, true);
     this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+  }
+
+  /** Releases the Rapier WASM allocations owned by this world. */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.world.free();
   }
 
   private addWall(x: number, y: number, z: number, hx: number, hy: number, hz: number): void {

@@ -243,5 +243,7 @@ function upgradeGlyph(upgradeId: UpgradeId): string {
       return '✹';
     case 'ghostPass':
       return '♢';
+    case 'stormStuds':
+      return 'ϟ';
   }
 }

@@ -7,6 +7,7 @@ export const UPGRADE_IDS = [
   'orbitingSpectralBall',
   'bloodBomb',
   'ghostPass',
+  'stormStuds',
 ] as const;
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];

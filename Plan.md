@@ -60,6 +60,10 @@ Rapier provides collision queries and important rigid-body interactions. Game co
 - Blood Bomb
 - Ghost Pass
 
+Implemented target path:
+
+- Storm Studs chain lightning
+
 Initial evolutions:
 
 - Silver Ball + Piercing Studs → **Moon Breaker**
@@ -328,4 +332,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Eight upgrades, two evolutions, seven enemy archetypes plus elites, Focus Kick, physical XP shards, procedural music and match cues, onboarding, diagnostics, aim assistance, and persistent settings are active. Browser automation, 73 deterministic tests, release artifact verification, and real macOS Electron checks cover the main systems and desktop controls. Pointer-lock combat feel and full-run balance still require human playtesting. Windows packaging remains intentionally deferred until the game is content-complete.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Nine upgrades, two evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, procedural music and match cues, onboarding, diagnostics, aim assistance, and persistent settings are active. Browser automation, 77 deterministic tests, release artifact verification, and real macOS Electron checks cover the main systems and desktop controls. Pointer-lock combat feel and full-run balance still require human playtesting. Windows packaging remains intentionally deferred until the game is content-complete.

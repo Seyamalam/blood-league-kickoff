@@ -24,7 +24,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Create the current source layout documented in `Plan.md`.
 - [x] `P0` Initialize Rapier WASM and step it through a fixed-timestep game loop.
 - [x] `P0` Create the high-performance WebGL renderer with resize and capped pixel ratio.
-- [ ] `P0` Add complete renderer/listener/resource disposal for shutdown and hot reload.
+- [x] `P0` Add complete renderer/listener/resource disposal for shutdown and hot reload.
 - [x] `P0` Add a kickoff/boot surface and visible bootstrap error fallback.
 - [x] `P0` Add the Electron main/preload shell with secure renderer defaults.
 - [x] `P0` Run type-check and the production web build locally.
@@ -158,8 +158,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Bat Swarm.
 - [x] `P1` Add Leech Striker.
 - [x] `P1` Add Corrupt Referee.
-- [ ] `P1` Add Goalkeeper Brute.
-- [ ] `P1` Add lightning, frost, multiball, and black-hole paths.
+- [x] `P1` Add Goalkeeper Brute.
+- [x] `P1` Add the lightning path.
+- [ ] `P1` Add frost, multiball, and black-hole paths.
 - [ ] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
 - [ ] `P2` Add expanded victory presentation.

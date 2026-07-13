@@ -1,6 +1,6 @@
 import type { UpgradeDefinition, UpgradeId } from './types';
 
-/** The eight guaranteed GameJam upgrades. Runtime state is stored separately. */
+/** Guaranteed and target-scope GameJam upgrades. Runtime state is stored separately. */
 export const UPGRADE_DEFINITIONS = Object.freeze({
   silverBall: define({
     id: 'silverBall',
@@ -88,6 +88,18 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
     modifierPerStack: {
       ghostPassCount: 1,
       ghostPassDamageMultiplier: 0.12,
+    },
+  }),
+  stormStuds: define({
+    id: 'stormStuds',
+    name: 'Storm Studs',
+    description: 'Ball impacts arc lightning into nearby enemies.',
+    maxStacks: 4,
+    minPlayerLevel: 3,
+    prerequisites: [{ upgradeId: 'silverBall', minStacks: 1 }],
+    modifierPerStack: {
+      chainLightningDamage: 6,
+      chainLightningTargets: 1,
     },
   }),
 } satisfies Record<UpgradeId, UpgradeDefinition>);

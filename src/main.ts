@@ -82,6 +82,7 @@ const PLAYABLE_UPGRADES = [
   'orbitingSpectralBall',
   'bloodBomb',
   'ghostPass',
+  'stormStuds',
 ] as const satisfies readonly UpgradeId[];
 
 async function bootstrap(): Promise<void> {
@@ -138,6 +139,7 @@ async function bootstrap(): Promise<void> {
   let recallSpeedMultiplier = 1;
   let volleyWindowBonus = 0;
   let fixedStepsThisFrame = 0;
+  let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
 
   const chargeFocusKick = (action: FocusKickCombatAction, count = 1): void => {
@@ -155,6 +157,7 @@ async function bootstrap(): Promise<void> {
   };
 
   const offerUpgrade = (): void => {
+    if (disposed) return;
     if (
       upgradeOverlay.isVisible ||
       settingsOverlay.isVisible ||
@@ -264,15 +267,20 @@ async function bootstrap(): Promise<void> {
     tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
   };
-  hud.kickoffButton.addEventListener('click', begin);
-  hud.restartButton.addEventListener('click', restart);
-  hud.victoryRestartButton.addEventListener('click', restart);
+  const kickoffButton = hud.kickoffButton;
+  const restartButton = hud.restartButton;
+  const victoryRestartButton = hud.victoryRestartButton;
+  kickoffButton.addEventListener('click', begin);
+  restartButton.addEventListener('click', restart);
+  victoryRestartButton.addEventListener('click', restart);
   const openSettings = (): void => {
     if (input.isLocked) void document.exitPointerLock();
     settingsOverlay.show();
   };
-  hud.settingsButton.addEventListener('click', openSettings);
-  hud.titleSettingsButton.addEventListener('click', openSettings);
+  const settingsButton = hud.settingsButton;
+  const titleSettingsButton = hud.titleSettingsButton;
+  settingsButton.addEventListener('click', openSettings);
+  titleSettingsButton.addEventListener('click', openSettings);
   const returnToMenu = (): void => {
     resetGameState(state);
     physics.reset(state.player.position);
@@ -335,7 +343,7 @@ async function bootstrap(): Promise<void> {
   };
   window.addEventListener('blur', onFocusLoss);
   document.addEventListener('visibilitychange', onVisibilityChange);
-  renderer.domElement.addEventListener('click', () => {
+  const onCanvasClick = (): void => {
     if (state.phase === 'ready') begin();
     else if (
       state.phase === 'playing' &&
@@ -345,7 +353,8 @@ async function bootstrap(): Promise<void> {
       !halftimeOverlay.isVisible
     )
       input.requestPointerLock();
-  });
+  };
+  renderer.domElement.addEventListener('click', onCanvasClick);
 
   renderer.setAnimationLoop((time) => {
     const frameInterval = playerSettings.fpsLimit === 'unlimited' ? 0 : 1_000 / playerSettings.fpsLimit;
@@ -483,6 +492,13 @@ async function bootstrap(): Promise<void> {
         }
         if (hits > 0) {
           chargeFocusKick('enemy-hit', hits);
+          if (primaryDamage.firstHitEnemyId !== undefined) {
+            secondaryWeapons.triggerChainLightning(
+              primaryDamage.firstHitEnemyId,
+              physics.ballPosition,
+              progression.modifiers,
+            );
+          }
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -527,6 +543,7 @@ async function bootstrap(): Promise<void> {
         }
         for (const event of secondaryStep.events) {
           if (event.type === 'blood-bomb-triggered') bridge.volleyBurst(event.position, 1.2);
+          if (event.type === 'chain-lightning-hit') bridge.lightningBurst(event.position, 0.95);
         }
 
         const collectedXp = bloodShards.update(state.player.position, FIXED_STEP);
@@ -735,35 +752,83 @@ async function bootstrap(): Promise<void> {
     perf.update(frameTime, perfCounters);
   });
 
-  renderer.domElement.addEventListener('webglcontextlost', (event) => {
+  const onContextLost = (event: Event): void => {
     event.preventDefault();
     renderer.setAnimationLoop(null);
+  };
+  const onContextRestored = (): void => window.location.reload();
+  renderer.domElement.addEventListener('webglcontextlost', onContextLost);
+  renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
+
+  const dispose = (): void => {
+    if (disposed) return;
+    disposed = true;
+    renderer.setAnimationLoop(null);
+    window.removeEventListener('beforeunload', dispose);
+    window.removeEventListener('resize', resize);
+    window.removeEventListener('keydown', onGlobalKeyDown);
+    window.removeEventListener('blur', onFocusLoss);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    kickoffButton.removeEventListener('click', begin);
+    restartButton.removeEventListener('click', restart);
+    victoryRestartButton.removeEventListener('click', restart);
+    settingsButton.removeEventListener('click', openSettings);
+    titleSettingsButton.removeEventListener('click', openSettings);
+    renderer.domElement.removeEventListener('click', onCanvasClick);
+    renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
+    renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
+    if (input.isLocked) void document.exitPointerLock();
+    input.dispose();
+    void audio.dispose();
+    goalBeacon.dispose();
+    bossVisual.dispose();
+    bloodShardRenderer.dispose();
+    secondaryRenderer.dispose();
+    upgradeOverlay.dispose();
+    settingsOverlay.dispose();
+    pauseOverlay.dispose();
+    resultsOverlay.dispose();
+    halftimeOverlay.dispose();
+    announcement.dispose();
+    tutorialPrompt.dispose();
+    hud.dispose();
+    atmosphere.dispose();
+    bridge.dispose();
+    physics.dispose();
+    disposeSceneResources(scene);
+    renderer.renderLists.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+    renderer.domElement.remove();
+    root.replaceChildren();
+  };
+
+  window.addEventListener('beforeunload', dispose, { once: true });
+  const hot = (import.meta as ImportMeta & { hot?: { dispose(callback: () => void): void } }).hot;
+  hot?.dispose(dispose);
+}
+
+function disposeSceneResources(scene: THREE.Scene): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
+  scene.traverse((object) => {
+    if (object instanceof THREE.Light) object.dispose();
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points))
+      return;
+    geometries.add(object.geometry);
+    const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of objectMaterials) {
+      materials.add(material);
+      for (const value of Object.values(material)) {
+        if (value instanceof THREE.Texture) textures.add(value);
+      }
+    }
   });
-  renderer.domElement.addEventListener('webglcontextrestored', () => window.location.reload());
-  window.addEventListener(
-    'beforeunload',
-    () => {
-      input.dispose();
-      window.removeEventListener('keydown', onGlobalKeyDown);
-      window.removeEventListener('blur', onFocusLoss);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      void audio.dispose();
-      goalBeacon.dispose();
-      bossVisual.dispose();
-      bloodShardRenderer.dispose();
-      secondaryRenderer.dispose();
-      upgradeOverlay.dispose();
-      settingsOverlay.dispose();
-      pauseOverlay.dispose();
-      resultsOverlay.dispose();
-      halftimeOverlay.dispose();
-      announcement.dispose();
-      tutorialPrompt.dispose();
-      atmosphere.dispose();
-      bridge.dispose();
-    },
-    { once: true },
-  );
+  for (const texture of textures) texture.dispose();
+  for (const material of materials) material.dispose();
+  for (const geometry of geometries) geometry.dispose();
+  scene.clear();
 }
 
 function hasCompletedTutorial(): boolean {
