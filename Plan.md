@@ -1,74 +1,55 @@
-# Blood League: Kickoff - Production Plan
+# Blood League: Kickoff — Production Plan
 
 ## 1. Objective
 
-Create a polished third-person 3D horde-survival roguelite in which football is the combat system and each kickoff advances the run. Submit a stable Windows build, public GitHub repository, itch.io page, and clear gameplay pitch within the IUT 12th ICT Fest 2026 GameJam deadline.
+Create a polished third-person 3D horde-survival roguelite in which football is the combat system and each kickoff advances the run. Submit a stable web build, portable Windows `.exe`, public GitHub repository, itch.io page, and clear gameplay pitch within the IUT 12th ICT Fest 2026 GameJam deadline.
 
 ## 2. Product Decision
 
-### Chosen direction
-
-- **Engine:** Unity 6 with URP
+- **Runtime:** Browser-native Three.js game packaged unchanged inside Electron
+- **Language/tooling:** TypeScript and Vite
+- **Physics:** Rapier WASM for the player, ball, arena, and important dynamic interactions
 - **View:** Third-person, over-the-shoulder camera
 - **Special camera:** Brief first-person Focus Kick ultimate only
-- **Platform:** Windows first; WebGL only if it becomes nearly free to support
-- **Session:** 8-10 minutes for the guaranteed build, up to 12 minutes for the target build
-- **Art direction:** Stylized low-poly gothic stadium with moonlit blue environments, crimson vampire effects, and gold holy weapons
+- **Platforms:** Web plus portable Windows `.exe`
+- **Session:** 8–10 minutes guaranteed; up to 12 minutes only after the scope gates pass
+- **Art direction:** Stylized low-poly gothic stadium, moonlit blue environment, crimson vampire effects, and gold holy weapons
 
-### Why third-person
-
-Football combat requires awareness of the player, ball, enemies, rebound surfaces, and goals at the same time. Third-person preserves this spatial information. A temporary first-person ultimate creates spectacle without doubling the normal control and camera workload.
+This code-first stack lets the team iterate, test, profile, and build without a proprietary editor. Electron provides a self-contained desktop game while WebGL 2 uses the player's GPU. Actual 120 FPS depends on hardware and quality settings; stable 60 FPS is the guaranteed baseline.
 
 ## 3. Player Fantasy and Verbs
 
-The player is the last human striker in a supernatural match. The primary verbs are:
-
-- Move
-- Aim
-- Kick
-- Charge
-- Curve
-- Recall
-- Volley
-- Dash
-- Score
-- Choose upgrades
-
-The kick must feel satisfying before any secondary weapon or additional enemy is approved.
+The player is the last human striker in a supernatural match. The verbs are move, aim, kick, charge, curve, recall, volley, dash, score, and choose upgrades. The kick must feel satisfying before secondary weapons or additional enemies are approved.
 
 ## 4. Run Structure
 
 | Time | Phase | Purpose |
 | --- | --- | --- |
 | 0:00 | Opening Kickoff | Teach movement, kicking, recall, and collection |
-| 0:00-3:00 | First Half | Introduce basic crowds, flankers, and first upgrades |
-| 3:00 | First Goal | Player scores; enemy tier and stadium state change |
-| 3:00-5:00 | Escalation | Add shields, ranged pressure, and upgrade evolution |
-| 5:00 | Halftime | Major upgrade choice and a brief pacing reset |
-| 5:00-8:00 | Blood Moon | Denser waves, elites, and more dangerous combinations |
+| 0:00–3:00 | First Half | Introduce basic crowds, flankers, and upgrades |
+| 3:00 | First Goal | Score; enemy tier and stadium state change |
+| 3:00–5:00 | Escalation | Add shields, ranged pressure, and evolutions |
+| 5:00 | Halftime | Major choice and a brief pacing reset |
+| 5:00–8:00 | Blood Moon | Denser waves, elites, and dangerous combinations |
 | 8:00 | Final Goal | Summon Count Goalkeeper |
-| 8:00-10:00 | Final Match | Boss encounter, victory, or defeat |
+| 8:00–10:00 | Final Match | Boss encounter, victory, or defeat |
 
-The exact timings remain configurable data and will be shortened if playtests reveal downtime.
+Timings and balance values live in data files and remain easy to shorten during playtests.
 
 ## 5. Combat Design
 
 ### Ball state model
 
-The ball moves through explicit states:
-
-1. **Possessed:** attached to the player's dribble point and ready to kick.
-2. **Charging:** kick power increases while the input is held.
-3. **Launched:** damages enemies and interacts with rebound surfaces.
-4. **Returning:** travels toward the player after recall or timeout.
-5. **Volley window:** a timed input near the player increases damage and speed.
+1. **Possessed:** attached at the player's dribble point and ready to kick.
+2. **Charging:** kick power increases while input is held.
+3. **Launched:** damages enemies and rebounds from arena surfaces.
+4. **Returning:** steers toward the player after recall or timeout.
+5. **Volley window:** a timed kick near the player increases damage and speed.
 6. **Disabled:** temporarily caught, blocked, or controlled by a boss mechanic.
 
-Ball movement must remain predictable. Use Rigidbody collision only where it improves feel; keep aim assistance, recall, damage, and state transitions under game-code control.
+Rapier provides collision queries and important rigid-body interactions. Game code owns ball state, aim assistance, recall steering, damage, recovery, and velocity limits so combat remains predictable. A fail-safe returns an inaccessible ball after a short timeout.
 
-### Initial weapons and upgrades
-
-The guaranteed build contains:
+### Guaranteed upgrades
 
 - Silver Ball
 - Power Kick
@@ -81,83 +62,85 @@ The guaranteed build contains:
 
 Initial evolutions:
 
-- Silver Ball + Piercing Studs = **Moon Breaker**
-- Blood Bomb + Power Kick = **Crimson Meteor**
+- Silver Ball + Piercing Studs → **Moon Breaker**
+- Blood Bomb + Power Kick → **Crimson Meteor**
 
-The target build may add lightning, frost, black-hole, multiball, holy-zone, dash-shockwave, and goalkeeper-shield paths.
+Target paths include lightning, frost, black hole, multiball, holy zones, dash shockwaves, and goalkeeper shields.
 
-## 6. Enemies
+## 6. Enemy Roster
 
-### Guaranteed behaviors
-
-| Enemy | Gameplay role |
+| Guaranteed enemy | Gameplay role |
 | --- | --- |
 | Blood Fan | Basic crowd pressure and readable fodder |
 | Vampire Winger | Fast flanker that punishes standing still |
-| Undead Defender | Blocks frontal ball hits and rewards rebounds |
+| Undead Defender | Blocks frontal shots and rewards curves/rebounds |
 | Blood Coach | Buffs nearby enemies and becomes a priority target |
 
-### Target behaviors
-
-- Bat swarm: airborne movement and ground-hazard immunity
-- Leech Striker: telegraphed dash attack
-- Corrupt Referee: temporary upgrade suppression or area denial
-- Goalkeeper Brute: catches and returns the ball
-- Count Goalkeeper: final multi-phase boss
-
-Visual variants should reuse behavior code, rigs, animations, and materials wherever possible.
+Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brutes, and the multi-phase Count Goalkeeper. Visual variants reuse behavior, geometry, materials, and animation wherever possible.
 
 ## 7. Technical Architecture
 
-### Proposed project layout
+### Proposed layout
 
 ```text
-Game/
-  Assets/
-    _Game/
-      Art/
-      Audio/
-      Data/
-      Materials/
-      Prefabs/
-      Scenes/
-      Scripts/
-        Ball/
-        Combat/
-        Core/
-        Enemies/
-        Player/
-        Pooling/
-        Progression/
-        Spawning/
-        UI/
-      Settings/
-      UI/
+.
+├── electron/
+│   ├── main.ts
+│   └── preload.ts
+├── public/
+│   ├── assets/
+│   │   ├── audio/
+│   │   ├── models/
+│   │   └── textures/
+│   └── icons/
+├── src/
+│   ├── core/
+│   ├── game/
+│   │   ├── ball/
+│   │   ├── combat/
+│   │   ├── enemies/
+│   │   ├── player/
+│   │   ├── progression/
+│   │   └── spawning/
+│   ├── rendering/
+│   ├── scenes/
+│   ├── ui/
+│   ├── data/
+│   ├── styles/
+│   └── main.ts
+├── tests/
+├── .github/workflows/
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
 
-### Scene boundaries
+### Runtime boundaries
 
-- `Bootstrap`: persistent services, settings, save data, and scene loading
-- `MainMenu`: start, settings, credits, and quit
-- `Stadium`: gameplay arena and match flow
-- `Results`: run statistics, victory or defeat, and restart
+- `App`: boot, disposal, resize, focus, pause, and scene transitions
+- `GameLoop`: fixed-step simulation with interpolated rendering
+- `InputManager`: keyboard/mouse state and configurable actions
+- `PlayerController`: camera-relative movement, dash, facing, and health
+- `CameraRig`: third-person orbit, collision handling, shake, and Focus Kick transition
+- `BallController`: explicit ball state and trajectory control
+- `RapierWorld`: physics initialization, fixed stepping, queries, and collision events
+- `EnemySimulation`: lightweight crowd state separate from rendering
+- `EnemyRenderer`: instanced or pooled visuals with distance/update LOD
+- `SpawnDirector`: phase-driven population and pacing
+- `UpgradeSystem`: offers, stacks, prerequisites, and evolutions
+- `MatchDirector`: clock, goals, kickoffs, halftime, boss, win, and loss
+- `PoolManager`: VFX, pickups, projectiles, UI numbers, and non-instanced enemies
+- `AudioManager`: Web Audio buses, spatial effects, music layers, and persistence
+- `QualityManager`: render scale, shadows, effects, population, and frame-rate choices
 
-### Core systems
+Data definitions must be plain typed objects/JSON where practical. Rendering, simulation, UI, and configuration stay decoupled so large crowds do not require one physics body or DOM element per enemy.
 
-- `GameFlowController`: run state and match phases
-- `PlayerMotor`: movement, dash, facing, and animation signals
-- `PlayerCombat`: input-to-kick commands and cooldowns
-- `BallController`: ball state machine and trajectory
-- `DamageSystem`: damage requests, critical hits, and status effects
-- `EnemyController`: shared movement and attack boundary
-- `EnemyArchetype`: data-driven enemy configuration
-- `SpawnDirector`: time- and phase-based spawning
-- `PoolService`: enemies, pickups, projectiles, VFX, and UI numbers
-- `UpgradeSystem`: offers, stacking, prerequisites, and evolutions
-- `GoalController`: goal opportunities and kickoff transitions
-- `PerformanceManager`: quality presets and population budgets
+### Desktop packaging
 
-Use ScriptableObjects for weapons, upgrades, enemies, waves, and match phases. Avoid putting game rules directly inside animation events or scene-only objects.
+Electron loads only the local production build. The desktop shell uses a restricted preload boundary, context isolation, no Node integration in renderer code, fullscreen/window settings, and hardware acceleration. The game must also remain playable as a normal static web build.
+
+`electron-builder` produces a portable Windows executable. A Windows GitHub Actions runner performs the authoritative `.exe` build; a real Windows machine must run each release candidate before submission.
 
 ## 8. Performance Plan
 
@@ -165,182 +148,116 @@ Use ScriptableObjects for weapons, upgrades, enemies, waves, and match phases. A
 
 - 120 FPS frame budget: **8.33 ms**
 - 60 FPS frame budget: **16.67 ms**
-- Physics simulation: 60 Hz with interpolation for render smoothness
-- Initial active-enemy cap: 80 on performance mode, 120 on balanced mode
-- Stretch cap: increase only after standalone profiling
+- Fixed simulation: initially 60 Hz, accumulated independently of render refresh
+- Initial enemy cap: 80 performance, 120 balanced; increase only after profiling
+- WebGL 2 with `powerPreference: "high-performance"`
 
 ### Required practices
 
-- Pool all frequently spawned objects.
-- Do not add one Rigidbody, NavMeshAgent, or unique material per crowd enemy without profiling evidence.
-- Stagger enemy decision updates across frames.
-- Use shared materials, GPU instancing, simple collision shapes, and animation LOD.
-- Limit real-time lights, particles, transparent overdraw, and shadow distance.
-- Provide 60, 120, and unlimited frame-rate options where supported.
-- Profile development builds on the target Windows hardware; Editor FPS is not acceptance evidence.
+- Use instancing for repeated enemies, crowd silhouettes, and simple repeated props.
+- Keep ordinary crowd enemies in lightweight arrays/typed data; avoid individual dynamic Rapier bodies.
+- Use simple spatial hashing for crowd separation and nearby-hit queries.
+- Pool frequently created effects, pickups, projectiles, and UI feedback.
+- Stagger enemy decisions and animation updates across frames.
+- Reuse geometry/materials; limit transparent overdraw, particles, shadows, and real-time lights.
+- Clamp device pixel ratio/render scale through quality presets.
+- Avoid per-frame object allocation in hot loops.
+- Profile both browser and packaged desktop builds; development-server FPS is not acceptance evidence.
 
-### Performance acceptance
+### Acceptance
 
-Define a reference laptop before optimization. The guaranteed build must maintain a stable 60 FPS on that machine during the densest required wave. The 120 FPS mode is considered supported when frame pacing remains stable on capable 120 Hz hardware at the performance preset.
+The guaranteed build must maintain stable 60 FPS on the documented reference machine during the densest required wave. 120 FPS support passes only when a capable 120 Hz Windows system sustains stable frame pacing on the performance preset. It is a supported option, not a promise for all hardware.
 
-## 9. Art and Audio Pipeline
+## 9. Art and Audio
 
-### AI-generated raster assets
+Image generation may provide original key art, menus, upgrade icons, portraits, stadium banners, decals, loading art, and promotional graphics. Generated raster art does not replace production-ready rigged 3D models. Gameplay models should use licensed low-poly assets, shared rigs, authored primitives, or procedural geometry.
 
-Image generation can provide original:
+Every external or generated asset must immediately receive a source, author/tool, license, and modification record in the credits documentation.
 
-- Key art and itch.io cover
-- Menu backgrounds
-- Upgrade and evolution icons
-- Enemy portraits
-- Stadium banners and decals
-- Loading screens
-- YouTube thumbnail and pitch graphics
+Audio priority is kick impact, ball flight/recall, enemy hit/death, goal/kickoff stingers, upgrade/evolution cues, then phase-layered music. Strong sound and restrained camera/impact feedback outrank decorative content.
 
-Generated raster images are not a replacement for rigged 3D characters. Gameplay characters should use licensed reusable humanoid rigs, simple low-poly models, or purpose-built primitives. Every external asset and license must be recorded immediately in an asset-credit file.
+## 10. UI and Accessibility
 
-### Audio priorities
+Persistent HUD: health, blood XP/level, clock/phase, ball state, ultimate charge, current objective, and boss health when relevant.
 
-1. Kick impact variations
-2. Ball flight and recall cues
-3. Enemy damage and death feedback
-4. Goal and kickoff stingers
-5. Upgrade selection and evolution cues
-6. Music with phase-based intensity layers
+Modal surfaces: upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
 
-Strong sound and restrained hit-stop are higher priority than additional decorative models.
+## 11. Build and Release Strategy
 
-## 10. UI Surface
+### Outputs
 
-Persistent HUD:
+- Static web production build (`dist/`) for itch.io
+- Portable Windows `.exe` packaged by Electron Builder
+- Optional Windows installer only after portable delivery is stable
 
-- Health
-- Blood XP and level
-- Match clock and current phase
-- Ball state / recall availability
-- Ultimate charge
-- Current objective
+### Continuous integration
 
-Modal surfaces:
+GitHub Actions runs type checking, tests, and a production web build on pushes and pull requests. Version tags trigger a Windows runner to package artifacts and attach them to a GitHub Release. Release metadata must state controls, included content, known issues, test status, and commit SHA.
 
-- Upgrade choice
-- Halftime major choice
-- Pause/settings
-- Results and run statistics
+### Commit and documentation policy
 
-Upgrade text must remain readable at 1080p. Include volume controls, mouse sensitivity, camera shake strength, and aim-assist strength if time permits.
+- Commit small coherent changes; never mix unrelated refactors, assets, and features.
+- Push after verified feature slices and at least at the end of each active work block.
+- Update README progress, controls, architecture notes, credits, and known issues as behavior changes.
+- At every major playable milestone: verify, commit, push, tag, publish a GitHub Release, and test its downloaded artifact.
+- Never rewrite or erase jam development history.
+- Stop all repository changes before the July 20 freeze.
 
-## 11. Production Schedule
+Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical slice, `v0.5.0` complete run, `v0.8.0` content complete, `v0.9.0` release candidate, and `v1.0.0` frozen submission.
 
-### July 14 - Foundation and feel
+## 12. Production Schedule
 
-- Initialize the required empty public repository.
-- Create the Unity 6 URP project in `Game/` and make the first project commit.
-- Configure input, third-person movement, camera, and graybox stadium.
-- Implement one ball, one enemy, damage, death, and restart.
-- Produce a Windows build.
+### July 14 — Foundation and feel
+
+- Scaffold Three.js, TypeScript, Vite, Rapier, lint/type checks, and Electron.
+- Add browser and desktop development commands.
+- Graybox a stadium and implement player, camera, ball, one enemy, damage, death, and restart.
+- Build web locally and establish the Windows CI package.
 
 **Gate A:** Do not expand scope unless kicking, rebounding, recalling, and defeating enemies are fun in a build.
 
-### July 15 - Vertical slice
+### July 15 — Vertical slice
 
-- Add pooling, Spawn Director, XP drops, level-up choice, HUD, and audio feedback.
-- Run a three-minute match with one upgrade and one goal.
+- Add pools/instancing, Spawn Director, blood XP, upgrade selection, HUD, audio, and first goal.
+- Ship a three-minute match release.
 
 **Gate B:** A new player must understand and complete the loop without developer help.
 
-### July 16 - Required content
+### July 16 — Required content
 
-- Implement four guaranteed enemy behaviors.
-- Implement the guaranteed upgrade set and two evolutions.
-- Add data-driven wave and balance configuration.
+- Implement four guaranteed enemies, eight upgrades, two evolutions, and data-driven waves.
 
-### July 17 - Complete run
+### July 17 — Complete run
 
-- Implement match phases, halftime, final goal, boss, win, and loss.
-- Finish the entire 8-10 minute run with placeholder art.
+- Implement match phases, halftime, final goal, boss/fallback, win, loss, and results.
 
-**Gate C:** Feature freeze the guaranteed submission. Only target-scope items may be added without destabilizing it.
+**Gate C:** Freeze guaranteed features. Target work may not destabilize a shippable build.
 
-### July 18 - Presentation
+### July 18 — Presentation
 
-- Replace critical placeholders.
-- Add generated icons, key art, banners, VFX, music, menus, tutorial, and settings.
-- Add first-person Focus Kick only if all required content is stable.
+- Replace critical placeholders; add icons, key art, banners, VFX, audio, menus, tutorials, and settings.
+- Add Focus Kick only if required content is stable.
 
-### July 19 - Performance and balance
+### July 19 — Performance and balance
 
-- Profile standalone builds.
-- Remove allocations and pooling failures.
-- Tune difficulty, upgrade offers, population caps, and quality presets.
-- Run external playtests and resolve blocking feedback.
+- Profile web and Electron builds, tune budgets/difficulty, run external playtests, and cut weak target features.
 
-### July 20 - Submission
+### July 20 — Submission and freeze
 
-- Fix only release-blocking bugs.
-- Build and test the final clean Windows package.
-- Upload early, download it again, and test the downloaded copy.
-- Complete the itch.io page and verify public visibility and jam listing.
-- Tag the release and freeze all project/repository changes before 11:59 PM.
+- Fix release blockers only, generate final web/Windows artifacts, test downloaded uploads, tag `v1.0.0`, submit early, and freeze the repository by **11:59 PM Asia/Dhaka**.
 
-### July 21 - Pitch
+### July 21 — Pitch
 
-- Edit and upload the gameplay pitch.
-- Use the required title and hashtag.
-- Add the YouTube link to the itch.io page without changing the frozen project files.
+- Edit and submit the gameplay/theme pitch by **11:59 PM Asia/Dhaka** without modifying the frozen game or repository.
 
-## 12. Verification Plan
+## 13. Scope Gates and Fallbacks
 
-Every milestone build must test:
+- If ball combat is not fun by Gate A, simplify curve/physics and prioritize reliable kick–recall–volley control.
+- If crowds miss 60 FPS, reduce population and improve density through instanced visuals, speed, formation, audio, and spawn pacing.
+- If the boss is unstable, ship a authored final elite wave using proven behaviors.
+- If Windows CI fails, preserve the web submission while repairing the desktop artifact; never endanger both outputs.
+- If target features threaten the deadline, cut them immediately. A polished guaranteed build outranks breadth.
 
-- Clean launch on a machine without the Unity Editor
-- Keyboard and mouse input
-- Pause, resume, restart, win, and loss flows
-- Upgrade choices and evolution conditions
-- Ball recovery from walls, goals, corners, and boss possession
-- Enemy and pickup pool exhaustion behavior
-- Frame pacing during the densest wave
-- 16:9 at 1080p and at least one lower resolution
-- Audio and sensitivity settings persistence
+## 14. Current State
 
-Keep a short known-issues list. A recoverable visual bug may ship; a ball that becomes permanently inaccessible may not.
-
-## 13. Risks and Responses
-
-| Risk | Response |
-| --- | --- |
-| Ball physics feels random | Use controlled launch/recall states, aim assistance, and predictable rebound rules |
-| Crowd performance collapses | Pool objects, reduce active cap, stagger AI, simplify animation and collision |
-| Too much content | Protect the guaranteed scope and cut target items in listed order |
-| Art pipeline consumes development time | Use one coherent low-poly kit and spend generated art on UI/presentation |
-| Unity MCP becomes unstable | Continue through normal Unity project files and editor workflows |
-| Boss is unfinished | Convert the strongest elite into a timed final wave with a clear health bar |
-| Submission build fails | Produce and test Windows builds from Day 1 onward |
-
-## 14. Cut Order
-
-If the schedule slips, cut features in this order:
-
-1. Meta-progression
-2. Additional playable characters
-3. Optional first-person camera outside Focus Kick
-4. Extra stadium transformations
-5. Target-only weapons and evolutions
-6. Target-only enemy behaviors
-7. First-person Focus Kick
-8. Additional visual variants
-
-Never cut the core kick/recall loop, complete run, boss or final challenge, settings, build verification, or pitch preparation.
-
-## 15. Definition of Done
-
-The project is ready to submit when:
-
-- A new player can launch, understand, play, win or lose, and restart without assistance.
-- Football mechanics are required for combat and progression.
-- The game contains a complete beginning, escalation, and ending.
-- The guaranteed content is present and balanced.
-- No known bug can permanently lose the ball or block progression.
-- The standalone build meets the 60 FPS baseline on the reference machine.
-- The uploaded itch.io build has been downloaded and retested.
-- Repository, credits, submission metadata, and pitch capture are ready before freeze.
+As of July 14, 2026, the repository and GitHub remote exist and the initial design documentation is committed. The code scaffold, local browser build, Electron shell, Windows CI artifact, and playable prototype are the next foundation tasks. README progress must be updated as each lands.

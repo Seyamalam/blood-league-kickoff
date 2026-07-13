@@ -2,35 +2,37 @@
 
 > A third-person football-combat horde-survival roguelite created for the IUT 12th ICT Fest 2026 GameJam.
 
-**Status:** Pre-production  
-**Theme:** Kickoff  
-**Primary platform:** Windows  
-**Engine:** Unity 6, Universal Render Pipeline (URP)  
-**Input:** Keyboard and mouse
+| Project | Value |
+| --- | --- |
+| Status | Foundation in progress |
+| Theme | Kickoff |
+| Platforms | Web and Windows desktop |
+| Stack | Three.js, TypeScript, Vite, Rapier, Electron |
+| Input | Keyboard and mouse |
 
 ## The Game
 
 The opening kickoff of a cursed football match awakens a stadium full of vampires. The last human striker must survive the match using an enchanted football, supernatural boots, and spectral teammates.
 
-The ball is more than a projectile: it is the player's main weapon, defensive tool, positional risk, and key to advancing the match. Every goal begins another kickoff, mutates the enemy horde, and pushes the player toward a final confrontation with Count Goalkeeper.
+The ball is the player's main weapon, defensive tool, positional risk, and key to advancing the match. Kick, curve, rebound, recall, and volley it through the horde. Every goal begins another kickoff, mutates the enemy crowd, and pushes the player toward a final confrontation with Count Goalkeeper.
 
 ## Design Pillars
 
-1. **The ball is the combat system.** Kicking, curving, rebounding, recalling, and volleying must remain useful throughout a run.
+1. **The ball is the combat system.** Its movement and impact must feel excellent before more content is added.
 2. **Every kickoff changes the match.** Goals advance phases, introduce enemy mutations, and transform the stadium.
-3. **Readable spectacle.** Large enemy crowds, strong impact effects, and clear threats without visual noise.
-4. **Short, replayable runs.** A complete run should take approximately 10 minutes.
-5. **Performance is a feature.** The Windows build should support 60 and 120 Hz displays with scalable enemy and effects budgets.
+3. **Readable spectacle.** Large crowds and strong impacts must remain easy to understand.
+4. **Short, replayable runs.** A complete run targets 8–10 minutes.
+5. **Performance is a feature.** The game targets stable 60 FPS and supports 120 Hz displays on capable hardware.
 
 ## Core Loop
 
 1. Move through the stadium and control space.
 2. Kick the ball through vampire crowds.
-3. Recall, redirect, or volley the returning ball.
+3. Recall, redirect, or perfectly volley the returning ball.
 4. Collect blood shards and choose one of three upgrades.
 5. Score when the enemy goal opens.
-6. Begin a more dangerous kickoff phase.
-7. Defeat the final goalkeeper or fall and begin a new run.
+6. Survive the more dangerous kickoff phase.
+7. Defeat Count Goalkeeper or fall and begin a new run.
 
 ## Planned Controls
 
@@ -46,60 +48,114 @@ The ball is more than a projectile: it is the player's main weapon, defensive to
 
 Controls may change during playtesting.
 
-## Scope
+## Submission Scope
 
-### Guaranteed submission
+### Guaranteed build
 
-- One playable striker
-- One stadium arena
-- One complete 8-10 minute run
-- Ball kick, rebound, recall, and perfect-volley mechanics
-- Four normal enemy behaviors
-- Six upgrades and two evolved upgrades
-- One final boss
-- Menus, settings, tutorial prompts, win, and loss states
-- A tested Windows build
+- One playable striker and one gothic stadium
+- One complete 8–10 minute run
+- Kick, rebound, recall, curve, and perfect-volley mechanics
+- Four normal enemy behaviors plus a final boss or fallback final elite wave
+- Eight upgrades and two evolved combinations
+- Menus, settings, tutorial prompts, win, loss, pause, and restart
+- Playable web build and tested portable Windows `.exe`
 
-### Target submission
+### Target build
 
 - Eight enemy behaviors with visual variants
-- Twelve weapons or upgrades
-- Five evolved combinations
+- Twelve or more weapons/upgrades and five evolutions
 - Three match phases and a halftime choice
-- First-person Focus Kick sequence
+- Brief first-person Focus Kick ultimate
 - Performance, balanced, and quality presets
-- Additional VFX, music layers, and accessibility options
+- Expanded VFX, audio layers, accessibility, and presentation
 
-Anything beyond the guaranteed submission is optional until the vertical slice is approved.
+Target features remain gated until the guaranteed vertical slice is fun, stable, and performant.
 
 ## Technology
 
-- Unity 6
-- Universal Render Pipeline
-- C#
-- Unity Input System
-- Cinemachine
-- Unity MCP / AI Assistant for editor automation where stable
-- Git and GitHub for required development history
+- **Three.js / WebGL 2:** GPU-accelerated 3D rendering
+- **TypeScript + Vite:** code-first development and browser builds
+- **Rapier:** deterministic WASM physics for the player, ball, arena, and important collisions
+- **HTML/CSS:** menus, HUD, upgrade cards, and settings
+- **Web Audio:** music, effects, and phase transitions
+- **Electron:** self-contained GPU-accelerated Windows desktop build
+- **electron-builder:** portable `.exe` packaging
+- **GitHub Actions:** reproducible Windows build and release artifacts
 
-The game must never depend on an AI service or MCP connection at runtime.
+The game uses no AI service at runtime. Browser and desktop releases share the same gameplay code.
 
 ## Development
 
-The Unity project has not been scaffolded yet. Development starts by creating a new Unity 6 URP project in `Game/` inside this repository and proving the complete player-ball-enemy interaction before producing content.
+### Current progress — July 14, 2026
 
-See [Plan.md](Plan.md) for the production and technical plan and [TODO.md](TODO.md) for the ordered task list.
+- [x] Game concept, theme interpretation, scope gates, and architecture selected
+- [x] Git repository initialized from the jam's empty starting point
+- [x] GitHub remote configured at `Seyamalam/blood-league-kickoff`
+- [x] Documentation baseline committed
+- [x] Three.js/Vite/Rapier source scaffold created
+- [x] Initial renderer, camera, input, physics, and simulation modules created
+- [x] Electron shell and Windows workflow files created
+- [ ] Browser and Electron builds verified from a clean install
+- [ ] First player–ball–enemy playable prototype
+- [ ] Automated Windows portable build
+
+### Project documents
+
+- [Production plan](Plan.md)
+- [Ordered task list](TODO.md)
+- [Game design](docs/GAME_DESIGN.md)
+- [Technical architecture](docs/TECHNICAL_ARCHITECTURE.md)
+- [Release process](docs/RELEASE_PROCESS.md)
+- [Asset credits](docs/ASSET_CREDITS.md)
+- [Changelog](CHANGELOG.md)
+
+### Local development
+
+The scaffold currently exposes the browser workflow below. Desktop/package commands are added and documented during the foundation milestone.
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run typecheck
+```
+
+The web build will be emitted to `dist/`. The Windows package will be emitted to `release/` and must be tested on Windows before submission.
+
+## Versioning and Releases
+
+Development history is part of the jam submission, so changes are committed in small, reviewable units and pushed frequently. Each major playable milestone receives:
+
+1. Updated README progress and game documentation
+2. A verified production build
+3. A milestone commit pushed to GitHub
+4. A version tag and GitHub Release with web and/or Windows artifacts
+
+Planned release line:
+
+| Version | Milestone |
+| --- | --- |
+| `v0.1.0` | Foundation scaffold |
+| `v0.2.0` | Player–ball combat prototype |
+| `v0.3.0` | Three-minute vertical slice |
+| `v0.5.0` | Complete guaranteed run |
+| `v0.8.0` | Content and presentation complete |
+| `v0.9.0` | Release candidate |
+| `v1.0.0` | Jam submission freeze |
+
+Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.
 
 ## Jam Requirements
 
-- The repository must begin empty and remain public for verification.
-- The submitted game must be a Windows or web build requiring no additional software.
-- No project changes or repository commits are allowed after **July 20, 2026 at 11:59 PM (Asia/Dhaka)**.
+- Development must begin from an empty Git repository and the repository must remain public for verification.
+- The submission must include a working Windows or web build requiring no additional software; we plan to provide both.
+- Project files and repository commits must freeze after **July 20, 2026 at 11:59 PM (Asia/Dhaka)**. Post-deadline changes before the onsite event may disqualify the team.
 - The pitch video is due **July 21, 2026 at 11:59 PM (Asia/Dhaka)**.
+- The onsite round is **July 25, 2026** for the selected top 15 teams.
 - All reused assets must be licensed and credited.
 
 Refer to [RuleBook for GameJam_IUT_12th_ICT_Fest.md](RuleBook%20for%20GameJam_IUT_12th_ICT_Fest.md) for the complete rules.
 
 ## Credits
 
-Team name, members, third-party assets, tools, and licenses will be added before submission.
+Team name, members, third-party assets, tools, generated assets, and licenses will be recorded before submission.

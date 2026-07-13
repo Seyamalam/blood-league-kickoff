@@ -1,79 +1,103 @@
-# Blood League: Kickoff - TODO
+# Blood League: Kickoff — TODO
 
-Complete tasks from top to bottom. `P0` is required for submission, `P1` is the target build, and `P2` is optional polish. Do not begin a later milestone before its gate passes.
+Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `P2` is optional polish. A later milestone must not weaken an earlier gate.
 
-## Immediate setup
+## Current setup
 
+- [x] `P0` Select the Blood League concept and third-person direction.
+- [x] `P0` Select Three.js + TypeScript + Vite + Rapier + Electron.
+- [x] `P0` Initialize the empty Git repository.
+- [x] `P0` Configure the `Seyamalam/blood-league-kickoff` GitHub remote.
+- [x] `P0` Commit the initial documentation baseline.
+- [ ] `P0` Confirm the remote repository is public while signed out.
 - [ ] `P0` Confirm final team name and member names.
-- [ ] `P0` Confirm every member has read the rulebook and repository-freeze requirement.
-- [ ] `P0` Initialize this directory as the new Git repository.
-- [ ] `P0` Create the public GitHub repository and push the documentation-only initial commit.
-- [ ] `P0` Record the exact jam start time and preserve evidence that the repository began empty.
-- [ ] `P0` Install or confirm Unity 6 with Windows Build Support.
-- [ ] `P0` Create a new URP project in the repository's `Game/` subfolder.
-- [ ] `P0` Add a Unity-appropriate `.gitignore` before importing large assets.
-- [ ] `P0` Install Input System and Cinemachine.
-- [ ] `P0` Configure Unity MCP and prove it can read the console and manipulate a test GameObject.
-- [ ] `P0` Verify the project opens after cloning into a clean directory.
-- [ ] `P0` Produce an empty Windows build and run it outside the Editor.
+- [ ] `P0` Confirm every member has read the rulebook and freeze rule.
+- [ ] `P0` Record exact start evidence and current jam deadlines.
 
-## Milestone A - Combat feel
+## Milestone 0 — Project foundation (`v0.1.0`)
 
-- [ ] `P0` Create the `_Game` folder structure defined in `Plan.md`.
-- [ ] `P0` Create `Bootstrap`, `MainMenu`, `Stadium`, and `Results` scenes.
-- [ ] `P0` Graybox a small stadium with walls and one goal.
-- [ ] `P0` Implement third-person movement and camera-relative facing.
-- [ ] `P0` Implement mouse camera control and sensitivity setting.
-- [ ] `P0` Implement dash with cooldown and invulnerability decision.
-- [ ] `P0` Implement the ball state machine.
-- [ ] `P0` Implement aim preview and charged kick.
-- [ ] `P0` Implement controlled rebounds.
-- [ ] `P0` Implement manual and automatic ball recall.
-- [ ] `P0` Implement the perfect-volley timing window.
-- [ ] `P0` Implement one basic enemy that approaches and damages the player.
-- [ ] `P0` Implement damage, enemy death, player death, and restart.
-- [ ] `P0` Add temporary kick, hit, death, and recall sounds.
-- [ ] `P0` Add restrained hit-stop, screen shake, trail, and impact VFX.
-- [ ] `P0` Test ball recovery from every wall and corner.
-- [ ] `P0` Create and play a Windows build.
+- [ ] `P0` Scaffold Vite and strict TypeScript without overwriting jam documentation.
+- [ ] `P0` Install Three.js and Rapier dependencies.
+- [ ] `P0` Add lint, formatting, type-check, unit-test, dev, and production-build scripts.
+- [ ] `P0` Add `.gitignore` for Node, builds, Electron outputs, logs, and local files.
+- [ ] `P0` Create the source/assets/test layout from `Plan.md`.
+- [ ] `P0` Initialize Rapier WASM and step it through a fixed-timestep game loop.
+- [ ] `P0` Create the WebGL renderer with resize, render scale, and clean disposal.
+- [ ] `P0` Add a boot/loading surface and visible error fallback.
+- [ ] `P0` Add the Electron main/preload shell with secure renderer defaults.
+- [ ] `P0` Run the production web build locally.
+- [ ] `P0` Run the Electron desktop development build locally.
+- [ ] `P0` Add GitHub Actions checks for install, type-check, tests, and web build.
+- [ ] `P0` Add a Windows workflow using electron-builder on a Windows runner.
+- [ ] `P0` Update README current progress and exact commands.
+- [ ] `P0` Commit and push the verified foundation.
+- [ ] `P0` Tag `v0.1.0` and publish a GitHub Release with available artifacts and known issues.
+
+## Milestone A — Combat feel (`v0.2.0`)
+
+- [ ] `P0` Graybox the stadium, rebound walls, center circle, and one goal.
+- [ ] `P0` Implement third-person camera-relative movement.
+- [ ] `P0` Implement mouse orbit, pitch limits, camera collision, and sensitivity.
+- [ ] `P0` Implement dash, cooldown, and invulnerability decision.
+- [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
+- [ ] `P0` Implement aim indicator and charged kick.
+- [ ] `P0` Implement deterministic velocity limits and controlled rebounds.
+- [ ] `P0` Implement optional kick curve.
+- [ ] `P0` Implement manual and automatic recall.
+- [ ] `P0` Implement perfect-volley timing and feedback.
+- [ ] `P0` Add ball timeout/out-of-bounds recovery.
+- [ ] `P0` Implement one Blood Fan that approaches and damages the player.
+- [ ] `P0` Implement hits, knockback, enemy death, player death, and restart.
+- [ ] `P0` Add placeholder kick, hit, recall, damage, and death audio.
+- [ ] `P0` Add restrained hit pause, camera shake, ball trail, and impacts.
+- [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
+- [ ] `P0` Add a development overlay for FPS, frame time, enemies, and pools.
+- [ ] `P0` Produce and test browser and desktop builds.
+- [ ] `P0` Update README/game docs with implemented controls and known issues.
+- [ ] `P0` Commit and push coherent combat slices during implementation.
+- [ ] `P0` Tag `v0.2.0` and publish/test the combat prototype release.
 
 ### Gate A
 
-- [ ] Kicking, rebounding, recalling, and volleying are satisfying without upgrades.
+- [ ] Kicking, rebounding, recalling, curving, and volleying feel satisfying without upgrades.
 - [ ] The ball cannot become permanently inaccessible.
 - [ ] Five enemies can be defeated in a repeatable graybox encounter.
-- [ ] A complete build runs outside Unity.
+- [ ] Web and packaged desktop builds run outside the dev server.
 
-## Milestone B - Vertical slice
+## Milestone B — Vertical slice (`v0.3.0`)
 
-- [ ] `P0` Implement reusable object pools.
-- [ ] `P0` Pool enemies, blood shards, impact VFX, and damage numbers.
-- [ ] `P0` Implement Spawn Director with configurable phases.
-- [ ] `P0` Implement blood XP collection and level progression.
+- [ ] `P0` Implement reusable pools for effects, shards, projectiles, and UI feedback.
+- [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
+- [ ] `P0` Implement crowd separation and nearby-target spatial queries.
+- [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
+- [ ] `P0` Implement blood shard collection and XP levels.
 - [ ] `P0` Implement three-choice upgrade selection.
 - [ ] `P0` Implement health, XP, clock, objective, and ball-state HUD.
-- [ ] `P0` Implement the first goal opening and scoring flow.
-- [ ] `P0` Reset to the center and trigger a new kickoff after scoring.
+- [ ] `P0` Implement first goal opening, scoring, reset, and new kickoff.
 - [ ] `P0` Create a three-minute mini-run with a clear win state.
-- [ ] `P0` Add tutorial prompts that disappear after demonstrated actions.
-- [ ] `P0` Conduct one external playtest.
+- [ ] `P0` Add tutorial prompts that clear after demonstrated actions.
+- [ ] `P0` Persist audio, sensitivity, and quality settings.
+- [ ] `P0` Conduct at least one external playtest.
+- [ ] `P0` Update README/game docs and release notes.
+- [ ] `P0` Commit and push each verified system slice.
+- [ ] `P0` Tag `v0.3.0`, publish both artifacts, and test the downloaded release.
 
 ### Gate B
 
-- [ ] A new player understands movement, kick, recall, upgrades, and scoring without verbal instruction.
-- [ ] The three-minute loop has no progression blocker.
-- [ ] The standalone build maintains the initial 60 FPS baseline.
+- [ ] A new player understands movement, kick, recall, upgrades, and scoring without help.
+- [ ] The mini-run has no progression blocker.
+- [ ] The guaranteed reference machine maintains a stable 60 FPS baseline.
 
-## Milestone C - Guaranteed content
+## Milestone C — Guaranteed content (`v0.5.0`)
 
 ### Enemies
 
-- [ ] `P0` Blood Fan behavior and visual variant.
-- [ ] `P0` Vampire Winger behavior and telegraph.
-- [ ] `P0` Undead Defender shield and rebound weakness.
-- [ ] `P0` Blood Coach buff behavior and priority indicator.
-- [ ] `P0` Data-driven enemy archetype definitions.
-- [ ] `P0` Elite modifiers using existing enemy behaviors.
+- [ ] `P0` Blood Fan crowd behavior and visual variant.
+- [ ] `P0` Vampire Winger behavior and readable telegraph.
+- [ ] `P0` Undead Defender shield and rebound/curve weakness.
+- [ ] `P0` Blood Coach buff and priority indicator.
+- [ ] `P0` Typed/data-driven enemy archetypes.
+- [ ] `P0` Elite modifiers that reuse proven behaviors.
 
 ### Upgrades
 
@@ -87,112 +111,136 @@ Complete tasks from top to bottom. `P0` is required for submission, `P1` is the 
 - [ ] `P0` Ghost Pass.
 - [ ] `P0` Moon Breaker evolution.
 - [ ] `P0` Crimson Meteor evolution.
-- [ ] `P0` Upgrade stacking, prerequisites, and duplicate limits.
+- [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and deterministic offers.
 
 ### Complete run
 
 - [ ] `P0` Opening Kickoff phase.
 - [ ] `P0` First Goal transition.
-- [ ] `P0` Halftime major upgrade choice.
+- [ ] `P0` Halftime major choice.
 - [ ] `P0` Blood Moon phase.
 - [ ] `P0` Final Goal transition.
-- [ ] `P0` Count Goalkeeper or fallback final elite-wave encounter.
-- [ ] `P0` Victory sequence.
-- [ ] `P0` Defeat sequence.
-- [ ] `P0` Results screen with run time, kills, goals, and upgrades.
-- [ ] `P0` Complete 8-10 minute balancing pass.
+- [ ] `P0` Count Goalkeeper or stable final elite-wave fallback.
+- [ ] `P0` Victory and defeat sequences.
+- [ ] `P0` Results with time, kills, goals, level, and upgrades.
+- [ ] `P0` Balance the full run to 8–10 minutes.
+- [ ] `P0` Update all public documentation to match actual content.
+- [ ] `P0` Commit/push the completed guaranteed run.
+- [ ] `P0` Tag `v0.5.0`, publish web/Windows artifacts, and test both.
 
-### Gate C - Feature freeze
+### Gate C — Guaranteed feature freeze
 
-- [ ] The full run is playable from menu to results.
-- [ ] All guaranteed enemies and upgrades function.
-- [ ] Win, loss, pause, resume, restart, and quit work.
-- [ ] The required game can ship if all remaining `P1` and `P2` work is deleted.
+- [ ] The run works from main menu to results.
+- [ ] All guaranteed enemies, upgrades, goals, and outcomes function.
+- [ ] Pause, resume, restart, settings, fullscreen, and quit work where applicable.
+- [ ] The game can ship if every remaining `P1`/`P2` task is deleted.
 
-## Presentation and target content
+## Presentation and target content (`v0.8.0`)
 
 - [ ] `P0` Lock the low-poly gothic visual palette.
-- [ ] `P0` Generate original key art and menu background.
-- [ ] `P0` Generate readable upgrade icons.
+- [ ] `P0` Generate original key art, itch cover, and menu background.
+- [ ] `P0` Generate readable upgrade/evolution icons.
 - [ ] `P0` Create or source licensed character and enemy models.
-- [ ] `P0` Record every external asset URL, author, and license immediately.
-- [ ] `P0` Replace critical placeholder models and materials.
-- [ ] `P0` Add stadium banners, decals, goals, and crowd silhouettes.
-- [ ] `P0` Add phase-based lighting and music intensity.
-- [ ] `P0` Add final kick, hit, goal, evolution, boss, win, and loss audio.
+- [ ] `P0` Record every external/generated asset source, author/tool, license, and changes.
+- [ ] `P0` Replace critical placeholder models/materials.
+- [ ] `P0` Add stadium banners, decals, goals, crowd silhouettes, and phase changes.
+- [ ] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
+- [ ] `P0` Add phase-based music intensity.
 - [ ] `P1` Add first-person Focus Kick ultimate.
 - [ ] `P1` Add Bat Swarm.
 - [ ] `P1` Add Leech Striker.
 - [ ] `P1` Add Corrupt Referee.
 - [ ] `P1` Add Goalkeeper Brute.
-- [ ] `P1` Add lightning upgrade path.
-- [ ] `P1` Add frost upgrade path.
-- [ ] `P1` Add multiball upgrade path.
-- [ ] `P1` Add black-hole upgrade path.
+- [ ] `P1` Add lightning, frost, multiball, and black-hole paths.
 - [ ] `P1` Add remaining evolution combinations.
-- [ ] `P2` Add enemy material and uniform variants.
-- [ ] `P2` Add stadium transformation variants.
-- [ ] `P2` Add additional victory presentation.
+- [ ] `P2` Add uniform/material variants and stadium transformations.
+- [ ] `P2` Add expanded victory presentation.
+- [ ] `P0` Update screenshots, feature list, credits, controls, and known issues.
+- [ ] `P0` Commit/push verified content batches.
+- [ ] `P0` Tag `v0.8.0`, publish artifacts, and test the downloaded release.
 
 ## UI, settings, and accessibility
 
-- [ ] `P0` Main menu.
-- [ ] `P0` Pause menu.
-- [ ] `P0` Results and restart flow.
-- [ ] `P0` Master, music, and effects volume controls.
-- [ ] `P0` Mouse sensitivity control.
-- [ ] `P0` Resolution, fullscreen, and quality controls.
-- [ ] `P0` 60, 120, and unlimited frame-rate options.
-- [ ] `P1` Camera shake strength control.
-- [ ] `P1` Aim-assist strength control.
+- [ ] `P0` Main menu and start flow.
+- [ ] `P0` Pause menu and focus-loss pause behavior.
+- [ ] `P0` Results, restart, and return-to-menu flow.
+- [ ] `P0` Master, music, and effects volumes.
+- [ ] `P0` Mouse sensitivity.
+- [ ] `P0` Quality presets and render-scale control.
+- [ ] `P0` Desktop resolution, fullscreen/windowed, and quit behavior.
+- [ ] `P0` 60, 120, and unlimited frame-rate options where supported.
+- [ ] `P1` Camera shake strength.
+- [ ] `P1` Aim-assist strength.
 - [ ] `P1` Rebindable controls.
-- [ ] `P1` Color-independent enemy and ball-state indicators.
+- [ ] `P1` Color-independent enemy/ball-state indicators.
 
 ## Performance
 
-- [ ] `P0` Select and document the reference test machine.
-- [ ] `P0` Add a development-only FPS, frame-time, active-enemy, and pool overlay.
-- [ ] `P0` Confirm no recurring managed allocation occurs during steady combat.
-- [ ] `P0` Stagger enemy decisions across frames.
-- [ ] `P0` Configure shared materials and GPU instancing.
-- [ ] `P0` Configure simple collision layers and remove unnecessary callbacks.
-- [ ] `P0` Configure animation-distance and update-rate LOD.
-- [ ] `P0` Profile CPU and GPU in a standalone development build.
+- [ ] `P0` Select and document the reference machine/browser/GPU.
+- [ ] `P0` Track FPS, frame time, draw calls, triangles, enemies, pools, and physics time.
+- [ ] `P0` Confirm no recurring allocation/GC spikes during steady combat.
+- [ ] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
+- [ ] `P0` Stagger enemy AI and animation updates.
+- [ ] `P0` Use instancing and shared geometry/materials for repeated visuals.
+- [ ] `P0` Add distance/update LOD and simple collision/query shapes.
+- [ ] `P0` Profile CPU and GPU in production web and Electron builds.
 - [ ] `P0` Maintain stable 60 FPS in the densest guaranteed wave.
-- [ ] `P1` Maintain stable 120 FPS in performance mode on capable hardware.
-- [ ] `P1` Add population and VFX budgets per quality preset.
-- [ ] `P1` Test frame pacing on both 60 and 120 Hz displays if available.
+- [ ] `P1` Maintain stable 120 FPS on capable hardware in performance mode.
+- [ ] `P1` Tune population, shadows, render scale, and VFX per quality preset.
+- [ ] `P1` Test frame pacing on 60 and 120 Hz Windows displays if available.
+
+## CI, packaging, and releases
+
+- [ ] `P0` Pin the Node/package-manager version used by local and CI builds.
+- [ ] `P0` Make clean installs reproducible from the lockfile.
+- [ ] `P0` Run type-check/tests/web build on every pushed branch.
+- [ ] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
+- [ ] `P0` Keep Electron renderer isolated from Node and remote network content.
+- [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
+- [ ] `P0` Include commit SHA/version in the debug or results metadata.
+- [ ] `P0` Attach checksums and concise notes to milestone releases.
+- [ ] `P0` Download and smoke-test each major release artifact.
 
 ## Testing
 
-- [ ] `P0` Test fresh install and first launch.
-- [ ] `P0` Test 1080p and one lower resolution.
-- [ ] `P0` Test ball recovery from walls, corners, goals, death, and boss possession.
-- [ ] `P0` Test pool exhaustion behavior.
-- [ ] `P0` Test every upgrade individually.
-- [ ] `P0` Test every evolution requirement.
+- [ ] `P0` Test fresh browser cache and first desktop launch.
+- [ ] `P0` Test Chrome/Chromium web build and packaged Electron build.
+- [ ] `P0` Test 1080p and one lower resolution/aspect ratio.
+- [ ] `P0` Test ball recovery from walls, corners, goals, death, pause, and boss control.
+- [ ] `P0` Test pool/population-cap exhaustion behavior.
+- [ ] `P0` Test every upgrade/evolution alone and in combinations.
 - [ ] `P0` Test every enemy alone and in mixed waves.
-- [ ] `P0` Test pause during combat and upgrade selection.
+- [ ] `P0` Test pause/focus loss during combat and upgrade selection.
 - [ ] `P0` Test settings persistence after restart.
-- [ ] `P0` Run at least three full external playtests.
-- [ ] `P0` Record and triage bugs by release-blocking, major, and cosmetic severity.
-- [ ] `P0` Retest every release-blocking fix in a clean build.
+- [ ] `P0` Run at least three complete external playtests.
+- [ ] `P0` Classify bugs as release-blocking, major, or cosmetic.
+- [ ] `P0` Retest every release-blocking fix from a clean production build.
 
-## Submission
+## Release candidate (`v0.9.0`)
+
+- [ ] `P0` Stop feature work.
+- [ ] `P0` Resolve release blockers and cut unstable target features.
+- [ ] `P0` Complete credits, licenses, controls, known issues, and asset inventory.
+- [ ] `P0` Verify README and itch.io description exactly match the build.
+- [ ] `P0` Generate web ZIP and portable Windows `.exe`/ZIP in CI.
+- [ ] `P0` Test downloaded artifacts on a clean Windows machine and fresh browser.
+- [ ] `P0` Tag/publish `v0.9.0` with checksums and test notes.
+
+## Submission and freeze (`v1.0.0`)
 
 - [ ] `P0` Choose final game and team names.
-- [ ] `P0` Add team members, engine, controls, GitHub link, and credits to README and itch.io.
-- [ ] `P0` Prepare Windows ZIP with no unnecessary development files.
-- [ ] `P0` Upload the final build before the deadline buffer.
-- [ ] `P0` Download the uploaded file and test it on a clean machine.
-- [ ] `P0` Confirm the itch.io page is public and appears in the jam submission list.
-- [ ] `P0` Confirm the public GitHub repository is accessible while signed out.
-- [ ] `P0` Add known issues and workarounds to the itch.io page.
-- [ ] `P0` Tag the submitted source revision.
-- [ ] `P0` Freeze project and repository changes before July 20 at 11:59 PM.
-- [ ] `P0` Capture clean gameplay footage before freeze.
+- [ ] `P0` Add members, controls, repository, tools, assets, and credits to README/itch.io.
+- [ ] `P0` Upload both builds before the safety buffer.
+- [ ] `P0` Download and test the exact itch.io uploads.
+- [ ] `P0` Confirm the itch.io page is public and in the jam submission list.
+- [ ] `P0` Confirm GitHub is accessible while signed out.
+- [ ] `P0` Add accurate known issues and workarounds.
+- [ ] `P0` Tag the exact submitted revision as `v1.0.0`.
+- [ ] `P0` Publish the final GitHub Release with matching artifacts/checksums.
+- [ ] `P0` Freeze game and repository changes before **July 20, 2026 at 11:59 PM Asia/Dhaka**.
+- [ ] `P0` Capture clean footage before the freeze.
 - [ ] `P0` Edit the pitch around gameplay, mechanics, and theme adaptation.
 - [ ] `P0` Title the video with `IUT_ICT_FEST_2026`.
 - [ ] `P0` Add `#IUT_ICT_FEST_2026_GAMEJAM` to the description.
-- [ ] `P0` Upload the pitch before July 21 at 11:59 PM.
-- [ ] `P0` Add the video link to the itch.io Gameplay Video / Trailer field.
+- [ ] `P0` Upload the pitch before **July 21, 2026 at 11:59 PM Asia/Dhaka**.
+- [ ] `P0` Add the video to the itch.io Gameplay Video / Trailer field without modifying the frozen repository.
