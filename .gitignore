@@ -4,6 +4,7 @@ node_modules/
 # Web and desktop builds
 dist/
 release/
+*.tsbuildinfo
 
 # Test and coverage output
 coverage/
@@ -25,4 +26,3 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-

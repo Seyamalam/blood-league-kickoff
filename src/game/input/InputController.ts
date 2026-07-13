@@ -1,0 +1,118 @@
+export class InputController {
+  private readonly keys = new Set<string>();
+  private mouseDx = 0;
+  private mouseDy = 0;
+  private kickQueued = false;
+  private recallHeld = false;
+  private restartQueued = false;
+
+  constructor(private readonly target: HTMLElement) {
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('blur', this.clearHeldInput);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    target.addEventListener('contextmenu', this.preventContextMenu);
+  }
+
+  get isLocked(): boolean {
+    return document.pointerLockElement === this.target;
+  }
+
+  requestPointerLock(): void {
+    void this.target.requestPointerLock().catch(() => {
+      // Some automated and embedded browsers deny pointer lock. The player can
+      // click the canvas again in a normal browser without breaking the run.
+    });
+  }
+
+  movement(yaw: number): { x: number; z: number } {
+    const forward = Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS'));
+    const strafe = Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'));
+    return {
+      x: -Math.sin(yaw) * forward + Math.cos(yaw) * strafe,
+      z: -Math.cos(yaw) * forward - Math.sin(yaw) * strafe,
+    };
+  }
+
+  consumeMouseDelta(): { x: number; y: number } {
+    const delta = { x: this.mouseDx, y: this.mouseDy };
+    this.mouseDx = 0;
+    this.mouseDy = 0;
+    return delta;
+  }
+
+  consumeKick(): boolean {
+    const queued = this.kickQueued;
+    this.kickQueued = false;
+    return queued;
+  }
+
+  get recall(): boolean {
+    return this.recallHeld || this.keys.has('KeyE');
+  }
+
+  consumeRestart(): boolean {
+    const queued = this.restartQueued;
+    this.restartQueued = false;
+    return queued;
+  }
+
+  dispose(): void {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mousedown', this.onMouseDown);
+    window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('blur', this.clearHeldInput);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    this.target.removeEventListener('contextmenu', this.preventContextMenu);
+  }
+
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    this.keys.add(event.code);
+    if (event.code === 'KeyR') this.restartQueued = true;
+  };
+
+  private readonly onKeyUp = (event: KeyboardEvent): void => {
+    this.keys.delete(event.code);
+  };
+
+  private readonly onMouseMove = (event: MouseEvent): void => {
+    if (!this.isLocked) return;
+    this.mouseDx += event.movementX;
+    this.mouseDy += event.movementY;
+  };
+
+  private readonly onMouseDown = (event: MouseEvent): void => {
+    if (!this.isLocked) return;
+    if (event.button === 0) this.kickQueued = true;
+    if (event.button === 2) this.recallHeld = true;
+  };
+
+  private readonly onMouseUp = (event: MouseEvent): void => {
+    if (event.button === 2) this.recallHeld = false;
+  };
+
+  private readonly clearHeldInput = (): void => {
+    this.keys.clear();
+    this.recallHeld = false;
+    this.kickQueued = false;
+    this.mouseDx = 0;
+    this.mouseDy = 0;
+  };
+
+  private readonly onVisibilityChange = (): void => {
+    if (document.hidden) this.clearHeldInput();
+  };
+
+  private readonly onPointerLockChange = (): void => {
+    if (!this.isLocked) this.clearHeldInput();
+  };
+
+  private readonly preventContextMenu = (event: Event): void => event.preventDefault();
+}

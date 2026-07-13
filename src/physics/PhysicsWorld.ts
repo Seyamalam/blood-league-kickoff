@@ -1,0 +1,166 @@
+import RAPIER from '@dimforge/rapier3d-compat';
+import type { Vec3 } from '../game/simulation/types';
+
+const BALL_RADIUS = 0.42;
+
+export class PhysicsWorld {
+  private readonly world: RAPIER.World;
+  private readonly playerBody: RAPIER.RigidBody;
+  private readonly ballBody: RAPIER.RigidBody;
+  private possessed = true;
+  private recallActive = false;
+  private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
+  private unpossessedTime = 0;
+  private stalledTime = 0;
+
+  private constructor() {
+    this.world = new RAPIER.World({ x: 0, y: -12, z: 0 });
+    this.world.integrationParameters.dt = 1 / 60;
+
+    const floor = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    this.world.createCollider(
+      RAPIER.ColliderDesc.cuboid(23, 0.1, 15).setTranslation(0, -0.1, 0).setFriction(0.65).setRestitution(0.38),
+      floor,
+    );
+    this.addWall(0, 1.5, -15.2, 23.5, 1.5, 0.2);
+    this.addWall(0, 1.5, 15.2, 23.5, 1.5, 0.2);
+    this.addWall(-23.2, 1.5, 0, 0.2, 1.5, 15);
+    this.addWall(23.2, 1.5, 0, 0.2, 1.5, 15);
+
+    this.playerBody = this.world.createRigidBody(
+      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0.9, 5),
+    );
+    this.world.createCollider(RAPIER.ColliderDesc.capsule(0.48, 0.42), this.playerBody);
+
+    this.ballBody = this.world.createRigidBody(
+      RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(0, BALL_RADIUS, 3.8)
+        .setLinearDamping(0.24)
+        .setAngularDamping(0.18)
+        .setCcdEnabled(true)
+        .setCanSleep(false),
+    );
+    this.world.createCollider(
+      RAPIER.ColliderDesc.ball(BALL_RADIUS).setDensity(0.7).setFriction(0.62).setRestitution(0.82),
+      this.ballBody,
+    );
+  }
+
+  static async create(): Promise<PhysicsWorld> {
+    await RAPIER.init();
+    return new PhysicsWorld();
+  }
+
+  get ballPossessed(): boolean {
+    return this.possessed;
+  }
+
+  get ballPosition(): Vec3 {
+    const p = this.ballBody.translation();
+    return { x: p.x, y: p.y, z: p.z };
+  }
+
+  get ballVelocity(): Vec3 {
+    const velocity = this.ballBody.linvel();
+    return { x: velocity.x, y: velocity.y, z: velocity.z };
+  }
+
+  get ballSpeed(): number {
+    const velocity = this.ballBody.linvel();
+    return Math.hypot(velocity.x, velocity.y, velocity.z);
+  }
+
+  ballRenderPosition(alpha: number): Vec3 {
+    const current = this.ballPosition;
+    const t = Math.max(0, Math.min(1, alpha));
+    return {
+      x: this.previousBallPosition.x + (current.x - this.previousBallPosition.x) * t,
+      y: this.previousBallPosition.y + (current.y - this.previousBallPosition.y) * t,
+      z: this.previousBallPosition.z + (current.z - this.previousBallPosition.z) * t,
+    };
+  }
+
+  syncPlayer(position: Vec3): void {
+    this.playerBody.setNextKinematicTranslation(position);
+  }
+
+  kick(origin: Vec3, direction: Vec3): boolean {
+    if (!this.possessed) return false;
+    this.possessed = false;
+    this.recallActive = false;
+    this.ballBody.setTranslation(
+      { x: origin.x + direction.x * 1.15, y: 0.62, z: origin.z + direction.z * 1.15 },
+      true,
+    );
+    this.ballBody.setLinvel(
+      { x: direction.x * 25, y: Math.max(2.4, direction.y * 18 + 2.4), z: direction.z * 25 },
+      true,
+    );
+    this.ballBody.setAngvel({ x: direction.z * 20, y: 0, z: -direction.x * 20 }, true);
+    return true;
+  }
+
+  setRecall(active: boolean): void {
+    this.recallActive = active;
+  }
+
+  step(playerPosition: Vec3, playerFacing: number, dt: number): void {
+    this.previousBallPosition = this.ballPosition;
+    const forward = { x: -Math.sin(playerFacing), z: -Math.cos(playerFacing) };
+    if (this.possessed) {
+      this.unpossessedTime = 0;
+      this.stalledTime = 0;
+      this.ballBody.setTranslation(
+        { x: playerPosition.x + forward.x * 1.08, y: BALL_RADIUS, z: playerPosition.z + forward.z * 1.08 },
+        true,
+      );
+      this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    } else if (this.recallActive) {
+      const ball = this.ballBody.translation();
+      const dx = playerPosition.x - ball.x;
+      const dy = 0.75 - ball.y;
+      const dz = playerPosition.z - ball.z;
+      const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
+      const pull = Math.min(44, 19 + distance * 2.8);
+      this.ballBody.applyImpulse({ x: (dx / distance) * pull * dt, y: (dy / distance) * pull * dt, z: (dz / distance) * pull * dt }, true);
+      if (distance < 1.25) this.possessed = true;
+    }
+
+    if (!this.possessed) {
+      this.unpossessedTime += dt;
+      this.stalledTime = this.ballSpeed < 0.4 ? this.stalledTime + dt : 0;
+      if (this.unpossessedTime > 7 || this.stalledTime > 1.35) this.recallActive = true;
+    }
+
+    this.world.integrationParameters.dt = dt;
+    this.world.step();
+
+    const ball = this.ballBody.translation();
+    if (
+      !Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.z)
+      || ball.y < -4 || Math.abs(ball.x) > 30 || Math.abs(ball.z) > 22
+    ) {
+      this.reset(playerPosition);
+    }
+  }
+
+  reset(playerPosition: Vec3): void {
+    this.possessed = true;
+    this.recallActive = false;
+    this.unpossessedTime = 0;
+    this.stalledTime = 0;
+    this.previousBallPosition = { x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 };
+    this.ballBody.setTranslation({ x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 }, true);
+    this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+  }
+
+  private addWall(x: number, y: number, z: number, hx: number, hy: number, hz: number): void {
+    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    this.world.createCollider(
+      RAPIER.ColliderDesc.cuboid(hx, hy, hz).setTranslation(x, y, z).setFriction(0.3).setRestitution(0.88),
+      body,
+    );
+  }
+}

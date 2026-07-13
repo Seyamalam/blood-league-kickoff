@@ -1,0 +1,52 @@
+:root { color: #f4f1e9; background: #08080d; font-family: Arial, system-ui, sans-serif; font-synthesis: none; }
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { user-select: none; }
+canvas { display: block; width: 100%; height: 100%; outline: none; }
+button { font: inherit; }
+.boot-error { min-height: 100%; padding: 40px; color: #fff; background: #08080d; font-family: system-ui, sans-serif; }
+.vignette { position: fixed; inset: 0; pointer-events: none; z-index: 3; background: radial-gradient(circle, transparent 52%, rgba(3, 3, 8, .62) 100%); }
+.hud { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+.topbar { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 28px; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: .08em; }
+.brand { width: 150px; display: flex; flex-direction: column; line-height: .86; }
+.brand-kicker { color: #d73255; font-size: 12px; font-weight: 800; letter-spacing: .18em; }
+.brand strong { font-size: 31px; font-weight: 900; font-style: italic; }
+.timer, .score { display: grid; text-align: center; min-width: 110px; text-shadow: 0 2px 8px #000; }
+.timer { position: absolute; left: 50%; transform: translateX(-50%); }
+.timer small, .score small { color: #96909b; font-size: 10px; font-weight: 700; letter-spacing: .24em; }
+.timer span { font-size: 33px; font-weight: 700; }
+.score { text-align: right; margin-left: auto; }
+.score span { font-size: 25px; font-weight: 700; }
+.status-panel { position: absolute; left: 28px; bottom: 28px; width: min(350px, calc(100vw - 56px)); font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; }
+.status-label, .status-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; letter-spacing: .15em; }
+.status-label { margin-bottom: 7px; }
+.health-track { height: 9px; padding: 2px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16); transform: skewX(-14deg); }
+.health-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #8e1533, #f13b60); box-shadow: 0 0 14px rgba(241,59,96,.5); transition: width .18s ease; }
+.status-row { margin-top: 10px; color: #aaa5ad; font-size: 10px; }
+.status-row b { color: #fff; }
+.status-row .warn { color: #ffcc6c; }
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+.crimson { background: #f13b60; box-shadow: 0 0 8px #f13b60; }
+.crosshair { position: absolute; top: 50%; left: 50%; width: 28px; height: 28px; transform: translate(-50%,-50%); opacity: .72; }
+.crosshair span { position: absolute; background: #f4f1e9; box-shadow: 0 0 3px #000; }
+.crosshair span:nth-child(1), .crosshair span:nth-child(2) { width: 7px; height: 1px; top: 14px; }
+.crosshair span:nth-child(1) { left: 0; } .crosshair span:nth-child(2) { right: 0; }
+.crosshair span:nth-child(3), .crosshair span:nth-child(4) { width: 1px; height: 7px; left: 14px; }
+.crosshair span:nth-child(3) { top: 0; } .crosshair span:nth-child(4) { bottom: 0; }
+.controls-hint { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 8px 13px; color: #aaa5ad; background: rgba(7,7,12,.55); border: 1px solid rgba(255,255,255,.1); border-radius: 4px; font: 10px Arial,sans-serif; letter-spacing: .09em; transition: opacity 1s; }
+.controls-hint b { color: #f4f1e9; margin-left: 8px; } .controls-hint b:first-child { margin-left: 0; } .controls-hint.faded { opacity: .2; }
+.perf { position: absolute; right: 28px; bottom: 28px; display: flex; gap: 12px; color: #77727d; font: 9px Arial,sans-serif; letter-spacing: .12em; }
+.combo { position: absolute; left: 50%; top: 62%; transform: translate(-50%, 10px) scale(.9); color: #ff4166; opacity: 0; font: italic 900 25px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: .08em; text-shadow: 0 0 18px rgba(241,59,96,.7); transition: .18s ease; }
+.combo.visible { opacity: 1; transform: translate(-50%,0) scale(1); }
+.modal { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; background: radial-gradient(circle at 50% 38%, rgba(82,14,39,.42), rgba(5,5,10,.94) 52%); transition: opacity .35s, visibility .35s; }
+.modal.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.crest { width: 55px; height: 62px; display: grid; place-items: center; margin-bottom: 18px; color: #e4d7bb; border: 2px solid #a62343; clip-path: polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); font: italic 900 20px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; }
+.eyebrow { margin: 0 0 8px; color: #d63255; font: 700 11px Arial, sans-serif; letter-spacing: .32em; }
+.modal h1, .modal h2 { margin: 0; font: italic 900 clamp(54px,8vw,105px)/.76 Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: -.035em; text-shadow: 0 10px 42px #000; }
+.modal h1 em { color: #d52e50; font-style: normal; }
+.modal h2 { font-size: clamp(48px, 7vw, 86px); }
+.modal > p:not(.eyebrow) { color: #aaa5ad; line-height: 1.65; font-size: 13px; margin: 25px 20px; }
+.modal button { pointer-events: auto; min-width: 220px; padding: 13px 24px; border: 1px solid #f13b60; color: #fff; background: linear-gradient(135deg,#a7193b,#d63355); transform: skewX(-8deg); font: 800 14px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: .15em; cursor: pointer; box-shadow: 0 9px 28px rgba(164,20,55,.3); }
+.modal button:hover { filter: brightness(1.18); }
+.modal small { margin-top: 14px; color: #67636d; font-size: 10px; letter-spacing: .06em; }
+@media (max-width: 650px) { .topbar { padding: 16px; } .brand { transform: scale(.8); transform-origin: top left; } .score { transform: scale(.85); transform-origin: top right; } .status-panel { left: 16px; bottom: 16px; } .controls-hint { bottom: 95px; white-space: normal; width: 90%; text-align: center; line-height: 1.8; } .perf { display: none; } }
