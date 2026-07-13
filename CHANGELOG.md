@@ -4,6 +4,8 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+## v0.8.0-alpha.1 — 2026-07-14
+
 - Added fast, fragile Bat Swarms with deterministic weaving behavior and a distinct animated airborne silhouette.
 - Added Leech Strikers with contact-range latching, pulsed health drain, self-healing, recovery windows, and a shape-based drain tell.
 - Added Corrupt Referees with ranged whistle telegraphs, standoff movement, retreat behavior, and a shape-based pulse tell.

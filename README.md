@@ -208,18 +208,19 @@ Development history is part of the jam submission, so changes are committed in s
 
 Planned release line:
 
-| Version  | Milestone                                                |
-| -------- | -------------------------------------------------------- |
-| `v0.1.0` | Foundation scaffold                                      |
-| `v0.2.0` | Player–ball combat prototype                             |
-| `v0.3.0` | Three-minute vertical slice                              |
-| `v0.5.0` | Complete guaranteed run                                  |
-| `v0.6.0` | First-run onboarding, curved kicks, and live diagnostics |
-| `v0.7.0` | Crowd scaling, recovery hardening, and phase music       |
-| `v0.7.1` | macOS controls, audio mixing, and CI hardening           |
-| `v0.8.0` | Content and presentation complete                        |
-| `v0.9.0` | Release candidate                                        |
-| `v1.0.0` | Jam submission freeze                                    |
+| Version          | Milestone                                                |
+| ---------------- | -------------------------------------------------------- |
+| `v0.1.0`         | Foundation scaffold                                      |
+| `v0.2.0`         | Player–ball combat prototype                             |
+| `v0.3.0`         | Three-minute vertical slice                              |
+| `v0.5.0`         | Complete guaranteed run                                  |
+| `v0.6.0`         | First-run onboarding, curved kicks, and live diagnostics |
+| `v0.7.0`         | Crowd scaling, recovery hardening, and phase music       |
+| `v0.7.1`         | macOS controls, audio mixing, and CI hardening           |
+| `v0.8.0-alpha.1` | Target gameplay/content checkpoint                       |
+| `v0.8.0`         | Content and presentation complete                        |
+| `v0.9.0`         | Release candidate                                        |
+| `v1.0.0`         | Jam submission freeze                                    |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.
 
