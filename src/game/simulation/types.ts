@@ -17,9 +17,9 @@ export interface PlayerState {
   dashDirection: Vec3;
 }
 
-export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach' | 'batSwarm';
+export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach' | 'batSwarm' | 'leechStriker';
 export type EliteEnemyArchetype = Extract<EnemyArchetype, 'winger' | 'defender'>;
-export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'recover';
+export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'drain' | 'recover';
 
 export interface EnemyState {
   id: number;

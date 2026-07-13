@@ -156,6 +156,14 @@ export function updateEnemies(state: GameState, dt: number): void {
       movementZ += chaseX * weave;
     }
 
+    if (enemy.archetype === 'leechStriker') {
+      updateLeechAttack(enemy, distance, dt);
+      if (enemy.attackState === 'drain' || enemy.attackState === 'recover') {
+        movementX = 0;
+        movementZ = 0;
+      }
+    }
+
     if (enemy.archetype === 'winger') {
       updateWingerAttack(enemy, player.position, distance, dt);
       if (enemy.attackState === 'telegraph' || enemy.attackState === 'recover') {
@@ -179,10 +187,19 @@ export function updateEnemies(state: GameState, dt: number): void {
     const contactDz = player.position.z - enemy.position.z;
     const contactDistance = Math.max(0.001, Math.hypot(contactDx, contactDz));
     if (contactDistance < enemy.radius + 0.58 && player.invulnerability <= 0) {
-      player.health = Math.max(0, player.health - enemy.attackDamage);
-      player.invulnerability = 0.62;
-      enemy.position.x -= (contactDx / contactDistance) * 1.4;
-      enemy.position.z -= (contactDz / contactDistance) * 1.4;
+      if (enemy.archetype === 'leechStriker') {
+        if (enemy.attackState !== 'drain') continue;
+        // The short immunity window creates several clear drain pulses during a
+        // latch while the striker converts each successful pulse into health.
+        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.invulnerability = 0.18;
+        enemy.hitPoints = Math.min(enemy.maxHitPoints, enemy.hitPoints + 1);
+      } else {
+        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.invulnerability = 0.62;
+        enemy.position.x -= (contactDx / contactDistance) * 1.4;
+        enemy.position.z -= (contactDz / contactDistance) * 1.4;
+      }
       if (player.health <= 0) state.phase = 'dead';
     }
   }
@@ -400,6 +417,26 @@ function updateWingerAttack(enemy: EnemyState, player: Vec3, distance: number, d
   }
 }
 
+function updateLeechAttack(enemy: EnemyState, distance: number, dt: number): void {
+  if (enemy.attackState === 'chase') {
+    if (distance <= enemy.radius + 0.58 && enemy.attackCooldown <= 0) {
+      enemy.attackState = 'drain';
+      enemy.attackTimer = 0.82;
+    }
+    return;
+  }
+
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return;
+  if (enemy.attackState === 'drain') {
+    enemy.attackState = 'recover';
+    enemy.attackTimer = 0.38;
+  } else if (enemy.attackState === 'recover') {
+    enemy.attackState = 'chase';
+    enemy.attackCooldown = 1.1;
+  }
+}
+
 function pickArchetype(elapsed: number): EnemyArchetype {
   // Availability and weights ramp with match time, keeping the opening readable.
   const fanWeight = Math.max(38, 72 - elapsed * 0.16);
@@ -407,7 +444,10 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   const defenderWeight = elapsed < 24 ? 0 : Math.min(24, 5 + (elapsed - 24) * 0.15);
   const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
   const batSwarmWeight = elapsed < 55 ? 0 : Math.min(20, 4 + (elapsed - 55) * 0.12);
-  let roll = Math.random() * (fanWeight + wingerWeight + defenderWeight + coachWeight + batSwarmWeight);
+  const leechStrikerWeight = elapsed < 95 ? 0 : Math.min(18, 3 + (elapsed - 95) * 0.1);
+  let roll =
+    Math.random() *
+    (fanWeight + wingerWeight + defenderWeight + coachWeight + batSwarmWeight + leechStrikerWeight);
   if (roll < fanWeight) return 'bloodFan';
   roll -= fanWeight;
   if (roll < wingerWeight) return 'winger';
@@ -415,7 +455,9 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   if (roll < defenderWeight) return 'defender';
   roll -= defenderWeight;
   if (roll < coachWeight) return 'coach';
-  return 'batSwarm';
+  roll -= coachWeight;
+  if (roll < batSwarmWeight) return 'batSwarm';
+  return 'leechStriker';
 }
 
 function enemyStats(
@@ -438,6 +480,8 @@ function enemyStats(
       return { radius: 0.6, speed: 1.7 + pace * 0.5, attackDamage: 12, hitPoints: 2, y: 0.98 };
     case 'batSwarm':
       return { radius: 0.38, speed: 4.15 + pace, attackDamage: 8, hitPoints: 1, y: 1.25 };
+    case 'leechStriker':
+      return { radius: 0.48, speed: 2.8 + pace * 0.7, attackDamage: 4, hitPoints: 3, y: 0.94 };
     case 'bloodFan':
       return { radius: 0.52, speed: 2.1 + pace, attackDamage: 14, hitPoints: 1, y: 0.9 };
   }

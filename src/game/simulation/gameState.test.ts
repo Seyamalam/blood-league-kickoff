@@ -115,4 +115,68 @@ describe('game state match helpers', () => {
     expect(Math.abs(firstSwarm.position.x)).toBeGreaterThan(0.01);
     expect(firstSwarm.position).toEqual(secondSwarm.position);
   });
+
+  it('unlocks durable leech strikers in the advanced enemy mix', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 120;
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1 / 60);
+
+    expect(state.enemies.at(-1)).toMatchObject({
+      archetype: 'leechStriker',
+      radius: 0.48,
+      attackDamage: 4,
+      hitPoints: 3,
+      maxHitPoints: 3,
+    });
+  });
+
+  it('latches to drain health in pulses and sustain itself', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 120;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const striker = state.enemies[0]!;
+    striker.position = { ...state.player.position };
+    striker.previousPosition = { ...striker.position };
+    striker.hitPoints = 1;
+    state.spawnTimer = 100;
+
+    updateEnemies(state, 0.01);
+
+    expect(striker.attackState).toBe('drain');
+    expect(striker.position).toEqual(striker.previousPosition);
+    expect(striker.hitPoints).toBe(2);
+    expect(state.player.health).toBe(96);
+    expect(state.player.invulnerability).toBe(0.18);
+
+    state.player.invulnerability = 0;
+    updateEnemies(state, 0.2);
+    expect(striker.hitPoints).toBe(3);
+    expect(state.player.health).toBe(92);
+  });
+
+  it('keeps closing when a leech striker is just outside contact range', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 120;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const striker = state.enemies[0]!;
+    striker.position = { x: state.player.position.x + 1.07, y: 0.94, z: state.player.position.z };
+    striker.previousPosition = { ...striker.position };
+    state.spawnTimer = 100;
+
+    updateEnemies(state, 0.01);
+
+    expect(striker.attackState).toBe('chase');
+    expect(striker.position.x).toBeLessThan(state.player.position.x + 1.07);
+    expect(state.player.health).toBe(100);
+  });
 });
