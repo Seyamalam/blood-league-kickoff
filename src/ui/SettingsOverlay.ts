@@ -1,9 +1,12 @@
 import {
+  CONTROL_ACTIONS,
   type AimAssistStrength,
+  type ControlAction,
   type FpsLimit,
   type PlayerSettings,
   type RenderQuality,
   SettingsStore,
+  isBindableKeyboardCode,
 } from '../settings/SettingsStore';
 
 export type SettingsChangeCallback = (settings: Readonly<PlayerSettings>) => void;
@@ -25,6 +28,8 @@ export class SettingsOverlay {
   private readonly fpsLimit: HTMLSelectElement;
   private readonly aimAssistStrength: HTMLSelectElement;
   private readonly reducedCameraShake: HTMLInputElement;
+  private readonly bindingButtons: Record<ControlAction, HTMLButtonElement>;
+  private readonly bindingStatus: HTMLElement;
   private readonly closeButton: HTMLButtonElement;
   private readonly desktopSettings: HTMLElement;
   private readonly windowSize: HTMLSelectElement;
@@ -34,6 +39,7 @@ export class SettingsOverlay {
   private readonly unsubscribe: () => void;
   private onChange: SettingsChangeCallback | null;
   private previouslyFocused: HTMLElement | null = null;
+  private awaitingBinding: ControlAction | null = null;
   private open = false;
 
   public constructor(
@@ -103,6 +109,21 @@ export class SettingsOverlay {
             <span><strong>Reduced camera shake</strong><small>Limits impact movement and intense screen feedback.</small></span>
             <input id="setting-reduced-shake" type="checkbox">
           </label>
+          <fieldset class="settings-controls" aria-describedby="settings-binding-help settings-binding-status">
+            <legend>KEYBOARD CONTROLS</legend>
+            <p id="settings-binding-help">Choose a control, then press a keyboard key. Escape cancels. Mouse buttons cannot be assigned.</p>
+            <div class="settings-controls__grid">
+              <label>Move forward<button type="button" data-binding="moveForward"></button></label>
+              <label>Move backward<button type="button" data-binding="moveBackward"></button></label>
+              <label>Move left<button type="button" data-binding="moveLeft"></button></label>
+              <label>Move right<button type="button" data-binding="moveRight"></button></label>
+              <label>Dash<button type="button" data-binding="dash"></button></label>
+              <label>Recall ball<button type="button" data-binding="recall"></button></label>
+              <label>Focus Kick<button type="button" data-binding="focusKick"></button></label>
+              <label>Restart match<button type="button" data-binding="restart"></button></label>
+            </div>
+            <p id="settings-binding-status" class="settings-controls__status" aria-live="polite"></p>
+          </fieldset>
           <div class="settings-desktop hidden" id="settings-desktop">
             <div class="settings-field">
               <label for="setting-window-size">Window size</label>
@@ -136,6 +157,8 @@ export class SettingsOverlay {
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
     this.aimAssistStrength = requiredSelect(this.element, '#setting-aim-assist');
     this.reducedCameraShake = requiredInput(this.element, '#setting-reduced-shake');
+    this.bindingButtons = requiredBindingButtons(this.element);
+    this.bindingStatus = requiredElement(this.element, '#settings-binding-status');
     this.closeButton = requiredButton(this.element, '.settings-panel__close');
     this.desktopSettings = requiredElement(this.element, '#settings-desktop');
     this.windowSize = requiredSelect(this.element, '#setting-window-size');
@@ -144,6 +167,7 @@ export class SettingsOverlay {
 
     this.element.addEventListener('input', this.handleInput);
     this.element.addEventListener('change', this.handleInput);
+    this.element.addEventListener('click', this.handleBindingClick);
     this.closeButton.addEventListener('click', this.hide);
     this.windowSize.addEventListener('change', this.handleWindowSize);
     this.fullscreenButton.addEventListener('click', this.handleFullscreen);
@@ -181,6 +205,9 @@ export class SettingsOverlay {
   public readonly hide = (): void => {
     if (!this.open) return;
     this.open = false;
+    this.awaitingBinding = null;
+    this.bindingStatus.textContent = '';
+    this.render(this.store.value);
     window.removeEventListener('keydown', this.handleKeyDown, { capture: true });
     this.element.classList.add('hidden');
     this.element.hidden = true;
@@ -198,6 +225,7 @@ export class SettingsOverlay {
     this.unsubscribe();
     this.element.removeEventListener('input', this.handleInput);
     this.element.removeEventListener('change', this.handleInput);
+    this.element.removeEventListener('click', this.handleBindingClick);
     this.closeButton.removeEventListener('click', this.hide);
     this.windowSize.removeEventListener('change', this.handleWindowSize);
     this.fullscreenButton.removeEventListener('click', this.handleFullscreen);
@@ -221,6 +249,18 @@ export class SettingsOverlay {
     this.fpsLimit.value = String(settings.fpsLimit);
     this.aimAssistStrength.value = settings.aimAssistStrength;
     this.reducedCameraShake.checked = settings.reducedCameraShake;
+    for (const action of CONTROL_ACTIONS) {
+      const button = this.bindingButtons[action];
+      const code = settings.keyBindings[action];
+      button.textContent = this.awaitingBinding === action ? 'PRESS A KEY…' : formatKeyboardCode(code);
+      button.setAttribute(
+        'aria-label',
+        this.awaitingBinding === action
+          ? `Waiting for a new ${CONTROL_ACTION_LABELS[action]} key. Press Escape to cancel.`
+          : `Rebind ${CONTROL_ACTION_LABELS[action]}. Current key ${formatKeyboardCode(code)}.`,
+      );
+      button.classList.toggle('is-listening', this.awaitingBinding === action);
+    }
   }
 
   private readonly handleInput = (event: Event): void => {
@@ -252,6 +292,17 @@ export class SettingsOverlay {
     if (!patch) return;
     const settings = this.store.update(patch);
     this.onChange?.(settings);
+  };
+
+  private readonly handleBindingClick = (event: MouseEvent): void => {
+    const target =
+      event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-binding]') : null;
+    if (!target || !this.element.contains(target)) return;
+    const action = target.dataset.binding;
+    if (!isControlAction(action)) return;
+    this.awaitingBinding = action;
+    this.bindingStatus.textContent = `Press a keyboard key for ${CONTROL_ACTION_LABELS[action]}.`;
+    this.render(this.store.value);
   };
 
   private readonly handleFullscreen = (): void => {
@@ -307,6 +358,36 @@ export class SettingsOverlay {
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (!this.open) return;
+    if (this.awaitingBinding) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === 'Escape') {
+        this.cancelBinding('Key assignment cancelled.');
+        return;
+      }
+      if (event.repeat) return;
+      const action = this.awaitingBinding;
+      if (!isBindableKeyboardCode(event.code)) {
+        this.bindingStatus.textContent = 'That key is reserved or unavailable. Choose another keyboard key.';
+        return;
+      }
+      const current = this.store.value;
+      const conflict = CONTROL_ACTIONS.find(
+        (candidate) => candidate !== action && current.keyBindings[candidate] === event.code,
+      );
+      if (conflict) {
+        this.bindingStatus.textContent = `${formatKeyboardCode(event.code)} is already assigned to ${CONTROL_ACTION_LABELS[conflict]}.`;
+        return;
+      }
+      this.awaitingBinding = null;
+      const settings = this.store.update({
+        keyBindings: { ...current.keyBindings, [action]: event.code },
+      });
+      this.bindingStatus.textContent = `${CONTROL_ACTION_LABELS[action]} assigned to ${formatKeyboardCode(event.code)}.`;
+      this.onChange?.(settings);
+      this.render(settings);
+      return;
+    }
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -328,6 +409,34 @@ export class SettingsOverlay {
       first.focus();
     }
   };
+
+  private cancelBinding(message: string): void {
+    this.awaitingBinding = null;
+    this.bindingStatus.textContent = message;
+    this.render(this.store.value);
+  }
+}
+
+const CONTROL_ACTION_LABELS: Readonly<Record<ControlAction, string>> = {
+  moveForward: 'move forward',
+  moveBackward: 'move backward',
+  moveLeft: 'move left',
+  moveRight: 'move right',
+  dash: 'dash',
+  recall: 'recall ball',
+  focusKick: 'Focus Kick',
+  restart: 'restart match',
+};
+
+function isControlAction(value: unknown): value is ControlAction {
+  return typeof value === 'string' && (CONTROL_ACTIONS as readonly string[]).includes(value);
+}
+
+function formatKeyboardCode(code: string): string {
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (code.startsWith('Arrow')) return code.slice(5).toUpperCase();
+  return code.replace('Left', ' LEFT').replace('Right', ' RIGHT').replace('Numpad', 'NUM ').toUpperCase();
 }
 
 function parseFpsLimit(value: string): FpsLimit {
@@ -364,6 +473,16 @@ function requiredElement(root: ParentNode, selector: string): HTMLElement {
   const element = root.querySelector<HTMLElement>(selector);
   if (!element) throw new Error(`Missing settings element ${selector}`);
   return element;
+}
+
+function requiredBindingButtons(root: ParentNode): Record<ControlAction, HTMLButtonElement> {
+  return Object.fromEntries(
+    CONTROL_ACTIONS.map((action) => {
+      const button = root.querySelector<HTMLButtonElement>(`[data-binding="${action}"]`);
+      if (!button) throw new Error(`Missing binding button for ${action}`);
+      return [action, button];
+    }),
+  ) as Record<ControlAction, HTMLButtonElement>;
 }
 
 function parseWindowSize(value: string): { width: 1280 | 1600 | 1920; height: 720 | 900 | 1080 } | null {

@@ -903,6 +903,70 @@ button {
   accent-color: #e03459;
   cursor: pointer;
 }
+.settings-controls {
+  grid-column: 1/-1;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.settings-controls legend {
+  padding: 0 7px;
+  color: #e9c46f;
+  font:
+    800 11px Arial,
+    sans-serif;
+  letter-spacing: 0.13em;
+}
+.settings-controls > p {
+  margin: 0 0 12px;
+  color: #8f8994;
+  font:
+    10px/1.45 Arial,
+    sans-serif;
+}
+.settings-controls__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.settings-controls__grid label {
+  display: grid;
+  gap: 6px;
+  color: #b8b1bc;
+  font:
+    700 9px Arial,
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.settings-panel .settings-controls__grid button {
+  min-height: 38px;
+  padding: 7px 5px;
+  color: #f4f1e9;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  background: #18141e;
+  cursor: pointer;
+  font:
+    800 11px Arial,
+    sans-serif;
+  letter-spacing: 0.07em;
+}
+.settings-panel .settings-controls__grid button:hover,
+.settings-panel .settings-controls__grid button:focus-visible {
+  border-color: #f8d777;
+  outline: 2px solid #f8d777;
+  outline-offset: 2px;
+}
+.settings-panel .settings-controls__grid button.is-listening {
+  border-style: dashed;
+  background: rgba(241, 59, 96, 0.18);
+}
+.settings-controls .settings-controls__status {
+  min-height: 15px;
+  margin: 11px 0 0;
+  color: #e9c46f;
+}
 .settings-desktop {
   grid-column: 1/-1;
   display: grid;
@@ -966,6 +1030,12 @@ button {
   }
   .settings-toggle {
     grid-column: auto;
+  }
+  .settings-controls {
+    grid-column: auto;
+  }
+  .settings-controls__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .settings-desktop {
     grid-column: auto;

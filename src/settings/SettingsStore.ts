@@ -1,6 +1,10 @@
 export type RenderQuality = 'performance' | 'balanced' | 'quality';
 export type FpsLimit = 60 | 120 | 'unlimited';
 export type AimAssistStrength = 'off' | 'low' | 'high';
+export type ControlAction =
+  'moveForward' | 'moveBackward' | 'moveLeft' | 'moveRight' | 'dash' | 'recall' | 'focusKick' | 'restart';
+
+export type KeyBindings = Record<ControlAction, string>;
 
 export interface PlayerSettings {
   masterVolume: number;
@@ -12,12 +16,24 @@ export interface PlayerSettings {
   fpsLimit: FpsLimit;
   aimAssistStrength: AimAssistStrength;
   reducedCameraShake: boolean;
+  keyBindings: KeyBindings;
 }
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 3;
+const SETTINGS_VERSION = 4;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
+
+export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
+  moveForward: 'KeyW',
+  moveBackward: 'KeyS',
+  moveLeft: 'KeyA',
+  moveRight: 'KeyD',
+  dash: 'Space',
+  recall: 'KeyE',
+  focusKick: 'KeyF',
+  restart: 'KeyR',
+});
 
 export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   masterVolume: 0.42,
@@ -29,6 +45,7 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   fpsLimit: 120,
   aimAssistStrength: 'low',
   reducedCameraShake: false,
+  keyBindings: DEFAULT_KEY_BINDINGS,
 });
 
 /**
@@ -46,7 +63,7 @@ export class SettingsStore {
   }
 
   public get value(): Readonly<PlayerSettings> {
-    return { ...this.settings };
+    return { ...this.settings, keyBindings: { ...this.settings.keyBindings } };
   }
 
   /** Validates, persists, and broadcasts a partial update. */
@@ -60,7 +77,7 @@ export class SettingsStore {
   }
 
   public reset(): Readonly<PlayerSettings> {
-    this.settings = { ...DEFAULT_PLAYER_SETTINGS };
+    this.settings = { ...DEFAULT_PLAYER_SETTINGS, keyBindings: { ...DEFAULT_KEY_BINDINGS } };
     this.persist();
     this.emit();
     return this.value;
@@ -75,20 +92,21 @@ export class SettingsStore {
 
   private load(): PlayerSettings {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) return { ...DEFAULT_PLAYER_SETTINGS };
+      if (typeof window === 'undefined' || !window.localStorage) return defaultPlayerSettings();
       const serialized = window.localStorage.getItem(this.storageKey);
-      if (!serialized) return { ...DEFAULT_PLAYER_SETTINGS };
+      if (!serialized) return defaultPlayerSettings();
       const parsed: unknown = JSON.parse(serialized);
-      if (!isRecord(parsed)) return { ...DEFAULT_PLAYER_SETTINGS };
+      if (!isRecord(parsed)) return defaultPlayerSettings();
       const version = parsed.version;
       const wrappedSettings =
-        (version === 1 || version === 2 || version === SETTINGS_VERSION) && isRecord(parsed.settings)
+        (version === 1 || version === 2 || version === 3 || version === SETTINGS_VERSION) &&
+        isRecord(parsed.settings)
           ? parsed.settings
           : null;
-      if ('version' in parsed && !wrappedSettings) return { ...DEFAULT_PLAYER_SETTINGS };
+      if ('version' in parsed && !wrappedSettings) return defaultPlayerSettings();
       return sanitizePlayerSettings(wrappedSettings ?? parsed);
     } catch {
-      return { ...DEFAULT_PLAYER_SETTINGS };
+      return defaultPlayerSettings();
     }
   }
 
@@ -134,7 +152,54 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       typeof source.reducedCameraShake === 'boolean'
         ? source.reducedCameraShake
         : DEFAULT_PLAYER_SETTINGS.reducedCameraShake,
+    keyBindings: sanitizeKeyBindings(source.keyBindings),
   };
+}
+
+export function sanitizeKeyBindings(value: unknown): KeyBindings {
+  const source = isRecord(value) ? value : {};
+  const bindings = Object.fromEntries(
+    CONTROL_ACTIONS.map((action) => {
+      const candidate = source[action];
+      return [action, isBindableKeyboardCode(candidate) ? candidate : DEFAULT_KEY_BINDINGS[action]];
+    }),
+  ) as KeyBindings;
+
+  const usage = new Map<string, number>();
+  for (const action of CONTROL_ACTIONS) {
+    const code = bindings[action];
+    usage.set(code, (usage.get(code) ?? 0) + 1);
+  }
+  for (const action of CONTROL_ACTIONS) {
+    if ((usage.get(bindings[action]) ?? 0) > 1 && bindings[action] !== DEFAULT_KEY_BINDINGS[action]) {
+      bindings[action] = DEFAULT_KEY_BINDINGS[action];
+    }
+  }
+  return bindings;
+}
+
+export function isBindableKeyboardCode(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|Shift(Left|Right)|Control(Left|Right)|Alt(Left|Right)|Enter|Backspace|CapsLock|Home|End|PageUp|PageDown|Insert|Delete|Numpad[0-9]|Numpad(Add|Subtract|Multiply|Divide|Decimal)|Bracket(Left|Right)|Semicolon|Quote|Comma|Period|Slash|Backslash|Minus|Equal|Backquote)$/.test(
+      value,
+    )
+  );
+}
+
+export const CONTROL_ACTIONS: readonly ControlAction[] = [
+  'moveForward',
+  'moveBackward',
+  'moveLeft',
+  'moveRight',
+  'dash',
+  'recall',
+  'focusKick',
+  'restart',
+];
+
+function defaultPlayerSettings(): PlayerSettings {
+  return { ...DEFAULT_PLAYER_SETTINGS, keyBindings: { ...DEFAULT_KEY_BINDINGS } };
 }
 
 function boundedNumber(value: unknown, minimum: number, maximum: number, fallback: number): number {
@@ -169,6 +234,7 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.renderScale === right.renderScale &&
     left.fpsLimit === right.fpsLimit &&
     left.aimAssistStrength === right.aimAssistStrength &&
-    left.reducedCameraShake === right.reducedCameraShake
+    left.reducedCameraShake === right.reducedCameraShake &&
+    CONTROL_ACTIONS.every((action) => left.keyBindings[action] === right.keyBindings[action])
   );
 }

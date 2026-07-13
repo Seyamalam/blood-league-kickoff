@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_PLAYER_SETTINGS, sanitizePlayerSettings, SettingsStore } from './SettingsStore';
+import {
+  DEFAULT_KEY_BINDINGS,
+  DEFAULT_PLAYER_SETTINGS,
+  sanitizeKeyBindings,
+  sanitizePlayerSettings,
+  SettingsStore,
+} from './SettingsStore';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -18,6 +24,7 @@ describe('player settings sanitization', () => {
     expect(migrated.effectsVolume).toBe(1);
     expect(migrated.mouseSensitivity).toBe(1.25);
     expect(migrated.aimAssistStrength).toBe('low');
+    expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
   });
 
   it('clamps audio values and rejects malformed values', () => {
@@ -43,7 +50,48 @@ describe('player settings sanitization', () => {
     );
   });
 
-  it('persists aim assist and restores it in a new store', () => {
+  it('accepts keyboard codes while rejecting reserved, mouse, malformed, and duplicate bindings', () => {
+    expect(
+      sanitizeKeyBindings({
+        moveForward: 'ArrowUp',
+        moveBackward: 'Mouse0',
+        moveLeft: 'Escape',
+        moveRight: '<script>',
+        dash: 'KeyE',
+        recall: 'KeyE',
+        focusKick: 'KeyQ',
+        restart: 'KeyQ',
+      }),
+    ).toEqual({
+      ...DEFAULT_KEY_BINDINGS,
+      moveForward: 'ArrowUp',
+    });
+  });
+
+  it('loads a version-three save with default keyboard bindings', () => {
+    const values = new Map<string, string>([
+      [
+        'legacy.settings',
+        JSON.stringify({
+          version: 3,
+          settings: { masterVolume: 0.25, aimAssistStrength: 'high' },
+        }),
+      ],
+    ]);
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    });
+
+    const migrated = new SettingsStore('legacy.settings').value;
+    expect(migrated.masterVolume).toBe(0.25);
+    expect(migrated.aimAssistStrength).toBe('high');
+    expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
+  });
+
+  it('persists aim assist and keyboard bindings and restores them in a new store', () => {
     const values = new Map<string, string>();
     vi.stubGlobal('window', {
       localStorage: {
@@ -53,9 +101,15 @@ describe('player settings sanitization', () => {
     });
 
     const first = new SettingsStore('test.settings');
-    first.update({ aimAssistStrength: 'high' });
+    first.update({
+      aimAssistStrength: 'high',
+      keyBindings: { ...first.value.keyBindings, dash: 'ShiftLeft', focusKick: 'KeyQ' },
+    });
 
-    expect(new SettingsStore('test.settings').value.aimAssistStrength).toBe('high');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 3 });
+    const restored = new SettingsStore('test.settings').value;
+    expect(restored.aimAssistStrength).toBe('high');
+    expect(restored.keyBindings.dash).toBe('ShiftLeft');
+    expect(restored.keyBindings.focusKick).toBe('KeyQ');
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 4 });
   });
 });
