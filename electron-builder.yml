@@ -1,0 +1,34 @@
+appId: games.bloodleague.kickoff
+productName: Blood League Kickoff
+copyright: Copyright © 2026 Blood League Kickoff contributors
+
+directories:
+  output: release/windows
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+
+extraMetadata:
+  main: electron/main.cjs
+
+asar: true
+compression: maximum
+artifactName: "${productName}-${version}-Windows-${arch}.${ext}"
+
+win:
+  executableName: BloodLeagueKickoff
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+  verifyUpdateCodeSignature: false
+
+portable:
+  artifactName: "${productName}-${version}-Portable-${arch}.${ext}"
+  requestExecutionLevel: user
+
