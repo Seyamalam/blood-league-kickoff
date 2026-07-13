@@ -8,6 +8,7 @@
 | --------- | -------------------------------------------------------------------- |
 | Status    | Complete nine-minute run alpha in active development                 |
 | Theme     | Kickoff                                                              |
+| Team      | Huntrix — 2 participants                                             |
 | Platforms | Web and macOS development first; Windows desktop at final submission |
 | Stack     | Three.js, TypeScript, Vite, Rapier, Electron                         |
 | Input     | Keyboard and mouse                                                   |
@@ -73,6 +74,17 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                            |
 
 Controls and bindings may change during playtesting.
+
+## Team and Registration
+
+**Huntrix** is registered for the IUT 12th ICT Fest 2026 GameJam under registration code **04-42417**.
+
+| Participant         | Role   | Institution                                       |
+| ------------------- | ------ | ------------------------------------------------- |
+| Touhidul Alam Seyam | Leader | BGC Trust University Bangladesh                   |
+| MD. Abtahee Kabir   | Member | Chittagong University of Engineering & Technology |
+
+For participant privacy, contact details and student identity numbers are not published in this repository. The complete verified roster remains in the organizer registration. See [Submission identity](docs/SUBMISSION.md) for the public record used across release materials.
 
 ## Submission Scope
 
@@ -254,4 +266,4 @@ Refer to [RuleBook for GameJam_IUT_12th_ICT_Fest.md](RuleBook%20for%20GameJam_IU
 
 ## Credits
 
-Team name, members, third-party assets, tools, generated assets, and licenses will be recorded before submission.
+Created by **Huntrix**: Touhidul Alam Seyam and MD. Abtahee Kabir. Project-created and generated assets, tools, third-party dependencies, and licenses are recorded in the [asset credits](docs/ASSET_CREDITS.md).

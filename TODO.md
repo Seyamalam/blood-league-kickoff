@@ -10,7 +10,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Configure the `Seyamalam/blood-league-kickoff` GitHub remote.
 - [x] `P0` Commit the initial documentation baseline.
 - [ ] `P0` Confirm the remote repository is public while signed out.
-- [ ] `P0` Confirm final team name and member names.
+- [x] `P0` Confirm final team name and member names: Huntrix — Touhidul Alam Seyam and MD. Abtahee Kabir.
 - [ ] `P0` Confirm every member has read the rulebook and freeze rule.
 - [ ] `P0` Record exact start evidence and current jam deadlines.
 
@@ -240,8 +240,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Submission and freeze (`v1.0.0`)
 
-- [ ] `P0` Choose final game and team names.
-- [ ] `P0` Add members, controls, repository, tools, assets, and credits to README/itch.io.
+- [x] `P0` Choose final game and team names.
+- [ ] `P0` Add the confirmed public roster, controls, repository, tools, assets, and credits to itch.io (README roster is complete).
 - [ ] `P0` Upload both builds before the safety buffer.
 - [ ] `P0` Download and test the exact itch.io uploads.
 - [ ] `P0` Confirm the itch.io page is public and in the jam submission list.

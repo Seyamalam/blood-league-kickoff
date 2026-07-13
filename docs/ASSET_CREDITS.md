@@ -4,12 +4,12 @@ This is the authoritative asset and license ledger. The submission-facing file i
 
 ## Project-Created Assets
 
-| Asset/path                                | Creator              | Tool                                   | Date              | Notes                                                                                                                                                 |
-| ----------------------------------------- | -------------------- | -------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Game design and source code               | Team (names pending) | Codex and local development tools      | 2026-07-14 onward | AI assistance must not be required at runtime                                                                                                         |
-| Procedural visuals, UI, and audio systems | Team (names pending) | TypeScript, Three.js, CSS, Web Audio   | 2026-07-14 onward | Generated at runtime from project source; no external media files                                                                                     |
-| `src/assets/progression/**/*.svg`         | Team (names pending) | Authored SVG/XML with Codex assistance | 2026-07-14        | Fourteen original upgrade/evolution icons using the project's locked palette; no external source art                                                  |
-| `docs/screenshots/*.jpg`                  | Team (names pending) | Chrome 149 DevTools capture and FFmpeg | 2026-07-14        | Seven 1280×720 captures; six from `dcf620b` and the alpha.2 results capture from `fb8e5bf`; the title composites the generated key art recorded below |
+| Asset/path                                | Creator | Tool                                   | Date              | Notes                                                                                                                                                 |
+| ----------------------------------------- | ------- | -------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Game design and source code               | Huntrix | Codex and local development tools      | 2026-07-14 onward | Team roster: Touhidul Alam Seyam and MD. Abtahee Kabir; AI assistance is not required at runtime                                                      |
+| Procedural visuals, UI, and audio systems | Huntrix | TypeScript, Three.js, CSS, Web Audio   | 2026-07-14 onward | Generated at runtime from project source; no external media files                                                                                     |
+| `src/assets/progression/**/*.svg`         | Huntrix | Authored SVG/XML with Codex assistance | 2026-07-14        | Fourteen original upgrade/evolution icons using the project's locked palette; no external source art                                                  |
+| `docs/screenshots/*.jpg`                  | Huntrix | Chrome 149 DevTools capture and FFmpeg | 2026-07-14        | Seven 1280×720 captures; six from `dcf620b` and the alpha.2 results capture from `fb8e5bf`; the title composites the generated key art recorded below |
 
 ## AI-Generated Assets
 

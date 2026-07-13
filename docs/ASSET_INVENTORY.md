@@ -13,7 +13,7 @@ Inventory status as of 2026-07-14:
 
 - **Source** identifies the code or repository file that produces the asset.
 - **Tool** identifies the creation/runtime tool, not merely the application used to view it.
-- **License/ownership** records redistribution status. “Project-created” means original repository work; final team-name and event-submission ownership wording must be confirmed before release.
+- **License/ownership** records redistribution status. “Project-created” means original work created for this repository by Huntrix.
 - **Changes/current state** records transformations and whether the listed source is final or still live-generated.
 
 ## Runtime-Generated Visual Assets
@@ -86,7 +86,7 @@ The capture method is recorded at the level verified by the repository history. 
 
 ## Asset Freeze Checklist
 
-- [ ] Confirm the final creator/team names and ownership wording in both this inventory and `ASSET_CREDITS.md`.
+- [x] Confirm the final creator/team names and ownership wording in both this inventory and `ASSET_CREDITS.md`.
 - [ ] Freeze from a clean, tagged commit and record the commit SHA used for the submission build.
 - [ ] Search the repository and final package for every image, model, audio, font, video, shader, and data asset; reconcile every result with this inventory.
 - [ ] Refresh title, gameplay, settings, and results screenshots after the final UI/visual pass; remove obsolete captures.
