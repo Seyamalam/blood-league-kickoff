@@ -256,7 +256,28 @@ export function damageEnemiesWithBall(
     if (distance < enemy.radius + 0.52 && Math.abs(ball.y - 0.75) < 1.35) {
       const baseDamage = (speed > 17 ? 2 : 1) * safeDamageMultiplier;
       let damage = baseDamage;
-      let knockbackScale = enemy.archetype === 'defender' ? 0.42 : 1;
+      let knockbackScale =
+        enemy.archetype === 'defender' ? 0.42 : enemy.archetype === 'goalkeeperBrute' ? 0.18 : 1;
+
+      if (enemy.archetype === 'goalkeeperBrute' && speed <= 17) {
+        // Brutes catch ordinary shots outright, but the same power-shot speed
+        // boundary used for bonus ball damage breaks through their guard.
+        damage = 0;
+        knockbackScale = 0;
+        blockedHits += 1;
+        enemy.shieldFlash = 0.28;
+        const normalX = ball.x - enemy.position.x;
+        const normalZ = ball.z - enemy.position.z;
+        const normalLength = Math.hypot(normalX, normalZ);
+        rebound ??= {
+          enemyId: enemy.id,
+          normal:
+            normalLength > 0.001
+              ? { x: normalX / normalLength, y: 0, z: normalZ / normalLength }
+              : { x: -velocityX, y: 0, z: -velocityZ },
+          velocityMultiplier: 0.45,
+        };
+      }
 
       if (enemy.archetype === 'defender' && velocityLength > 0.001) {
         const faceX = state.player.position.x - enemy.position.x;
@@ -488,6 +509,7 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   const batSwarmWeight = elapsed < 55 ? 0 : Math.min(20, 4 + (elapsed - 55) * 0.12);
   const leechStrikerWeight = elapsed < 95 ? 0 : Math.min(18, 3 + (elapsed - 95) * 0.1);
   const corruptRefereeWeight = elapsed < 145 ? 0 : Math.min(12, 2 + (elapsed - 145) * 0.065);
+  const goalkeeperBruteWeight = elapsed < 210 ? 0 : Math.min(10, 2 + (elapsed - 210) * 0.045);
   let roll =
     Math.random() *
     (fanWeight +
@@ -496,7 +518,8 @@ function pickArchetype(elapsed: number): EnemyArchetype {
       coachWeight +
       batSwarmWeight +
       leechStrikerWeight +
-      corruptRefereeWeight);
+      corruptRefereeWeight +
+      goalkeeperBruteWeight);
   if (roll < fanWeight) return 'bloodFan';
   roll -= fanWeight;
   if (roll < wingerWeight) return 'winger';
@@ -508,7 +531,9 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   if (roll < batSwarmWeight) return 'batSwarm';
   roll -= batSwarmWeight;
   if (roll < leechStrikerWeight) return 'leechStriker';
-  return 'corruptReferee';
+  roll -= leechStrikerWeight;
+  if (roll < corruptRefereeWeight) return 'corruptReferee';
+  return 'goalkeeperBrute';
 }
 
 function enemyStats(
@@ -535,6 +560,8 @@ function enemyStats(
       return { radius: 0.48, speed: 2.8 + pace * 0.7, attackDamage: 4, hitPoints: 3, y: 0.94 };
     case 'corruptReferee':
       return { radius: 0.55, speed: 2.25 + pace * 0.45, attackDamage: 6, hitPoints: 3, y: 0.98 };
+    case 'goalkeeperBrute':
+      return { radius: 0.92, speed: 0.95 + pace * 0.25, attackDamage: 28, hitPoints: 8, y: 1.18 };
     case 'bloodFan':
       return { radius: 0.52, speed: 2.1 + pace, attackDamage: 14, hitPoints: 1, y: 0.9 };
   }

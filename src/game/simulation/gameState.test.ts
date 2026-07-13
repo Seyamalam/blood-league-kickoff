@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createGameState,
+  damageEnemiesWithBall,
   resetKickoffFormation,
   spawnEliteEnemy,
   updateEnemies,
@@ -261,5 +262,58 @@ describe('game state match helpers', () => {
 
     expect(referee.attackState).toBe('chase');
     expect(referee.position.x).toBeGreaterThan(state.player.position.x + 4);
+  });
+
+  it('unlocks slow durable goalkeeper brutes in the final enemy mix', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 240;
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1 / 60);
+
+    const brute = state.enemies.at(-1);
+    expect(brute).toMatchObject({
+      archetype: 'goalkeeperBrute',
+      radius: 0.92,
+      attackDamage: 28,
+      hitPoints: 8,
+      maxHitPoints: 8,
+    });
+    expect(brute!.speed).toBeLessThan(1.2);
+  });
+
+  it('catches shots through the exact power-shot boundary', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 240;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const brute = state.enemies[0]!;
+    brute.position = { x: 0, y: 1.18, z: 0 };
+    brute.previousPosition = { ...brute.position };
+    const ball = { x: 0, y: 0.75, z: 0 };
+    const ballVelocity = { x: 17, y: 0, z: 0 };
+
+    const caught = damageEnemiesWithBall(state, ball, 17, 1, ballVelocity);
+
+    expect(caught).toMatchObject({
+      hits: 1,
+      kills: 0,
+      blockedHits: 1,
+      rebound: { enemyId: brute.id, velocityMultiplier: 0.45 },
+    });
+    expect(brute.hitPoints).toBe(8);
+    expect(brute.knockbackVelocity).toEqual({ x: 0, y: 0, z: 0 });
+    expect(brute.shieldFlash).toBe(0.28);
+
+    brute.lastBallHit = 0;
+    const powered = damageEnemiesWithBall(state, ball, 17.01, 1, ballVelocity);
+    expect(powered.blockedHits).toBe(0);
+    expect(powered.rebound).toBeUndefined();
+    expect(brute.hitPoints).toBe(6);
+    expect(brute.knockbackVelocity.x).toBeGreaterThan(0);
   });
 });

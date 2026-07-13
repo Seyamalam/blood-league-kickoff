@@ -18,7 +18,14 @@ export interface PlayerState {
 }
 
 export type EnemyArchetype =
-  'bloodFan' | 'winger' | 'defender' | 'coach' | 'batSwarm' | 'leechStriker' | 'corruptReferee';
+  | 'bloodFan'
+  | 'winger'
+  | 'defender'
+  | 'coach'
+  | 'batSwarm'
+  | 'leechStriker'
+  | 'corruptReferee'
+  | 'goalkeeperBrute';
 export type EliteEnemyArchetype = Extract<EnemyArchetype, 'winger' | 'defender'>;
 export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'drain' | 'whistle' | 'recover';
 
