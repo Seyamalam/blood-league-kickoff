@@ -155,7 +155,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
 - [x] `P0` Add phase-based procedural music intensity.
 - [ ] `P1` Add first-person Focus Kick ultimate.
-- [ ] `P1` Add Bat Swarm.
+- [x] `P1` Add Bat Swarm.
 - [ ] `P1` Add Leech Striker.
 - [ ] `P1` Add Corrupt Referee.
 - [ ] `P1` Add Goalkeeper Brute.
@@ -178,7 +178,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Desktop window-size, fullscreen/windowed, and quit behavior verified on macOS.
 - [x] `P0` 60, 120, and unlimited frame-rate options where supported.
 - [x] `P1` Reduced camera-shake option.
-- [ ] `P1` Aim-assist strength.
+- [x] `P1` Aim-assist strength.
 - [ ] `P1` Rebindable controls.
 - [ ] `P1` Color-independent enemy/ball-state indicators.
 
@@ -206,8 +206,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
 - [ ] `P0` Include commit SHA/version in the debug or results metadata.
-- [ ] `P0` Attach checksums and concise notes to milestone releases.
-- [ ] `P0` Download and smoke-test each major release artifact.
+- [x] `P0` Attach checksums and concise notes to milestone releases.
+- [x] `P0` Download and smoke-test each major release artifact.
 
 ## Testing
 

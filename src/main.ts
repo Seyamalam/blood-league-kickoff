@@ -9,7 +9,7 @@ import {
   updateCountGoalkeeper,
   type CountGoalkeeperState,
 } from './game/boss';
-import { SecondaryWeaponSystem } from './game/combat';
+import { SecondaryWeaponSystem, selectAimAssistTarget, steerAimDirection } from './game/combat';
 import {
   createMatchDirectorState,
   FULL_MATCH_CONFIG,
@@ -351,9 +351,27 @@ async function bootstrap(): Promise<void> {
       !halftimeOverlay.isVisible &&
       kick
     ) {
+      const rawAim = cameraController.aimDirection();
+      const aimTarget = selectAimAssistTarget(
+        state.player.position,
+        rawAim,
+        [
+          ...state.enemies,
+          ...(boss && boss.phase !== 'defeated' ? [{ id: -1, position: boss.position }] : []),
+        ],
+        playerSettings.aimAssistStrength,
+      );
+      const assistedHorizontal = aimTarget
+        ? steerAimDirection(rawAim, aimTarget.direction, playerSettings.aimAssistStrength)
+        : { x: rawAim.x, z: rawAim.z };
+      const horizontalScale = Math.sqrt(Math.max(0, 1 - rawAim.y * rawAim.y));
       const result = physics.kick(
         state.player.position,
-        cameraController.aimDirection(),
+        {
+          x: assistedHorizontal.x * horizontalScale,
+          y: rawAim.y,
+          z: assistedHorizontal.z * horizontalScale,
+        },
         kick.charge,
         {
           ...progression.modifiers,
@@ -485,7 +503,10 @@ async function bootstrap(): Promise<void> {
               cameraController.addImpulse(0.32);
               if (state.player.health <= 0) state.phase = 'dead';
             }
-            if (event.type === 'phaseChanged') audio.playPhase(event.to === 'desperation' ? 3 : 2);
+            if (event.type === 'phaseChanged') {
+              if (event.to === 'bloodRush' || event.to === 'desperation') audio.playBossPhase(event.to);
+              else audio.playPhase(2);
+            }
             if (event.type === 'summonElite') spawnEliteEnemy(state, event.archetype, event.side);
           }
 
@@ -535,7 +556,10 @@ async function bootstrap(): Promise<void> {
             audio.playPhase(matchUpdate.state.matchElapsed);
             audio.setMatchIntensity(event.to);
             atmosphere.setPhase(event.to);
-            if (event.to === 'finalWave' && !boss) boss = spawnCountGoalkeeper();
+            if (event.to === 'finalWave' && !boss) {
+              boss = spawnCountGoalkeeper();
+              audio.playBossEntrance();
+            }
           }
           if (event.type === 'goalScored') {
             signalTutorial('goal-scored');
@@ -575,7 +599,7 @@ async function bootstrap(): Promise<void> {
           }
           if (event.type === 'victory') {
             state.phase = 'won';
-            audio.playGoal();
+            audio.playVictory();
             announcement.show('finalWhistle', 'COUNT GOALKEEPER HAS FALLEN');
           }
         }
@@ -627,6 +651,7 @@ async function bootstrap(): Promise<void> {
     );
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
       resultsShown = true;
+      if (state.phase === 'dead') audio.playDefeat();
       resultsOverlay.show(
         {
           outcome: state.phase === 'won' ? 'victory' : 'defeat',

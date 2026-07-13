@@ -68,9 +68,11 @@ export class RenderBridge {
         this.enemies.set(enemy.id, mesh);
         this.scene.add(mesh);
       }
+      const flightHeight =
+        enemy.archetype === 'batSwarm' ? 0.62 + Math.sin(state.elapsed * 8 + enemy.id) * 0.16 : 0;
       mesh.position.set(
         THREE.MathUtils.lerp(enemy.previousPosition.x, enemy.position.x, alpha),
-        0,
+        flightHeight,
         THREE.MathUtils.lerp(enemy.previousPosition.z, enemy.position.z, alpha),
       );
       mesh.lookAt(p.x, 0, p.z);
@@ -89,6 +91,13 @@ export class RenderBridge {
       if (eliteMarker) {
         eliteMarker.rotation.z += dt * 1.5;
         eliteMarker.scale.setScalar(1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.08);
+      }
+      const leftBatWing = mesh.getObjectByName('bat-wing-left');
+      const rightBatWing = mesh.getObjectByName('bat-wing-right');
+      if (leftBatWing && rightBatWing) {
+        const flap = Math.sin(state.elapsed * 18 + enemy.id) * 0.34;
+        leftBatWing.rotation.z = -0.72 - flap;
+        rightBatWing.rotation.z = 0.72 + flap;
       }
     }
     for (const [id, mesh] of this.enemies) {
@@ -299,6 +308,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   if (enemy.archetype === 'winger') addWinger(group);
   else if (enemy.archetype === 'defender') addDefender(group);
   else if (enemy.archetype === 'coach') addCoach(group);
+  else if (enemy.archetype === 'batSwarm') addBatSwarm(group);
   else addBloodFan(group);
   if (enemy.elite) addEliteMarker(group);
   return group;
@@ -314,6 +324,9 @@ const enemyGeometry = {
   defenderShield: new THREE.BoxGeometry(1.18, 1.05, 0.18),
   coachBody: new THREE.CylinderGeometry(0.38, 0.58, 1.55, 8),
   coachAura: new THREE.RingGeometry(5.3, 5.5, 40),
+  batBody: new THREE.SphereGeometry(0.25, 7, 5),
+  batWing: new THREE.ConeGeometry(0.3, 0.7, 3),
+  batEar: new THREE.ConeGeometry(0.07, 0.22, 4),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
@@ -326,6 +339,8 @@ const enemyMaterial = {
   defender: new THREE.MeshStandardMaterial({ color: 0x35184d, roughness: 0.8 }),
   shield: new THREE.MeshStandardMaterial({ color: 0x74426e, roughness: 0.48, metalness: 0.28 }),
   coach: new THREE.MeshStandardMaterial({ color: 0xb89526, roughness: 0.58 }),
+  bat: new THREE.MeshStandardMaterial({ color: 0x17101f, roughness: 0.78 }),
+  batWing: new THREE.MeshStandardMaterial({ color: 0x6e204f, roughness: 0.66, side: THREE.DoubleSide }),
   aura: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
     transparent: true,
@@ -397,4 +412,29 @@ function addCoach(group: THREE.Group): void {
   aura.rotation.x = -Math.PI / 2;
   aura.castShadow = false;
   group.add(aura);
+}
+
+function addBatSwarm(group: THREE.Group): void {
+  const body = mesh(enemyGeometry.batBody, enemyMaterial.bat, 0.72);
+  body.scale.set(1, 0.72, 1.18);
+  group.add(body);
+
+  const leftWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75);
+  leftWing.name = 'bat-wing-left';
+  leftWing.position.x = -0.34;
+  leftWing.rotation.set(0, 0, -0.72);
+  const rightWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75);
+  rightWing.name = 'bat-wing-right';
+  rightWing.position.x = 0.34;
+  rightWing.rotation.set(0, 0, 0.72);
+
+  const leftEar = mesh(enemyGeometry.batEar, enemyMaterial.bat, 1.02);
+  leftEar.position.x = -0.1;
+  const rightEar = mesh(enemyGeometry.batEar, enemyMaterial.bat, 1.02);
+  rightEar.position.x = 0.1;
+  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, 0.8);
+  eyes.scale.setScalar(0.55);
+  eyes.position.z = 0.24;
+  eyes.castShadow = false;
+  group.add(leftWing, rightWing, leftEar, rightEar, eyes);
 }
