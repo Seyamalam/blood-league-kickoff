@@ -2,7 +2,7 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
-## Unreleased
+## v0.6.0 — 2026-07-14
 
 - Added a persistent six-step first-run tutorial driven by demonstrated gameplay actions.
 - Added restrained mouse-intent kick curve and arena-boundary camera collision.
