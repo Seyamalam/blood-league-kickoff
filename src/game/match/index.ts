@@ -3,6 +3,8 @@ export { createMatchDirectorState, getMatchObjective, updateMatchDirector } from
 export type {
   ActiveCombatStage,
   CombatStageRule,
+  GoalOpportunity,
+  HalftimeChoice,
   MatchDirectorConfig,
   MatchDirectorEvent,
   MatchDirectorInput,

@@ -1,6 +1,10 @@
 import {
+  EVOLUTION_IDS,
   UPGRADE_IDS,
   type BloodXpResult,
+  type EvolutionId,
+  type EvolutionUnlockEvent,
+  type EvolutionUnlocks,
   type ProgressionModifiers,
   type ProgressionState,
   type RandomSource,
@@ -9,6 +13,7 @@ import {
   type UpgradeId,
   type UpgradeStacks,
 } from './types';
+import { EVOLUTION_DEFINITIONS } from './evolutionDefinitions';
 import { UPGRADE_DEFINITIONS } from './upgradeDefinitions';
 
 const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
@@ -35,6 +40,7 @@ export function createProgressionState(): ProgressionState {
     totalBloodXp: 0,
     pendingLevelUps: 0,
     upgradeStacks: createEmptyStacks(),
+    evolutions: createEmptyEvolutions(),
     modifiers: { ...BASE_MODIFIERS },
   };
 }
@@ -129,30 +135,64 @@ export function chooseUpgrade(
   upgradeId: UpgradeId,
 ): UpgradeChoiceResult {
   if (state.pendingLevelUps <= 0) {
-    return { applied: false, state: cloneState(state), reason: 'no-pending-level-up' };
+    return { applied: false, state: cloneState(state), reason: 'no-pending-level-up', evolutionEvents: [] };
   }
   const availability = getUpgradeAvailability(state, upgradeId);
   if (!availability.available) {
-    return { applied: false, state: cloneState(state), reason: availability.reason };
+    return { applied: false, state: cloneState(state), reason: availability.reason, evolutionEvents: [] };
   }
 
   const upgradeStacks = { ...state.upgradeStacks };
   upgradeStacks[upgradeId] += 1;
+  const evolutions = { ...state.evolutions };
+  const evolutionEvents: EvolutionUnlockEvent[] = [];
+  for (const evolutionId of getEligibleEvolutionIds({ ...state, upgradeStacks })) {
+    if (evolutions[evolutionId]) continue;
+    evolutions[evolutionId] = true;
+    evolutionEvents.push({
+      type: 'evolution-unlocked',
+      evolutionId,
+      definition: EVOLUTION_DEFINITIONS[evolutionId],
+    });
+  }
   const nextState: ProgressionState = {
     ...cloneState(state),
     pendingLevelUps: state.pendingLevelUps - 1,
     upgradeStacks,
-    modifiers: calculateModifiers(upgradeStacks),
+    evolutions,
+    modifiers: calculateModifiers(upgradeStacks, evolutions),
   };
   return {
     applied: true,
     state: nextState,
     definition: UPGRADE_DEFINITIONS[upgradeId],
+    evolutionEvents,
   };
 }
 
+/** Returns locked evolutions whose upgrade requirements are currently met. */
+export function getEligibleEvolutionIds(
+  state: Pick<ProgressionState, 'upgradeStacks' | 'evolutions'>,
+): EvolutionId[] {
+  return EVOLUTION_IDS.filter((evolutionId) => {
+    if (state.evolutions[evolutionId]) return false;
+    return EVOLUTION_DEFINITIONS[evolutionId].requirements.every(
+      (requirement) => state.upgradeStacks[requirement.upgradeId] >= requirement.minStacks,
+    );
+  });
+}
+
+export function getUnlockedEvolutionIds(
+  state: Pick<ProgressionState, 'evolutions'>,
+): EvolutionId[] {
+  return EVOLUTION_IDS.filter((evolutionId) => state.evolutions[evolutionId]);
+}
+
 /** Rebuilds modifiers from stacks, preventing drift during resets or save loading. */
-export function calculateModifiers(stacks: Readonly<UpgradeStacks>): ProgressionModifiers {
+export function calculateModifiers(
+  stacks: Readonly<UpgradeStacks>,
+  evolutions?: Readonly<EvolutionUnlocks>,
+): ProgressionModifiers {
   const modifiers: ProgressionModifiers = { ...BASE_MODIFIERS };
   for (const upgradeId of UPGRADE_IDS) {
     const definition = UPGRADE_DEFINITIONS[upgradeId];
@@ -160,6 +200,14 @@ export function calculateModifiers(stacks: Readonly<UpgradeStacks>): Progression
     for (const [key, value] of Object.entries(definition.modifierPerStack)) {
       const modifierKey = key as keyof ProgressionModifiers;
       modifiers[modifierKey] += (value ?? 0) * stackCount;
+    }
+  }
+  const activeEvolutions = evolutions ?? inferEvolutions(stacks);
+  for (const evolutionId of EVOLUTION_IDS) {
+    if (!activeEvolutions[evolutionId]) continue;
+    for (const [key, value] of Object.entries(EVOLUTION_DEFINITIONS[evolutionId].modifierBonus)) {
+      const modifierKey = key as keyof ProgressionModifiers;
+      modifiers[modifierKey] += value ?? 0;
     }
   }
   // Cooldown can shrink but never reaches zero, even if definitions change later.
@@ -192,10 +240,28 @@ function createEmptyStacks(): UpgradeStacks {
   };
 }
 
+function createEmptyEvolutions(): EvolutionUnlocks {
+  return {
+    moonBreaker: false,
+    crimsonMeteor: false,
+  };
+}
+
+function inferEvolutions(stacks: Readonly<UpgradeStacks>): EvolutionUnlocks {
+  const evolutions = createEmptyEvolutions();
+  for (const evolutionId of EVOLUTION_IDS) {
+    evolutions[evolutionId] = EVOLUTION_DEFINITIONS[evolutionId].requirements.every(
+      (requirement) => stacks[requirement.upgradeId] >= requirement.minStacks,
+    );
+  }
+  return evolutions;
+}
+
 function cloneState(state: Readonly<ProgressionState>): ProgressionState {
   return {
     ...state,
     upgradeStacks: { ...state.upgradeStacks },
+    evolutions: { ...state.evolutions },
     modifiers: { ...state.modifiers },
   };
 }

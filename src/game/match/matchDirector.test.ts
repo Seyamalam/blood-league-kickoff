@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMatchDirectorState, updateMatchDirector } from './index';
+import { PROTOTYPE_MATCH_CONFIG, createMatchDirectorState, updateMatchDirector } from './index';
 
 describe('match director', () => {
   it('advances the opening when its time and kill gates pass', () => {
@@ -7,6 +7,73 @@ describe('match director', () => {
     const update = updateMatchDirector(state, { dt: 0.02, totalKills: 4, playerDead: false });
     expect(update.state.stage).toBe('firstHalf');
     expect(update.events).toContainEqual({ type: 'stageChanged', from: 'opening', to: 'firstHalf' });
+  });
+
+  it('runs the complete second-half stage sequence', () => {
+    const initial = createMatchDirectorState();
+    const firstGoal = updateMatchDirector(
+      { ...initial, stage: 'goalOpportunity', matchElapsed: 50, stageElapsed: 2 },
+      { dt: 0.02, totalKills: 15, playerDead: false, goalScored: true },
+    );
+    expect(firstGoal.state.stage).toBe('escalation');
+    expect(firstGoal.events).toContainEqual({ type: 'goalScored', goal: 'first' });
+
+    const halftime = updateMatchDirector(
+      { ...firstGoal.state, matchElapsed: PROTOTYPE_MATCH_CONFIG.escalation.deadlineMatchTime },
+      { dt: 0, totalKills: 30, playerDead: false },
+    );
+    expect(halftime.state.stage).toBe('halftimeChoice');
+
+    const choice = updateMatchDirector(
+      halftime.state,
+      { dt: 0.02, totalKills: 30, playerDead: false, halftimeChoice: 'pace' },
+    );
+    expect(choice.state.stage).toBe('bloodMoon');
+    expect(choice.state.halftimeChoice).toBe('pace');
+    expect(choice.events).toContainEqual({
+      type: 'halftimeChoiceSelected', choice: 'pace', automatic: false,
+    });
+
+    const finalGoal = updateMatchDirector(
+      { ...choice.state, matchElapsed: PROTOTYPE_MATCH_CONFIG.bloodMoon.deadlineMatchTime },
+      { dt: 0, totalKills: 50, playerDead: false },
+    );
+    expect(finalGoal.state.stage).toBe('finalGoal');
+
+    const finalWave = updateMatchDirector(
+      finalGoal.state,
+      { dt: 0.02, totalKills: 50, playerDead: false, goalScored: true },
+    );
+    expect(finalWave.state.stage).toBe('finalWave');
+    expect(finalWave.state.goalsScored).toBe(2);
+    expect(finalWave.events).toContainEqual({ type: 'goalScored', goal: 'final' });
+  });
+
+  it('opens the first goal at the end of the first half', () => {
+    const state = {
+      ...createMatchDirectorState(),
+      stage: 'firstHalf' as const,
+      matchElapsed: PROTOTYPE_MATCH_CONFIG.firstHalf.deadlineMatchTime,
+      totalKills: 15,
+    };
+    const update = updateMatchDirector(state, { dt: 0, totalKills: 15, playerDead: false });
+    expect(update.state.stage).toBe('goalOpportunity');
+    expect(update.events).toContainEqual({
+      type: 'goalOpportunityStarted', goal: 'first', duration: PROTOTYPE_MATCH_CONFIG.goalOpportunityDuration,
+    });
+  });
+
+  it('selects the configured halftime fallback when the choice clock expires', () => {
+    const state = {
+      ...createMatchDirectorState(),
+      stage: 'halftimeChoice' as const,
+      stageElapsed: PROTOTYPE_MATCH_CONFIG.halftimeChoiceDuration,
+    };
+    const update = updateMatchDirector(state, { dt: 0, totalKills: 30, playerDead: false });
+    expect(update.state.halftimeChoice).toBe('power');
+    expect(update.events).toContainEqual({
+      type: 'halftimeChoiceSelected', choice: 'power', automatic: true,
+    });
   });
 
   it('turns boss defeat into victory during the final wave', () => {

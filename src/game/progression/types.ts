@@ -11,6 +11,10 @@ export const UPGRADE_IDS = [
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
 
+export const EVOLUTION_IDS = ['moonBreaker', 'crimsonMeteor'] as const;
+
+export type EvolutionId = (typeof EVOLUTION_IDS)[number];
+
 export interface UpgradePrerequisite {
   upgradeId: UpgradeId;
   minStacks: number;
@@ -47,7 +51,23 @@ export interface UpgradeDefinition {
   modifierPerStack: Readonly<Partial<ProgressionModifiers>>;
 }
 
+export interface EvolutionDefinition {
+  id: EvolutionId;
+  name: string;
+  description: string;
+  requirements: readonly UpgradePrerequisite[];
+  /** One-time additive modifier bonuses applied while this evolution is unlocked. */
+  modifierBonus: Readonly<Partial<ProgressionModifiers>>;
+}
+
 export type UpgradeStacks = Record<UpgradeId, number>;
+export type EvolutionUnlocks = Record<EvolutionId, boolean>;
+
+export interface EvolutionUnlockEvent {
+  type: 'evolution-unlocked';
+  evolutionId: EvolutionId;
+  definition: EvolutionDefinition;
+}
 
 export interface ProgressionState {
   /** Player level. A new run starts at level 1. */
@@ -57,6 +77,7 @@ export interface ProgressionState {
   /** Level-ups earned but not yet resolved by choosing an upgrade. */
   pendingLevelUps: number;
   upgradeStacks: UpgradeStacks;
+  evolutions: EvolutionUnlocks;
   modifiers: ProgressionModifiers;
 }
 
@@ -70,11 +91,17 @@ export type UpgradeAvailability =
     };
 
 export type UpgradeChoiceResult =
-  | { applied: true; state: ProgressionState; definition: UpgradeDefinition }
+  | {
+      applied: true;
+      state: ProgressionState;
+      definition: UpgradeDefinition;
+      evolutionEvents: readonly EvolutionUnlockEvent[];
+    }
   | {
       applied: false;
       state: ProgressionState;
       reason: 'no-pending-level-up' | 'max-stacks' | 'level' | 'prerequisite';
+      evolutionEvents: readonly EvolutionUnlockEvent[];
     };
 
 export interface BloodXpResult {

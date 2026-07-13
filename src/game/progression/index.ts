@@ -4,6 +4,8 @@ export {
   createProgressionState,
   createSeededRandom,
   createUpgradeOffer,
+  getEligibleEvolutionIds,
+  getUnlockedEvolutionIds,
   getAvailableUpgradeIds,
   getUpgradeAvailability,
   grantBloodXp,
@@ -11,9 +13,14 @@ export {
   xpUntilNextLevel,
 } from './progression';
 export { UPGRADE_DEFINITIONS } from './upgradeDefinitions';
-export { UPGRADE_IDS } from './types';
+export { EVOLUTION_DEFINITIONS } from './evolutionDefinitions';
+export { EVOLUTION_IDS, UPGRADE_IDS } from './types';
 export type {
   BloodXpResult,
+  EvolutionDefinition,
+  EvolutionId,
+  EvolutionUnlockEvent,
+  EvolutionUnlocks,
   ProgressionModifiers,
   ProgressionState,
   RandomSource,

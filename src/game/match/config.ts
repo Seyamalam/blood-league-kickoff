@@ -4,18 +4,26 @@ import type { MatchDirectorConfig } from './types';
 export const PROTOTYPE_MATCH_CONFIG: MatchDirectorConfig = {
   id: 'prototype-3-minute',
   opening: { minimumMatchTime: 8, deadlineMatchTime: 18, killTarget: 4 },
-  firstHalf: { minimumMatchTime: 42, deadlineMatchTime: 70, killTarget: 22 },
-  goalOpportunityDuration: 20,
-  escalation: { minimumMatchTime: 112, deadlineMatchTime: 140, killTarget: 48 },
-  finalWave: { minimumMatchTime: 162, deadlineMatchTime: 180, killTarget: 75 },
+  firstHalf: { minimumMatchTime: 35, deadlineMatchTime: 50, killTarget: 15 },
+  goalOpportunityDuration: 12,
+  escalation: { minimumMatchTime: 75, deadlineMatchTime: 90, killTarget: 30 },
+  halftimeChoiceDuration: 8,
+  defaultHalftimeChoice: 'power',
+  bloodMoon: { minimumMatchTime: 120, deadlineMatchTime: 138, killTarget: 50 },
+  finalGoalDuration: 12,
+  finalWave: { minimumMatchTime: 165, deadlineMatchTime: 180, killTarget: 70 },
 };
 
-/** A data-only starting point for the intended 8–10 minute jam build. */
+/** Full production pacing target: nine minutes, within the intended 8–10 minute run. */
 export const FULL_MATCH_CONFIG: MatchDirectorConfig = {
   id: 'full-9-minute',
   opening: { minimumMatchTime: 18, deadlineMatchTime: 30, killTarget: 10 },
-  firstHalf: { minimumMatchTime: 135, deadlineMatchTime: 180, killTarget: 75 },
-  goalOpportunityDuration: 35,
-  escalation: { minimumMatchTime: 300, deadlineMatchTime: 360, killTarget: 180 },
-  finalWave: { minimumMatchTime: 480, deadlineMatchTime: 540, killTarget: 300 },
+  firstHalf: { minimumMatchTime: 125, deadlineMatchTime: 165, killTarget: 65 },
+  goalOpportunityDuration: 25,
+  escalation: { minimumMatchTime: 235, deadlineMatchTime: 270, killTarget: 120 },
+  halftimeChoiceDuration: 15,
+  defaultHalftimeChoice: 'power',
+  bloodMoon: { minimumMatchTime: 390, deadlineMatchTime: 430, killTarget: 215 },
+  finalGoalDuration: 25,
+  finalWave: { minimumMatchTime: 500, deadlineMatchTime: 540, killTarget: 285 },
 };
