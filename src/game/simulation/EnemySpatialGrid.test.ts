@@ -35,6 +35,7 @@ describe('EnemySpatialGrid', () => {
       'coach',
       'batSwarm',
       'leechStriker',
+      'corruptReferee',
     ];
     const crowd = Array.from({ length: 257 }, (_, index) =>
       enemy(index, archetypes[index % archetypes.length]!, (index % 17) * 0.06, (index % 11) * 0.06),

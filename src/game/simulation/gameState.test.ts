@@ -179,4 +179,87 @@ describe('game state match helpers', () => {
     expect(striker.position.x).toBeLessThan(state.player.position.x + 1.07);
     expect(state.player.health).toBe(100);
   });
+
+  it('unlocks corrupt referees in the late-match enemy mix', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 180;
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1 / 60);
+
+    expect(state.enemies.at(-1)).toMatchObject({
+      archetype: 'corruptReferee',
+      radius: 0.55,
+      attackDamage: 6,
+      hitPoints: 3,
+      maxHitPoints: 3,
+    });
+  });
+
+  it('telegraphs and applies exactly one ranged whistle disruption', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 180;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const referee = state.enemies[0]!;
+    referee.position = { x: state.player.position.x + 6, y: 0.98, z: state.player.position.z };
+    referee.previousPosition = { ...referee.position };
+    state.spawnTimer = 100;
+
+    updateEnemies(state, 0.01);
+    expect(referee.attackState).toBe('telegraph');
+    expect(referee.position).toEqual(referee.previousPosition);
+    expect(state.player.health).toBe(100);
+
+    updateEnemies(state, 0.65);
+    expect(referee.attackState).toBe('whistle');
+    expect(state.player.health).toBe(94);
+    expect(state.player.invulnerability).toBe(0.45);
+
+    state.player.invulnerability = 0;
+    updateEnemies(state, 0.01);
+    expect(state.player.health).toBe(94);
+  });
+
+  it('keeps closing immediately beyond the referee whistle boundary', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 180;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const referee = state.enemies[0]!;
+    referee.position = { x: state.player.position.x + 6.51, y: 0.98, z: state.player.position.z };
+    referee.previousPosition = { ...referee.position };
+    state.spawnTimer = 100;
+
+    updateEnemies(state, 0.01);
+
+    expect(referee.attackState).toBe('chase');
+    expect(referee.position.x).toBeLessThan(state.player.position.x + 6.51);
+    expect(state.player.health).toBe(100);
+  });
+
+  it('retreats to preserve standoff distance while its whistle is cooling down', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 180;
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    const referee = state.enemies[0]!;
+    referee.position = { x: state.player.position.x + 4, y: 0.98, z: state.player.position.z };
+    referee.previousPosition = { ...referee.position };
+    referee.attackCooldown = 1;
+    state.spawnTimer = 100;
+
+    updateEnemies(state, 0.1);
+
+    expect(referee.attackState).toBe('chase');
+    expect(referee.position.x).toBeGreaterThan(state.player.position.x + 4);
+  });
 });

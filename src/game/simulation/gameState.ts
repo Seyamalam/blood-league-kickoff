@@ -164,6 +164,22 @@ export function updateEnemies(state: GameState, dt: number): void {
       }
     }
 
+    if (enemy.archetype === 'corruptReferee') {
+      const whistleHit = updateRefereeAttack(enemy, distance, dt);
+      if (whistleHit && distance <= 6.5 && player.invulnerability <= 0) {
+        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.invulnerability = 0.45;
+        if (player.health <= 0) state.phase = 'dead';
+      }
+      if (enemy.attackState !== 'chase' || (distance >= 4.5 && distance <= 6.5)) {
+        movementX = 0;
+        movementZ = 0;
+      } else if (distance < 4.5) {
+        movementX = -chaseX * enemy.speed * speedBuff;
+        movementZ = -chaseZ * enemy.speed * speedBuff;
+      }
+    }
+
     if (enemy.archetype === 'winger') {
       updateWingerAttack(enemy, player.position, distance, dt);
       if (enemy.attackState === 'telegraph' || enemy.attackState === 'recover') {
@@ -437,6 +453,32 @@ function updateLeechAttack(enemy: EnemyState, distance: number, dt: number): voi
   }
 }
 
+function updateRefereeAttack(enemy: EnemyState, distance: number, dt: number): boolean {
+  if (enemy.attackState === 'chase') {
+    if (distance <= 6.5 && enemy.attackCooldown <= 0) {
+      enemy.attackState = 'telegraph';
+      enemy.attackTimer = 0.65;
+    }
+    return false;
+  }
+
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return false;
+  if (enemy.attackState === 'telegraph') {
+    enemy.attackState = 'whistle';
+    enemy.attackTimer = 0.12;
+    return true;
+  }
+  if (enemy.attackState === 'whistle') {
+    enemy.attackState = 'recover';
+    enemy.attackTimer = 0.45;
+  } else if (enemy.attackState === 'recover') {
+    enemy.attackState = 'chase';
+    enemy.attackCooldown = 2.2;
+  }
+  return false;
+}
+
 function pickArchetype(elapsed: number): EnemyArchetype {
   // Availability and weights ramp with match time, keeping the opening readable.
   const fanWeight = Math.max(38, 72 - elapsed * 0.16);
@@ -445,9 +487,16 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
   const batSwarmWeight = elapsed < 55 ? 0 : Math.min(20, 4 + (elapsed - 55) * 0.12);
   const leechStrikerWeight = elapsed < 95 ? 0 : Math.min(18, 3 + (elapsed - 95) * 0.1);
+  const corruptRefereeWeight = elapsed < 145 ? 0 : Math.min(12, 2 + (elapsed - 145) * 0.065);
   let roll =
     Math.random() *
-    (fanWeight + wingerWeight + defenderWeight + coachWeight + batSwarmWeight + leechStrikerWeight);
+    (fanWeight +
+      wingerWeight +
+      defenderWeight +
+      coachWeight +
+      batSwarmWeight +
+      leechStrikerWeight +
+      corruptRefereeWeight);
   if (roll < fanWeight) return 'bloodFan';
   roll -= fanWeight;
   if (roll < wingerWeight) return 'winger';
@@ -457,7 +506,9 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   if (roll < coachWeight) return 'coach';
   roll -= coachWeight;
   if (roll < batSwarmWeight) return 'batSwarm';
-  return 'leechStriker';
+  roll -= batSwarmWeight;
+  if (roll < leechStrikerWeight) return 'leechStriker';
+  return 'corruptReferee';
 }
 
 function enemyStats(
@@ -482,6 +533,8 @@ function enemyStats(
       return { radius: 0.38, speed: 4.15 + pace, attackDamage: 8, hitPoints: 1, y: 1.25 };
     case 'leechStriker':
       return { radius: 0.48, speed: 2.8 + pace * 0.7, attackDamage: 4, hitPoints: 3, y: 0.94 };
+    case 'corruptReferee':
+      return { radius: 0.55, speed: 2.25 + pace * 0.45, attackDamage: 6, hitPoints: 3, y: 0.98 };
     case 'bloodFan':
       return { radius: 0.52, speed: 2.1 + pace, attackDamage: 14, hitPoints: 1, y: 0.9 };
   }
