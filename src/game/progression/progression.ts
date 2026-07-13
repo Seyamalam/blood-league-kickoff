@@ -37,6 +37,8 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   frostBurstRadius: 0,
   frostSlowAmount: 0,
   frostSlowDuration: 0,
+  multiBallCount: 0,
+  multiBallDamageMultiplier: 0,
 });
 
 /** Creates a fresh run progression state. */

@@ -15,6 +15,8 @@ const EMPTY: SecondaryCombatModifiers = {
   frostBurstRadius: 0,
   frostSlowAmount: 0,
   frostSlowDuration: 0,
+  multiBallCount: 0,
+  multiBallDamageMultiplier: 0,
 };
 
 describe('SecondaryWeaponSystem', () => {
@@ -136,5 +138,55 @@ describe('SecondaryWeaponSystem', () => {
 
   it('does not queue frost bursts without frost damage', () => {
     expect(new SecondaryWeaponSystem().triggerFrostBurst({ x: 0, y: 0, z: 0 }, EMPTY)).toBe(false);
+  });
+
+  it('spawns a deterministic symmetric multiball fan in a bounded pool', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = { ...EMPTY, multiBallCount: 3, multiBallDamageMultiplier: 0.5 };
+    const trigger = {
+      origin: { x: 0, y: 0.9, z: 0 },
+      direction: { x: 1, y: 0, z: 0 },
+      baseDamage: 10,
+      modifiers,
+    };
+
+    expect(system.triggerMultiBall(trigger)).toBe(3);
+    const firstFan = system.renderState.multiBallShots.filter((shot) => shot.active);
+    expect(firstFan).toHaveLength(3);
+    expect(firstFan[0]!.velocity.z).toBeCloseTo(-firstFan[2]!.velocity.z);
+    expect(firstFan[1]!.velocity.z).toBeCloseTo(0);
+
+    system.triggerMultiBall({ ...trigger, modifiers: { ...modifiers, multiBallCount: 4 } });
+    expect(system.renderState.multiBallShots.filter((shot) => shot.active)).toHaveLength(6);
+  });
+
+  it('deals duplicate-shot damage once per target', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = { ...EMPTY, multiBallCount: 1, multiBallDamageMultiplier: 0.6 };
+    expect(
+      system.triggerMultiBall({
+        origin: { x: 0, y: 0.9, z: 0 },
+        direction: { x: 1, y: 0, z: 0 },
+        baseDamage: 10,
+        modifiers,
+      }),
+    ).toBe(1);
+    const input = {
+      dt: 0.05,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets: [{ id: 4, position: { x: 1.1, y: 0.9, z: 0 }, radius: 0.2 }],
+    };
+
+    const first = system.step(input);
+    expect(first.hits).toContainEqual(
+      expect.objectContaining({ targetId: 4, damage: 6, source: 'multi-ball' }),
+    );
+    expect(first.events).toContainEqual(expect.objectContaining({ type: 'multi-ball-spawned', count: 1 }));
+    expect(system.step({ ...input, dt: 0 }).hits).toHaveLength(0);
   });
 });

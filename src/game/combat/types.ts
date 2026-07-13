@@ -17,6 +17,8 @@ export type SecondaryCombatModifiers = Readonly<
     | 'frostBurstRadius'
     | 'frostSlowAmount'
     | 'frostSlowDuration'
+    | 'multiBallCount'
+    | 'multiBallDamageMultiplier'
   >
 >;
 
@@ -40,7 +42,13 @@ export interface SecondaryWeaponStepInput {
 }
 
 export type SecondaryDamageSource =
-  'garlic-trail' | 'spectral-ball' | 'blood-bomb' | 'ghost-pass' | 'chain-lightning' | 'frost-burst';
+  | 'garlic-trail'
+  | 'spectral-ball'
+  | 'blood-bomb'
+  | 'ghost-pass'
+  | 'chain-lightning'
+  | 'frost-burst'
+  | 'multi-ball';
 
 export interface SecondaryDamageHit {
   targetId: number;
@@ -69,7 +77,9 @@ export type SecondaryWeaponEvent =
       targetId: number;
       speedMultiplier: number;
       duration: number;
-    };
+    }
+  | { type: 'multi-ball-spawned'; position: Readonly<Vec3>; count: number }
+  | { type: 'multi-ball-hit'; position: Readonly<Vec3>; targetId: number; shotIndex: number };
 
 /** Arrays are reused by the system and remain valid only until its next step/reset. */
 export interface SecondaryWeaponStepResult {
@@ -100,15 +110,32 @@ export interface GhostPassState {
   lifetime: number;
 }
 
+export interface MultiBallShotState {
+  active: boolean;
+  position: Vec3;
+  velocity: Vec3;
+  radius: number;
+  age: number;
+  lifetime: number;
+}
+
 export interface SecondaryWeaponRenderState {
   readonly garlicZones: readonly GarlicZoneState[];
   readonly orbitingBalls: readonly OrbitingBallState[];
   readonly ghostPasses: readonly GhostPassState[];
+  readonly multiBallShots: readonly MultiBallShotState[];
 }
 
 export interface GhostPassTrigger {
   origin: Readonly<Vec3>;
   direction: Readonly<Vec3>;
   baseDamage?: number;
+  modifiers: SecondaryCombatModifiers;
+}
+
+export interface MultiBallTrigger {
+  origin: Readonly<Vec3>;
+  direction: Readonly<Vec3>;
+  baseDamage: number;
   modifiers: SecondaryCombatModifiers;
 }

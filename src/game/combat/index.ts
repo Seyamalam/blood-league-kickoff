@@ -24,6 +24,8 @@ export type {
   GarlicZoneState,
   GhostPassState,
   GhostPassTrigger,
+  MultiBallShotState,
+  MultiBallTrigger,
   OrbitingBallState,
   SecondaryCombatModifiers,
   SecondaryDamageHit,

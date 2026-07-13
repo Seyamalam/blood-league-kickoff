@@ -4,6 +4,8 @@ import type {
   GarlicZoneState,
   GhostPassState,
   GhostPassTrigger,
+  MultiBallShotState,
+  MultiBallTrigger,
   OrbitingBallState,
   SecondaryCombatModifiers,
   SecondaryDamageHit,
@@ -33,6 +35,12 @@ const CHAIN_LIGHTNING_RANGE = 4.5;
 const FROST_BURST_TRIGGER_CAP = 8;
 const FROST_BURST_TARGET_CAP = 12;
 const FROST_BURST_BASE_RADIUS = 1.25;
+const MULTI_BALL_POOL_CAP = 6;
+const MULTI_BALL_TRIGGER_CAP = 4;
+const MULTI_BALL_SPEED = 22;
+const MULTI_BALL_LIFETIME = 1.2;
+const MULTI_BALL_RADIUS = 0.3;
+const MULTI_BALL_SPREAD_RADIANS = 0.14;
 const HIT_CAP_PER_STEP = 256;
 const EVENT_CAP_PER_STEP = 64;
 
@@ -75,6 +83,13 @@ interface FrostBurstInternal {
   slowDuration: number;
 }
 
+interface MultiBallInternal extends MultiBallShotState {
+  damage: number;
+  hitTargets: Set<number>;
+  spawnEventCount: number;
+  shotIndex: number;
+}
+
 /**
  * Fixed-step secondary weapon simulation. It owns bounded pools and reports
  * typed damage queries instead of mutating enemies, keeping it independent of
@@ -89,6 +104,7 @@ export class SecondaryWeaponSystem {
   private readonly chainVisitedIds = new Int32Array(CHAIN_LIGHTNING_TARGET_CAP + 1);
   private readonly frostBurstTriggers: FrostBurstInternal[];
   private readonly frostVisitedIds = new Int32Array(FROST_BURST_TARGET_CAP);
+  private readonly multiBallShots: MultiBallInternal[];
   private readonly hits: SecondaryDamageHit[] = [];
   private readonly events: SecondaryWeaponEvent[] = [];
   private readonly result: SecondaryWeaponStepResult;
@@ -99,6 +115,7 @@ export class SecondaryWeaponSystem {
   private ghostCursor = 0;
   private chainLightningCursor = 0;
   private frostBurstCursor = 0;
+  private multiBallCursor = 0;
   private garlicPositionValid = false;
   private previousBallReturning = false;
   private readonly lastGarlicPosition: Vec3 = { x: 0, y: 0, z: 0 };
@@ -110,11 +127,13 @@ export class SecondaryWeaponSystem {
     this.ghostPasses = Array.from({ length: GHOST_PASS_CAP }, createGhostPass);
     this.chainLightningTriggers = Array.from({ length: CHAIN_LIGHTNING_TRIGGER_CAP }, createChainLightning);
     this.frostBurstTriggers = Array.from({ length: FROST_BURST_TRIGGER_CAP }, createFrostBurst);
+    this.multiBallShots = Array.from({ length: MULTI_BALL_POOL_CAP }, createMultiBallShot);
     this.result = { hits: this.hits, events: this.events };
     this.visibleState = {
       garlicZones: this.garlicZones,
       orbitingBalls: this.orbitingBalls,
       ghostPasses: this.ghostPasses,
+      multiBallShots: this.multiBallShots,
     };
   }
 
@@ -129,6 +148,7 @@ export class SecondaryWeaponSystem {
     this.ghostCursor = 0;
     this.chainLightningCursor = 0;
     this.frostBurstCursor = 0;
+    this.multiBallCursor = 0;
     this.garlicPositionValid = false;
     this.previousBallReturning = false;
     this.hits.length = 0;
@@ -146,6 +166,11 @@ export class SecondaryWeaponSystem {
     }
     for (const chain of this.chainLightningTriggers) chain.active = false;
     for (const burst of this.frostBurstTriggers) burst.active = false;
+    for (const shot of this.multiBallShots) {
+      shot.active = false;
+      shot.spawnEventCount = 0;
+      shot.hitTargets.clear();
+    }
   }
 
   step(input: Readonly<SecondaryWeaponStepInput>): SecondaryWeaponStepResult {
@@ -173,6 +198,7 @@ export class SecondaryWeaponSystem {
     }
     this.previousBallReturning = input.ballReturning;
     this.updateGhostPasses(input.targets, dt);
+    this.updateMultiBallShots(input.targets, dt);
     return this.result;
   }
 
@@ -259,6 +285,37 @@ export class SecondaryWeaponSystem {
     burst.speedMultiplier = 1 - slowAmount;
     burst.slowDuration = slowDuration;
     return true;
+  }
+
+  /** Spawns a small, fixed-pool fan of spectral shots from a confirmed primary impact. */
+  triggerMultiBall(trigger: Readonly<MultiBallTrigger>): number {
+    const count = Math.floor(safeFinite(trigger.modifiers.multiBallCount, 0, MULTI_BALL_TRIGGER_CAP, 0));
+    const damageMultiplier = safeFinite(trigger.modifiers.multiBallDamageMultiplier, 0, 3, 0);
+    const baseDamage = safeFinite(trigger.baseDamage, 0, 64, 0);
+    const length = Math.hypot(trigger.direction.x, trigger.direction.y, trigger.direction.z);
+    if (count <= 0 || damageMultiplier <= 0 || baseDamage <= 0 || length < 0.0001) return 0;
+
+    const nx = trigger.direction.x / length;
+    const ny = trigger.direction.y / length;
+    const nz = trigger.direction.z / length;
+    for (let index = 0; index < count; index += 1) {
+      const shot = this.multiBallShots[this.multiBallCursor]!;
+      this.multiBallCursor = (this.multiBallCursor + 1) % this.multiBallShots.length;
+      const spread = (index - (count - 1) / 2) * MULTI_BALL_SPREAD_RADIANS;
+      const cos = Math.cos(spread);
+      const sin = Math.sin(spread);
+      shot.active = true;
+      shot.age = 0;
+      shot.damage = baseDamage * damageMultiplier;
+      shot.spawnEventCount = index === 0 ? count : 0;
+      shot.shotIndex = index;
+      copyPosition(shot.position, trigger.origin);
+      shot.velocity.x = (nx * cos - nz * sin) * MULTI_BALL_SPEED;
+      shot.velocity.y = ny * MULTI_BALL_SPEED;
+      shot.velocity.z = (nz * cos + nx * sin) * MULTI_BALL_SPEED;
+      shot.hitTargets.clear();
+    }
+    return count;
   }
 
   private updateGarlicTrail(input: Readonly<SecondaryWeaponStepInput>, dt: number): void {
@@ -507,6 +564,44 @@ export class SecondaryWeaponSystem {
     }
   }
 
+  private updateMultiBallShots(targets: readonly CombatTarget[], dt: number): void {
+    for (const shot of this.multiBallShots) {
+      if (!shot.active) continue;
+      if (shot.spawnEventCount > 0) {
+        pushCapped(
+          this.events,
+          { type: 'multi-ball-spawned', position: shot.position, count: shot.spawnEventCount },
+          EVENT_CAP_PER_STEP,
+        );
+        shot.spawnEventCount = 0;
+      }
+      shot.age += dt;
+      if (shot.age >= shot.lifetime) {
+        shot.active = false;
+        continue;
+      }
+      shot.position.x += shot.velocity.x * dt;
+      shot.position.y += shot.velocity.y * dt;
+      shot.position.z += shot.velocity.z * dt;
+      for (const target of targets) {
+        if (shot.hitTargets.has(target.id)) continue;
+        if (!overlaps(shot.position, shot.radius, target)) continue;
+        this.pushHit(target, shot.damage, 'multi-ball', shot.position);
+        shot.hitTargets.add(target.id);
+        pushCapped(
+          this.events,
+          {
+            type: 'multi-ball-hit',
+            position: shot.position,
+            targetId: target.id,
+            shotIndex: shot.shotIndex,
+          },
+          EVENT_CAP_PER_STEP,
+        );
+      }
+    }
+  }
+
   private queryRadius(
     targets: readonly CombatTarget[],
     position: Readonly<Vec3>,
@@ -586,6 +681,21 @@ function createFrostBurst(): FrostBurstInternal {
     damage: 0,
     speedMultiplier: 1,
     slowDuration: 0,
+  };
+}
+
+function createMultiBallShot(): MultiBallInternal {
+  return {
+    active: false,
+    position: { x: 0, y: 0, z: 0 },
+    velocity: { x: 0, y: 0, z: 0 },
+    radius: MULTI_BALL_RADIUS,
+    age: 0,
+    lifetime: MULTI_BALL_LIFETIME,
+    damage: 0,
+    hitTargets: new Set<number>(),
+    spawnEventCount: 0,
+    shotIndex: 0,
   };
 }
 

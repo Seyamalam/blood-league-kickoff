@@ -44,6 +44,8 @@ export interface ProgressionModifiers {
   frostBurstRadius: number;
   frostSlowAmount: number;
   frostSlowDuration: number;
+  multiBallCount: number;
+  multiBallDamageMultiplier: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;
