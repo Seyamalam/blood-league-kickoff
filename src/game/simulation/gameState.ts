@@ -140,11 +140,21 @@ export function updateEnemies(state: GameState, dt: number): void {
     const separationZ = enemySpatialGrid.separationZ;
 
     const speedBuff = enemy.buffed ? 1.28 : 1;
-    dx = dx / distance + separationX * 1.35;
-    dz = dz / distance + separationZ * 1.35;
+    const chaseX = dx / distance;
+    const chaseZ = dz / distance;
+    dx = chaseX + separationX * 1.35;
+    dz = chaseZ + separationZ * 1.35;
     const moveLength = Math.max(1, Math.hypot(dx, dz));
     let movementX = (dx / moveLength) * enemy.speed * speedBuff * crowdSlow;
     let movementZ = (dz / moveLength) * enemy.speed * speedBuff * crowdSlow;
+
+    if (enemy.archetype === 'batSwarm') {
+      // Swarms cut across the direct pursuit line in a predictable wave. The
+      // enemy id offsets neighboring swarms without introducing frame-randomness.
+      const weave = Math.sin(state.elapsed * 4.4 + enemy.id * 1.618) * 1.65;
+      movementX -= chaseZ * weave;
+      movementZ += chaseX * weave;
+    }
 
     if (enemy.archetype === 'winger') {
       updateWingerAttack(enemy, player.position, distance, dt);
@@ -396,13 +406,16 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   const wingerWeight = elapsed < 10 ? 0 : Math.min(30, 10 + (elapsed - 10) * 0.18);
   const defenderWeight = elapsed < 24 ? 0 : Math.min(24, 5 + (elapsed - 24) * 0.15);
   const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
-  let roll = Math.random() * (fanWeight + wingerWeight + defenderWeight + coachWeight);
+  const batSwarmWeight = elapsed < 55 ? 0 : Math.min(20, 4 + (elapsed - 55) * 0.12);
+  let roll = Math.random() * (fanWeight + wingerWeight + defenderWeight + coachWeight + batSwarmWeight);
   if (roll < fanWeight) return 'bloodFan';
   roll -= fanWeight;
   if (roll < wingerWeight) return 'winger';
   roll -= wingerWeight;
   if (roll < defenderWeight) return 'defender';
-  return 'coach';
+  roll -= defenderWeight;
+  if (roll < coachWeight) return 'coach';
+  return 'batSwarm';
 }
 
 function enemyStats(
@@ -423,6 +436,8 @@ function enemyStats(
       return { radius: 0.76, speed: 1.35 + pace * 0.35, attackDamage: 22, hitPoints: 4, y: 1.02 };
     case 'coach':
       return { radius: 0.6, speed: 1.7 + pace * 0.5, attackDamage: 12, hitPoints: 2, y: 0.98 };
+    case 'batSwarm':
+      return { radius: 0.38, speed: 4.15 + pace, attackDamage: 8, hitPoints: 1, y: 1.25 };
     case 'bloodFan':
       return { radius: 0.52, speed: 2.1 + pace, attackDamage: 14, hitPoints: 1, y: 0.9 };
   }

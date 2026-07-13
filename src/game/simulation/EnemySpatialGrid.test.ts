@@ -28,7 +28,7 @@ describe('EnemySpatialGrid', () => {
 
   it('grows capacity geometrically and handles a dense mixed 257-enemy crowd', () => {
     const grid = new EnemySpatialGrid(-22, -14, 22, 14, 2.5, 4);
-    const archetypes: readonly EnemyArchetype[] = ['bloodFan', 'winger', 'defender', 'coach'];
+    const archetypes: readonly EnemyArchetype[] = ['bloodFan', 'winger', 'defender', 'coach', 'batSwarm'];
     const crowd = Array.from({ length: 257 }, (_, index) =>
       enemy(index, archetypes[index % archetypes.length]!, (index % 17) * 0.06, (index % 11) * 0.06),
     );

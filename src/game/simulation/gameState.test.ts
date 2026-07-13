@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createGameState,
   resetKickoffFormation,
@@ -8,6 +8,10 @@ import {
 } from './gameState';
 
 describe('game state match helpers', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('resets the formation without erasing run progress', () => {
     const state = createGameState();
     state.score = 2_400;
@@ -66,5 +70,49 @@ describe('game state match helpers', () => {
     state.spawnTimer = 0;
     updateEnemies(state, 1 / 60);
     expect(state.enemies).toHaveLength(72);
+  });
+
+  it('unlocks fragile bat swarms in the later enemy mix', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 60;
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1 / 60);
+
+    const swarm = state.enemies.at(-1);
+    expect(swarm).toMatchObject({
+      archetype: 'batSwarm',
+      radius: 0.38,
+      attackDamage: 8,
+      hitPoints: 1,
+      maxHitPoints: 1,
+    });
+    expect(swarm!.speed).toBeGreaterThan(4);
+    expect(swarm!.position.y).toBe(1.25);
+  });
+
+  it('gives bat swarms a deterministic lateral weave while pursuing', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const states = [createGameState(), createGameState()];
+    for (const state of states) {
+      state.phase = 'playing';
+      state.elapsed = 60;
+      state.spawnTimer = 0;
+      updateEnemies(state, 1 / 60);
+      const swarm = state.enemies[0]!;
+      swarm.position = { x: 0, y: 1.25, z: -8 };
+      swarm.previousPosition = { ...swarm.position };
+      state.player.position = { x: 0, y: 0.9, z: 5 };
+      state.spawnTimer = 100;
+      updateEnemies(state, 0.1);
+    }
+
+    const firstSwarm = states[0]!.enemies[0]!;
+    const secondSwarm = states[1]!.enemies[0]!;
+    expect(firstSwarm.position.z).toBeGreaterThan(-8);
+    expect(Math.abs(firstSwarm.position.x)).toBeGreaterThan(0.01);
+    expect(firstSwarm.position).toEqual(secondSwarm.position);
   });
 });
