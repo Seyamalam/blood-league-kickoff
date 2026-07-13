@@ -160,7 +160,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Corrupt Referee.
 - [x] `P1` Add Goalkeeper Brute.
 - [x] `P1` Add the lightning path.
-- [ ] `P1` Add frost, multiball, and black-hole paths.
+- [x] `P1` Add the frost path.
+- [ ] `P1` Add multiball and black-hole paths.
 - [ ] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
 - [ ] `P2` Add expanded victory presentation.
@@ -181,7 +182,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Reduced camera-shake option.
 - [x] `P1` Aim-assist strength.
 - [ ] `P1` Rebindable controls.
-- [ ] `P1` Color-independent enemy/ball-state indicators.
+- [x] `P1` Color-independent enemy/ball-state indicators.
 
 ## Performance
 

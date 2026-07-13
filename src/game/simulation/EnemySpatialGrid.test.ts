@@ -73,6 +73,8 @@ function enemy(id: number, archetype: EnemyArchetype, x: number, z: number): Ene
     attackCooldown: 0,
     attackDirection: { x: 0, y: 0, z: 1 },
     shieldFlash: 0,
+    slowSpeedMultiplier: 1,
+    slowTimer: 0,
     elite: false,
     eliteModifier: 1,
   };

@@ -40,6 +40,7 @@ import {
 } from './game/progression';
 import {
   createGameState,
+  applyEnemySlow,
   damageEnemiesWithBall,
   damageEnemiesWithSecondary,
   resetGameState,
@@ -83,6 +84,7 @@ const PLAYABLE_UPGRADES = [
   'bloodBomb',
   'ghostPass',
   'stormStuds',
+  'frostCleats',
 ] as const satisfies readonly UpgradeId[];
 
 async function bootstrap(): Promise<void> {
@@ -499,6 +501,7 @@ async function bootstrap(): Promise<void> {
               progression.modifiers,
             );
           }
+          secondaryWeapons.triggerFrostBurst(physics.ballPosition, progression.modifiers);
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -544,6 +547,10 @@ async function bootstrap(): Promise<void> {
         for (const event of secondaryStep.events) {
           if (event.type === 'blood-bomb-triggered') bridge.volleyBurst(event.position, 1.2);
           if (event.type === 'chain-lightning-hit') bridge.lightningBurst(event.position, 0.95);
+          if (event.type === 'frost-burst-triggered') bridge.frostBurst(event.position, 1.2);
+          if (event.type === 'frost-burst-hit') {
+            applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
+          }
         }
 
         const collectedXp = bloodShards.update(state.player.position, FIXED_STEP);

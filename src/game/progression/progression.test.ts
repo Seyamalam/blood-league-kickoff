@@ -57,4 +57,21 @@ describe('progression', () => {
     expect(secondStorm.state.modifiers.chainLightningDamage).toBe(12);
     expect(secondStorm.state.modifiers.chainLightningTargets).toBe(2);
   });
+
+  it('unlocks Frost Cleats after Rapid Recall and stacks its burst and slow', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(4)).state;
+    const recall = chooseUpgrade(state, 'rapidRecall');
+    expect(recall.applied).toBe(true);
+    if (!recall.applied) return;
+    state = recall.state;
+    const firstFrost = chooseUpgrade(state, 'frostCleats');
+    expect(firstFrost.applied).toBe(true);
+    if (!firstFrost.applied) return;
+    const secondFrost = chooseUpgrade(firstFrost.state, 'frostCleats');
+    expect(secondFrost.applied).toBe(true);
+    if (!secondFrost.applied) return;
+    expect(secondFrost.state.modifiers.frostBurstDamage).toBe(10);
+    expect(secondFrost.state.modifiers.frostSlowAmount).toBeCloseTo(0.2);
+    expect(secondFrost.state.modifiers.frostSlowDuration).toBeCloseTo(0.9);
+  });
 });

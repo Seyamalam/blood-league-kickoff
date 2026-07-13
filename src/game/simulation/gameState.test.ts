@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyEnemySlow,
   createGameState,
   damageEnemiesWithBall,
   resetKickoffFormation,
@@ -315,5 +316,16 @@ describe('game state match helpers', () => {
     expect(powered.rebound).toBeUndefined();
     expect(brute.hitPoints).toBe(6);
     expect(brute.knockbackVelocity.x).toBeGreaterThan(0);
+  });
+
+  it('applies the strongest active frost slow with bounded duration', () => {
+    const state = createGameState();
+    const enemy = spawnEliteEnemy(state, 'winger', 1);
+
+    expect(applyEnemySlow(state, enemy.id, 0.7, 2)).toBe(true);
+    expect(applyEnemySlow(state, enemy.id, 0.9, 9)).toBe(true);
+    expect(enemy.slowSpeedMultiplier).toBe(0.7);
+    expect(enemy.slowTimer).toBe(6);
+    expect(applyEnemySlow(state, 999_999, 0.5, 1)).toBe(false);
   });
 });

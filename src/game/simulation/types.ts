@@ -48,6 +48,8 @@ export interface EnemyState {
   attackCooldown: number;
   attackDirection: Vec3;
   shieldFlash: number;
+  slowSpeedMultiplier: number;
+  slowTimer: number;
   /** Boss-requested elites are visually distinguishable and use boosted stats. */
   elite: boolean;
   eliteModifier: number;

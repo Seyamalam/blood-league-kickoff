@@ -102,6 +102,20 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
       chainLightningTargets: 1,
     },
   }),
+  frostCleats: define({
+    id: 'frostCleats',
+    name: 'Frost Cleats',
+    description: 'Ball impacts burst with slowing grave-frost.',
+    maxStacks: 4,
+    minPlayerLevel: 3,
+    prerequisites: [{ upgradeId: 'rapidRecall', minStacks: 1 }],
+    modifierPerStack: {
+      frostBurstDamage: 5,
+      frostBurstRadius: 0.25,
+      frostSlowAmount: 0.1,
+      frostSlowDuration: 0.45,
+    },
+  }),
 } satisfies Record<UpgradeId, UpgradeDefinition>);
 
 function define(definition: UpgradeDefinition): Readonly<UpgradeDefinition> {

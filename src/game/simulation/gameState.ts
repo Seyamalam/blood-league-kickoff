@@ -121,6 +121,7 @@ export function updateEnemies(state: GameState, dt: number): void {
     enemy.shieldFlash = Math.max(0, enemy.shieldFlash - dt);
     enemy.lastBallHit = Math.max(0, enemy.lastBallHit - dt);
     enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
+    enemy.slowTimer = Math.max(0, enemy.slowTimer - dt);
     let dx = player.position.x - enemy.position.x;
     let dz = player.position.z - enemy.position.z;
     const distance = Math.max(0.001, Math.hypot(dx, dz));
@@ -190,6 +191,10 @@ export function updateEnemies(state: GameState, dt: number): void {
         movementZ = enemy.attackDirection.z * 8.4;
       }
     }
+
+    const slowMultiplier = enemy.slowTimer > 0 ? enemy.slowSpeedMultiplier : 1;
+    movementX *= slowMultiplier;
+    movementZ *= slowMultiplier;
 
     const knockbackDamping = Math.exp(-7.5 * dt);
     movementX += enemy.knockbackVelocity.x;
@@ -361,6 +366,22 @@ export function damageEnemiesWithSecondary(
   return { hits, kills, blockedHits: 0 };
 }
 
+export function applyEnemySlow(
+  state: GameState,
+  targetId: number,
+  speedMultiplier: number,
+  duration: number,
+): boolean {
+  const enemy = state.enemies.find((candidate) => candidate.id === targetId);
+  if (!enemy || !Number.isFinite(speedMultiplier) || !Number.isFinite(duration) || duration <= 0)
+    return false;
+  const safeMultiplier = Math.max(0.2, Math.min(1, speedMultiplier));
+  enemy.slowSpeedMultiplier =
+    enemy.slowTimer > 0 ? Math.min(enemy.slowSpeedMultiplier, safeMultiplier) : safeMultiplier;
+  enemy.slowTimer = Math.max(enemy.slowTimer, Math.min(6, duration));
+  return true;
+}
+
 function awardKills(state: GameState, kills: number): void {
   if (kills <= 0) return;
   state.kills += kills;
@@ -427,6 +448,8 @@ function createEnemyState(
     attackCooldown: archetype === 'winger' ? 0.7 + Math.random() * 0.5 : 0,
     attackDirection: { x: 0, y: 0, z: 1 },
     shieldFlash: 0,
+    slowSpeedMultiplier: 1,
+    slowTimer: 0,
     elite,
     eliteModifier,
   };

@@ -15,7 +15,10 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added a combat-charged first-person Focus Kick with real-time slow aiming, one empowered shot, HUD state, and cooldown.
 - Locked the low-poly gothic palette, silhouettes, lighting, VFX grammar, accessibility rules, and performance budgets.
 - Added selectable Storm Studs with bounded deterministic chain-lightning hops and cyan impact feedback.
+- Added selectable Frost Cleats with bounded deterministic impact bursts, timed enemy slowing, and ice feedback.
+- Added patterned/glyph ball-state indicators and geometric special-attack markers that do not depend on color.
 - Added idempotent shutdown/HMR cleanup across listeners, UI, WebGL resources, shared enemy assets, and Rapier WASM.
+- Split production output into small app, Three.js, and offline Rapier/WASM chunks with relative desktop-safe loading.
 - Downloaded v0.7.1, corrected its portable checksum path, and verified both the checksum and ZIP contents.
 
 ## v0.7.1 — 2026-07-14

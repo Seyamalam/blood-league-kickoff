@@ -172,6 +172,10 @@ export class RenderBridge {
     this.startBurst(position, intensity, 0x66d9ff);
   }
 
+  frostBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 1.15, 0xb9f2ff);
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
