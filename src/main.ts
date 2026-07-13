@@ -9,7 +9,9 @@ import {
   updateCountGoalkeeper,
   type CountGoalkeeperState,
 } from './game/boss';
+import { SecondaryWeaponSystem } from './game/combat';
 import { createMatchDirectorState, getMatchObjective, updateMatchDirector } from './game/match';
+import { BloodShardSystem } from './game/pickups';
 import {
   chooseUpgrade,
   createProgressionState,
@@ -17,7 +19,7 @@ import {
   grantBloodXp,
   type UpgradeId,
 } from './game/progression';
-import { createGameState, damageEnemiesWithBall, resetGameState, updateEnemies, updatePlayer } from './game/simulation/gameState';
+import { createGameState, damageEnemiesWithBall, damageEnemiesWithSecondary, resetGameState, updateEnemies, updatePlayer } from './game/simulation/gameState';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
 import { CameraController } from './render/app/CameraController';
@@ -25,6 +27,8 @@ import { createRenderer } from './render/app/createRenderer';
 import { createScene } from './render/app/createScene';
 import { GoalBeacon } from './render/objects/GoalBeacon';
 import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
+import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
+import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
 import { SettingsOverlay } from './ui/SettingsOverlay';
@@ -32,7 +36,16 @@ import { UpgradeOverlay } from './ui/UpgradeOverlay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
-const PLAYABLE_UPGRADES = ['silverBall', 'powerKick', 'rapidRecall'] as const satisfies readonly UpgradeId[];
+const PLAYABLE_UPGRADES = [
+  'silverBall',
+  'powerKick',
+  'rapidRecall',
+  'piercingStuds',
+  'garlicTrail',
+  'orbitingSpectralBall',
+  'bloodBomb',
+  'ghostPass',
+] as const satisfies readonly UpgradeId[];
 
 async function bootstrap(): Promise<void> {
   const root = document.getElementById('app');
@@ -50,6 +63,10 @@ async function bootstrap(): Promise<void> {
   const bridge = new RenderBridge(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
+  const bloodShards = new BloodShardSystem();
+  const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
+  const secondaryWeapons = new SecondaryWeaponSystem();
+  const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const hud = new Hud(root);
   const upgradeOverlay = new UpgradeOverlay(root);
   const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
@@ -117,6 +134,10 @@ async function bootstrap(): Promise<void> {
     bridge.reset();
     goalBeacon.reset();
     bossVisual.reset();
+    bloodShards.reset();
+    bloodShardRenderer.reset();
+    secondaryWeapons.reset();
+    secondaryRenderer.reset();
     upgradeOverlay.reset();
     settingsOverlay.hide();
     hud.reset();
@@ -190,12 +211,18 @@ async function bootstrap(): Promise<void> {
       if (simulationActive) physics.step(state.player.position, state.player.facing, FIXED_STEP);
       if (simulationActive) {
         const comboBeforeHit = state.combo;
-        const { hits, kills } = damageEnemiesWithBall(
+        const primaryDamage = damageEnemiesWithBall(
           state,
           physics.ballPosition,
           physics.ballSpeed,
           progression.modifiers.ballDamageMultiplier,
+          physics.ballVelocity,
+          progression.modifiers.pierceCount,
         );
+        const { hits, kills } = primaryDamage;
+        if (primaryDamage.rebound) {
+          physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
+        }
         if (hits > 0) {
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
@@ -203,7 +230,38 @@ async function bootstrap(): Promise<void> {
           cameraController.hitImpulse(hitIntensity);
         }
         if (state.combo > comboBeforeHit) audio.playKill(state.combo);
-        if (kills > 0) progression = grantBloodXp(progression, kills * 10).state;
+        if (kills > 0) {
+          bloodShards.spawnOnKill(physics.ballPosition, kills * 10, Math.min(9, kills * 3));
+          secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
+        }
+
+        const secondaryStep = secondaryWeapons.step({
+          dt: FIXED_STEP,
+          playerPosition: state.player.position,
+          ballPosition: physics.ballPosition,
+          ballSpeed: physics.ballSpeed,
+          ballInFlight: !physics.ballPossessed,
+          ballReturning: physics.ballState === 'recalling' || physics.ballState === 'recovering' || physics.ballState === 'volley-window',
+          ballDamage: physics.ballSpeed > 17 ? 2 : 1,
+          modifiers: progression.modifiers,
+          targets: state.enemies,
+        });
+        const secondaryDamage = damageEnemiesWithSecondary(state, secondaryStep.hits);
+        if (secondaryDamage.hits > 0) {
+          audio.playHit(0.7);
+          const effectPosition = secondaryStep.hits[0]?.position ?? physics.ballPosition;
+          bridge.hitBurst(effectPosition, 0.8);
+        }
+        if (secondaryDamage.kills > 0) {
+          bloodShards.spawnOnKill(physics.ballPosition, secondaryDamage.kills * 10, Math.min(9, secondaryDamage.kills * 3));
+          audio.playKill(state.combo);
+        }
+        for (const event of secondaryStep.events) {
+          if (event.type === 'blood-bomb-triggered') bridge.volleyBurst(event.position, 1.2);
+        }
+
+        const collectedXp = bloodShards.update(state.player.position, FIXED_STEP);
+        if (collectedXp > 0) progression = grantBloodXp(progression, collectedXp).state;
 
         let bossDefeatedThisStep = false;
         if (boss && boss.phase !== 'defeated') {
@@ -292,6 +350,8 @@ async function bootstrap(): Promise<void> {
     cameraController.update(renderPlayerPosition, frameTime);
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
     bossVisual.sync(boss, alpha);
+    bloodShardRenderer.sync(bloodShards.state, alpha);
+    secondaryRenderer.sync(secondaryWeapons.renderState);
     hud.update(
       state,
       physics.ballState,
@@ -315,6 +375,8 @@ async function bootstrap(): Promise<void> {
     void audio.dispose();
     goalBeacon.dispose();
     bossVisual.dispose();
+    bloodShardRenderer.dispose();
+    secondaryRenderer.dispose();
     upgradeOverlay.dispose();
     settingsOverlay.dispose();
     bridge.dispose();

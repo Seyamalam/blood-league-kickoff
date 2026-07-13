@@ -18,6 +18,7 @@ export interface PlayerState {
 }
 
 export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach';
+export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'recover';
 
 export interface EnemyState {
   id: number;
@@ -32,6 +33,12 @@ export interface EnemyState {
   hitFlash: number;
   lastBallHit: number;
   buffed: boolean;
+  knockbackVelocity: Vec3;
+  attackState: EnemyAttackState;
+  attackTimer: number;
+  attackCooldown: number;
+  attackDirection: Vec3;
+  shieldFlash: number;
 }
 
 export type MatchPhase = 'ready' | 'playing' | 'dead' | 'won';

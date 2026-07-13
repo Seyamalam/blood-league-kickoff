@@ -160,6 +160,18 @@ export class PhysicsWorld {
     this.recallSpeedMultiplier = safeMultiplier(modifiers.recallSpeedMultiplier, 0.5, 2);
   }
 
+  applyBallRebound(normal: Readonly<Vec3>, velocityMultiplier = 0.82): void {
+    if (this.possessed) return;
+    const velocity = this.ballBody.linvel();
+    const dot = velocity.x * normal.x + velocity.y * normal.y + velocity.z * normal.z;
+    const scale = Number.isFinite(velocityMultiplier) ? Math.max(0.25, Math.min(1.2, velocityMultiplier)) : 0.82;
+    this.ballBody.setLinvel({
+      x: (velocity.x - 2 * dot * normal.x) * scale,
+      y: Math.max(1.8, (velocity.y - 2 * dot * normal.y) * scale),
+      z: (velocity.z - 2 * dot * normal.z) * scale,
+    }, true);
+  }
+
   step(playerPosition: Vec3, playerFacing: number, dt: number): void {
     this.previousBallPosition = this.ballPosition;
     const forward = { x: -Math.sin(playerFacing), z: -Math.cos(playerFacing) };

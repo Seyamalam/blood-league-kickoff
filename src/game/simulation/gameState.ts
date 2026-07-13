@@ -1,4 +1,5 @@
 import type { EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
+import type { SecondaryDamageHit } from '../combat';
 
 const ARENA_HALF_WIDTH = 22;
 const ARENA_HALF_DEPTH = 14;
@@ -94,7 +95,9 @@ export function updateEnemies(state: GameState, dt: number): void {
   for (const enemy of state.enemies) {
     copyVec3(enemy.previousPosition, enemy.position);
     enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
+    enemy.shieldFlash = Math.max(0, enemy.shieldFlash - dt);
     enemy.lastBallHit = Math.max(0, enemy.lastBallHit - dt);
+    enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
     let dx = player.position.x - enemy.position.x;
     let dz = player.position.z - enemy.position.z;
     const distance = Math.max(0.001, Math.hypot(dx, dz));
@@ -136,22 +139,44 @@ export function updateEnemies(state: GameState, dt: number): void {
     dx = dx / distance + separationX * 1.35;
     dz = dz / distance + separationZ * 1.35;
     const moveLength = Math.max(1, Math.hypot(dx, dz));
+    let movementX = (dx / moveLength) * enemy.speed * speedBuff * crowdSlow;
+    let movementZ = (dz / moveLength) * enemy.speed * speedBuff * crowdSlow;
+
+    if (enemy.archetype === 'winger') {
+      updateWingerAttack(enemy, player.position, distance, dt);
+      if (enemy.attackState === 'telegraph' || enemy.attackState === 'recover') {
+        movementX = 0;
+        movementZ = 0;
+      } else if (enemy.attackState === 'lunge') {
+        movementX = enemy.attackDirection.x * 8.4;
+        movementZ = enemy.attackDirection.z * 8.4;
+      }
+    }
+
+    const knockbackDamping = Math.exp(-7.5 * dt);
+    movementX += enemy.knockbackVelocity.x;
+    movementZ += enemy.knockbackVelocity.z;
     enemy.position.x = clamp(
-      enemy.position.x + (dx / moveLength) * enemy.speed * speedBuff * crowdSlow * dt,
+      enemy.position.x + movementX * dt,
       -ARENA_HALF_WIDTH,
       ARENA_HALF_WIDTH,
     );
     enemy.position.z = clamp(
-      enemy.position.z + (dz / moveLength) * enemy.speed * speedBuff * crowdSlow * dt,
+      enemy.position.z + movementZ * dt,
       -ARENA_HALF_DEPTH,
       ARENA_HALF_DEPTH,
     );
+    enemy.knockbackVelocity.x *= knockbackDamping;
+    enemy.knockbackVelocity.z *= knockbackDamping;
 
-    if (distance < enemy.radius + 0.58 && player.invulnerability <= 0) {
+    const contactDx = player.position.x - enemy.position.x;
+    const contactDz = player.position.z - enemy.position.z;
+    const contactDistance = Math.max(0.001, Math.hypot(contactDx, contactDz));
+    if (contactDistance < enemy.radius + 0.58 && player.invulnerability <= 0) {
       player.health = Math.max(0, player.health - enemy.attackDamage);
       player.invulnerability = 0.62;
-      enemy.position.x -= (dx / distance) * 1.4;
-      enemy.position.z -= (dz / distance) * 1.4;
+      enemy.position.x -= (contactDx / contactDistance) * 1.4;
+      enemy.position.z -= (contactDz / contactDistance) * 1.4;
       if (player.health <= 0) state.phase = 'dead';
     }
   }
@@ -160,6 +185,12 @@ export function updateEnemies(state: GameState, dt: number): void {
 export interface BallDamageResult {
   hits: number;
   kills: number;
+  blockedHits: number;
+  rebound?: {
+    enemyId: number;
+    normal: Vec3;
+    velocityMultiplier: number;
+  };
 }
 
 export function damageEnemiesWithBall(
@@ -167,19 +198,65 @@ export function damageEnemiesWithBall(
   ball: Vec3,
   speed: number,
   damageMultiplier = 1,
+  ballVelocity?: Vec3,
+  pierceCount = 0,
 ): BallDamageResult {
-  if (speed < 7) return { hits: 0, kills: 0 };
+  if (speed < 7) return { hits: 0, kills: 0, blockedHits: 0 };
   const safeDamageMultiplier = Number.isFinite(damageMultiplier)
     ? Math.max(0, Math.min(8, damageMultiplier))
     : 1;
   let hits = 0;
+  let blockedHits = 0;
+  let rebound: BallDamageResult['rebound'];
+  const velocityLength = ballVelocity ? Math.hypot(ballVelocity.x, ballVelocity.z) : 0;
+  const velocityX = velocityLength > 0.001 ? ballVelocity!.x / velocityLength : 0;
+  const velocityZ = velocityLength > 0.001 ? ballVelocity!.z / velocityLength : 0;
   for (const enemy of state.enemies) {
     if (enemy.lastBallHit > 0) continue;
     const distance = Math.hypot(ball.x - enemy.position.x, ball.z - enemy.position.z);
     if (distance < enemy.radius + 0.52 && Math.abs(ball.y - 0.75) < 1.35) {
-      enemy.hitPoints -= (speed > 17 ? 2 : 1) * safeDamageMultiplier;
+      const baseDamage = (speed > 17 ? 2 : 1) * safeDamageMultiplier;
+      let damage = baseDamage;
+      let knockbackScale = enemy.archetype === 'defender' ? 0.42 : 1;
+
+      if (enemy.archetype === 'defender' && velocityLength > 0.001) {
+        const faceX = state.player.position.x - enemy.position.x;
+        const faceZ = state.player.position.z - enemy.position.z;
+        const faceLength = Math.max(0.001, Math.hypot(faceX, faceZ));
+        const approachDot = velocityX * (faceX / faceLength) + velocityZ * (faceZ / faceLength);
+        if (approachDot < -0.3) {
+          // A frontal shot is absorbed unless sufficiently powered. The rebound
+          // result lets the physics integration reflect the ball intentionally.
+          const shieldReduction = pierceCount > 0 ? safeDamageMultiplier * 0.45 : safeDamageMultiplier;
+          damage = Math.max(0, baseDamage - shieldReduction);
+          knockbackScale = 0.12;
+          blockedHits += 1;
+          enemy.shieldFlash = 0.2;
+          const normalX = ball.x - enemy.position.x;
+          const normalZ = ball.z - enemy.position.z;
+          const normalLength = Math.hypot(normalX, normalZ);
+          rebound ??= {
+            enemyId: enemy.id,
+            normal: normalLength > 0.001
+              ? { x: normalX / normalLength, y: 0, z: normalZ / normalLength }
+              : { x: -velocityX, y: 0, z: -velocityZ },
+            velocityMultiplier: pierceCount > 0 ? 0.88 : 0.72,
+          };
+        } else if (approachDot > 0.3) {
+          // Shots from behind bypass the shield and earn one bonus damage unit.
+          damage += safeDamageMultiplier;
+          knockbackScale = 0.7;
+        }
+      }
+
+      enemy.hitPoints -= damage;
+      if (velocityLength > 0.001) {
+        const impulse = Math.min(10, 2.6 + speed * 0.22) * knockbackScale;
+        enemy.knockbackVelocity.x += velocityX * impulse;
+        enemy.knockbackVelocity.z += velocityZ * impulse;
+      }
       enemy.lastBallHit = 0.22;
-      enemy.hitFlash = 0.12;
+      enemy.hitFlash = damage > 0 ? 0.12 : 0;
       hits += 1;
     }
   }
@@ -191,13 +268,38 @@ export function damageEnemiesWithBall(
     state.enemies.splice(index, 1);
     kills += 1;
   }
-  if (kills > 0) {
-    state.kills += kills;
-    state.combo += kills;
-    state.comboTimer = 2.2;
-    state.score += kills * 100 * Math.max(1, state.combo);
+  awardKills(state, kills);
+  return rebound ? { hits, kills, blockedHits, rebound } : { hits, kills, blockedHits };
+}
+
+export function damageEnemiesWithSecondary(
+  state: GameState,
+  damageHits: readonly SecondaryDamageHit[],
+): BallDamageResult {
+  let hits = 0;
+  for (const damageHit of damageHits) {
+    const enemy = state.enemies.find((candidate) => candidate.id === damageHit.targetId);
+    if (!enemy || damageHit.damage <= 0) continue;
+    enemy.hitPoints -= damageHit.damage;
+    enemy.hitFlash = 0.12;
+    hits += 1;
   }
-  return { hits, kills };
+  let kills = 0;
+  for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
+    if (state.enemies[index]!.hitPoints > 0) continue;
+    state.enemies.splice(index, 1);
+    kills += 1;
+  }
+  awardKills(state, kills);
+  return { hits, kills, blockedHits: 0 };
+}
+
+function awardKills(state: GameState, kills: number): void {
+  if (kills <= 0) return;
+  state.kills += kills;
+  state.combo += kills;
+  state.comboTimer = 2.2;
+  state.score += kills * 100 * Math.max(1, state.combo);
 }
 
 function spawnEnemy(state: GameState): EnemyState {
@@ -226,7 +328,41 @@ function spawnEnemy(state: GameState): EnemyState {
     hitFlash: 0,
     lastBallHit: 0,
     buffed: false,
+    knockbackVelocity: { x: 0, y: 0, z: 0 },
+    attackState: 'chase',
+    attackTimer: 0,
+    attackCooldown: archetype === 'winger' ? 0.7 + Math.random() * 0.5 : 0,
+    attackDirection: { x: 0, y: 0, z: 1 },
+    shieldFlash: 0,
   };
+}
+
+function updateWingerAttack(enemy: EnemyState, player: Vec3, distance: number, dt: number): void {
+  if (enemy.attackState === 'chase') {
+    if (distance <= 4.5 && enemy.attackCooldown <= 0) {
+      const dx = player.x - enemy.position.x;
+      const dz = player.z - enemy.position.z;
+      const length = Math.max(0.001, Math.hypot(dx, dz));
+      enemy.attackDirection.x = dx / length;
+      enemy.attackDirection.z = dz / length;
+      enemy.attackState = 'telegraph';
+      enemy.attackTimer = 0.42;
+    }
+    return;
+  }
+
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return;
+  if (enemy.attackState === 'telegraph') {
+    enemy.attackState = 'lunge';
+    enemy.attackTimer = 0.34;
+  } else if (enemy.attackState === 'lunge') {
+    enemy.attackState = 'recover';
+    enemy.attackTimer = 0.5;
+  } else {
+    enemy.attackState = 'chase';
+    enemy.attackCooldown = 1.15;
+  }
 }
 
 function pickArchetype(elapsed: number): EnemyArchetype {
