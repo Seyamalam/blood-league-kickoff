@@ -18,18 +18,19 @@ Machine identifiers such as serial number, hardware UUID, and provisioning IDs a
 
 ## July 14, 2026 Development Stress Sample
 
-Revision: `999e312`  
-Route: Vite development server, `?stress=72`  
-Viewport: 1600×900 CSS pixels, device scale factor 1  
-Scene: deterministic frozen mixed roster of all eight ordinary archetypes, 72 enemies  
+Revisions: `999e312` baseline and `22b2268` frame-scheduler retest<br>
+Route: Vite development server, `?stress=72`<br>
+Viewport: 1600×900 CSS pixels, device scale factor 1<br>
+Scene: deterministic frozen mixed roster of all eight ordinary archetypes, 72 enemies<br>
 Sampling: 15 seconds after a two-second warm-up in headless Chrome, background throttling disabled
 
-| Preset / cap         | Frame p50 | Frame p95 | Frame p99 | Calls | Triangles | Result                                                                   |
-| -------------------- | --------: | --------: | --------: | ----: | --------: | ------------------------------------------------------------------------ |
-| Balanced / 120 FPS   |    8.3 ms |    9.5 ms |   10.7 ms |   162 |     6,808 | 120.5 FPS median; occasional tail misses the 8.33 ms target              |
-| Performance / 60 FPS |   16.7 ms |   24.9 ms |   25.0 ms |   162 |     6,808 | GPU headroom is ample, but the limiter shows periodic three-vsync pacing |
+| Preset / cap                     | Frame p50 | Frame p95 | Frame p99 | Calls | Triangles | Result                                                                   |
+| -------------------------------- | --------: | --------: | --------: | ----: | --------: | ------------------------------------------------------------------------ |
+| Balanced / 120 FPS               |    8.3 ms |    9.5 ms |   10.7 ms |   162 |     6,808 | 120.5 FPS median; occasional tail misses the 8.33 ms target              |
+| Performance / 60 FPS, before fix |   16.7 ms |   24.9 ms |   25.0 ms |   162 |     6,808 | GPU headroom is ample, but the limiter shows periodic three-vsync pacing |
+| Performance / 60 FPS, after fix  |   16.7 ms |   17.6 ms |   17.7 ms |   162 |     6,808 | Three-vsync regression removed; smoothed rate 59.9 FPS                   |
 
-The measured renderer workload is below the visual-direction ceiling. The first actionable issue is frame-limiter cadence, not enemy instancing or triangle count. Simulation and render synchronization micro-probes were also far below one millisecond at 72 enemies, but those probes are diagnostic evidence rather than shipping acceptance.
+The measured renderer workload is below the visual-direction ceiling. The first actionable issue was frame-limiter cadence, not enemy instancing or triangle count; `22b2268` replaced last-accepted-frame anchoring with a deadline scheduler and removed the 25 ms tail. Simulation and render synchronization micro-probes were also far below one millisecond at 72 enemies, but those probes are diagnostic evidence rather than shipping acceptance.
 
 ## Remaining Acceptance Work
 
