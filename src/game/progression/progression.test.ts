@@ -41,4 +41,20 @@ describe('progression', () => {
     expect(offerA).toEqual(offerB);
     expect(new Set(offerA).size).toBe(offerA.length);
   });
+
+  it('unlocks Storm Studs after Silver Ball and stacks bounded lightning modifiers', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(4)).state;
+    const silver = chooseUpgrade(state, 'silverBall');
+    expect(silver.applied).toBe(true);
+    if (!silver.applied) return;
+    state = silver.state;
+    const firstStorm = chooseUpgrade(state, 'stormStuds');
+    expect(firstStorm.applied).toBe(true);
+    if (!firstStorm.applied) return;
+    const secondStorm = chooseUpgrade(firstStorm.state, 'stormStuds');
+    expect(secondStorm.applied).toBe(true);
+    if (!secondStorm.applied) return;
+    expect(secondStorm.state.modifiers.chainLightningDamage).toBe(12);
+    expect(secondStorm.state.modifiers.chainLightningTargets).toBe(2);
+  });
 });
