@@ -58,7 +58,7 @@ The generated noise buffer is computed during runtime and is not an authored or 
 
 ## Repository Screenshots
 
-All current screenshots are direct 1280×720 captures of revision `dcf620b` in Chrome 149 and therefore depict the runtime visuals and authored interface listed above. They were exported from PNG to JPEG with FFmpeg (`-q:v 2`). The title capture includes the generated key-art background recorded in the asset register; the remaining captures contain no generated or third-party raster imagery.
+All current screenshots are direct 1280×720 Chrome 149 captures: six from revision `dcf620b` and the alpha.2 results capture from `fb8e5bf`. They were exported from PNG to JPEG with FFmpeg (`-q:v 2`). The title capture includes the generated key-art background recorded in the asset register; the remaining captures contain no generated or third-party raster imagery.
 
 | Path                                   | Source                                                           | License/ownership                                                        | Changes/current state                                                                                        |
 | -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
@@ -68,7 +68,7 @@ All current screenshots are direct 1280×720 captures of revision `dcf620b` in C
 | `docs/screenshots/pause.jpg`           | Focus-loss pause overlay during a live match                     | Project-created capture                                                  | SHA-256 `ef5184f198071dd6d32175f16d798d958a08b5c1db596e213c3f9d9b7c07b758`                                   |
 | `docs/screenshots/upgrade.jpg`         | DEV-only deterministic upgrade route using the real overlay      | Project-created capture                                                  | SHA-256 `460cf74b129d9897e468c33537c7745775dc9361223a063f4980f7188c98a47c`                                   |
 | `docs/screenshots/evolution.jpg`       | DEV-only live Moon Breaker unlock through `chooseUpgrade`        | Project-created capture                                                  | SHA-256 `42e8a17aead82b408a3b6d47ffef38626becbca699569ad474abcff3e2742187`                                   |
-| `docs/screenshots/results-victory.jpg` | DEV-only deterministic victory route using the real results flow | Project-created capture                                                  | Shows `v0.8.0-alpha.1 · dcf620b`; SHA-256 `604cbe992519f486b03c7fa45ca2e9b0219590a8b8cf093de466a04f8a0592fa` |
+| `docs/screenshots/results-victory.jpg` | DEV-only deterministic victory route using the real results flow | Project-created capture                                                  | Shows `v0.8.0-alpha.2 · fb8e5bf`; SHA-256 `7133bcd013338d74f74c958afa42cabf4baefa5ff68f4811290bd17df2cec509` |
 
 The capture method is recorded at the level verified by the repository history. If a release capture is cropped, color-corrected, composited, or exported through another tool, record that change and tool here before submission.
 
