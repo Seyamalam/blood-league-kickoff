@@ -34,12 +34,13 @@ export interface EnemyState {
   buffed: boolean;
 }
 
-export type MatchPhase = 'ready' | 'playing' | 'dead';
+export type MatchPhase = 'ready' | 'playing' | 'dead' | 'won';
 
 export interface GameState {
   phase: MatchPhase;
   elapsed: number;
   score: number;
+  kills: number;
   combo: number;
   comboTimer: number;
   nextEnemyId: number;

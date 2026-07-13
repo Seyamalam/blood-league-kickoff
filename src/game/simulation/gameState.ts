@@ -13,6 +13,7 @@ export function createGameState(): GameState {
     phase: 'ready',
     elapsed: 0,
     score: 0,
+    kills: 0,
     combo: 0,
     comboTimer: 0,
     nextEnemyId: 1,
@@ -156,14 +157,27 @@ export function updateEnemies(state: GameState, dt: number): void {
   }
 }
 
-export function damageEnemiesWithBall(state: GameState, ball: Vec3, speed: number): number {
-  if (speed < 7) return 0;
+export interface BallDamageResult {
+  hits: number;
+  kills: number;
+}
+
+export function damageEnemiesWithBall(
+  state: GameState,
+  ball: Vec3,
+  speed: number,
+  damageMultiplier = 1,
+): BallDamageResult {
+  if (speed < 7) return { hits: 0, kills: 0 };
+  const safeDamageMultiplier = Number.isFinite(damageMultiplier)
+    ? Math.max(0, Math.min(8, damageMultiplier))
+    : 1;
   let hits = 0;
   for (const enemy of state.enemies) {
     if (enemy.lastBallHit > 0) continue;
     const distance = Math.hypot(ball.x - enemy.position.x, ball.z - enemy.position.z);
     if (distance < enemy.radius + 0.52 && Math.abs(ball.y - 0.75) < 1.35) {
-      enemy.hitPoints -= speed > 17 ? 2 : 1;
+      enemy.hitPoints -= (speed > 17 ? 2 : 1) * safeDamageMultiplier;
       enemy.lastBallHit = 0.22;
       enemy.hitFlash = 0.12;
       hits += 1;
@@ -178,11 +192,12 @@ export function damageEnemiesWithBall(state: GameState, ball: Vec3, speed: numbe
     kills += 1;
   }
   if (kills > 0) {
+    state.kills += kills;
     state.combo += kills;
     state.comboTimer = 2.2;
     state.score += kills * 100 * Math.max(1, state.combo);
   }
-  return hits;
+  return { hits, kills };
 }
 
 function spawnEnemy(state: GameState): EnemyState {

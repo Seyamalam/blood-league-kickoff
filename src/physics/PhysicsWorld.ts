@@ -1,8 +1,10 @@
 import RAPIER from '@dimforge/rapier3d-compat';
+import type { ProgressionModifiers } from '../game/progression';
 import type { Vec3 } from '../game/simulation/types';
 
 const BALL_RADIUS = 0.42;
 const MAX_BALL_SPEED = 36;
+const MAX_UPGRADED_BALL_SPEED = 54;
 const VOLLEY_WINDOW_DISTANCE = 2.35;
 const CATCH_DISTANCE = 0.95;
 
@@ -14,6 +16,12 @@ export type KickResult = {
   speed: number;
 };
 
+/** Upgrade values consumed by ball physics. Full ProgressionModifiers is structurally compatible. */
+export type BallCombatModifiers = Partial<Pick<
+  ProgressionModifiers,
+  'kickPowerMultiplier' | 'ballSpeedMultiplier' | 'recallSpeedMultiplier'
+>>;
+
 export class PhysicsWorld {
   private readonly world: RAPIER.World;
   private readonly playerBody: RAPIER.RigidBody;
@@ -22,6 +30,8 @@ export class PhysicsWorld {
   private recallRequested = false;
   private automaticRecall = false;
   private volleyWindow = false;
+  private speedCap = MAX_BALL_SPEED;
+  private recallSpeedMultiplier = 1;
   private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
   private unpossessedTime = 0;
   private stalledTime = 0;
@@ -77,7 +87,7 @@ export class PhysicsWorld {
   }
 
   get maxBallSpeed(): number {
-    return MAX_BALL_SPEED;
+    return this.speedCap;
   }
 
   get ballPosition(): Vec3 {
@@ -109,11 +119,22 @@ export class PhysicsWorld {
     this.playerBody.setNextKinematicTranslation(position);
   }
 
-  kick(origin: Vec3, direction: Vec3, charge = 0): KickResult | null {
+  kick(
+    origin: Vec3,
+    direction: Vec3,
+    charge = 0,
+    modifiers: Readonly<BallCombatModifiers> = {},
+  ): KickResult | null {
     const perfectVolley = !this.possessed && this.volleyWindow;
     if (!this.possessed && !perfectVolley) return null;
     const normalizedCharge = Math.max(0, Math.min(1, charge));
-    const launchSpeed = Math.min(MAX_BALL_SPEED, (20 + normalizedCharge * 12) * (perfectVolley ? 1.12 : 1));
+    const kickPowerMultiplier = safeMultiplier(modifiers.kickPowerMultiplier, 0.5, 2);
+    const ballSpeedMultiplier = safeMultiplier(modifiers.ballSpeedMultiplier, 0.5, 1.5);
+    this.speedCap = Math.min(MAX_UPGRADED_BALL_SPEED, MAX_BALL_SPEED * ballSpeedMultiplier);
+    const launchSpeed = Math.min(
+      this.speedCap,
+      (20 + normalizedCharge * 12) * (perfectVolley ? 1.12 : 1) * kickPowerMultiplier,
+    );
     this.possessed = false;
     this.recallRequested = false;
     this.automaticRecall = false;
@@ -134,8 +155,9 @@ export class PhysicsWorld {
     return { kind: 'kick', charge: normalizedCharge, perfectVolley, speed: launchSpeed };
   }
 
-  setRecall(active: boolean): void {
+  setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}): void {
     this.recallRequested = active;
+    this.recallSpeedMultiplier = safeMultiplier(modifiers.recallSpeedMultiplier, 0.5, 2);
   }
 
   step(playerPosition: Vec3, playerFacing: number, dt: number): void {
@@ -157,7 +179,7 @@ export class PhysicsWorld {
       const dy = 0.75 - ball.y;
       const dz = playerPosition.z - ball.z;
       const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
-      const pull = Math.min(44, 19 + distance * 2.8);
+      const pull = Math.min(70, (19 + distance * 2.8) * this.recallSpeedMultiplier);
       this.ballBody.applyImpulse({ x: (dx / distance) * pull * dt, y: (dy / distance) * pull * dt, z: (dz / distance) * pull * dt }, true);
       this.volleyWindow = distance <= VOLLEY_WINDOW_DISTANCE;
       if (distance < CATCH_DISTANCE) {
@@ -194,6 +216,8 @@ export class PhysicsWorld {
     this.recallRequested = false;
     this.automaticRecall = false;
     this.volleyWindow = false;
+    this.speedCap = MAX_BALL_SPEED;
+    this.recallSpeedMultiplier = 1;
     this.unpossessedTime = 0;
     this.stalledTime = 0;
     this.previousBallPosition = { x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 };
@@ -213,11 +237,17 @@ export class PhysicsWorld {
   private limitBallSpeed(): void {
     const velocity = this.ballBody.linvel();
     const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
-    if (speed <= MAX_BALL_SPEED || speed === 0) return;
-    const scale = MAX_BALL_SPEED / speed;
+    if (speed <= this.speedCap || speed === 0) return;
+    const scale = this.speedCap / speed;
     this.ballBody.setLinvel(
       { x: velocity.x * scale, y: velocity.y * scale, z: velocity.z * scale },
       true,
     );
   }
+}
+
+function safeMultiplier(value: number | undefined, min: number, max: number): number {
+  if (value === undefined) return 1;
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(min, Math.min(max, value));
 }
