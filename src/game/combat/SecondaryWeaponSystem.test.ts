@@ -246,4 +246,112 @@ describe('SecondaryWeaponSystem', () => {
     }
     expect(system.renderState.blackHoleZones.filter((zone) => zone.active)).toHaveLength(4);
   });
+
+  it('stays bounded when every secondary-weapon pool is exhausted', () => {
+    const system = new SecondaryWeaponSystem();
+    const renderState = system.renderState;
+    const poolReferences = {
+      garlicZones: renderState.garlicZones,
+      orbitingBalls: renderState.orbitingBalls,
+      ghostPasses: renderState.ghostPasses,
+      multiBallShots: renderState.multiBallShots,
+      blackHoleZones: renderState.blackHoleZones,
+    };
+    const modifiers: SecondaryCombatModifiers = {
+      ...EMPTY,
+      garlicTrailDamage: 4,
+      orbitingBallCount: 99,
+      orbitingBallDamage: 7,
+      bloodBombDamage: 8,
+      bloodBombRadius: 0.5,
+      ghostPassCount: 3,
+      ghostPassDamageMultiplier: 1,
+      chainLightningDamage: 6,
+      chainLightningTargets: 1,
+      frostBurstDamage: 5,
+      frostBurstRadius: 0.25,
+      frostSlowAmount: 0.1,
+      frostSlowDuration: 0.45,
+      multiBallCount: 4,
+      multiBallDamageMultiplier: 0.5,
+      blackHoleDamage: 1,
+      blackHoleRadius: 0.25,
+      blackHolePullStrength: 3,
+      blackHoleDuration: 2,
+    };
+    const baseStep = {
+      dt: 0,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 10,
+      ballInFlight: true,
+      ballReturning: false,
+      ballDamage: 10,
+      modifiers,
+      targets: [],
+    };
+
+    for (let index = 0; index < 40; index += 1) {
+      system.step({ ...baseStep, ballPosition: { x: index * 1.1, y: 0.9, z: 0 } });
+    }
+    expect(renderState.garlicZones).toHaveLength(24);
+    expect(renderState.garlicZones.filter((zone) => zone.active)).toHaveLength(24);
+    expect(renderState.orbitingBalls).toHaveLength(3);
+    expect(renderState.orbitingBalls.filter((orbit) => orbit.active)).toHaveLength(3);
+
+    for (let index = 0; index < 10; index += 1) {
+      expect(
+        system.triggerGhostPass({
+          origin: { x: index, y: 0.9, z: 0 },
+          direction: { x: 1, y: 0, z: 0 },
+          baseDamage: 10,
+          modifiers,
+        }),
+      ).toBe(3);
+      expect(
+        system.triggerMultiBall({
+          origin: { x: index, y: 0.9, z: 0 },
+          direction: { x: 1, y: 0, z: 0 },
+          baseDamage: 10,
+          modifiers,
+        }),
+      ).toBe(4);
+      expect(system.triggerBlackHole({ x: index, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    }
+    expect(renderState.ghostPasses).toHaveLength(8);
+    expect(renderState.ghostPasses.filter((ghost) => ghost.active)).toHaveLength(8);
+    expect(renderState.multiBallShots).toHaveLength(6);
+    expect(renderState.multiBallShots.filter((shot) => shot.active)).toHaveLength(6);
+    expect(renderState.blackHoleZones).toHaveLength(4);
+    expect(renderState.blackHoleZones.filter((zone) => zone.active)).toHaveLength(4);
+
+    for (let index = 0; index < 20; index += 1) {
+      expect(system.triggerBloodBomb({ x: index, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    }
+    const bombStep = system.step({
+      ...baseStep,
+      ballInFlight: false,
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+    });
+    expect(bombStep.events.filter((event) => event.type === 'blood-bomb-triggered')).toHaveLength(8);
+
+    for (let index = 0; index < 20; index += 1) {
+      expect(system.triggerChainLightning(1, { x: index, y: 0.9, z: 0 }, modifiers)).toBe(true);
+      expect(system.triggerFrostBurst({ x: index, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    }
+    const queuedStep = system.step({
+      ...baseStep,
+      ballInFlight: false,
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      targets: [{ id: 2, position: { x: 16, y: 0.9, z: 0 }, radius: 0.2 }],
+    });
+    expect(queuedStep.hits.filter((hit) => hit.source === 'chain-lightning')).toHaveLength(8);
+    expect(queuedStep.events.filter((event) => event.type === 'frost-burst-triggered')).toHaveLength(8);
+
+    expect(system.renderState).toBe(renderState);
+    expect(renderState.garlicZones).toBe(poolReferences.garlicZones);
+    expect(renderState.orbitingBalls).toBe(poolReferences.orbitingBalls);
+    expect(renderState.ghostPasses).toBe(poolReferences.ghostPasses);
+    expect(renderState.multiBallShots).toBe(poolReferences.multiBallShots);
+    expect(renderState.blackHoleZones).toBe(poolReferences.blackHoleZones);
+  });
 });
