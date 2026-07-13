@@ -222,7 +222,7 @@ Electron loads only the local production build. The desktop shell uses a restric
 - 120 FPS frame budget: **8.33 ms**
 - 60 FPS frame budget: **16.67 ms**
 - Fixed simulation: initially 60 Hz, accumulated independently of render refresh
-- Initial enemy cap: 80 performance, 120 balanced; increase only after profiling
+- Current ordinary-enemy cap: 72 across presets; change only after production profiling
 - WebGL 2 with `powerPreference: "high-performance"`
 
 ### Required practices

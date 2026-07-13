@@ -35,7 +35,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Keep Windows packaging manual-only until the game is content-complete.
 - [x] `P0` Update README current progress and exact commands.
 - [x] `P0` Commit and push the verified foundation runtime and packaging.
-- [ ] `P0` Tag `v0.1.0` and publish a GitHub Release with available artifacts and known issues.
+- [x] `P0` Record `v0.1.0` as superseded by the first playable `v0.2.0` release; do not create a misleading retroactive artifact.
 
 ## Milestone A — Combat feel (`v0.2.0`)
 
@@ -44,7 +44,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement pointer-lock mouse orbit and pitch limits.
 - [x] `P0` Implement arena-boundary camera collision and configurable sensitivity.
 - [x] `P0` Implement dash, cooldown, and brief invulnerability.
-- [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
+- [x] `P0` Implement the runtime ball states: possessed, free/launched, recalling, volley window, and recovering/disabled.
 - [x] `P0` Implement aim indicator and charged kick.
 - [x] `P0` Implement Rapier wall/floor rebounds with CCD.
 - [x] `P0` Add explicit ball speed limits and tune controlled rebound behavior.

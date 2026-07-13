@@ -16,13 +16,13 @@
 | Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX               |
 | Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events |
 | UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                |
-| Desktop    | Electron                    | Self-contained GPU-accelerated Windows application |
-| Packaging  | electron-builder            | Portable Windows executable                        |
-| Automation | GitHub Actions              | Manual-only final Windows artifacts                |
+| Desktop    | Electron                    | Self-contained GPU-accelerated desktop application |
+| Packaging  | electron-builder            | Desktop artifacts; Windows remains final-only      |
+| Automation | GitHub Actions              | Web verification and manual final Windows builds   |
 
 ## Current Source Baseline
 
-The foundation contains a playable single-page loop: input, player/enemy simulation, Rapier ball physics, render synchronization, a third-person camera, primitive stadium/actors, HUD, performance readout, and Electron packaging. Enemy spawn positions and elite rolls currently use `Math.random()`, so runs are intentionally not deterministic or replay-synchronized. These are scaffolding boundaries, not frozen APIs.
+The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, two evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. Enemy spawn positions and elite rolls use `Math.random()`, so live runs are intentionally not replay-synchronized; deterministic unit tests cover the pure simulation boundaries.
 
 ## Runtime Flow
 
@@ -41,20 +41,20 @@ Three's `setAnimationLoop` drives presentation. Frame delta is clamped to 100 ms
 
 ## Ownership Boundaries
 
-- **Current `main.ts`:** bootstrap, resize, pointer-lock start/restart events, fixed-step accumulator, interpolation, HUD updates, and rendering.
-- **InputController:** DOM listeners and action snapshot; gameplay never reads raw DOM events.
-- **Current `gameState.ts`:** authoritative player/enemy data, movement, random spawning, contact damage, ball-hit tests, death, score, and combo.
-- **Current `PhysicsWorld`:** Rapier initialization, static arena, kinematic player body, dynamic ball, kick/recall, fixed stepping, interpolation positions, and recovery fail-safes.
-- **Current `CameraController`:** mouse orbit, pitch limits, aim vector, and smoothed follow.
-- **Current `RenderBridge`:** primitive player/ball/enemy visuals synchronized from simulation; it creates/disposes enemy groups as IDs appear/disappear.
-- **Current `Hud`:** kickoff/death overlays plus health, timer, score, enemy, ball, combo, and FPS views.
-- **Planned modules:** dedicated app lifecycle/disposal, ball/player controllers, spawn/match/upgrade directors, pools/instancing, audio, quality, and settings.
+- **`main.ts`:** bootstrap, lifecycle/disposal, pointer-lock and menu events, fixed-step accumulator, match/combat orchestration, audio hooks, interpolation, HUD updates, and rendering.
+- **`InputController`:** DOM listeners, persistent rebindable actions, and input snapshots; gameplay never reads raw DOM events.
+- **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawning, crowd queries, damage, death, score, and combo.
+- **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
+- **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run.
+- **`CameraController` and `RenderBridge`:** third-person/Focus cameras and synchronized pooled/shared-resource presentation.
+- **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
+- **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings.
 
 ## Physics Policy
 
-Rapier currently owns the static arena colliders, a synchronized kinematic player body, and the dynamic ball. Ordinary enemies are lightweight planar state and ball hits use direct distance checks; enemies do not have Rapier bodies. A spatial grid and crowd separation remain planned for larger populations.
+Rapier owns the static arena colliders, a synchronized kinematic player body, and the dynamic ball. Ordinary enemies remain lightweight planar state without individual rigid bodies. Ball/enemy hits and crowd separation use reusable spatial queries and typed-array storage so crowd cost stays bounded.
 
-The current ball tracks possessed, kicked, and recall behavior through `PhysicsWorld` flags rather than the full planned state machine. Rapier provides CCD and material restitution for rebounds. Code applies recall impulses and automatically recalls or resets stalled, overdue, out-of-bounds, or non-finite balls. Explicit speed clamping, curve control, volley/disabled states, collision groups, goal triggers, and pickup queries remain planned.
+The ball exposes possessed, free, recalling, volley-window, and recovering states. Rapier provides CCD and material restitution for rebounds; game code owns charge, curve, aim assistance, Focus Kick, damage, recall impulses, speed limits, and recovery. Stalled, overdue, out-of-bounds, or non-finite balls automatically recall or reset. Match code owns goal detection and kickoff transitions, while pickup and secondary-weapon systems use their own lightweight queries and pools.
 
 ## Rendering Policy
 
@@ -99,7 +99,7 @@ The Windows GitHub Actions definition is intentionally manual-only during gamepl
 | Guaranteed   | Stable 60 FPS during densest required wave on reference system |
 | High refresh | Stable 120 FPS on capable system/performance preset            |
 | Simulation   | 60 fixed steps/sec initially; measured before changing         |
-| Enemy cap    | Start at 80 performance / 120 balanced                         |
+| Enemy cap    | 72 ordinary enemies; change only after production profiling    |
 | Recovery     | No unrecoverable ball or invalid run state                     |
 
 The debug overlay should expose render FPS/frame time, fixed-step time, enemy count, draw calls, triangles, pool usage, physics time, and quality preset. Optimize measured bottlenecks, not guesses.
@@ -113,11 +113,11 @@ The debug overlay should expose render FPS/frame time, fixed-step time, enemy co
 - Test focus loss, resize, pause, low frame rate, high refresh, and clean first launch.
 - Profile development and production separately; dev-server results are not acceptance evidence.
 
-## Near-Term Implementation Order
+## Remaining Implementation Order
 
-1. Playtest the production web build and Electron shell; fix control/feel blockers.
-2. Add explicit cleanup/disposal and verify resize/focus/context-loss behavior.
-3. Tune kick, rebound, recall, damage, and ball recovery through Gate A playtests.
-4. Add charge, volley, controlled speed limits, feedback, and deliberate knockback.
-5. Verify the Windows workflow artifact on real Windows hardware.
-6. Only then expand enemies, progression, and match flow.
+1. Run full human playtests on macOS/browser and fix control, onboarding, balance, and readability blockers.
+2. Profile production web and Electron builds during the densest wave; prove the 60 FPS baseline before tuning measured bottlenecks.
+3. Finish key art, icons, visible model/material polish, credits, and final screenshots.
+4. Execute the focused gameplay QA matrix and retest release-blocking fixes from clean web/macOS builds.
+5. Freeze the content-complete web/macOS candidate and prepare the submission materials.
+6. Only after the game is finished, invoke and verify Windows packaging on real Windows hardware.

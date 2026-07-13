@@ -26,15 +26,15 @@ The game is not a football simulation. No passing rules, fouls, offside, or team
 
 ## Controls and Camera
 
-| Action              | Default            |
-| ------------------- | ------------------ |
-| Move                | `WASD`             |
-| Orbit/aim           | Mouse              |
-| Charge/release kick | Left mouse         |
-| Recall              | Right mouse        |
-| Dash                | `Space`            |
-| Focus Kick          | `Q` (target scope) |
-| Pause               | `Esc`              |
+| Action              | Default     |
+| ------------------- | ----------- |
+| Move                | `WASD`      |
+| Orbit/aim           | Mouse       |
+| Charge/release kick | Left mouse  |
+| Recall              | Right mouse |
+| Dash                | `Space`     |
+| Focus Kick          | `F`         |
+| Pause               | `Esc`       |
 
 Normal play uses a third-person orbit camera with camera-relative movement. Aim direction should be readable on the pitch. The optional Focus Kick briefly enters first person/time dilation, fires one precise shot, then restores third person automatically.
 
