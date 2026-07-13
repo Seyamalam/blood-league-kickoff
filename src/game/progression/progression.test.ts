@@ -90,4 +90,22 @@ describe('progression', () => {
     expect(state.modifiers.multiBallCount).toBe(4);
     expect(state.modifiers.multiBallDamageMultiplier).toBeCloseTo(1.28);
   });
+
+  it('unlocks Void Goal after Blood Bomb and stacks bounded gravity modifiers', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(7)).state;
+    const power = chooseUpgrade(state, 'powerKick');
+    expect(power.applied).toBe(true);
+    if (!power.applied) return;
+    state = power.state;
+    const bomb = chooseUpgrade(state, 'bloodBomb');
+    expect(bomb.applied).toBe(true);
+    if (!bomb.applied) return;
+    state = bomb.state;
+    const voidGoal = chooseUpgrade(state, 'voidGoal');
+    expect(voidGoal.applied).toBe(true);
+    if (!voidGoal.applied) return;
+    expect(voidGoal.state.modifiers.blackHoleDamage).toBeCloseTo(1.25);
+    expect(voidGoal.state.modifiers.blackHolePullStrength).toBe(3);
+    expect(voidGoal.state.modifiers.blackHoleDuration).toBeCloseTo(0.8);
+  });
 });

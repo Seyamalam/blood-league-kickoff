@@ -6,6 +6,7 @@ export class SecondaryWeaponRenderer {
   private readonly orbits: THREE.Mesh[];
   private readonly ghosts: THREE.Mesh[];
   private readonly multiBalls: THREE.Mesh[];
+  private readonly blackHoles: THREE.Mesh[];
   private readonly geometries: THREE.BufferGeometry[] = [];
   private readonly materials: THREE.Material[] = [];
 
@@ -24,10 +25,15 @@ export class SecondaryWeaponRenderer {
     const multiBallMaterial = this.trackMaterial(
       new THREE.MeshBasicMaterial({ color: 0xd7b7ff, transparent: true, opacity: 0.8, depthWrite: false }),
     );
+    const blackHoleGeometry = this.trackGeometry(new THREE.TorusGeometry(0.32, 0.1, 8, 20));
+    const blackHoleMaterial = this.trackMaterial(
+      new THREE.MeshBasicMaterial({ color: 0x8b43c7, transparent: true, opacity: 0.7, depthWrite: false }),
+    );
     this.garlic = Array.from({ length: 24 }, () => this.add(scene, garlicGeometry, garlicMaterial));
     this.orbits = Array.from({ length: 3 }, () => this.add(scene, orbGeometry, orbitMaterial));
     this.ghosts = Array.from({ length: 8 }, () => this.add(scene, orbGeometry, ghostMaterial));
     this.multiBalls = Array.from({ length: 6 }, () => this.add(scene, orbGeometry, multiBallMaterial));
+    this.blackHoles = Array.from({ length: 4 }, () => this.add(scene, blackHoleGeometry, blackHoleMaterial));
   }
 
   sync(state: SecondaryWeaponRenderState): void {
@@ -35,14 +41,33 @@ export class SecondaryWeaponRenderer {
     this.syncPool(this.orbits, state.orbitingBalls);
     this.syncPool(this.ghosts, state.ghostPasses);
     this.syncPool(this.multiBalls, state.multiBallShots);
+    this.syncPool(this.blackHoles, state.blackHoleZones);
+    for (let index = 0; index < this.blackHoles.length; index += 1) {
+      const mesh = this.blackHoles[index]!;
+      if (!mesh.visible) continue;
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.rotation.z += 0.035 + index * 0.002;
+    }
   }
 
   reset(): void {
-    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts, ...this.multiBalls])
+    for (const mesh of [
+      ...this.garlic,
+      ...this.orbits,
+      ...this.ghosts,
+      ...this.multiBalls,
+      ...this.blackHoles,
+    ])
       mesh.visible = false;
   }
   dispose(): void {
-    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts, ...this.multiBalls])
+    for (const mesh of [
+      ...this.garlic,
+      ...this.orbits,
+      ...this.ghosts,
+      ...this.multiBalls,
+      ...this.blackHoles,
+    ])
       mesh.removeFromParent();
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();

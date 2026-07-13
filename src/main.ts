@@ -86,6 +86,7 @@ const PLAYABLE_UPGRADES = [
   'stormStuds',
   'frostCleats',
   'spectralVolley',
+  'voidGoal',
 ] as const satisfies readonly UpgradeId[];
 
 async function bootstrap(): Promise<void> {
@@ -514,6 +515,7 @@ async function bootstrap(): Promise<void> {
               ballDamageMultiplier,
             modifiers: progression.modifiers,
           });
+          secondaryWeapons.triggerBlackHole(physics.ballPosition, progression.modifiers);
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -562,6 +564,14 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'frost-burst-triggered') bridge.frostBurst(event.position, 1.2);
           if (event.type === 'frost-burst-hit') {
             applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
+          }
+          if (event.type === 'black-hole-pulse') bridge.voidBurst(event.position, 0.75);
+          if (event.type === 'black-hole-pull') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
+            if (enemy) {
+              enemy.knockbackVelocity.x += event.force.x * 0.12;
+              enemy.knockbackVelocity.z += event.force.z * 0.12;
+            }
           }
         }
 

@@ -247,6 +247,7 @@ function createEmptyStacks(): UpgradeStacks {
     stormStuds: 0,
     frostCleats: 0,
     spectralVolley: 0,
+    voidGoal: 0,
   };
 }
 

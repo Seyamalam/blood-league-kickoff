@@ -249,5 +249,7 @@ function upgradeGlyph(upgradeId: UpgradeId): string {
       return '❄';
     case 'spectralVolley':
       return '✣';
+    case 'voidGoal':
+      return '◌';
   }
 }

@@ -176,6 +176,10 @@ export class RenderBridge {
     this.startBurst(position, intensity * 1.15, 0xb9f2ff);
   }
 
+  voidBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity, 0xb66cff);
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;

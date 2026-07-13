@@ -68,7 +68,7 @@ Controls and bindings may change during playtesting.
 - One complete 8–10 minute run
 - Kick, rebound, recall, curve, and perfect-volley mechanics
 - Eight normal enemy behaviors plus a final boss or fallback final elite wave
-- Eleven upgrades and two evolved combinations
+- Twelve upgrades and two evolved combinations
 - Menus, settings, tutorial prompts, win, loss, pause, and restart
 - Playable web build and tested portable Windows `.exe`
 
@@ -147,6 +147,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Storm Studs chain lightning with deterministic bounded hops and cyan impact feedback
 - [x] Frost Cleats impact bursts with deterministic victim caps, damage, and timed movement slow
 - [x] Spectral Volley multiball with a bounded six-shot pool and deterministic impact fan
+- [x] Void Goal black holes with a four-zone pool, capped pulses, damage, and inward pull
 - [x] Color-independent ball-state patterns and animated geometric special-attack markers
 - [x] Rebindable persistent keyboard controls with safe validation and conflict prevention
 - [x] Outcome-specific results presentation with deterministic accessible S–D run grades
@@ -175,6 +176,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [Locked visual direction](docs/VISUAL_DIRECTION.md)
 - [Release process](docs/RELEASE_PROCESS.md)
 - [Asset credits](docs/ASSET_CREDITS.md)
+- [Submission asset inventory](docs/ASSET_INVENTORY.md)
 - [Changelog](CHANGELOG.md)
 
 ### Local development

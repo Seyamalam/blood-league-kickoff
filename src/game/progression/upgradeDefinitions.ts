@@ -128,6 +128,20 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
       multiBallDamageMultiplier: 0.32,
     },
   }),
+  voidGoal: define({
+    id: 'voidGoal',
+    name: 'Void Goal',
+    description: 'Ball impacts open a temporary damaging gravity well.',
+    maxStacks: 4,
+    minPlayerLevel: 5,
+    prerequisites: [{ upgradeId: 'bloodBomb', minStacks: 1 }],
+    modifierPerStack: {
+      blackHoleDamage: 1.25,
+      blackHoleRadius: 0.25,
+      blackHolePullStrength: 3,
+      blackHoleDuration: 0.8,
+    },
+  }),
 } satisfies Record<UpgradeId, UpgradeDefinition>);
 
 function define(definition: UpgradeDefinition): Readonly<UpgradeDefinition> {

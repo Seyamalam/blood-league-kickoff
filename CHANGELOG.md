@@ -17,11 +17,14 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added selectable Storm Studs with bounded deterministic chain-lightning hops and cyan impact feedback.
 - Added selectable Frost Cleats with bounded deterministic impact bursts, timed enemy slowing, and ice feedback.
 - Added selectable Spectral Volley with a reusable six-shot pool, deterministic fan spread, and visible duplicate balls.
+- Added selectable Void Goal with pooled gravity zones, capped deterministic pulses, damage, pull, and visible vortex rings.
 - Added patterned/glyph ball-state indicators and geometric special-attack markers that do not depend on color.
 - Added schema-v4 persistent keyboard rebinding with migration, conflict rejection, safe capture, and live HUD labels.
 - Added outcome-specific results hierarchy, reduced-motion-safe animation, and an accessible deterministic S–D run grade.
 - Added idempotent shutdown/HMR cleanup across listeners, UI, WebGL resources, shared enemy assets, and Rapier WASM.
 - Split production output into small app, Three.js, and offline Rapier/WASM chunks with relative desktop-safe loading.
+- Staggered expensive far ordinary-enemy decisions while preserving per-tick movement, collision, timers, and special AI.
+- Added an accurate submission asset inventory with screenshot hashes, ownership/tool/license fields, and freeze checks.
 - Downloaded v0.7.1, corrected its portable checksum path, and verified both the checksum and ZIP contents.
 
 ## v0.7.1 — 2026-07-14

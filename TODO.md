@@ -162,7 +162,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add the lightning path.
 - [x] `P1` Add the frost path.
 - [x] `P1` Add the multiball path.
-- [ ] `P1` Add the black-hole path.
+- [x] `P1` Add the black-hole path.
 - [ ] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
 - [x] `P2` Add expanded victory presentation.
@@ -191,7 +191,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Track FPS, frame time, draw calls, triangles, enemies, fixed steps, and pools; add isolated physics timing during profiling.
 - [ ] `P0` Confirm no recurring allocation/GC spikes during steady combat.
 - [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
-- [ ] `P0` Stagger enemy AI and animation updates.
+- [x] `P0` Stagger far ordinary enemy decision/separation updates without reducing movement fidelity.
 - [x] `P0` Use instancing for blood shards and secondary weapons and shared geometry/materials for enemy visuals.
 - [ ] `P0` Add distance/update LOD and simple collision/query shapes.
 - [ ] `P0` Profile CPU and GPU in production web and Electron builds.

@@ -10,6 +10,7 @@ export const UPGRADE_IDS = [
   'stormStuds',
   'frostCleats',
   'spectralVolley',
+  'voidGoal',
 ] as const;
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
