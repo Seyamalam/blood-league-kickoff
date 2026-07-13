@@ -905,9 +905,22 @@ button {
   color: #f4f1e9;
   background: rgba(4, 4, 9, 0.88);
   backdrop-filter: blur(8px);
+  scrollbar-color: rgba(214, 45, 88, 0.72) #080811;
+  scrollbar-width: thin;
   transition:
     opacity 0.16s ease,
     visibility 0.16s ease;
+}
+.settings-overlay::-webkit-scrollbar {
+  width: 10px;
+}
+.settings-overlay::-webkit-scrollbar-track {
+  background: #080811;
+}
+.settings-overlay::-webkit-scrollbar-thumb {
+  border: 2px solid #080811;
+  border-radius: 8px;
+  background: #821733;
 }
 .settings-overlay.hidden {
   opacity: 0;
