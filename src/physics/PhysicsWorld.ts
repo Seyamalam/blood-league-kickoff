@@ -32,6 +32,7 @@ export class PhysicsWorld {
   private volleyWindow = false;
   private speedCap = MAX_BALL_SPEED;
   private recallSpeedMultiplier = 1;
+  private volleyWindowBonus = 0;
   private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
   private unpossessedTime = 0;
   private stalledTime = 0;
@@ -155,9 +156,10 @@ export class PhysicsWorld {
     return { kind: 'kick', charge: normalizedCharge, perfectVolley, speed: launchSpeed };
   }
 
-  setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}): void {
+  setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}, volleyWindowBonus = 0): void {
     this.recallRequested = active;
     this.recallSpeedMultiplier = safeMultiplier(modifiers.recallSpeedMultiplier, 0.5, 2);
+    this.volleyWindowBonus = Number.isFinite(volleyWindowBonus) ? Math.max(0, Math.min(0.8, volleyWindowBonus)) : 0;
   }
 
   applyBallRebound(normal: Readonly<Vec3>, velocityMultiplier = 0.82): void {
@@ -193,7 +195,7 @@ export class PhysicsWorld {
       const distance = Math.max(0.001, Math.hypot(dx, dy, dz));
       const pull = Math.min(70, (19 + distance * 2.8) * this.recallSpeedMultiplier);
       this.ballBody.applyImpulse({ x: (dx / distance) * pull * dt, y: (dy / distance) * pull * dt, z: (dz / distance) * pull * dt }, true);
-      this.volleyWindow = distance <= VOLLEY_WINDOW_DISTANCE;
+      this.volleyWindow = distance <= VOLLEY_WINDOW_DISTANCE + this.volleyWindowBonus;
       if (distance < CATCH_DISTANCE) {
         this.possessed = true;
         this.recallRequested = false;
@@ -230,6 +232,7 @@ export class PhysicsWorld {
     this.volleyWindow = false;
     this.speedCap = MAX_BALL_SPEED;
     this.recallSpeedMultiplier = 1;
+    this.volleyWindowBonus = 0;
     this.unpossessedTime = 0;
     this.stalledTime = 0;
     this.previousBallPosition = { x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 };

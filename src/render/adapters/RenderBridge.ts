@@ -74,7 +74,22 @@ export class RenderBridge {
       mesh.lookAt(p.x, 0, p.z);
       const pulse = enemy.hitFlash > 0 ? 1.28 : 1;
       const coachPulse = enemy.archetype === 'coach' ? 1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.025 : 1;
-      mesh.scale.setScalar(pulse * coachPulse);
+      const telegraphPulse = enemy.attackState === 'telegraph'
+        ? 1 + Math.sin(state.elapsed * 34) * 0.08
+        : 1;
+      const eliteScale = enemy.elite ? 1.18 : 1;
+      mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * eliteScale);
+
+      const shield = mesh.getObjectByName('defender-shield');
+      if (shield) {
+        const shieldPulse = enemy.shieldFlash > 0 ? 1.18 + Math.sin(state.elapsed * 48) * 0.08 : 1;
+        shield.scale.set(shieldPulse, shieldPulse, enemy.shieldFlash > 0 ? 1.65 : 1);
+      }
+      const eliteMarker = mesh.getObjectByName('elite-marker');
+      if (eliteMarker) {
+        eliteMarker.rotation.z += dt * 1.5;
+        eliteMarker.scale.setScalar(1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.08);
+      }
     }
     for (const [id, mesh] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
@@ -282,6 +297,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   else if (enemy.archetype === 'defender') addDefender(group);
   else if (enemy.archetype === 'coach') addCoach(group);
   else addBloodFan(group);
+  if (enemy.elite) addEliteMarker(group);
   return group;
 }
 
@@ -295,6 +311,7 @@ const enemyGeometry = {
   defenderShield: new THREE.BoxGeometry(1.18, 1.05, 0.18),
   coachBody: new THREE.CylinderGeometry(0.38, 0.58, 1.55, 8),
   coachAura: new THREE.RingGeometry(5.3, 5.5, 40),
+  eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
 const enemyMaterial = {
@@ -312,6 +329,12 @@ const enemyMaterial = {
     opacity: 0.16,
     depthWrite: false,
     side: THREE.DoubleSide,
+  }),
+  elite: new THREE.MeshBasicMaterial({
+    color: 0xffcf40,
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false,
   }),
 };
 
@@ -350,9 +373,18 @@ function addWinger(group: THREE.Group): void {
 function addDefender(group: THREE.Group): void {
   group.add(mesh(enemyGeometry.defenderBody, enemyMaterial.defender, 0.75));
   const shield = mesh(enemyGeometry.defenderShield, enemyMaterial.shield, 0.72);
+  shield.name = 'defender-shield';
   shield.position.z = 0.42;
   group.add(shield);
   addFace(group, 1.65);
+}
+
+function addEliteMarker(group: THREE.Group): void {
+  const marker = mesh(enemyGeometry.eliteMarker, enemyMaterial.elite, 2.25);
+  marker.name = 'elite-marker';
+  marker.rotation.x = Math.PI / 2;
+  marker.castShadow = false;
+  group.add(marker);
 }
 
 function addCoach(group: THREE.Group): void {

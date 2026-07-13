@@ -18,6 +18,7 @@ export interface PlayerState {
 }
 
 export type EnemyArchetype = 'bloodFan' | 'winger' | 'defender' | 'coach';
+export type EliteEnemyArchetype = Extract<EnemyArchetype, 'winger' | 'defender'>;
 export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'recover';
 
 export interface EnemyState {
@@ -39,6 +40,9 @@ export interface EnemyState {
   attackCooldown: number;
   attackDirection: Vec3;
   shieldFlash: number;
+  /** Boss-requested elites are visually distinguishable and use boosted stats. */
+  elite: boolean;
+  eliteModifier: number;
 }
 
 export type MatchPhase = 'ready' | 'playing' | 'dead' | 'won';

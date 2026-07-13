@@ -169,3 +169,37 @@ button { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .pause-overlay,.results-overlay { transition: none; }
 }
+
+/* Halftime tactical choice. */
+.halftime-overlay { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 26px; overflow-y: auto; color: #f4f1e9; text-align: center; background: radial-gradient(circle at 50% 40%,rgba(99,18,52,.58),rgba(4,4,9,.97) 60%); backdrop-filter: blur(7px); transition: opacity .18s ease,visibility .18s ease; }
+.halftime-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.halftime-overlay__eyebrow { margin: 0 0 7px; color: #e23b5e; font: 800 10px Arial,sans-serif; letter-spacing: .31em; }
+.halftime-overlay h2 { margin: 0; font: italic 900 clamp(40px,6vw,72px)/.88 Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif; letter-spacing: -.02em; text-shadow: 0 9px 34px #000; }
+.halftime-overlay__description { margin: 12px 0 6px; color: #aaa4ae; font: 12px/1.5 Arial,sans-serif; }
+.halftime-overlay__countdown { min-width: 150px; margin: 7px 0 19px; padding: 6px 12px; color: #e9c46f; border: 1px solid rgba(233,196,111,.28); background: rgba(0,0,0,.25); font: 800 10px Arial,sans-serif; letter-spacing: .15em; font-variant-numeric: tabular-nums; }
+.halftime-overlay__countdown--urgent { color: #ff5575; border-color: rgba(255,85,117,.5); }
+.halftime-overlay__choices { width: min(100%,980px); display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; }
+.halftime-choice { position: relative; min-width: 0; min-height: 270px; display: flex; flex-direction: column; align-items: center; padding: 23px 19px 20px; color: #eee8ee; text-align: center; border: 1px solid rgba(255,255,255,.15); border-radius: 3px; background: linear-gradient(155deg,rgba(38,23,38,.98),rgba(10,9,16,.99)); box-shadow: 0 15px 42px rgba(0,0,0,.45); cursor: pointer; transition: translate .14s ease,border-color .14s ease,box-shadow .14s ease; }
+.halftime-choice:hover { translate: 0 -4px; border-color: #e23b5e; box-shadow: 0 19px 50px rgba(119,15,48,.37); }
+.halftime-choice:focus-visible { outline: 3px solid #f8d777; outline-offset: 3px; }
+.halftime-choice__number { position: absolute; top: 11px; left: 12px; width: 24px; height: 24px; display: grid; place-items: center; color: #d6ced7; border: 1px solid rgba(255,255,255,.2); font: 800 11px Arial,sans-serif; }
+.halftime-choice__glyph { width: 72px; height: 72px; display: grid; place-items: center; margin: 3px 0 16px; color: #ffb263; border: 1px solid rgba(255,159,80,.45); border-radius: 50%; background: radial-gradient(circle,rgba(211,57,73,.36),rgba(42,13,30,.8)); box-shadow: 0 0 25px rgba(204,37,74,.22); font: 700 34px Georgia,serif; }
+.halftime-choice--pace .halftime-choice__glyph { color: #98d9ff; border-color: rgba(102,190,239,.5); }
+.halftime-choice--control .halftime-choice__glyph { color: #c7efcf; border-color: rgba(113,211,143,.5); }
+.halftime-choice small { color: #8e8792; font: 800 8px Arial,sans-serif; letter-spacing: .17em; }
+.halftime-choice strong { margin-top: 6px; font: italic 900 23px Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.halftime-choice__description { max-width: 250px; margin-top: 12px; color: #aaa4ae; font: 11px/1.55 Arial,sans-serif; }
+.halftime-overlay__hint { margin: 17px 0 0; color: #706a74; font: 9px Arial,sans-serif; letter-spacing: .12em; }
+
+@media (max-width: 720px) {
+  .halftime-overlay { justify-content: flex-start; padding: 20px 14px; }
+  .halftime-overlay__choices { max-width: 440px; grid-template-columns: 1fr; }
+  .halftime-choice { min-height: 150px; align-items: flex-start; padding: 20px 17px 16px 100px; text-align: left; }
+  .halftime-choice__glyph { position: absolute; left: 17px; top: 47px; width: 62px; height: 62px; margin: 0; }
+  .halftime-choice__description { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halftime-overlay,.halftime-choice { transition: none; }
+  .halftime-choice:hover { translate: 0; }
+}

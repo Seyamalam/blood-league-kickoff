@@ -1,4 +1,4 @@
-import type { EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
+import type { EliteEnemyArchetype, EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
 import type { SecondaryDamageHit } from '../combat';
 
 const ARENA_HALF_WIDTH = 22;
@@ -39,11 +39,26 @@ export function resetGameState(state: GameState): void {
   Object.assign(state, createGameState());
 }
 
+/** Resets the on-pitch formation after a goal without touching run rewards or health. */
+export function resetKickoffFormation(state: GameState): void {
+  state.enemies.length = 0;
+  state.spawnTimer = 0.8;
+  state.player.position.x = 0;
+  state.player.position.y = 0.9;
+  state.player.position.z = 0;
+  copyVec3(state.player.previousPosition, state.player.position);
+  state.player.velocity.x = 0;
+  state.player.velocity.y = 0;
+  state.player.velocity.z = 0;
+  state.player.dashTime = 0;
+}
+
 export function updatePlayer(
   state: GameState,
   movement: { x: number; z: number; dash?: boolean },
   facing: number,
   dt: number,
+  movementSpeedMultiplier = 1,
 ): void {
   const player = state.player;
   copyVec3(player.previousPosition, player.position);
@@ -51,12 +66,16 @@ export function updatePlayer(
   const scale = length > 1 ? 1 / length : 1;
   player.dashCooldown = Math.max(0, player.dashCooldown - dt);
 
+  const safeMovementMultiplier = Number.isFinite(movementSpeedMultiplier)
+    ? clamp(movementSpeedMultiplier, 0.5, 2)
+    : 1;
+
   if (movement.dash && player.dashCooldown <= 0) {
     const hasMoveDirection = length > 0.001;
     player.dashDirection.x = hasMoveDirection ? movement.x * scale : -Math.sin(facing);
     player.dashDirection.z = hasMoveDirection ? movement.z * scale : -Math.cos(facing);
     player.dashTime = PLAYER_DASH_DURATION;
-    player.dashCooldown = PLAYER_DASH_COOLDOWN;
+    player.dashCooldown = PLAYER_DASH_COOLDOWN * (safeMovementMultiplier > 1 ? 0.8 : 1);
     player.invulnerability = Math.max(player.invulnerability, PLAYER_DASH_INVULNERABILITY);
   }
 
@@ -65,8 +84,8 @@ export function updatePlayer(
     player.velocity.z = player.dashDirection.z * PLAYER_DASH_SPEED;
     player.dashTime = Math.max(0, player.dashTime - dt);
   } else {
-    const targetX = movement.x * scale * PLAYER_SPEED;
-    const targetZ = movement.z * scale * PLAYER_SPEED;
+    const targetX = movement.x * scale * PLAYER_SPEED * safeMovementMultiplier;
+    const targetZ = movement.z * scale * PLAYER_SPEED * safeMovementMultiplier;
     const acceleration = 1 - Math.exp(-14 * dt);
     player.velocity.x += (targetX - player.velocity.x) * acceleration;
     player.velocity.z += (targetZ - player.velocity.z) * acceleration;
@@ -314,17 +333,47 @@ function spawnEnemy(state: GameState): EnemyState {
   if (side === 3) z = edgeZ;
   const archetype = pickArchetype(state.elapsed);
   const stats = enemyStats(archetype, state.elapsed);
-  const position = { x, y: stats.y, z };
+  return createEnemyState(state, archetype, { x, y: stats.y, z }, false);
+}
+
+/** Adds a boss-requested elite near the opponent goal and returns its live state. */
+export function spawnEliteEnemy(
+  state: GameState,
+  archetype: EliteEnemyArchetype,
+  side: -1 | 1,
+): EnemyState {
+  const stats = enemyStats(archetype, state.elapsed);
+  const position = {
+    x: side * (4.8 + Math.random() * 1.8),
+    y: stats.y * 1.08,
+    z: -11.5 + (Math.random() * 0.8 - 0.4),
+  };
+  const enemy = createEnemyState(state, archetype, position, true);
+  state.enemies.push(enemy);
+  return enemy;
+}
+
+function createEnemyState(
+  state: GameState,
+  archetype: EnemyArchetype,
+  position: Vec3,
+  elite: boolean,
+): EnemyState {
+  const stats = enemyStats(archetype, state.elapsed);
+  const eliteModifier = elite ? 1.35 : 1;
+  const hitPoints = elite
+    ? Math.max(stats.hitPoints + 2, Math.ceil(stats.hitPoints * 1.65))
+    : stats.hitPoints;
   return {
     id: state.nextEnemyId++,
     archetype,
     position,
     previousPosition: { ...position },
-    radius: stats.radius,
-    speed: stats.speed,
-    attackDamage: stats.attackDamage,
-    hitPoints: stats.hitPoints,
-    maxHitPoints: stats.hitPoints,
+    radius: stats.radius * (elite ? 1.12 : 1),
+    speed: stats.speed * (elite ? 1.14 : 1),
+    attackDamage: Math.ceil(stats.attackDamage * (elite ? 1.25 : 1)),
+    hitPoints,
+    maxHitPoints: hitPoints,
     hitFlash: 0,
     lastBallHit: 0,
     buffed: false,
@@ -334,6 +383,8 @@ function spawnEnemy(state: GameState): EnemyState {
     attackCooldown: archetype === 'winger' ? 0.7 + Math.random() * 0.5 : 0,
     attackDirection: { x: 0, y: 0, z: 1 },
     shieldFlash: 0,
+    elite,
+    eliteModifier,
   };
 }
 
@@ -390,8 +441,6 @@ function enemyStats(archetype: EnemyArchetype, elapsed: number): {
     case 'winger':
       return { radius: 0.42, speed: 3.65 + pace, attackDamage: 10, hitPoints: 1, y: 0.82 };
     case 'defender':
-      // Defender is the durable archetype. Directional shielding can be added once
-      // the combat API exposes the ball velocity, rather than only its speed.
       return { radius: 0.76, speed: 1.35 + pace * 0.35, attackDamage: 22, hitPoints: 4, y: 1.02 };
     case 'coach':
       return { radius: 0.6, speed: 1.7 + pace * 0.5, attackDamage: 12, hitPoints: 2, y: 0.98 };

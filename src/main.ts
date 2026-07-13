@@ -10,7 +10,7 @@ import {
   type CountGoalkeeperState,
 } from './game/boss';
 import { SecondaryWeaponSystem } from './game/combat';
-import { createMatchDirectorState, getMatchObjective, updateMatchDirector } from './game/match';
+import { createMatchDirectorState, FULL_MATCH_CONFIG, getMatchObjective, updateMatchDirector, type HalftimeChoice } from './game/match';
 import { BloodShardSystem } from './game/pickups';
 import {
   chooseUpgrade,
@@ -20,7 +20,7 @@ import {
   UPGRADE_IDS,
   type UpgradeId,
 } from './game/progression';
-import { createGameState, damageEnemiesWithBall, damageEnemiesWithSecondary, resetGameState, updateEnemies, updatePlayer } from './game/simulation/gameState';
+import { createGameState, damageEnemiesWithBall, damageEnemiesWithSecondary, resetGameState, resetKickoffFormation, spawnEliteEnemy, updateEnemies, updatePlayer } from './game/simulation/gameState';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
 import { CameraController } from './render/app/CameraController';
@@ -30,8 +30,11 @@ import { GoalBeacon } from './render/objects/GoalBeacon';
 import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
 import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
 import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
+import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
+import { HalftimeOverlay } from './ui/HalftimeOverlay';
+import { MatchAnnouncement } from './ui/MatchAnnouncement';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { ResultsOverlay } from './ui/ResultsOverlay';
 import { SettingsOverlay } from './ui/SettingsOverlay';
@@ -39,6 +42,7 @@ import { UpgradeOverlay } from './ui/UpgradeOverlay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
+const MATCH_CONFIG = FULL_MATCH_CONFIG;
 const PLAYABLE_UPGRADES = [
   'silverBall',
   'powerKick',
@@ -70,6 +74,7 @@ async function bootstrap(): Promise<void> {
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
+  const atmosphere = new PhaseAtmosphere(scene);
   const hud = new Hud(root);
   const upgradeOverlay = new UpgradeOverlay(root);
   const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
@@ -78,6 +83,8 @@ async function bootstrap(): Promise<void> {
   });
   const pauseOverlay = new PauseOverlay(root);
   const resultsOverlay = new ResultsOverlay(root);
+  const halftimeOverlay = new HalftimeOverlay(root);
+  const announcement = new MatchAnnouncement(root);
   const perf = new PerfMeter();
   const clock = new THREE.Clock();
   let accumulator = 0;
@@ -88,9 +95,16 @@ async function bootstrap(): Promise<void> {
   let boss: CountGoalkeeperState | null = null;
   let lastRenderedAt = 0;
   let resultsShown = false;
+  let pendingHalftimeChoice: HalftimeChoice | undefined;
+  let halftimeDeadline = 0;
+  let movementSpeedMultiplier = 1;
+  let kickPowerMultiplier = 1;
+  let ballDamageMultiplier = 1;
+  let recallSpeedMultiplier = 1;
+  let volleyWindowBonus = 0;
 
   const offerUpgrade = (): void => {
-    if (upgradeOverlay.isVisible || settingsOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
+    if (upgradeOverlay.isVisible || settingsOverlay.isVisible || halftimeOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
     const choices = PLAYABLE_UPGRADES.filter(
       (upgradeId) => getUpgradeAvailability(progression, upgradeId).available,
     );
@@ -135,6 +149,7 @@ async function bootstrap(): Promise<void> {
     void audio.unlock();
     if (state.phase === 'ready') state.phase = 'playing';
     audio.playPhase(0);
+    announcement.show('kickoff');
     hud.start();
     input.requestPointerLock();
   };
@@ -149,6 +164,9 @@ async function bootstrap(): Promise<void> {
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
     secondaryRenderer.reset();
+    atmosphere.reset();
+    announcement.reset();
+    halftimeOverlay.reset();
     upgradeOverlay.reset();
     settingsOverlay.hide();
     pauseOverlay.hide();
@@ -159,9 +177,16 @@ async function bootstrap(): Promise<void> {
     goalLatched = false;
     boss = null;
     resultsShown = false;
+    pendingHalftimeChoice = undefined;
+    movementSpeedMultiplier = 1;
+    kickPowerMultiplier = 1;
+    ballDamageMultiplier = 1;
+    recallSpeedMultiplier = 1;
+    volleyWindowBonus = 0;
     state.phase = 'playing';
     previousBallState = physics.ballState;
     audio.playPhase(0);
+    announcement.show('kickoff');
     input.requestPointerLock();
   };
   hud.kickoffButton.addEventListener('click', begin);
@@ -178,7 +203,12 @@ async function bootstrap(): Promise<void> {
     physics.reset(state.player.position);
     bridge.reset();
     bloodShards.reset();
+    bloodShardRenderer.reset();
     secondaryWeapons.reset();
+    secondaryRenderer.reset();
+    atmosphere.reset();
+    announcement.reset();
+    halftimeOverlay.reset();
     resultsOverlay.reset();
     pauseOverlay.hide();
     state.phase = 'ready';
@@ -186,10 +216,16 @@ async function bootstrap(): Promise<void> {
     match = createMatchDirectorState();
     boss = null;
     resultsShown = false;
+    pendingHalftimeChoice = undefined;
+    movementSpeedMultiplier = 1;
+    kickPowerMultiplier = 1;
+    ballDamageMultiplier = 1;
+    recallSpeedMultiplier = 1;
+    volleyWindowBonus = 0;
     hud.showMenu();
   };
   const showPause = (): void => {
-    if (state.phase !== 'playing' || upgradeOverlay.isVisible || settingsOverlay.isVisible) return;
+    if (state.phase !== 'playing' || upgradeOverlay.isVisible || settingsOverlay.isVisible || halftimeOverlay.isVisible) return;
     if (input.isLocked) void document.exitPointerLock();
     pauseOverlay.show({
       onResume: () => input.requestPointerLock(),
@@ -202,9 +238,13 @@ async function bootstrap(): Promise<void> {
     if (event.key === 'Escape' && !pauseOverlay.isVisible) showPause();
   };
   window.addEventListener('keydown', onGlobalKeyDown);
+  const onFocusLoss = (): void => showPause();
+  const onVisibilityChange = (): void => { if (document.hidden) showPause(); };
+  window.addEventListener('blur', onFocusLoss);
+  document.addEventListener('visibilitychange', onVisibilityChange);
   renderer.domElement.addEventListener('click', () => {
     if (state.phase === 'ready') begin();
-    else if (state.phase === 'playing' && !input.isLocked && !settingsOverlay.isVisible) input.requestPointerLock();
+    else if (state.phase === 'playing' && !input.isLocked && !settingsOverlay.isVisible && !pauseOverlay.isVisible && !halftimeOverlay.isVisible) input.requestPointerLock();
   });
 
   renderer.setAnimationLoop((time) => {
@@ -217,12 +257,15 @@ async function bootstrap(): Promise<void> {
 
     if (input.consumeRestart() && state.phase !== 'ready' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible) restart();
     const kick = input.consumeKick();
-    if (state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && kick) {
+    if (state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible && !halftimeOverlay.isVisible && kick) {
       const result = physics.kick(
         state.player.position,
         cameraController.aimDirection(),
         kick.charge,
-        progression.modifiers,
+        {
+          ...progression.modifiers,
+          kickPowerMultiplier: progression.modifiers.kickPowerMultiplier * kickPowerMultiplier,
+        },
       );
       if (result) {
         audio.playKick(result.charge);
@@ -234,16 +277,19 @@ async function bootstrap(): Promise<void> {
       }
     }
     physics.setRecall(
-      state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && input.recall,
-      progression.modifiers,
+      state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible && !halftimeOverlay.isVisible && input.recall,
+      {
+        recallSpeedMultiplier: progression.modifiers.recallSpeedMultiplier * recallSpeedMultiplier,
+      },
+      volleyWindowBonus,
     );
 
     accumulator += frameTime;
     while (accumulator >= FIXED_STEP) {
-      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible;
+      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && !pauseOverlay.isVisible && !halftimeOverlay.isVisible;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
-        updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP);
+        updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
         updateEnemies(state, FIXED_STEP);
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
@@ -258,7 +304,7 @@ async function bootstrap(): Promise<void> {
           state,
           physics.ballPosition,
           physics.ballSpeed,
-          progression.modifiers.ballDamageMultiplier,
+          progression.modifiers.ballDamageMultiplier * ballDamageMultiplier,
           physics.ballVelocity,
           progression.modifiers.pierceCount,
         );
@@ -322,6 +368,7 @@ async function bootstrap(): Promise<void> {
               if (state.player.health <= 0) state.phase = 'dead';
             }
             if (event.type === 'phaseChanged') audio.playPhase(event.to === 'desperation' ? 3 : 2);
+            if (event.type === 'summonElite') spawnEliteEnemy(state, event.archetype, event.side);
           }
 
           const bossDistance = Math.hypot(
@@ -353,21 +400,55 @@ async function bootstrap(): Promise<void> {
           playerDead: state.phase === 'dead',
           goalScored: scored,
           bossDefeated: bossDefeatedThisStep,
-        });
+          halftimeChoice: pendingHalftimeChoice,
+        }, MATCH_CONFIG);
+        pendingHalftimeChoice = undefined;
         match = matchUpdate.state;
         for (const event of matchUpdate.events) {
           if (event.type === 'stageChanged') {
             audio.playPhase(matchUpdate.state.matchElapsed);
+            atmosphere.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) boss = spawnCountGoalkeeper();
           }
           if (event.type === 'goalScored') {
             state.score += 1_000;
             audio.playGoal();
+            announcement.show('goal', event.goal === 'final' ? 'THE FINAL KEEPER AWAKENS' : undefined);
+            resetKickoffFormation(state);
             physics.reset(state.player.position);
+            bloodShards.reset();
+            secondaryWeapons.reset();
+          }
+          if (event.type === 'goalOpportunityStarted' && event.goal === 'final') {
+            announcement.show('finalGoal');
+          }
+          if (event.type === 'halftimeChoiceStarted') {
+            announcement.show('halftime');
+            halftimeDeadline = performance.now() + event.duration * 1_000;
+            if (input.isLocked) void document.exitPointerLock();
+            void halftimeOverlay.show(event.duration).then((choice) => {
+              if (choice) pendingHalftimeChoice = choice;
+            });
+          }
+          if (event.type === 'halftimeChoiceSelected') {
+            halftimeOverlay.hide();
+            if (event.choice === 'power') {
+              ballDamageMultiplier = 1.25;
+              kickPowerMultiplier = 1.15;
+            } else if (event.choice === 'pace') {
+              movementSpeedMultiplier = 1.15;
+            } else {
+              recallSpeedMultiplier = 1.25;
+              volleyWindowBonus = 0.45;
+            }
+          }
+          if (event.type === 'bloodMoonStarted') {
+            announcement.show('bloodMoon');
           }
           if (event.type === 'victory') {
             state.phase = 'won';
             audio.playGoal();
+            announcement.show('finalWhistle', 'COUNT GOALKEEPER HAS FALLEN');
           }
         }
       }
@@ -382,6 +463,16 @@ async function bootstrap(): Promise<void> {
 
     goalBeacon.setActive(match.stage === 'goalOpportunity' || match.stage === 'finalGoal');
     goalBeacon.update(frameTime);
+    announcement.update(frameTime);
+    atmosphere.update(frameTime);
+    if (halftimeOverlay.isVisible) {
+      const remaining = Math.max(0, (halftimeDeadline - performance.now()) / 1_000);
+      halftimeOverlay.updateCountdown(remaining);
+      if (remaining <= 0) {
+        pendingHalftimeChoice = MATCH_CONFIG.defaultHalftimeChoice;
+        halftimeOverlay.hide();
+      }
+    }
     offerUpgrade();
 
     const alpha = accumulator / FIXED_STEP;
@@ -401,7 +492,7 @@ async function bootstrap(): Promise<void> {
       perf.update(frameTime),
       input.kickCharge,
       progression,
-      getMatchObjective(match),
+      getMatchObjective(match, MATCH_CONFIG),
       boss,
     );
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
@@ -428,6 +519,8 @@ async function bootstrap(): Promise<void> {
   window.addEventListener('beforeunload', () => {
     input.dispose();
     window.removeEventListener('keydown', onGlobalKeyDown);
+    window.removeEventListener('blur', onFocusLoss);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     void audio.dispose();
     goalBeacon.dispose();
     bossVisual.dispose();
@@ -437,6 +530,9 @@ async function bootstrap(): Promise<void> {
     settingsOverlay.dispose();
     pauseOverlay.dispose();
     resultsOverlay.dispose();
+    halftimeOverlay.dispose();
+    announcement.dispose();
+    atmosphere.dispose();
     bridge.dispose();
   }, { once: true });
 }
