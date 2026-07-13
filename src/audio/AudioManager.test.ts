@@ -42,6 +42,7 @@ describe('AudioManager event cues', () => {
       audio.playBossPhase('bloodRush');
       audio.playBossPhase('desperation');
       audio.playBossPhase(2);
+      audio.playEvolutionUnlock();
       audio.playVictory();
       audio.playDefeat();
     }).not.toThrow();

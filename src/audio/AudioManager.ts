@@ -341,6 +341,50 @@ export class AudioManager {
     });
   }
 
+  /** Luminous transformation cue used when a weapon reaches its evolved form. */
+  public playEvolutionUnlock(): void {
+    const now = this.now();
+    if (now === null) return;
+
+    this.noise({
+      duration: 0.48,
+      gain: 0.08,
+      start: now,
+      filterFrequency: 420,
+      filterEndFrequency: 5_600,
+      filterType: 'bandpass',
+    });
+
+    const notes = [220, 277.18, 329.63, 440, 554.37];
+    notes.forEach((frequency, index) => {
+      const start = now + index * 0.075;
+      this.tone({
+        frequency,
+        endFrequency: frequency * 1.015,
+        duration: index === notes.length - 1 ? 0.48 : 0.2,
+        gain: index === notes.length - 1 ? 0.13 : 0.075,
+        start,
+        type: 'triangle',
+      });
+      this.tone({
+        frequency: frequency * 2,
+        duration: 0.14,
+        gain: 0.025,
+        start: start + 0.012,
+        type: 'sine',
+      });
+    });
+
+    this.tone({
+      frequency: 110,
+      endFrequency: 220,
+      duration: 0.56,
+      gain: 0.07,
+      start: now,
+      type: 'sine',
+    });
+  }
+
   /** Ominous brass-like reveal and heartbeat used when the Count enters the pitch. */
   public playBossEntrance(): void {
     const now = this.now();
