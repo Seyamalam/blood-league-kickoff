@@ -786,6 +786,113 @@ button {
   }
 }
 
+/* Queued evolution unlock feedback remains readable above a following upgrade dialog. */
+.evolution-toast {
+  --evolution-progress: 0;
+  position: fixed;
+  top: 98px;
+  right: 28px;
+  z-index: 24;
+  width: min(430px, calc(100vw - 56px));
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 15px 18px;
+  overflow: hidden;
+  color: #f4f1e9;
+  border: 1px solid rgba(255, 207, 64, 0.56);
+  background: linear-gradient(135deg, rgba(65, 18, 50, 0.97), rgba(8, 8, 17, 0.98));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.48);
+  pointer-events: none;
+  opacity: 1;
+  translate: 0;
+  transition:
+    opacity 0.18s ease,
+    translate 0.18s ease;
+}
+.evolution-toast::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ffcf40, #ff315d);
+  transform: scaleX(calc(1 - var(--evolution-progress)));
+  transform-origin: left;
+}
+.evolution-toast.hidden {
+  opacity: 0;
+  translate: 24px 0;
+}
+.evolution-toast__icon {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  padding: 8px;
+  border: 1px solid rgba(255, 207, 64, 0.42);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 49, 93, 0.28), rgba(17, 17, 25, 0.82));
+}
+.evolution-toast__copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.evolution-toast__eyebrow {
+  color: #ffcf40;
+  font:
+    800 10px Arial,
+    sans-serif;
+  letter-spacing: 0.25em;
+}
+.evolution-toast__name {
+  font:
+    italic 900 25px/1 Impact,
+    Haettenschweiler,
+    'Arial Narrow Bold',
+    sans-serif;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.evolution-toast__description {
+  color: #c8c1ca;
+  font:
+    14px/1.35 Arial,
+    sans-serif;
+}
+
+@media (max-width: 650px) {
+  .evolution-toast {
+    top: 74px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    grid-template-columns: 64px 1fr;
+    padding: 12px 14px;
+  }
+  .evolution-toast__icon {
+    width: 64px;
+    height: 64px;
+  }
+  .evolution-toast__name {
+    font-size: 21px;
+  }
+}
+
+@media (forced-colors: active) {
+  .evolution-toast,
+  .evolution-toast__icon {
+    border: 2px solid CanvasText;
+    background: Canvas;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evolution-toast {
+    transition: none;
+  }
+}
+
 /* Persistent player settings. Scoped so its form controls do not affect HUD modals. */
 .settings-overlay {
   position: fixed;

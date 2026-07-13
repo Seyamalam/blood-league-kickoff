@@ -69,6 +69,7 @@ import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRendere
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
+import { EvolutionToast } from './ui/EvolutionToast';
 import { HalftimeOverlay } from './ui/HalftimeOverlay';
 import { MatchAnnouncement } from './ui/MatchAnnouncement';
 import { PauseOverlay } from './ui/PauseOverlay';
@@ -140,6 +141,7 @@ async function bootstrap(): Promise<void> {
   const resultsOverlay = new ResultsOverlay(root);
   const halftimeOverlay = new HalftimeOverlay(root);
   const announcement = new MatchAnnouncement(root);
+  const evolutionToast = new EvolutionToast(root);
   const tutorialTracker = new TutorialTracker(hasCompletedTutorial());
   const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
@@ -243,6 +245,7 @@ async function bootstrap(): Promise<void> {
         audio.playEvolutionUnlock();
         bridge.volleyBurst(state.player.position, 1.8);
         cameraController.volleyImpulse(1.2);
+        evolutionToast.enqueue(result.evolutionEvents);
       }
       if (progression.pendingLevelUps > 0) window.setTimeout(offerUpgrade, 0);
       else input.requestPointerLock();
@@ -300,6 +303,7 @@ async function bootstrap(): Promise<void> {
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
+    evolutionToast.reset();
     halftimeOverlay.reset();
     upgradeOverlay.reset();
     settingsOverlay.hide();
@@ -354,6 +358,7 @@ async function bootstrap(): Promise<void> {
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
+    evolutionToast.reset();
     halftimeOverlay.reset();
     resultsOverlay.reset();
     pauseOverlay.hide();
@@ -770,6 +775,7 @@ async function bootstrap(): Promise<void> {
     goalBeacon.setActive(match.stage === 'goalOpportunity' || match.stage === 'finalGoal');
     goalBeacon.update(frameTime);
     announcement.update(frameTime);
+    evolutionToast.update(frameTime);
     atmosphere.update(frameTime);
     if (halftimeOverlay.isVisible) {
       const remaining = Math.max(0, (halftimeDeadline - performance.now()) / 1_000);
@@ -878,6 +884,7 @@ async function bootstrap(): Promise<void> {
     resultsOverlay.dispose();
     halftimeOverlay.dispose();
     announcement.dispose();
+    evolutionToast.dispose();
     tutorialPrompt.dispose();
     hud.dispose();
     uninstallDenseWavePerformanceHook();
