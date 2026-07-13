@@ -11,6 +11,20 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    // rapier3d-compat intentionally embeds its offline WASM payload in JavaScript.
+    // Keep that payload and Three.js in stable vendor chunks so app changes stay
+    // small and reviewable; the raised threshold acknowledges only that known,
+    // self-contained Rapier chunk rather than hiding growth in application code.
+    chunkSizeWarningLimit: 2_500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.split('\\').join('/');
+          if (normalizedId.includes('/node_modules/@dimforge/rapier3d-compat/')) return 'vendor-rapier';
+          if (normalizedId.includes('/node_modules/three/')) return 'vendor-three';
+        },
+      },
+    },
   },
 });
 
