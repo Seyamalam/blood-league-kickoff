@@ -7,6 +7,7 @@ import {
   installDenseWavePerformanceHook,
   readDenseWaveStressMode,
 } from './diagnostics/DenseWaveStress';
+import { PresentationFrameScheduler } from './diagnostics/PresentationFrameScheduler';
 import { InputController } from './game/input/InputController';
 import {
   damageCountGoalkeeper,
@@ -146,6 +147,7 @@ async function bootstrap(): Promise<void> {
       }))
     : () => undefined;
   const clock = new THREE.Clock();
+  const frameScheduler = new PresentationFrameScheduler();
   let accumulator = 0;
   let previousBallState = physics.ballState;
   let progression = createProgressionState();
@@ -153,7 +155,6 @@ async function bootstrap(): Promise<void> {
   let match = createMatchDirectorState();
   let goalLatched = false;
   let boss: CountGoalkeeperState | null = null;
-  let lastRenderedAt = 0;
   let resultsShown = false;
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
@@ -383,9 +384,7 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('click', onCanvasClick);
 
   renderer.setAnimationLoop((time) => {
-    const frameInterval = playerSettings.fpsLimit === 'unlimited' ? 0 : 1_000 / playerSettings.fpsLimit;
-    if (frameInterval > 0 && time - lastRenderedAt < frameInterval - 0.25) return;
-    lastRenderedAt = time;
+    if (!frameScheduler.shouldRender(time, playerSettings.fpsLimit)) return;
     fixedStepsThisFrame = 0;
     const frameTime = Math.min(MAX_FRAME_TIME, clock.getDelta());
     const mouse = input.consumeMouseDelta();

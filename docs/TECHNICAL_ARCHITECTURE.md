@@ -39,6 +39,11 @@ Accumulator -> 60 Hz simulation steps -> interpolated world render -> HUD update
 
 Three's `setAnimationLoop` drives presentation. Frame delta is clamped to 100 ms after stalls/focus changes. An accumulator advances the player, enemies, and Rapier world at 60 Hz. The player, enemies, and ball retain previous/current positions and are interpolated for rendering; the camera then follows the interpolated player with exponential smoothing. HUD values read current simulation state rather than interpolated values. There is no networking, rollback, replay, or deterministic lockstep layer.
 
+The 60/120 FPS presentation caps use an ideal-deadline scheduler with a bounded early margin for RAF timestamp
+jitter. Deadlines advance from the ideal timeline rather than the last rendered callback, preventing a slightly
+early 120 Hz callback from turning a 60 FPS cap into a periodic three-refresh frame. Unlimited mode renders every
+callback, and changing limits resets the schedule immediately.
+
 ## Ownership Boundaries
 
 - **`main.ts`:** bootstrap, lifecycle/disposal, pointer-lock and menu events, fixed-step accumulator, match/combat orchestration, audio hooks, interpolation, HUD updates, and rendering.
