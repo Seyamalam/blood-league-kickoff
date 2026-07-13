@@ -4,14 +4,14 @@
 
 ![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
 
-| Project   | Value                                                                |
-| --------- | -------------------------------------------------------------------- |
-| Status    | Complete nine-minute run alpha in active development                 |
-| Theme     | Kickoff                                                              |
-| Team      | Huntrix — 2 participants                                             |
-| Platforms | Web and macOS development first; Windows desktop at final submission |
-| Stack     | Three.js, TypeScript, Vite, Rapier, Electron                         |
-| Input     | Keyboard and mouse                                                   |
+| Project   | Value                                                      |
+| --------- | ---------------------------------------------------------- |
+| Status    | Complete nine-minute run alpha in active development       |
+| Theme     | Kickoff                                                    |
+| Team      | Huntrix — 2 participants                                   |
+| Platforms | Web, Windows x64, macOS Intel/Apple silicon, and Linux x64 |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron               |
+| Input     | Keyboard and mouse                                         |
 
 ### Current title screen
 
@@ -96,7 +96,7 @@ For participant privacy, contact details and student identity numbers are not pu
 - Eight normal enemy behaviors plus a final boss or fallback final elite wave
 - Twelve upgrades and two evolved combinations
 - Menus, settings, tutorial prompts, win, loss, pause, and restart
-- Playable web build and tested portable Windows `.exe`
+- Playable web build and native desktop packages for Windows, macOS, and Linux
 
 ### Target build
 
@@ -116,9 +116,9 @@ Target features remain gated until the guaranteed vertical slice is fun, stable,
 - **Rapier:** fixed-step WASM physics for the player, ball, arena, and important collisions
 - **HTML/CSS:** menus, HUD, upgrade cards, and settings
 - **Web Audio:** music, effects, and phase transitions
-- **Electron:** self-contained GPU-accelerated desktop build for local macOS testing and final Windows delivery
-- **electron-builder:** portable `.exe` packaging
-- **GitHub Actions:** manual-only final Windows packaging
+- **Electron:** self-contained GPU-accelerated desktop builds sharing the web gameplay code
+- **electron-builder:** portable Windows, macOS, and Linux packaging
+- **GitHub Actions:** native-runner web/desktop builds attached automatically to tagged releases
 
 The game uses no AI service at runtime. Browser and desktop releases share the same gameplay code.
 
@@ -186,13 +186,13 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
-- [x] Windows workflow retained as a manual-only final-submission task
+- [x] Native CI packaging matrix added for Windows x64, macOS Intel/Apple silicon, Linux x64, and web
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
 - [ ] Human balance testing for the complete nine-minute configuration
-- [ ] Final Windows portable build after the game is content-complete
+- [ ] Test the downloaded Windows and Linux packages on their target operating systems
 
 ### Project documents
 
@@ -209,7 +209,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 
 ### Local development
 
-Active development uses the browser and macOS Electron workflows:
+Active development uses the browser and Electron workflows:
 
 ```bash
 npm install
@@ -221,9 +221,10 @@ npm run format:check
 npm run check
 npm run desktop
 npm run desktop:dev
+npm run package:mac
 ```
 
-The web build is emitted to `dist/`. Windows packaging remains dormant until the game is content-complete; it will then be run manually and tested on real Windows hardware before submission.
+The web build is emitted to `dist/`. Version tags run native CI packaging for Windows x64, macOS Intel/Apple silicon, Linux x64, and web, then attach the artifacts and `SHA256SUMS.txt` to the matching GitHub Release. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
 
 ## Versioning and Releases
 
@@ -232,7 +233,7 @@ Development history is part of the jam submission, so changes are committed in s
 1. Updated README progress and game documentation
 2. A verified production build
 3. A milestone commit pushed to GitHub
-4. A version tag and GitHub Release with the verified web snapshot; Windows artifacts are reserved for the final submission release
+4. A version tag and GitHub Release with verified web and native desktop artifacts
 
 Planned release line:
 
@@ -247,6 +248,7 @@ Planned release line:
 | `v0.7.1`         | macOS controls, audio mixing, and CI hardening           |
 | `v0.8.0-alpha.1` | Target gameplay/content checkpoint                       |
 | `v0.8.0-alpha.2` | Presentation, progression UI, and macOS QA checkpoint    |
+| `v0.8.0-alpha.3` | Cross-platform packaging, pacing, and release hardening  |
 | `v0.8.0`         | Content and presentation complete                        |
 | `v0.9.0`         | Release candidate                                        |
 | `v1.0.0`         | Jam submission freeze                                    |

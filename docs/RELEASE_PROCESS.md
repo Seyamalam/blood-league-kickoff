@@ -51,7 +51,7 @@ git tag -a vX.Y.Z -m "Blood League: Kickoff vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Pushing the version tag runs the desktop workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the Windows, macOS, and Linux builds plus a combined SHA-256 manifest. Attach the separately verified web ZIP when available. Release notes must include:
+Pushing the version tag runs the release workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the web, Windows, macOS, and Linux builds plus a combined SHA-256 manifest. Release notes must include:
 
 - milestone and commit SHA;
 - implemented gameplay/content;

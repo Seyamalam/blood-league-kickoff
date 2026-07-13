@@ -2,7 +2,7 @@
 
 ## 1. Objective
 
-Create a polished third-person 3D horde-survival roguelite in which football is the combat system and each kickoff advances the run. Submit a stable web build, portable Windows `.exe`, public GitHub repository, itch.io page, and clear gameplay pitch within the IUT 12th ICT Fest 2026 GameJam deadline.
+Create a polished third-person 3D horde-survival roguelite in which football is the combat system and each kickoff advances the run. Submit stable web and desktop builds, a public GitHub repository, itch.io page, and clear gameplay pitch within the IUT 12th ICT Fest 2026 GameJam deadline.
 
 ## 2. Product Decision
 
@@ -11,7 +11,7 @@ Create a polished third-person 3D horde-survival roguelite in which football is 
 - **Physics:** Rapier WASM for the player, ball, arena, and important dynamic interactions
 - **View:** Third-person, over-the-shoulder camera
 - **Special camera:** Brief first-person Focus Kick ultimate only
-- **Platforms:** Web plus portable Windows `.exe`
+- **Platforms:** Web, Windows x64, macOS Intel/Apple silicon, and Linux x64
 - **Session:** 8–10 minutes guaranteed; up to 12 minutes only after the scope gates pass
 - **Art direction:** Stylized low-poly gothic stadium, moonlit blue environment, crimson vampire effects, and gold holy weapons
 
@@ -213,7 +213,7 @@ Data definitions must be plain typed objects/JSON where practical. Rendering, si
 
 Electron loads only the local production build. The desktop shell uses a restricted preload boundary, context isolation, no Node integration in renderer code, fullscreen/window settings, and hardware acceleration. The game must also remain playable as a normal static web build.
 
-`electron-builder` produces a portable Windows executable. A Windows GitHub Actions runner performs the authoritative `.exe` build; a real Windows machine must run each release candidate before submission.
+`electron-builder` produces native desktop packages. GitHub Actions builds Windows x64, macOS Intel/Apple silicon, and Linux x64 on their native runners; each release candidate must still be smoke-tested on its target operating systems before submission.
 
 ## 8. Performance Plan
 
@@ -260,14 +260,15 @@ Modal surfaces: upgrade selection, halftime choice, pause/settings, and results.
 ### Outputs
 
 - Static web production build (`dist/`) for itch.io
-- Portable Windows `.exe` packaged by Electron Builder
-- Optional Windows installer only after portable delivery is stable
+- Portable Windows `.exe` and ZIP packaged by Electron Builder
+- macOS Intel/Apple-silicon DMG and ZIP packages
+- Linux x64 AppImage and ZIP packages
 
 ### Continuous integration
 
-Development and gameplay validation run locally on macOS and in the browser. Milestone tags may publish verified web snapshots. The Windows workflow is manual-only and will not run during active gameplay development; it is reserved for the content-complete submission candidate. Release metadata must state controls, included content, known issues, test status, and commit SHA.
+Development and gameplay validation run locally on macOS and in the browser. Version tags trigger native Windows, macOS, and Linux packaging plus a static web archive, combine checksums, and attach all outputs to the matching GitHub Release. Release metadata must state controls, included content, known issues, test status, and commit SHA.
 
-Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. This workflow is separate from—and cannot trigger—the manual-only Windows packaging job.
+Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. Desktop packaging runs only for version tags or an explicit manual dispatch.
 
 ### Commit and documentation policy
 
@@ -335,4 +336,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, two evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, and persistent settings are active. Browser automation, 97 deterministic tests, release artifact verification, and real macOS Electron checks cover the main systems and desktop controls. Pointer-lock combat feel and full-run balance still require human playtesting. Windows packaging remains intentionally deferred until the game is content-complete.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, two evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, and persistent settings are active. Browser automation, 119 deterministic tests, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.

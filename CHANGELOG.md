@@ -4,6 +4,15 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+## v0.8.0-alpha.3 — 2026-07-14
+
+- Added native GitHub Actions release builds for Windows x64, macOS Intel/Apple silicon, Linux x64, and the static web game, with a combined SHA-256 manifest.
+- Added the confirmed Huntrix roster and registration code `04-42417` to public submission documentation while keeping private registration fields out of the repository.
+- Replaced the player placeholder with a distinctive low-poly vampire-league striker and added lifecycle coverage for its shared render resources.
+- Reduced kill XP from 10 to 2 to keep the full run near its intended wall-clock duration, with deterministic phase-by-phase progression checks.
+- Added exhaustive bounded-pool coverage for every secondary weapon family.
+- Fixed the final-wave deadline granting victory while Count Goalkeeper was still alive; only defeating the boss now wins the match.
+
 ## v0.8.0-alpha.2 — 2026-07-14
 
 - Added original generated key art, an optimized title background, an itch.io cover candidate, and a complete prompt/derivation record.
