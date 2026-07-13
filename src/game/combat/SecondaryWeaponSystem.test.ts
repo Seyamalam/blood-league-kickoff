@@ -11,6 +11,10 @@ const EMPTY: SecondaryCombatModifiers = {
   ghostPassDamageMultiplier: 1,
   chainLightningDamage: 0,
   chainLightningTargets: 0,
+  frostBurstDamage: 0,
+  frostBurstRadius: 0,
+  frostSlowAmount: 0,
+  frostSlowDuration: 0,
 };
 
 describe('SecondaryWeaponSystem', () => {
@@ -94,5 +98,43 @@ describe('SecondaryWeaponSystem', () => {
     });
 
     expect(result.hits.map((hit) => hit.targetId)).toEqual([2]);
+  });
+
+  it('applies deterministic frost damage and reports bounded slow metadata', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = {
+      ...EMPTY,
+      frostBurstDamage: 7,
+      frostBurstRadius: 0.5,
+      frostSlowAmount: 0.3,
+      frostSlowDuration: 2.25,
+    };
+    expect(system.triggerFrostBurst({ x: 0, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    const targets = Array.from({ length: 16 }, (_, index) => ({
+      id: 16 - index,
+      position: { x: 1, y: 0.9, z: 0 },
+      radius: 0.5,
+    }));
+    targets.push({ id: 50, position: { x: 5, y: 0.9, z: 0 }, radius: 0.5 });
+    const result = system.step({
+      dt: 1 / 60,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets,
+    });
+
+    expect(result.hits.filter((hit) => hit.source === 'frost-burst').map((hit) => hit.targetId)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
+    const frostHit = result.events.find((event) => event.type === 'frost-burst-hit');
+    expect(frostHit).toMatchObject({ speedMultiplier: 0.7, duration: 2.25 });
+  });
+
+  it('does not queue frost bursts without frost damage', () => {
+    expect(new SecondaryWeaponSystem().triggerFrostBurst({ x: 0, y: 0, z: 0 }, EMPTY)).toBe(false);
   });
 });

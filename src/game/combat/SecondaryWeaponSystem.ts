@@ -30,6 +30,9 @@ const GHOST_PASS_RADIUS = 0.34;
 const CHAIN_LIGHTNING_TRIGGER_CAP = 8;
 const CHAIN_LIGHTNING_TARGET_CAP = 6;
 const CHAIN_LIGHTNING_RANGE = 4.5;
+const FROST_BURST_TRIGGER_CAP = 8;
+const FROST_BURST_TARGET_CAP = 12;
+const FROST_BURST_BASE_RADIUS = 1.25;
 const HIT_CAP_PER_STEP = 256;
 const EVENT_CAP_PER_STEP = 64;
 
@@ -63,6 +66,15 @@ interface ChainLightningInternal {
   targetCount: number;
 }
 
+interface FrostBurstInternal {
+  active: boolean;
+  position: Vec3;
+  radius: number;
+  damage: number;
+  speedMultiplier: number;
+  slowDuration: number;
+}
+
 /**
  * Fixed-step secondary weapon simulation. It owns bounded pools and reports
  * typed damage queries instead of mutating enemies, keeping it independent of
@@ -75,6 +87,8 @@ export class SecondaryWeaponSystem {
   private readonly ghostPasses: GhostPassInternal[];
   private readonly chainLightningTriggers: ChainLightningInternal[];
   private readonly chainVisitedIds = new Int32Array(CHAIN_LIGHTNING_TARGET_CAP + 1);
+  private readonly frostBurstTriggers: FrostBurstInternal[];
+  private readonly frostVisitedIds = new Int32Array(FROST_BURST_TARGET_CAP);
   private readonly hits: SecondaryDamageHit[] = [];
   private readonly events: SecondaryWeaponEvent[] = [];
   private readonly result: SecondaryWeaponStepResult;
@@ -84,6 +98,7 @@ export class SecondaryWeaponSystem {
   private bombCursor = 0;
   private ghostCursor = 0;
   private chainLightningCursor = 0;
+  private frostBurstCursor = 0;
   private garlicPositionValid = false;
   private previousBallReturning = false;
   private readonly lastGarlicPosition: Vec3 = { x: 0, y: 0, z: 0 };
@@ -94,6 +109,7 @@ export class SecondaryWeaponSystem {
     this.bloodBombs = Array.from({ length: BLOOD_BOMB_CAP }, createBloodBomb);
     this.ghostPasses = Array.from({ length: GHOST_PASS_CAP }, createGhostPass);
     this.chainLightningTriggers = Array.from({ length: CHAIN_LIGHTNING_TRIGGER_CAP }, createChainLightning);
+    this.frostBurstTriggers = Array.from({ length: FROST_BURST_TRIGGER_CAP }, createFrostBurst);
     this.result = { hits: this.hits, events: this.events };
     this.visibleState = {
       garlicZones: this.garlicZones,
@@ -112,6 +128,7 @@ export class SecondaryWeaponSystem {
     this.bombCursor = 0;
     this.ghostCursor = 0;
     this.chainLightningCursor = 0;
+    this.frostBurstCursor = 0;
     this.garlicPositionValid = false;
     this.previousBallReturning = false;
     this.hits.length = 0;
@@ -128,6 +145,7 @@ export class SecondaryWeaponSystem {
       ghost.hitTargets.clear();
     }
     for (const chain of this.chainLightningTriggers) chain.active = false;
+    for (const burst of this.frostBurstTriggers) burst.active = false;
   }
 
   step(input: Readonly<SecondaryWeaponStepInput>): SecondaryWeaponStepResult {
@@ -140,6 +158,7 @@ export class SecondaryWeaponSystem {
     this.updateOrbitingBalls(input, dt);
     this.updateBloodBombs(input.targets);
     this.updateChainLightning(input.targets);
+    this.updateFrostBursts(input.targets);
 
     if (input.ballReturning && !this.previousBallReturning) {
       const dx = input.playerPosition.x - input.ballPosition.x;
@@ -221,6 +240,24 @@ export class SecondaryWeaponSystem {
     copyPosition(chain.originPosition, originPosition);
     chain.damage = damage;
     chain.targetCount = targetCount;
+    return true;
+  }
+
+  /** Queues a bounded frost burst; slow application is reported as typed events. */
+  triggerFrostBurst(position: Readonly<Vec3>, modifiers: SecondaryCombatModifiers): boolean {
+    const damage = safeFinite(modifiers.frostBurstDamage, 0, 80, 0);
+    if (damage <= 0) return false;
+    const bonusRadius = safeFinite(modifiers.frostBurstRadius, 0, 3, 0);
+    const slowAmount = safeFinite(modifiers.frostSlowAmount, 0, 0.8, 0);
+    const slowDuration = safeFinite(modifiers.frostSlowDuration, 0, 6, 0);
+    const burst = this.frostBurstTriggers[this.frostBurstCursor]!;
+    this.frostBurstCursor = (this.frostBurstCursor + 1) % this.frostBurstTriggers.length;
+    burst.active = true;
+    copyPosition(burst.position, position);
+    burst.radius = Math.min(4.25, FROST_BURST_BASE_RADIUS + bonusRadius);
+    burst.damage = damage;
+    burst.speedMultiplier = 1 - slowAmount;
+    burst.slowDuration = slowDuration;
     return true;
   }
 
@@ -418,6 +455,58 @@ export class SecondaryWeaponSystem {
     }
   }
 
+  private updateFrostBursts(targets: readonly CombatTarget[]): void {
+    for (const burst of this.frostBurstTriggers) {
+      if (!burst.active) continue;
+      burst.active = false;
+      pushCapped(
+        this.events,
+        { type: 'frost-burst-triggered', position: burst.position, radius: burst.radius },
+        EVENT_CAP_PER_STEP,
+      );
+
+      const radiusSquared = burst.radius * burst.radius;
+      let visitedCount = 0;
+      while (visitedCount < FROST_BURST_TARGET_CAP) {
+        let nearest: CombatTarget | null = null;
+        let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+        for (const target of targets) {
+          if (containsId(this.frostVisitedIds, visitedCount, target.id)) continue;
+          const dx = target.position.x - burst.position.x;
+          const dz = target.position.z - burst.position.z;
+          const distanceSquared = dx * dx + dz * dz;
+          if (distanceSquared > radiusSquared || Math.abs(target.position.y - burst.position.y) >= 1.7) {
+            continue;
+          }
+          if (
+            distanceSquared < nearestDistanceSquared ||
+            (distanceSquared === nearestDistanceSquared &&
+              target.id < (nearest?.id ?? Number.MAX_SAFE_INTEGER))
+          ) {
+            nearest = target;
+            nearestDistanceSquared = distanceSquared;
+          }
+        }
+        if (!nearest) break;
+
+        this.frostVisitedIds[visitedCount] = nearest.id;
+        visitedCount += 1;
+        this.pushHit(nearest, burst.damage, 'frost-burst', nearest.position);
+        pushCapped(
+          this.events,
+          {
+            type: 'frost-burst-hit',
+            position: nearest.position,
+            targetId: nearest.id,
+            speedMultiplier: burst.speedMultiplier,
+            duration: burst.slowDuration,
+          },
+          EVENT_CAP_PER_STEP,
+        );
+      }
+    }
+  }
+
   private queryRadius(
     targets: readonly CombatTarget[],
     position: Readonly<Vec3>,
@@ -486,6 +575,17 @@ function createChainLightning(): ChainLightningInternal {
     originPosition: { x: 0, y: 0, z: 0 },
     damage: 0,
     targetCount: 0,
+  };
+}
+
+function createFrostBurst(): FrostBurstInternal {
+  return {
+    active: false,
+    position: { x: 0, y: 0, z: 0 },
+    radius: FROST_BURST_BASE_RADIUS,
+    damage: 0,
+    speedMultiplier: 1,
+    slowDuration: 0,
   };
 }
 

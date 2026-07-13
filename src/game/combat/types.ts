@@ -13,6 +13,10 @@ export type SecondaryCombatModifiers = Readonly<
     | 'ghostPassDamageMultiplier'
     | 'chainLightningDamage'
     | 'chainLightningTargets'
+    | 'frostBurstDamage'
+    | 'frostBurstRadius'
+    | 'frostSlowAmount'
+    | 'frostSlowDuration'
   >
 >;
 
@@ -36,7 +40,7 @@ export interface SecondaryWeaponStepInput {
 }
 
 export type SecondaryDamageSource =
-  'garlic-trail' | 'spectral-ball' | 'blood-bomb' | 'ghost-pass' | 'chain-lightning';
+  'garlic-trail' | 'spectral-ball' | 'blood-bomb' | 'ghost-pass' | 'chain-lightning' | 'frost-burst';
 
 export interface SecondaryDamageHit {
   targetId: number;
@@ -57,6 +61,14 @@ export type SecondaryWeaponEvent =
       fromTargetId: number;
       targetId: number;
       jumpIndex: number;
+    }
+  | { type: 'frost-burst-triggered'; position: Readonly<Vec3>; radius: number }
+  | {
+      type: 'frost-burst-hit';
+      position: Readonly<Vec3>;
+      targetId: number;
+      speedMultiplier: number;
+      duration: number;
     };
 
 /** Arrays are reused by the system and remain valid only until its next step/reset. */

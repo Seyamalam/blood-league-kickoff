@@ -39,6 +39,10 @@ export interface ProgressionModifiers {
   ghostPassDamageMultiplier: number;
   chainLightningDamage: number;
   chainLightningTargets: number;
+  frostBurstDamage: number;
+  frostBurstRadius: number;
+  frostSlowAmount: number;
+  frostSlowDuration: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;
