@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { FULL_MATCH_CONFIG } from '../match';
 import {
+  BLOOD_XP_PER_KILL,
   chooseUpgrade,
   createProgressionState,
   createSeededRandom,
@@ -16,6 +18,23 @@ describe('progression', () => {
     expect(result.state.level).toBe(5);
     expect(result.state.pendingLevelUps).toBe(4);
     expect(initial.level).toBe(1);
+  });
+
+  it('paces level-up choices across the full-match kill checkpoints', () => {
+    const checkpoints = [
+      { stage: 'opening', kills: FULL_MATCH_CONFIG.opening.killTarget, level: 2, choices: 1 },
+      { stage: 'firstHalf', kills: FULL_MATCH_CONFIG.firstHalf.killTarget, level: 6, choices: 5 },
+      { stage: 'escalation', kills: FULL_MATCH_CONFIG.escalation.killTarget, level: 9, choices: 8 },
+      { stage: 'bloodMoon', kills: FULL_MATCH_CONFIG.bloodMoon.killTarget, level: 14, choices: 13 },
+      { stage: 'finalWave', kills: FULL_MATCH_CONFIG.finalWave.killTarget, level: 17, choices: 16 },
+    ] as const;
+
+    expect(
+      checkpoints.map(({ stage, kills }) => {
+        const state = grantBloodXp(createProgressionState(), kills * BLOOD_XP_PER_KILL).state;
+        return { stage, kills, level: state.level, choices: state.pendingLevelUps };
+      }),
+    ).toEqual(checkpoints);
   });
 
   it('applies upgrades without modifier drift', () => {

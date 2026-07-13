@@ -45,6 +45,9 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   blackHoleDuration: 0,
 });
 
+/** Total Blood XP preserved across the shard burst created by one enemy kill. */
+export const BLOOD_XP_PER_KILL = 2;
+
 /** Creates a fresh run progression state. */
 export function createProgressionState(): ProgressionState {
   return {

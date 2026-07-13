@@ -79,6 +79,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement crowd separation with reusable typed-array spatial queries.
 - [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [x] `P0` Implement pooled physical blood shard collection and XP levels.
+- [x] `P0` Calibrate kill XP for a bounded full-match upgrade cadence and cover phase checkpoints.
 - [x] `P0` Implement three-choice upgrade selection.
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [x] `P0` Implement first goal opening, scoring, reset, and new kickoff.

@@ -1,4 +1,5 @@
 export {
+  BLOOD_XP_PER_KILL,
   calculateModifiers,
   chooseUpgrade,
   createProgressionState,

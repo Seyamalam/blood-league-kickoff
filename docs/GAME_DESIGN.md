@@ -78,7 +78,7 @@ Target enemies add airborne pressure, dashes, area denial, and ball interception
 
 ## Progression
 
-Enemies drop blood shards. Crossing an XP threshold pauses or slows play and offers three upgrades. Offers must be understandable in seconds: name, icon, one-line effect, current/new value, and evolution hint where relevant.
+Enemies drop blood shards preserving 2 total Blood XP per kill. The full-match kill checkpoints target roughly 1, 5, 8, 13, and 16 earned upgrade choices, keeping builds distinct without flooding the run with paused menus. Crossing an XP threshold pauses play and offers three upgrades. Offers must be understandable in seconds: name, icon, one-line effect, current/new value, and evolution hint where relevant.
 
 Guaranteed upgrades:
 

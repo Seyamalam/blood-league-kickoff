@@ -38,6 +38,7 @@ import {
 } from './game/match';
 import { BloodShardSystem } from './game/pickups';
 import {
+  BLOOD_XP_PER_KILL,
   chooseUpgrade,
   calculateModifiers,
   createUpgradeOffer,
@@ -581,7 +582,7 @@ async function bootstrap(): Promise<void> {
         if (state.combo > comboBeforeHit) audio.playKill(state.combo);
         if (kills > 0) {
           chargeFocusKick('enemy-kill', kills);
-          bloodShards.spawnOnKill(physics.ballPosition, kills * 10, Math.min(9, kills * 3));
+          bloodShards.spawnOnKill(physics.ballPosition, kills * BLOOD_XP_PER_KILL, Math.min(9, kills * 3));
           secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
         }
 
@@ -610,7 +611,7 @@ async function bootstrap(): Promise<void> {
           chargeFocusKick('enemy-kill', secondaryDamage.kills);
           bloodShards.spawnOnKill(
             physics.ballPosition,
-            secondaryDamage.kills * 10,
+            secondaryDamage.kills * BLOOD_XP_PER_KILL,
             Math.min(9, secondaryDamage.kills * 3),
           );
           audio.playKill(state.combo);
