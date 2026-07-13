@@ -10,11 +10,21 @@
 | Stack | Three.js, TypeScript, Vite, Rapier, Electron |
 | Input | Keyboard and mouse |
 
+![Blood League: Kickoff title screen](docs/screenshots/title-screen.jpg)
+
 ## The Game
 
 The opening kickoff of a cursed football match awakens a stadium full of vampires. The last human striker must survive the match using an enchanted football, supernatural boots, and spectral teammates.
 
 The ball is the player's main weapon, defensive tool, positional risk, and key to advancing the match. Kick, curve, rebound, recall, and volley it through the horde. Every goal begins another kickoff, mutates the enemy crowd, and pushes the player toward a final confrontation with Count Goalkeeper.
+
+### Current gameplay
+
+![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay.jpg)
+
+### Settings
+
+![Persistent graphics, frame-rate, audio, sensitivity, and camera settings](docs/screenshots/settings.jpg)
 
 ## Design Pillars
 
@@ -46,6 +56,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | Dash | `Space` | Implemented with cooldown and brief invulnerability |
 | Focus Kick ultimate | `Q` | Target scope |
 | Pause | `Esc` | Planned; exits desktop fullscreen today |
+| Settings | Title-screen or in-game `⚙ SETTINGS` button | Implemented and persistent |
 
 Controls and bindings may change during playtesting.
 
@@ -105,6 +116,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Three-minute match director with objectives, a timed goal window, final wave, and victory screen
 - [x] On-pitch animated goal beacon during scoring opportunities
+- [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
+- [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
+- [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
+- [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
