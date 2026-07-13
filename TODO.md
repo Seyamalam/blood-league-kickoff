@@ -117,8 +117,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Orbiting Spectral Ball.
 - [x] `P0` Blood Bomb.
 - [x] `P0` Ghost Pass.
-- [ ] `P0` Moon Breaker evolution.
-- [ ] `P0` Crimson Meteor evolution.
+- [x] `P0` Moon Breaker evolution.
+- [x] `P0` Crimson Meteor evolution.
 - [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
 
 ### Complete run
@@ -126,11 +126,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Opening Kickoff phase.
 - [x] `P0` First Goal transition in the prototype match director.
 - [ ] `P0` Halftime major choice.
-- [ ] `P0` Blood Moon phase.
+- [x] `P0` Blood Moon phase in the full match director.
 - [x] `P0` Final-wave transition and prototype victory condition.
 - [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
 - [ ] `P0` Victory and defeat sequences.
-- [ ] `P0` Results with time, kills, goals, level, and upgrades.
+- [x] `P0` Results with time, kills, goals, level, and upgrades.
 - [ ] `P0` Balance the full run to 8–10 minutes.
 - [ ] `P0` Update all public documentation to match actual content.
 - [ ] `P0` Commit/push the completed guaranteed run.
@@ -170,8 +170,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 ## UI, settings, and accessibility
 
 - [ ] `P0` Main menu and start flow.
-- [ ] `P0` Pause menu and focus-loss pause behavior.
-- [ ] `P0` Results, restart, and return-to-menu flow.
+- [ ] `P0` Pause menu implemented; add focus-loss pause behavior.
+- [x] `P0` Results, restart, and return-to-menu flow.
 - [x] `P0` Persistent master volume control; split music/effects buses when music lands.
 - [x] `P0` Mouse sensitivity.
 - [x] `P0` Quality presets and render-scale control.

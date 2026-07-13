@@ -27,6 +27,9 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Replaced direct kill XP with pooled physical blood shards that bounce, magnetize, collect, and preserve rewards at capacity.
 - Activated all eight guaranteed upgrade choices, including Garlic Trail, orbiting spectral balls, Blood Bomb, Ghost Pass, and shield-piercing studs.
 - Added Defender frontal blocks/rebounds, vulnerable rear shots, velocity knockback, and telegraphed Winger lunges.
+- Added automatic Moon Breaker and Crimson Meteor evolution unlocks with live combined modifiers.
+- Expanded the match director through escalation, halftime, Blood Moon, final goal, boss wave, and terminal outcomes.
+- Added accessible pause and results overlays with restart, settings, menu navigation, run statistics, and loadout summaries.
 
 ## v0.0.0 — 2026-07-14
 

@@ -123,6 +123,9 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
+- [x] Moon Breaker and Crimson Meteor evolutions unlock automatically from their required upgrade pairs
+- [x] Full match director covers first goal, escalation, halftime, Blood Moon, final goal, boss wave, and outcomes
+- [x] Accessible pause menu and detailed victory/defeat results with run statistics and final loadout
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
@@ -132,7 +135,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
 - [ ] Pointer-lock combat feel accepted through a manual playtest
-- [ ] Moon Breaker and Crimson Meteor evolution combinations
+- [ ] Human balance testing for the complete nine-minute configuration
 - [ ] Final Windows portable build after the game is content-complete
 
 ### Project documents
