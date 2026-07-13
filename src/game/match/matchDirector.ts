@@ -95,10 +95,15 @@ export function updateMatchDirector(
       stage = 'bloodMoon';
     }
   } else {
-    const next =
-      stage === 'finalWave' && input.bossDefeated
-        ? 'victory'
-        : nextCombatStage(stage, matchElapsed, totalKills, config);
+    let next: MatchStage;
+    if (stage === 'finalWave' && input.bossDefeated) {
+      next = 'victory';
+    } else if (stage === 'finalWave' && matchElapsed >= config.finalWave.deadlineMatchTime) {
+      next = 'dead';
+      events.push({ type: 'timeExpired' });
+    } else {
+      next = nextCombatStage(stage, matchElapsed, totalKills, config);
+    }
     if (next !== stage) {
       transition(events, stage, next);
       stage = next;
@@ -186,7 +191,7 @@ function nextCombatStage(
     case 'bloodMoon':
       return 'finalGoal';
     case 'finalWave':
-      return 'victory';
+      return 'finalWave';
   }
 }
 

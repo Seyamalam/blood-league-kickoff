@@ -755,6 +755,10 @@ async function bootstrap(): Promise<void> {
             audio.playVictory();
             announcement.show('finalWhistle', 'COUNT GOALKEEPER HAS FALLEN');
           }
+          if (event.type === 'timeExpired') {
+            state.phase = 'dead';
+            announcement.show('finalWhistle', 'THE COUNT HOLDS THE PITCH');
+          }
         }
       }
       const recallStarted =

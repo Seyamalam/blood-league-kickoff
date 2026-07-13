@@ -110,6 +110,26 @@ describe('match director', () => {
     expect(update.events.some((event) => event.type === 'victory')).toBe(true);
   });
 
+  it('requires the boss defeat even after the final-wave kill target is met', () => {
+    const state = {
+      ...createMatchDirectorState(),
+      stage: 'finalWave' as const,
+      matchElapsed: FULL_MATCH_CONFIG.finalWave.minimumMatchTime,
+      totalKills: FULL_MATCH_CONFIG.finalWave.killTarget,
+    };
+    const update = updateMatchDirector(
+      state,
+      {
+        dt: 0,
+        totalKills: FULL_MATCH_CONFIG.finalWave.killTarget,
+        playerDead: false,
+      },
+      FULL_MATCH_CONFIG,
+    );
+    expect(update.state.stage).toBe('finalWave');
+    expect(update.events).toEqual([]);
+  });
+
   it('makes death terminal', () => {
     const first = updateMatchDirector(createMatchDirectorState(), {
       dt: 1 / 60,
@@ -207,7 +227,7 @@ describe('match director', () => {
     expect(finalMiss.state.stage).toBe('finalWave');
     expect(finalMiss.events).toContainEqual({ type: 'goalMissed', goal: 'final' });
 
-    const deadlineVictory = updateMatchDirector(
+    const deadlineDefeat = updateMatchDirector(
       finalMiss.state,
       {
         dt: FULL_MATCH_CONFIG.finalWave.deadlineMatchTime - finalMiss.state.matchElapsed,
@@ -216,8 +236,9 @@ describe('match director', () => {
       },
       FULL_MATCH_CONFIG,
     );
-    expect(deadlineVictory.state.stage).toBe('victory');
-    expect(deadlineVictory.events).toContainEqual({ type: 'victory' });
+    expect(deadlineDefeat.state.stage).toBe('dead');
+    expect(deadlineDefeat.events).toContainEqual({ type: 'timeExpired' });
+    expect(deadlineDefeat.events).not.toContainEqual({ type: 'victory' });
 
     const death = updateMatchDirector(
       finalMiss.state,

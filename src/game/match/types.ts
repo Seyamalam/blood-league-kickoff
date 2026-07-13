@@ -70,6 +70,7 @@ export type MatchDirectorEvent =
   | { readonly type: 'halftimeChoiceSelected'; readonly choice: HalftimeChoice; readonly automatic: boolean }
   | { readonly type: 'bloodMoonStarted' }
   | { readonly type: 'victory' }
+  | { readonly type: 'timeExpired' }
   | { readonly type: 'playerDied' };
 
 export interface MatchDirectorUpdate {
