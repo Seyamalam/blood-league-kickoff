@@ -95,6 +95,10 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   ├── AudioManager.ts
 │   │   └── index.ts
 │   ├── game/
+│   │   ├── boss/
+│   │   │   ├── countGoalkeeper.ts
+│   │   │   ├── finalElite.ts
+│   │   │   └── types.ts
 │   │   ├── input/InputController.ts
 │   │   ├── match/
 │   │   │   ├── config.ts
@@ -116,9 +120,12 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   │   └── createScene.ts
 │   │   └── objects/
 │   │       ├── createStadium.ts
+│   │       ├── CountGoalkeeperVisual.ts
 │   │       └── GoalBeacon.ts
+│   ├── settings/SettingsStore.ts
 │   ├── ui/
 │   │   ├── Hud.ts
+│   │   ├── SettingsOverlay.ts
 │   │   └── UpgradeOverlay.ts
 │   ├── main.ts
 │   └── styles.css
@@ -142,11 +149,14 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
 - `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
+- `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
+- `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
+- `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, four weighted enemy archetypes, crowd separation, coach buffs, damage, death, combo, and score
 - `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, recall states, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, and primitive visual lifecycles
-- `CameraController`: third-person orbit aim and camera smoothing
+- `CameraController`: third-person orbit aim, camera smoothing, sensitivity, and restrained impact feedback
 - `Hud`: kickoff/death overlays and live combat/performance readouts
 - `electron/main.cjs` and `preload.cjs`: secured desktop shell
 

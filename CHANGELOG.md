@@ -19,6 +19,10 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added a typed blood-XP and upgrade core covering all eight guaranteed upgrade definitions; Silver Ball, Power Kick, and Rapid Recall now affect live combat.
 - Added an accessible three-card level-up overlay with mouse and keyboard selection.
 - Added a data-configurable match director, live objectives, animated goal opportunity, final wave, and victory flow for a three-minute vertical slice.
+- Added repository screenshots for the title, live gameplay, and persistent settings surfaces and embedded them in the README.
+- Added a speed-reactive ball trail, pooled impact/volley particles, and bounded camera feedback.
+- Added persistent audio, sensitivity, quality, render-scale, frame-rate, and reduced-shake settings for browser and macOS.
+- Added the Count Goalkeeper final encounter with deterministic phases, charges, contact damage, boss health HUD, visuals, and boss-defeat victory integration.
 
 ## v0.0.0 — 2026-07-14
 

@@ -56,7 +56,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement ball hits, enemy damage/death, player damage/death, score/combo, and restart.
 - [ ] `P0` Add deliberate enemy/ball hit knockback.
 - [x] `P0` Add placeholder kick, hit, recall, damage, and death audio.
-- [ ] `P0` Add restrained hit pause, camera shake, ball trail, and impacts.
+- [x] `P0` Add restrained camera feedback, ball trail, and pooled impacts; evaluate hit pause during playtest.
 - [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
 - [x] `P0` Add an FPS/enemy-count development readout in the HUD.
 - [ ] `P0` Expand diagnostics with frame time, draw calls, physics time, and pool counts.
@@ -128,7 +128,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Halftime major choice.
 - [ ] `P0` Blood Moon phase.
 - [x] `P0` Final-wave transition and prototype victory condition.
-- [ ] `P0` Count Goalkeeper or stable final elite-wave fallback.
+- [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
 - [ ] `P0` Victory and defeat sequences.
 - [ ] `P0` Results with time, kills, goals, level, and upgrades.
 - [ ] `P0` Balance the full run to 8–10 minutes.
@@ -172,12 +172,12 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Main menu and start flow.
 - [ ] `P0` Pause menu and focus-loss pause behavior.
 - [ ] `P0` Results, restart, and return-to-menu flow.
-- [ ] `P0` Master, music, and effects volumes.
-- [ ] `P0` Mouse sensitivity.
-- [ ] `P0` Quality presets and render-scale control.
+- [x] `P0` Persistent master volume control; split music/effects buses when music lands.
+- [x] `P0` Mouse sensitivity.
+- [x] `P0` Quality presets and render-scale control.
 - [ ] `P0` Desktop resolution, fullscreen/windowed, and quit behavior.
-- [ ] `P0` 60, 120, and unlimited frame-rate options where supported.
-- [ ] `P1` Camera shake strength.
+- [x] `P0` 60, 120, and unlimited frame-rate options where supported.
+- [x] `P1` Reduced camera-shake option.
 - [ ] `P1` Aim-assist strength.
 - [ ] `P1` Rebindable controls.
 - [ ] `P1` Color-independent enemy/ball-state indicators.
