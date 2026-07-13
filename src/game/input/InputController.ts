@@ -19,6 +19,7 @@ export class InputController {
   private recallHeld = false;
   private restartQueued = false;
   private dashQueued = false;
+  private focusKickQueued = false;
 
   constructor(private readonly target: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -86,6 +87,12 @@ export class InputController {
     return queued;
   }
 
+  consumeFocusKick(): boolean {
+    const queued = this.focusKickQueued;
+    this.focusKickQueued = false;
+    return queued;
+  }
+
   dispose(): void {
     this.clearHeldInput();
     window.removeEventListener('keydown', this.onKeyDown);
@@ -102,6 +109,7 @@ export class InputController {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     this.keys.add(event.code);
     if (event.code === 'KeyR') this.restartQueued = true;
+    if (event.code === 'KeyF' && this.isLocked && !event.repeat) this.focusKickQueued = true;
     if (event.code === 'Space' && this.isLocked) {
       event.preventDefault();
       if (!event.repeat) this.dashQueued = true;
@@ -153,6 +161,7 @@ export class InputController {
     this.kickReleaseQueued = null;
     this.kickCurvePixels = 0;
     this.dashQueued = false;
+    this.focusKickQueued = false;
     this.mouseDx = 0;
     this.mouseDy = 0;
   };

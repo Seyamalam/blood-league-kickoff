@@ -9,7 +9,19 @@ import {
   updateCountGoalkeeper,
   type CountGoalkeeperState,
 } from './game/boss';
-import { SecondaryWeaponSystem, selectAimAssistTarget, steerAimDirection } from './game/combat';
+import {
+  activateFocusKick,
+  applyFocusKickCombatAction,
+  consumeFocusKickShot,
+  createFocusKickState,
+  getFocusKickTimeScale,
+  resetFocusKick,
+  SecondaryWeaponSystem,
+  selectAimAssistTarget,
+  steerAimDirection,
+  stepFocusKick,
+  type FocusKickCombatAction,
+} from './game/combat';
 import {
   createMatchDirectorState,
   FULL_MATCH_CONFIG,
@@ -112,6 +124,7 @@ async function bootstrap(): Promise<void> {
   let accumulator = 0;
   let previousBallState = physics.ballState;
   let progression = createProgressionState();
+  let focusKick = createFocusKickState();
   let match = createMatchDirectorState();
   let goalLatched = false;
   let boss: CountGoalkeeperState | null = null;
@@ -126,6 +139,12 @@ async function bootstrap(): Promise<void> {
   let volleyWindowBonus = 0;
   let fixedStepsThisFrame = 0;
   const tutorialSignals = new Set<TutorialSignal>();
+
+  const chargeFocusKick = (action: FocusKickCombatAction, count = 1): void => {
+    for (let index = 0; index < count; index += 1) {
+      focusKick = applyFocusKickCombatAction(focusKick, action);
+    }
+  };
 
   const signalTutorial = (signal: TutorialSignal): void => {
     if (tutorialTracker.complete || tutorialSignals.has(signal)) return;
@@ -222,6 +241,7 @@ async function bootstrap(): Promise<void> {
     resultsOverlay.reset();
     hud.reset();
     progression = createProgressionState();
+    focusKick = resetFocusKick();
     match = createMatchDirectorState();
     goalLatched = false;
     boss = null;
@@ -268,6 +288,7 @@ async function bootstrap(): Promise<void> {
     pauseOverlay.hide();
     state.phase = 'ready';
     progression = createProgressionState();
+    focusKick = resetFocusKick();
     match = createMatchDirectorState();
     boss = null;
     resultsShown = false;
@@ -334,6 +355,19 @@ async function bootstrap(): Promise<void> {
     const frameTime = Math.min(MAX_FRAME_TIME, clock.getDelta());
     const mouse = input.consumeMouseDelta();
     cameraController.applyMouseDelta(mouse.x, mouse.y);
+    focusKick = stepFocusKick(focusKick, frameTime);
+    if (
+      input.consumeFocusKick() &&
+      state.phase === 'playing' &&
+      !upgradeOverlay.isVisible &&
+      !settingsOverlay.isVisible &&
+      !pauseOverlay.isVisible &&
+      !halftimeOverlay.isVisible
+    ) {
+      focusKick = activateFocusKick(focusKick);
+    }
+    cameraController.setFocusMode(focusKick.phase === 'aiming');
+    bridge.setFirstPerson(focusKick.phase === 'aiming');
 
     if (
       input.consumeRestart() &&
@@ -365,6 +399,7 @@ async function bootstrap(): Promise<void> {
         ? steerAimDirection(rawAim, aimTarget.direction, playerSettings.aimAssistStrength)
         : { x: rawAim.x, z: rawAim.z };
       const horizontalScale = Math.sqrt(Math.max(0, 1 - rawAim.y * rawAim.y));
+      const focusShot = consumeFocusKickShot(focusKick);
       const result = physics.kick(
         state.player.position,
         {
@@ -375,11 +410,19 @@ async function bootstrap(): Promise<void> {
         kick.charge,
         {
           ...progression.modifiers,
-          kickPowerMultiplier: progression.modifiers.kickPowerMultiplier * kickPowerMultiplier,
+          kickPowerMultiplier:
+            progression.modifiers.kickPowerMultiplier *
+            kickPowerMultiplier *
+            (focusShot.empowered ? 1.75 : 1),
         },
         kick.curve,
       );
       if (result) {
+        if (focusShot.empowered) {
+          focusKick = focusShot.state;
+          bridge.volleyBurst(state.player.position, 2);
+          cameraController.volleyImpulse(1.4);
+        }
         signalTutorial('kick-demonstrated');
         audio.playKick(result.charge);
         if (result.perfectVolley) {
@@ -402,7 +445,7 @@ async function bootstrap(): Promise<void> {
       volleyWindowBonus,
     );
 
-    accumulator += frameTime;
+    accumulator += frameTime * getFocusKickTimeScale(focusKick);
     while (accumulator >= FIXED_STEP) {
       const simulationActive =
         state.phase === 'playing' &&
@@ -439,6 +482,7 @@ async function bootstrap(): Promise<void> {
           physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
         }
         if (hits > 0) {
+          chargeFocusKick('enemy-hit', hits);
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -446,6 +490,7 @@ async function bootstrap(): Promise<void> {
         }
         if (state.combo > comboBeforeHit) audio.playKill(state.combo);
         if (kills > 0) {
+          chargeFocusKick('enemy-kill', kills);
           bloodShards.spawnOnKill(physics.ballPosition, kills * 10, Math.min(9, kills * 3));
           secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
         }
@@ -466,11 +511,13 @@ async function bootstrap(): Promise<void> {
         });
         const secondaryDamage = damageEnemiesWithSecondary(state, secondaryStep.hits);
         if (secondaryDamage.hits > 0) {
+          chargeFocusKick('enemy-hit', secondaryDamage.hits);
           audio.playHit(0.7);
           const effectPosition = secondaryStep.hits[0]?.position ?? physics.ballPosition;
           bridge.hitBurst(effectPosition, 0.8);
         }
         if (secondaryDamage.kills > 0) {
+          chargeFocusKick('enemy-kill', secondaryDamage.kills);
           bloodShards.spawnOnKill(
             physics.ballPosition,
             secondaryDamage.kills * 10,
@@ -524,6 +571,7 @@ async function bootstrap(): Promise<void> {
             });
             boss = damage.state;
             if (damage.appliedDamage > 0) {
+              chargeFocusKick('boss-hit');
               bridge.hitBurst(boss.position, 1.4);
               cameraController.hitImpulse(1.25);
               audio.playHit(1);
@@ -562,6 +610,7 @@ async function bootstrap(): Promise<void> {
             }
           }
           if (event.type === 'goalScored') {
+            chargeFocusKick('goal');
             signalTutorial('goal-scored');
             state.score += 1_000;
             audio.playGoal();
@@ -648,6 +697,7 @@ async function bootstrap(): Promise<void> {
       progression,
       getMatchObjective(match, MATCH_CONFIG),
       boss,
+      focusKick,
     );
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
       resultsShown = true;

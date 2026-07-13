@@ -70,6 +70,7 @@ The aim preview may communicate direction and charge but should not solve every 
 | Blood Coach      | Buffs nearby enemies            | Prioritize at range and create a lane to it          |
 | Bat Swarm        | Fast airborne weaving pressure  | Track its lateral rhythm; one clean hit destroys it  |
 | Leech Striker    | Latches, drains, and self-heals | Break contact during drain, then punish its recovery |
+| Corrupt Referee  | Ranged telegraphed whistle      | Close distance or dodge beyond its disruption radius |
 | Count Goalkeeper | Final ball-control boss         | Read catches/returns and exploit openings            |
 
 Target enemies add airborne pressure, dashes, area denial, and ball interception only after the guaranteed roster is stable.

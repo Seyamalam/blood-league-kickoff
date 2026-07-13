@@ -16,6 +16,11 @@ export class CameraController {
   private fovKick = 0;
   private sensitivity = 1;
   private shakeScale = 1;
+  private focusMode = false;
+
+  setFocusMode(active: boolean): void {
+    this.focusMode = active;
+  }
 
   setSensitivity(value: number): void {
     this.sensitivity = Number.isFinite(value) ? THREE.MathUtils.clamp(value, 0.25, 2.5) : 1;
@@ -47,6 +52,25 @@ export class CameraController {
   }
 
   update(player: Vec3, dt: number): void {
+    if (this.focusMode) {
+      const forwardX = -Math.sin(this.yaw) * Math.cos(this.pitch);
+      const forwardZ = -Math.cos(this.yaw) * Math.cos(this.pitch);
+      this.desired.set(player.x, player.y + 1.22, player.z);
+      this.target.set(
+        player.x + forwardX * 14,
+        player.y + 1.22 - Math.sin(this.pitch) * 14,
+        player.z + forwardZ * 14,
+      );
+      this.camera.position.lerp(this.desired, 1 - Math.exp(-24 * dt));
+      this.camera.lookAt(this.target);
+      this.fovKick *= Math.exp(-11 * dt);
+      const focusFov = 52 + this.fovKick;
+      if (Math.abs(this.camera.fov - focusFov) > 0.01) {
+        this.camera.fov = focusFov;
+        this.camera.updateProjectionMatrix();
+      }
+      return;
+    }
     const distance = 7.5;
     const horizontal = Math.cos(this.pitch) * distance;
     this.target.set(player.x, player.y + 1.05, player.z);

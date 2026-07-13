@@ -26,6 +26,7 @@ export class RenderBridge {
   private ballSpin = 0;
   private trailInitialized = false;
   private nextBurst = 0;
+  private firstPerson = false;
 
   constructor(private readonly scene: THREE.Scene) {
     this.player = createPlayer();
@@ -49,9 +50,9 @@ export class RenderBridge {
       THREE.MathUtils.lerp(previousPlayer.z, p.z, alpha),
     );
     this.player.rotation.y = state.player.facing;
-    this.player.visible = !(
-      state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0
-    );
+    this.player.visible =
+      !this.firstPerson &&
+      !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0);
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
@@ -105,6 +106,13 @@ export class RenderBridge {
         drainRing.scale.setScalar(1 + Math.sin(state.elapsed * 30) * 0.16);
         drainRing.rotation.z += dt * 2.8;
       }
+      const whistleRing = mesh.getObjectByName('referee-whistle-ring');
+      if (whistleRing) {
+        whistleRing.visible = enemy.attackState === 'telegraph' || enemy.attackState === 'whistle';
+        const whistlePulse = enemy.attackState === 'whistle' ? 1.8 : 1 + Math.sin(state.elapsed * 24) * 0.12;
+        whistleRing.scale.setScalar(whistlePulse);
+        whistleRing.rotation.z += dt * 1.8;
+      }
     }
     for (const [id, mesh] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
@@ -124,6 +132,10 @@ export class RenderBridge {
       burst.age = burst.duration;
       burst.points.visible = false;
     }
+  }
+
+  setFirstPerson(active: boolean): void {
+    this.firstPerson = active;
   }
 
   /** Reuses a small particle pool; safe to call for every registered ball hit. */
@@ -316,6 +328,7 @@ function createEnemy(enemy: EnemyState): THREE.Group {
   else if (enemy.archetype === 'coach') addCoach(group);
   else if (enemy.archetype === 'batSwarm') addBatSwarm(group);
   else if (enemy.archetype === 'leechStriker') addLeechStriker(group);
+  else if (enemy.archetype === 'corruptReferee') addCorruptReferee(group);
   else addBloodFan(group);
   if (enemy.elite) addEliteMarker(group);
   return group;
@@ -337,6 +350,10 @@ const enemyGeometry = {
   leechBody: new THREE.CapsuleGeometry(0.38, 0.72, 4, 7),
   leechMouth: new THREE.TorusGeometry(0.2, 0.07, 5, 12),
   leechDrainRing: new THREE.TorusGeometry(0.62, 0.045, 5, 18),
+  refereeBody: new THREE.BoxGeometry(0.7, 1.35, 0.46),
+  refereeStripe: new THREE.BoxGeometry(0.13, 1.2, 0.03),
+  refereeWhistle: new THREE.ConeGeometry(0.1, 0.26, 5),
+  refereeWhistleRing: new THREE.TorusGeometry(0.74, 0.055, 5, 20),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
@@ -357,6 +374,15 @@ const enemyMaterial = {
     color: 0xffcf40,
     transparent: true,
     opacity: 0.82,
+    depthWrite: false,
+  }),
+  referee: new THREE.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.78 }),
+  refereeStripe: new THREE.MeshStandardMaterial({ color: 0x16131a, roughness: 0.84 }),
+  refereeWhistle: new THREE.MeshStandardMaterial({ color: 0xffcf40, roughness: 0.3, metalness: 0.58 }),
+  refereeRing: new THREE.MeshBasicMaterial({
+    color: 0xffcf40,
+    transparent: true,
+    opacity: 0.88,
     depthWrite: false,
   }),
   aura: new THREE.MeshBasicMaterial({
@@ -471,4 +497,23 @@ function addLeechStriker(group: THREE.Group): void {
   drainRing.castShadow = false;
   drainRing.visible = false;
   group.add(body, mouth, drainRing);
+}
+
+function addCorruptReferee(group: THREE.Group): void {
+  group.add(mesh(enemyGeometry.refereeBody, enemyMaterial.referee, 0.78));
+  for (const x of [-0.22, 0, 0.22]) {
+    const stripe = mesh(enemyGeometry.refereeStripe, enemyMaterial.refereeStripe, 0.78);
+    stripe.position.set(x, 0.78, 0.245);
+    group.add(stripe);
+  }
+  addFace(group, 1.66);
+  const whistle = mesh(enemyGeometry.refereeWhistle, enemyMaterial.refereeWhistle, 1.42);
+  whistle.position.z = 0.39;
+  whistle.rotation.x = Math.PI / 2;
+  const ring = mesh(enemyGeometry.refereeWhistleRing, enemyMaterial.refereeRing, 0.08);
+  ring.name = 'referee-whistle-ring';
+  ring.rotation.x = -Math.PI / 2;
+  ring.castShadow = false;
+  ring.visible = false;
+  group.add(whistle, ring);
 }

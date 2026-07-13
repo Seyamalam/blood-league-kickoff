@@ -145,19 +145,19 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Presentation and target content (`v0.8.0`)
 
-- [ ] `P0` Lock the low-poly gothic visual palette.
+- [x] `P0` Lock the low-poly gothic visual palette.
 - [ ] `P0` Generate original key art, itch cover, and menu background.
 - [ ] `P0` Generate readable upgrade/evolution icons.
 - [ ] `P0` Create or source licensed character and enemy models.
 - [ ] `P0` Record every external/generated asset source, author/tool, license, and changes.
 - [ ] `P0` Replace critical placeholder models/materials.
 - [x] `P0` Add stadium banners, goals, crowd silhouettes, and match-stage atmosphere changes; decals remain polish.
-- [ ] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
+- [x] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
 - [x] `P0` Add phase-based procedural music intensity.
-- [ ] `P1` Add first-person Focus Kick ultimate.
+- [x] `P1` Add first-person Focus Kick ultimate.
 - [x] `P1` Add Bat Swarm.
 - [x] `P1` Add Leech Striker.
-- [ ] `P1` Add Corrupt Referee.
+- [x] `P1` Add Corrupt Referee.
 - [ ] `P1` Add Goalkeeper Brute.
 - [ ] `P1` Add lightning, frost, multiball, and black-hole paths.
 - [ ] `P1` Add remaining evolution combinations.

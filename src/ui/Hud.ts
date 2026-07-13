@@ -4,6 +4,7 @@ import type { CountGoalkeeperState } from '../game/boss';
 import { totalXpRequiredForLevel, type ProgressionState } from '../game/progression';
 import type { BallState } from '../physics/PhysicsWorld';
 import type { PerformanceSnapshot } from '../diagnostics/PerfMeter';
+import type { FocusKickState } from '../game/combat';
 
 export class Hud {
   private readonly healthFill: HTMLElement;
@@ -23,6 +24,8 @@ export class Hud {
   private readonly chargeFill: HTMLElement;
   private readonly chargeLabel: HTMLElement;
   private readonly dashStatus: HTMLElement;
+  private readonly focusFill: HTMLElement;
+  private readonly focusStatus: HTMLElement;
   private readonly xpFill: HTMLElement;
   private readonly levelValue: HTMLElement;
   private readonly objective: HTMLElement;
@@ -48,6 +51,8 @@ export class Hud {
           <div class="health-track" style="margin-top:4px"><div id="charge-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#d6a632,#fff0a6);box-shadow:0 0 14px rgba(255,214,90,.45);transition:none"></div></div>
           <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status">BALL READY</span></div>
           <div class="status-row" style="margin-top:6px"><span>MOBILITY</span><span id="dash-status">DASH READY</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>FOCUS KICK</span><span id="focus-status">0%</span></div>
+          <div class="health-track" style="margin-top:4px"><div id="focus-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#b89526,#fff0a6);box-shadow:0 0 14px rgba(255,207,64,.4)"></div></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>BLOOD LEVEL</span><span id="level-value">1</span></div>
           <div class="health-track" style="margin-top:4px"><div id="xp-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#6f1f91,#d95eff);box-shadow:0 0 14px rgba(190,74,255,.42)"></div></div>
         </div>
@@ -55,7 +60,7 @@ export class Hud {
         <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
         <div class="crosshair"><span></span><span></span><span></span><span></span></div>
         <div id="combo" class="combo"></div>
-        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL</div>
+        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS</div>
         <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
         <button type="button" id="settings-button" class="settings-open" aria-label="Open settings">⚙ SETTINGS</button>
       </div>
@@ -101,6 +106,8 @@ export class Hud {
     this.chargeFill = required('charge-fill');
     this.chargeLabel = required('charge-label');
     this.dashStatus = required('dash-status');
+    this.focusFill = required('focus-fill');
+    this.focusStatus = required('focus-status');
     this.xpFill = required('xp-fill');
     this.levelValue = required('level-value');
     this.objective = required('objective');
@@ -137,6 +144,7 @@ export class Hud {
     progression: Readonly<ProgressionState>,
     objective: Readonly<MatchObjective>,
     boss: Readonly<CountGoalkeeperState> | null,
+    focusKick: Readonly<FocusKickState>,
   ): void {
     const health = state.player.health;
     this.healthFill.style.width = `${health}%`;
@@ -152,6 +160,17 @@ export class Hud {
     const dashReady = state.player.dashCooldown <= 0;
     this.dashStatus.textContent = dashReady ? 'DASH READY' : `DASH ${state.player.dashCooldown.toFixed(1)}s`;
     this.dashStatus.classList.toggle('warn', !dashReady);
+    const focusPercent = Math.round(Math.max(0, Math.min(100, focusKick.charge)));
+    this.focusFill.style.width = `${focusKick.phase === 'ready' ? 100 : focusPercent}%`;
+    this.focusStatus.textContent =
+      focusKick.phase === 'ready'
+        ? 'PRESS F'
+        : focusKick.phase === 'aiming'
+          ? `FIRE · ${focusKick.aimTimeRemaining.toFixed(1)}s`
+          : focusKick.phase === 'cooldown'
+            ? `COOLDOWN ${focusKick.cooldownRemaining.toFixed(1)}s`
+            : `${focusPercent}%`;
+    this.focusStatus.classList.toggle('warn', focusKick.phase === 'aiming');
     const currentLevelXp = totalXpRequiredForLevel(progression.level);
     const nextLevelXp = totalXpRequiredForLevel(progression.level + 1);
     const xpProgress =
