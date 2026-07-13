@@ -85,6 +85,7 @@ const PLAYABLE_UPGRADES = [
   'ghostPass',
   'stormStuds',
   'frostCleats',
+  'spectralVolley',
 ] as const satisfies readonly UpgradeId[];
 
 async function bootstrap(): Promise<void> {
@@ -209,6 +210,8 @@ async function bootstrap(): Promise<void> {
     audio.setEffectsVolume(settings.effectsVolume);
     cameraController.setSensitivity(settings.mouseSensitivity);
     cameraController.setReducedShake(settings.reducedCameraShake);
+    input.setKeyBindings(settings.keyBindings);
+    hud.setControlBindings(settings.keyBindings);
     renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
     resize();
   };
@@ -502,6 +505,15 @@ async function bootstrap(): Promise<void> {
             );
           }
           secondaryWeapons.triggerFrostBurst(physics.ballPosition, progression.modifiers);
+          secondaryWeapons.triggerMultiBall({
+            origin: physics.ballPosition,
+            direction: physics.ballVelocity,
+            baseDamage:
+              (physics.ballSpeed > 17 ? 2 : 1) *
+              progression.modifiers.ballDamageMultiplier *
+              ballDamageMultiplier,
+            modifiers: progression.modifiers,
+          });
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);

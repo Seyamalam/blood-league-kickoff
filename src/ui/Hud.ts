@@ -5,6 +5,7 @@ import { totalXpRequiredForLevel, type ProgressionState } from '../game/progress
 import type { BallState } from '../physics/PhysicsWorld';
 import type { PerformanceSnapshot } from '../diagnostics/PerfMeter';
 import type { FocusKickState } from '../game/combat';
+import type { KeyBindings } from '../settings/SettingsStore';
 
 export class Hud {
   private readonly healthFill: HTMLElement;
@@ -224,10 +225,20 @@ export class Hud {
     this.victory.classList.add('hidden');
   }
 
+  setControlBindings(bindings: Readonly<KeyBindings>): void {
+    this.hint.textContent = `${shortKey(bindings.moveForward)}/${shortKey(bindings.moveLeft)}/${shortKey(bindings.moveBackward)}/${shortKey(bindings.moveRight)} MOVE · ${shortKey(bindings.dash)} DASH · MOUSE AIM/KICK · RMB/${shortKey(bindings.recall)} RECALL · ${shortKey(bindings.focusKick)} FOCUS`;
+  }
+
   dispose(): void {
     if (this.hintFadeTimeout !== null) window.clearTimeout(this.hintFadeTimeout);
     this.hintFadeTimeout = null;
   }
+}
+
+function shortKey(code: string): string {
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code.replace('Arrow', '').replace('Left', '').replace('Right', '').toUpperCase();
 }
 
 function required(id: string): HTMLElement {

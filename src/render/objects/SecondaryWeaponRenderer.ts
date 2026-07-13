@@ -5,6 +5,7 @@ export class SecondaryWeaponRenderer {
   private readonly garlic: THREE.Mesh[];
   private readonly orbits: THREE.Mesh[];
   private readonly ghosts: THREE.Mesh[];
+  private readonly multiBalls: THREE.Mesh[];
   private readonly geometries: THREE.BufferGeometry[] = [];
   private readonly materials: THREE.Material[] = [];
 
@@ -20,22 +21,29 @@ export class SecondaryWeaponRenderer {
     const ghostMaterial = this.trackMaterial(
       new THREE.MeshBasicMaterial({ color: 0xa7dfff, transparent: true, opacity: 0.65, depthWrite: false }),
     );
+    const multiBallMaterial = this.trackMaterial(
+      new THREE.MeshBasicMaterial({ color: 0xd7b7ff, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
     this.garlic = Array.from({ length: 24 }, () => this.add(scene, garlicGeometry, garlicMaterial));
     this.orbits = Array.from({ length: 3 }, () => this.add(scene, orbGeometry, orbitMaterial));
     this.ghosts = Array.from({ length: 8 }, () => this.add(scene, orbGeometry, ghostMaterial));
+    this.multiBalls = Array.from({ length: 6 }, () => this.add(scene, orbGeometry, multiBallMaterial));
   }
 
   sync(state: SecondaryWeaponRenderState): void {
     this.syncPool(this.garlic, state.garlicZones);
     this.syncPool(this.orbits, state.orbitingBalls);
     this.syncPool(this.ghosts, state.ghostPasses);
+    this.syncPool(this.multiBalls, state.multiBallShots);
   }
 
   reset(): void {
-    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts]) mesh.visible = false;
+    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts, ...this.multiBalls])
+      mesh.visible = false;
   }
   dispose(): void {
-    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts]) mesh.removeFromParent();
+    for (const mesh of [...this.garlic, ...this.orbits, ...this.ghosts, ...this.multiBalls])
+      mesh.removeFromParent();
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();
   }

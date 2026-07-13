@@ -116,6 +116,18 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
       frostSlowDuration: 0.45,
     },
   }),
+  spectralVolley: define({
+    id: 'spectralVolley',
+    name: 'Spectral Volley',
+    description: 'Ball impacts launch extra spectral shots in a fan.',
+    maxStacks: 4,
+    minPlayerLevel: 4,
+    prerequisites: [{ upgradeId: 'orbitingSpectralBall', minStacks: 1 }],
+    modifierPerStack: {
+      multiBallCount: 1,
+      multiBallDamageMultiplier: 0.32,
+    },
+  }),
 } satisfies Record<UpgradeId, UpgradeDefinition>);
 
 function define(definition: UpgradeDefinition): Readonly<UpgradeDefinition> {

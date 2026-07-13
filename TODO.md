@@ -161,10 +161,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Goalkeeper Brute.
 - [x] `P1` Add the lightning path.
 - [x] `P1` Add the frost path.
-- [ ] `P1` Add multiball and black-hole paths.
+- [x] `P1` Add the multiball path.
+- [ ] `P1` Add the black-hole path.
 - [ ] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
-- [ ] `P2` Add expanded victory presentation.
+- [x] `P2` Add expanded victory presentation.
 - [ ] `P0` Update screenshots, feature list, credits, controls, and known issues.
 - [ ] `P0` Commit/push verified content batches.
 - [ ] `P0` Tag `v0.8.0`, publish artifacts, and test the downloaded release.
@@ -181,7 +182,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` 60, 120, and unlimited frame-rate options where supported.
 - [x] `P1` Reduced camera-shake option.
 - [x] `P1` Aim-assist strength.
-- [ ] `P1` Rebindable controls.
+- [x] `P1` Rebindable controls.
 - [x] `P1` Color-independent enemy/ball-state indicators.
 
 ## Performance

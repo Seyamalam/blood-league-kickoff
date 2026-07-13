@@ -20,6 +20,7 @@ export class InputController {
   private restartQueued = false;
   private dashQueued = false;
   private focusKickQueued = false;
+  private keyBindings: KeyBindings = { ...DEFAULT_KEY_BINDINGS };
 
   constructor(private readonly target: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -44,9 +45,17 @@ export class InputController {
     });
   }
 
+  setKeyBindings(bindings: Readonly<KeyBindings>): void {
+    this.clearHeldInput();
+    this.keyBindings = { ...bindings };
+  }
+
   movement(yaw: number): { x: number; z: number; dash: boolean } {
-    const forward = Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS'));
-    const strafe = Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'));
+    const forward =
+      Number(this.keys.has(this.keyBindings.moveForward)) -
+      Number(this.keys.has(this.keyBindings.moveBackward));
+    const strafe =
+      Number(this.keys.has(this.keyBindings.moveRight)) - Number(this.keys.has(this.keyBindings.moveLeft));
     const movement = {
       x: -Math.sin(yaw) * forward + Math.cos(yaw) * strafe,
       z: -Math.cos(yaw) * forward - Math.sin(yaw) * strafe,
@@ -78,7 +87,7 @@ export class InputController {
   }
 
   get recall(): boolean {
-    return this.recallHeld || this.keys.has('KeyE');
+    return this.recallHeld || this.keys.has(this.keyBindings.recall);
   }
 
   consumeRestart(): boolean {
@@ -108,9 +117,10 @@ export class InputController {
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     this.keys.add(event.code);
-    if (event.code === 'KeyR') this.restartQueued = true;
-    if (event.code === 'KeyF' && this.isLocked && !event.repeat) this.focusKickQueued = true;
-    if (event.code === 'Space' && this.isLocked) {
+    if (event.code === this.keyBindings.restart) this.restartQueued = true;
+    if (event.code === this.keyBindings.focusKick && this.isLocked && !event.repeat)
+      this.focusKickQueued = true;
+    if (event.code === this.keyBindings.dash && this.isLocked) {
       event.preventDefault();
       if (!event.repeat) this.dashQueued = true;
     }
@@ -185,3 +195,4 @@ export function normalizeKickCurveIntent(horizontalPixels: number): number {
   if (magnitude <= CURVE_DEADZONE) return 0;
   return (Math.sign(bounded) * (magnitude - CURVE_DEADZONE)) / (1 - CURVE_DEADZONE);
 }
+import { DEFAULT_KEY_BINDINGS, type KeyBindings } from '../../settings/SettingsStore';

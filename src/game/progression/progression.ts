@@ -242,6 +242,7 @@ function createEmptyStacks(): UpgradeStacks {
     ghostPass: 0,
     stormStuds: 0,
     frostCleats: 0,
+    spectralVolley: 0,
   };
 }
 

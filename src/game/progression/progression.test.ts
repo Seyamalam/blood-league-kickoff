@@ -74,4 +74,20 @@ describe('progression', () => {
     expect(secondFrost.state.modifiers.frostSlowAmount).toBeCloseTo(0.2);
     expect(secondFrost.state.modifiers.frostSlowDuration).toBeCloseTo(0.9);
   });
+
+  it('unlocks Spectral Volley from an orbiting ball and caps through upgrade stacks', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(6)).state;
+    const orbit = chooseUpgrade(state, 'orbitingSpectralBall');
+    expect(orbit.applied).toBe(true);
+    if (!orbit.applied) return;
+    state = orbit.state;
+    for (let stack = 0; stack < 4; stack += 1) {
+      const choice = chooseUpgrade(state, 'spectralVolley');
+      expect(choice.applied).toBe(true);
+      if (!choice.applied) return;
+      state = choice.state;
+    }
+    expect(state.modifiers.multiBallCount).toBe(4);
+    expect(state.modifiers.multiBallDamageMultiplier).toBeCloseTo(1.28);
+  });
 });
