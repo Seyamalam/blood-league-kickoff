@@ -26,9 +26,19 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay.jpg)
 
+### Progression
+
+![Three-choice upgrade selection with authored icons](docs/screenshots/upgrade.jpg)
+
+![Moon Breaker evolution unlock presentation](docs/screenshots/evolution.jpg)
+
 ### Settings
 
 ![Persistent graphics, frame-rate, audio, sensitivity, and camera settings](docs/screenshots/settings.jpg)
+
+### Results
+
+![Victory results with run grade and build metadata](docs/screenshots/results-victory.jpg)
 
 ## Design Pillars
 
@@ -160,7 +170,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
 - [x] Development-only deterministic 72-enemy profiling scene with a read-only automation snapshot
 - [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow
-- [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
+- [x] Current title, gameplay, upgrade, evolution, settings, pause, and results screenshots stored in the repository
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS

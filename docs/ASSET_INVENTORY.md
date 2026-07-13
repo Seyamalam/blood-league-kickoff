@@ -6,7 +6,7 @@ Inventory status as of 2026-07-14:
 
 - All current gameplay visuals are generated at runtime from authored TypeScript, Three.js primitives, materials, lights, and particles.
 - All current music and sound effects are synthesized at runtime with the Web Audio API.
-- The repository contains fourteen authored SVG progression icons, three authored JPEG screenshots, one generated key-art master, and two optimized key-art derivatives.
+- The repository contains fourteen authored SVG progression icons, seven authored JPEG screenshots, one generated key-art master, and two optimized key-art derivatives.
 - No imported 3D model, recorded audio, bundled font, or third-party player-facing asset is currently present.
 
 ## Field Definitions
@@ -58,13 +58,17 @@ The generated noise buffer is computed during runtime and is not an authored or 
 
 ## Repository Screenshots
 
-All current screenshots are direct captures of the running game and therefore depict the runtime visuals and authored interface listed above. The refreshed title capture includes the generated key-art background recorded in the asset register; the gameplay and settings captures contain no generated or third-party raster imagery.
+All current screenshots are direct 1280×720 captures of revision `dcf620b` in Chrome 149 and therefore depict the runtime visuals and authored interface listed above. They were exported from PNG to JPEG with FFmpeg (`-q:v 2`). The title capture includes the generated key-art background recorded in the asset register; the remaining captures contain no generated or third-party raster imagery.
 
-| Path                                | Source                           | Tool                                                      | License/ownership                                                        | Changes/current state                                                                                                                      |
-| ----------------------------------- | -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `docs/screenshots/title-screen.jpg` | Running local game title screen  | Headless Chrome 149 capture; FFmpeg JPEG export, 1280×720 | Project-created capture compositing the generated key art recorded below | README title image refreshed after key-art integration; SHA-256 `e089848c8cfa42b909fe6d315174ca4cbb1285d57cfd56bd0d9a842501303f31`         |
-| `docs/screenshots/gameplay.jpg`     | Running local third-person match | Local browser capture; JPEG, 1280×720                     | Project-created capture                                                  | README gameplay image; repository file is the source of record; SHA-256 `22b326334e4b11a46f88b4c09e81d91d939db94936a8943c60b01c7813cb06d4` |
-| `docs/screenshots/settings.jpg`     | Running local settings overlay   | Local browser capture; JPEG, 1280×720                     | Project-created capture                                                  | README settings image; repository file is the source of record; SHA-256 `f8208da807fa9b6bafb45e1ec9a8b306798319c570e81bc8f009b58b6b72aeb0` |
+| Path                                   | Source                                                           | License/ownership                                                        | Changes/current state                                                                                        |
+| -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `docs/screenshots/title-screen.jpg`    | Title screen                                                     | Project-created capture compositing the generated key art recorded below | SHA-256 `186de4295ea89232c5cfe3c1a0ff708fbe4f02dbd3cc459ed762551d9447d7a8`                                   |
+| `docs/screenshots/gameplay.jpg`        | Live opening-wave gameplay after the readability pass            | Project-created capture                                                  | SHA-256 `54ad1ae479cb166a18e388f0336ba7c66e32dcb5b86898fe334d26bc4c599088`                                   |
+| `docs/screenshots/settings.jpg`        | Expanded settings and control rebinding overlay                  | Project-created capture                                                  | SHA-256 `f3b619e30e35dc8f272ec84c4f73fd310f3d0b5c3d8ab7fda878fdd0d9a67a5f`                                   |
+| `docs/screenshots/pause.jpg`           | Focus-loss pause overlay during a live match                     | Project-created capture                                                  | SHA-256 `ef5184f198071dd6d32175f16d798d958a08b5c1db596e213c3f9d9b7c07b758`                                   |
+| `docs/screenshots/upgrade.jpg`         | DEV-only deterministic upgrade route using the real overlay      | Project-created capture                                                  | SHA-256 `460cf74b129d9897e468c33537c7745775dc9361223a063f4980f7188c98a47c`                                   |
+| `docs/screenshots/evolution.jpg`       | DEV-only live Moon Breaker unlock through `chooseUpgrade`        | Project-created capture                                                  | SHA-256 `42e8a17aead82b408a3b6d47ffef38626becbca699569ad474abcff3e2742187`                                   |
+| `docs/screenshots/results-victory.jpg` | DEV-only deterministic victory route using the real results flow | Project-created capture                                                  | Shows `v0.8.0-alpha.1 · dcf620b`; SHA-256 `604cbe992519f486b03c7fa45ca2e9b0219590a8b8cf093de466a04f8a0592fa` |
 
 The capture method is recorded at the level verified by the repository history. If a release capture is cropped, color-corrected, composited, or exported through another tool, record that change and tool here before submission.
 
