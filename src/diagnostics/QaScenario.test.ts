@@ -11,6 +11,8 @@ describe('development QA scenarios', () => {
   it('accepts only supported scenarios in development', () => {
     expect(readQaScenario('?qa=victory', true)).toBe('victory');
     expect(readQaScenario('?qa=defeat', true)).toBe('defeat');
+    expect(readQaScenario('?qa=upgrade', true)).toBe('upgrade');
+    expect(readQaScenario('?qa=evolution', true)).toBe('evolution');
     expect(readQaScenario('?qa=halftime', true)).toBeNull();
     expect(readQaScenario('?qa=victory', false)).toBeNull();
   });
@@ -61,6 +63,8 @@ function snapshot(resultsVisible: boolean): QaSnapshot {
     matchStage: 'victory',
     resultsVisible,
     resultsOutcome: resultsVisible ? 'victory' : null,
+    upgradeVisible: false,
+    evolutionVisible: false,
     pointerLocked: false,
   };
 }

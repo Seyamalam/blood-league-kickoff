@@ -61,6 +61,10 @@ export class EvolutionToast {
     root.append(this.element);
   }
 
+  public get isVisible(): boolean {
+    return this.active;
+  }
+
   public enqueue(events: readonly EvolutionUnlockEvent[]): void {
     if (this.disposed || events.length === 0) return;
     this.queue.push(...events);

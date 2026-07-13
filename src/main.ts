@@ -39,11 +39,12 @@ import {
 import { BloodShardSystem } from './game/pickups';
 import {
   chooseUpgrade,
+  calculateModifiers,
+  createUpgradeOffer,
   createProgressionState,
-  getUpgradeAvailability,
   grantBloodXp,
+  totalXpRequiredForLevel,
   UPGRADE_IDS,
-  type UpgradeId,
 } from './game/progression';
 import {
   createGameState,
@@ -82,21 +83,6 @@ const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
 const MATCH_CONFIG = FULL_MATCH_CONFIG;
 const TUTORIAL_STORAGE_KEY = 'blood-league-kickoff:tutorial-complete';
-const PLAYABLE_UPGRADES = [
-  'silverBall',
-  'powerKick',
-  'rapidRecall',
-  'piercingStuds',
-  'garlicTrail',
-  'orbitingSpectralBall',
-  'bloodBomb',
-  'ghostPass',
-  'stormStuds',
-  'frostCleats',
-  'spectralVolley',
-  'voidGoal',
-] as const satisfies readonly UpgradeId[];
-
 async function bootstrap(): Promise<void> {
   const root = document.getElementById('app');
   if (!root) throw new Error('Missing application root');
@@ -114,7 +100,8 @@ async function bootstrap(): Promise<void> {
   const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
   const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
-  const qaTerminalFixture = qaScenario ? createQaTerminalFixture(qaScenario) : null;
+  const qaTerminalFixture =
+    qaScenario === 'victory' || qaScenario === 'defeat' ? createQaTerminalFixture(qaScenario) : null;
   if (qaTerminalFixture) {
     state.phase = qaTerminalFixture.gamePhase;
     state.elapsed = qaTerminalFixture.elapsed;
@@ -123,6 +110,7 @@ async function bootstrap(): Promise<void> {
     state.player.health = qaScenario === 'victory' ? 42 : 0;
     state.enemies.length = 0;
   }
+  if (qaScenario === 'upgrade' || qaScenario === 'evolution') state.phase = 'playing';
   const bridge = new RenderBridge(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
@@ -164,6 +152,13 @@ async function bootstrap(): Promise<void> {
   let accumulator = 0;
   let previousBallState = physics.ballState;
   let progression = createProgressionState();
+  if (qaScenario === 'upgrade' || qaScenario === 'evolution') {
+    progression = grantBloodXp(progression, totalXpRequiredForLevel(2)).state;
+  }
+  if (qaScenario === 'evolution') {
+    progression.upgradeStacks.silverBall = 1;
+    progression.modifiers = calculateModifiers(progression.upgradeStacks, progression.evolutions);
+  }
   let focusKick = createFocusKickState();
   let match = qaTerminalFixture
     ? {
@@ -201,6 +196,8 @@ async function bootstrap(): Promise<void> {
             : resultsOverlay.isVisible && state.phase === 'dead'
               ? 'defeat'
               : null,
+        upgradeVisible: upgradeOverlay.isVisible,
+        evolutionVisible: evolutionToast.isVisible,
         pointerLocked: input.isLocked,
       }))
     : () => undefined;
@@ -229,9 +226,7 @@ async function bootstrap(): Promise<void> {
       state.phase !== 'playing'
     )
       return;
-    const choices = PLAYABLE_UPGRADES.filter(
-      (upgradeId) => getUpgradeAvailability(progression, upgradeId).available,
-    );
+    const choices = createUpgradeOffer(progression, qaScenario === 'evolution' ? () => 0.65 : Math.random);
     if (choices.length === 0) return;
     if (input.isLocked) void document.exitPointerLock();
     void upgradeOverlay.show(choices, progression).then((upgradeId) => {

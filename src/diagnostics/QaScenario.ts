@@ -3,7 +3,8 @@ import type { MatchPhase } from '../game/simulation/types';
 
 export const QA_SNAPSHOT_HOOK = '__bloodLeagueQaSnapshot';
 
-export type QaScenario = 'victory' | 'defeat';
+export type QaScenario = 'victory' | 'defeat' | 'upgrade' | 'evolution';
+export type QaTerminalScenario = Extract<QaScenario, 'victory' | 'defeat'>;
 
 export interface QaTerminalFixture {
   readonly gamePhase: Extract<MatchPhase, 'won' | 'dead'>;
@@ -20,6 +21,8 @@ export interface QaSnapshot {
   readonly matchStage: MatchStage;
   readonly resultsVisible: boolean;
   readonly resultsOutcome: 'victory' | 'defeat' | null;
+  readonly upgradeVisible: boolean;
+  readonly evolutionVisible: boolean;
   readonly pointerLocked: boolean;
 }
 
@@ -31,11 +34,13 @@ interface QaHookTarget {
 export function readQaScenario(search: string, development: boolean): QaScenario | null {
   if (!development) return null;
   const scenario = new URLSearchParams(search).get('qa');
-  return scenario === 'victory' || scenario === 'defeat' ? scenario : null;
+  return scenario === 'victory' || scenario === 'defeat' || scenario === 'upgrade' || scenario === 'evolution'
+    ? scenario
+    : null;
 }
 
 /** Stable terminal data lets browser QA exercise the real results integration without waiting nine minutes. */
-export function createQaTerminalFixture(scenario: QaScenario): QaTerminalFixture {
+export function createQaTerminalFixture(scenario: QaTerminalScenario): QaTerminalFixture {
   if (scenario === 'victory') {
     return {
       gamePhase: 'won',
