@@ -4,7 +4,7 @@
 
 | Project | Value |
 | --- | --- |
-| Status | Playable combat prototype in active development |
+| Status | Complete nine-minute run alpha in active development |
 | Theme | Kickoff |
 | Platforms | Web and macOS development first; Windows desktop at final submission |
 | Stack | Three.js, TypeScript, Vite, Rapier, Electron |
@@ -55,7 +55,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | Restart after kickoff | `R` | Implemented |
 | Dash | `Space` | Implemented with cooldown and brief invulnerability |
 | Focus Kick ultimate | `Q` | Target scope |
-| Pause | `Esc` | Planned; exits desktop fullscreen today |
+| Pause | `Esc` | Implemented; also activates when the game loses focus |
 | Settings | Title-screen or in-game `⚙ SETTINGS` button | Implemented and persistent |
 
 Controls and bindings may change during playtesting.
@@ -118,14 +118,19 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Piercing Studs, Garlic Trail, Orbiting Spectral Ball, Blood Bomb, and Ghost Pass work in live combat
 - [x] Defender shields, rear-shot weakness, deliberate knockback, and telegraphed Winger lunges
 - [x] Automated progression, pickup, secondary-weapon, match, and boss tests
-- [x] Three-minute match director with objectives, a timed goal window, final wave, and victory screen
+- [x] Full nine-minute match director with two goals, halftime tactics, Blood Moon, boss wave, and victory screen
 - [x] On-pitch animated goal beacon during scoring opportunities
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
 - [x] Moon Breaker and Crimson Meteor evolutions unlock automatically from their required upgrade pairs
 - [x] Full match director covers first goal, escalation, halftime, Blood Moon, final goal, boss wave, and outcomes
+- [x] Power, Pace, and Control halftime choices apply distinct second-half combat bonuses
+- [x] Goal celebrations reset the live formation and begin a fresh kickoff without erasing run progress
+- [x] Stage-reactive fog, lighting, embers, and animated match announcements communicate escalation
+- [x] Count Goalkeeper summons readable boosted Winger and Defender elites
 - [x] Accessible pause menu and detailed victory/defeat results with run statistics and final loadout
+- [x] Focus-loss and hidden-window pause protection
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS

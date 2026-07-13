@@ -54,7 +54,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add stalled, timeout, invalid-number, and out-of-bounds ball recovery.
 - [x] `P0` Implement one basic vampire that spawns, approaches, and damages the player.
 - [x] `P0` Implement ball hits, enemy damage/death, player damage/death, score/combo, and restart.
-- [ ] `P0` Add deliberate enemy/ball hit knockback.
+- [x] `P0` Add deliberate enemy/ball hit knockback.
 - [x] `P0` Add placeholder kick, hit, recall, damage, and death audio.
 - [x] `P0` Add restrained camera feedback, ball trail, and pooled impacts; evaluate hit pause during playtest.
 - [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
@@ -62,8 +62,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Expand diagnostics with frame time, draw calls, physics time, and pool counts.
 - [x] `P0` Produce and test browser and desktop builds.
 - [x] `P0` Update README/game docs with implemented controls and known issues.
-- [ ] `P0` Commit and push coherent combat slices during implementation.
-- [ ] `P0` Tag `v0.2.0` and publish/test the combat prototype release.
+- [x] `P0` Commit and push coherent combat slices during implementation.
+- [x] `P0` Tag `v0.2.0` and publish/test the combat prototype release.
 
 ### Gate A
 
@@ -81,14 +81,14 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement pooled physical blood shard collection and XP levels.
 - [x] `P0` Implement three-choice upgrade selection.
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
-- [ ] `P0` Implement first goal opening, scoring, reset, and new kickoff.
+- [x] `P0` Implement first goal opening, scoring, reset, and new kickoff.
 - [x] `P0` Create a three-minute mini-run with a clear win state.
 - [ ] `P0` Add tutorial prompts that clear after demonstrated actions.
-- [ ] `P0` Persist audio, sensitivity, and quality settings.
+- [x] `P0` Persist audio, sensitivity, and quality settings.
 - [ ] `P0` Conduct at least one external playtest.
-- [ ] `P0` Update README/game docs and release notes.
-- [ ] `P0` Commit and push each verified system slice.
-- [ ] `P0` Tag `v0.3.0`, publish both artifacts, and test the downloaded release.
+- [x] `P0` Update README/game docs and release notes.
+- [x] `P0` Commit and push each verified system slice.
+- [x] `P0` Tag `v0.3.0` and publish the verified web snapshot; Windows remains final-only.
 
 ### Gate B
 
@@ -105,7 +105,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Undead Defender frontal shield, rebound response, and rear-shot weakness.
 - [x] `P0` Blood Coach buff and priority indicator.
 - [x] `P0` Typed/data-driven enemy archetypes.
-- [ ] `P0` Elite modifiers that reuse proven behaviors.
+- [x] `P0` Elite modifiers that reuse proven behaviors.
 
 ### Upgrades
 
@@ -119,21 +119,21 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Ghost Pass.
 - [x] `P0` Moon Breaker evolution.
 - [x] `P0` Crimson Meteor evolution.
-- [ ] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
+- [x] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
 
 ### Complete run
 
 - [x] `P0` Opening Kickoff phase.
 - [x] `P0` First Goal transition in the prototype match director.
-- [ ] `P0` Halftime major choice.
+- [x] `P0` Halftime major choice.
 - [x] `P0` Blood Moon phase in the full match director.
 - [x] `P0` Final-wave transition and prototype victory condition.
 - [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
-- [ ] `P0` Victory and defeat sequences.
+- [x] `P0` Victory and defeat sequences.
 - [x] `P0` Results with time, kills, goals, level, and upgrades.
 - [ ] `P0` Balance the full run to 8–10 minutes.
-- [ ] `P0` Update all public documentation to match actual content.
-- [ ] `P0` Commit/push the completed guaranteed run.
+- [x] `P0` Update all public documentation to match actual content.
+- [x] `P0` Commit/push the completed guaranteed-run implementation.
 - [ ] `P0` Tag `v0.5.0`, publish web/Windows artifacts, and test both.
 
 ### Gate C — Guaranteed feature freeze
@@ -151,7 +151,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Create or source licensed character and enemy models.
 - [ ] `P0` Record every external/generated asset source, author/tool, license, and changes.
 - [ ] `P0` Replace critical placeholder models/materials.
-- [ ] `P0` Add stadium banners, decals, goals, crowd silhouettes, and phase changes.
+- [x] `P0` Add stadium banners, goals, crowd silhouettes, and match-stage atmosphere changes; decals remain polish.
 - [ ] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
 - [ ] `P0` Add phase-based music intensity.
 - [ ] `P1` Add first-person Focus Kick ultimate.
@@ -169,8 +169,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## UI, settings, and accessibility
 
-- [ ] `P0` Main menu and start flow.
-- [ ] `P0` Pause menu implemented; add focus-loss pause behavior.
+- [x] `P0` Main menu and start flow.
+- [x] `P0` Pause menu and focus-loss pause behavior.
 - [x] `P0` Results, restart, and return-to-menu flow.
 - [x] `P0` Persistent master volume control; split music/effects buses when music lands.
 - [x] `P0` Mouse sensitivity.
@@ -187,9 +187,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Select and document the reference machine/browser/GPU.
 - [ ] `P0` Track FPS, frame time, draw calls, triangles, enemies, pools, and physics time.
 - [ ] `P0` Confirm no recurring allocation/GC spikes during steady combat.
-- [ ] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
+- [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
 - [ ] `P0` Stagger enemy AI and animation updates.
-- [ ] `P0` Use instancing and shared geometry/materials for repeated visuals.
+- [x] `P0` Use instancing for blood shards and secondary weapons and shared geometry/materials for enemy visuals.
 - [ ] `P0` Add distance/update LOD and simple collision/query shapes.
 - [ ] `P0` Profile CPU and GPU in production web and Electron builds.
 - [ ] `P0` Maintain stable 60 FPS in the densest guaranteed wave.
@@ -203,7 +203,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Make clean installs reproducible from the lockfile.
 - [ ] `P0` Run type-check/tests/web build on every pushed branch.
 - [ ] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
-- [ ] `P0` Keep Electron renderer isolated from Node and remote network content.
+- [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
 - [ ] `P0` Include commit SHA/version in the debug or results metadata.
 - [ ] `P0` Attach checksums and concise notes to milestone releases.

@@ -2,7 +2,7 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
-## Unreleased
+## v0.5.0 — 2026-07-14
 
 - Migrated the production plan from Unity to Three.js, TypeScript, Vite, Rapier, and Electron.
 - Added the initial web/desktop project scaffold, Windows workflow, and expanded game, architecture, release, and asset-credit documentation.
@@ -30,6 +30,12 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added automatic Moon Breaker and Crimson Meteor evolution unlocks with live combined modifiers.
 - Expanded the match director through escalation, halftime, Blood Moon, final goal, boss wave, and terminal outcomes.
 - Added accessible pause and results overlays with restart, settings, menu navigation, run statistics, and loadout summaries.
+- Activated the complete nine-minute match configuration.
+- Added a timed halftime overlay with Power, Pace, and Control second-half tactics.
+- Added goal formation resets, kickoff/goal/phase announcements, and stage-reactive stadium atmosphere.
+- Added focus-loss pause protection and Count Goalkeeper elite Winger/Defender summons.
+- Added readable elite markers, Defender shield flashes, and Winger lunge telegraphs.
+- Expanded simulation coverage to 22 passing tests.
 
 ## v0.0.0 — 2026-07-14
 

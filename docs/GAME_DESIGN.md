@@ -101,6 +101,10 @@ Evolutions require both components plus a defined level threshold. Guaranteed ex
 
 Match timings live in data. If a section contains downtime, shorten it rather than filling it with weak content.
 
+The current halftime tactics are **Power** (+25% ball damage and +15% kick force), **Pace** (+15% movement and 20% faster dash recovery), and **Control** (+25% recall speed and a wider perfect-volley catch window). If the choice timer expires, the configured default is applied automatically.
+
+Scoring clears the active crowd, recenters the striker and ball, preserves health/XP/score, and presents a new kickoff. Match-stage announcements plus smoothly blended fog, accent lighting, and embers make the transition readable without blocking control.
+
 ## Feedback Priorities
 
 1. Kick input and contact sound

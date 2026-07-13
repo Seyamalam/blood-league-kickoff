@@ -112,6 +112,7 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   ├── combat/SecondaryWeaponSystem.ts
 │   │   └── simulation/
 │   │       ├── gameState.ts
+│   │       ├── gameState.test.ts
 │   │       └── types.ts
 │   ├── physics/PhysicsWorld.ts
 │   ├── render/
@@ -123,10 +124,15 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   └── objects/
 │   │       ├── createStadium.ts
 │   │       ├── CountGoalkeeperVisual.ts
-│   │       └── GoalBeacon.ts
+│   │       ├── GoalBeacon.ts
+│   │       └── PhaseAtmosphere.ts
 │   ├── settings/SettingsStore.ts
 │   ├── ui/
 │   │   ├── Hud.ts
+│   │   ├── HalftimeOverlay.ts
+│   │   ├── MatchAnnouncement.ts
+│   │   ├── PauseOverlay.ts
+│   │   ├── ResultsOverlay.ts
 │   │   ├── SettingsOverlay.ts
 │   │   └── UpgradeOverlay.ts
 │   ├── main.ts
@@ -152,16 +158,19 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
 - `SecondaryWeaponSystem`: pooled garlic zones, orbiting balls, blood bombs, and ghost passes
 - `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
+- `HalftimeOverlay`: timed Power/Pace/Control decision with mouse and keyboard support
+- `MatchAnnouncement` / `PhaseAtmosphere`: pooled match-state presentation and stadium color/fog transitions
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
-- `gameState.ts`: player simulation, four weighted enemy archetypes, crowd separation, coach buffs, damage, death, combo, and score
-- `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, recall states, speed limiting, stepping, and ball recovery
-- `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, and primitive visual lifecycles
+- `gameState.ts`: player simulation, four weighted archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
+- `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
+- `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, elite/shield/telegraph cues, and primitive visual lifecycles
 - `CameraController`: third-person orbit aim, camera smoothing, sensitivity, and restrained impact feedback
 - `Hud`: kickoff/death overlays and live combat/performance readouts
+- `PauseOverlay` / `ResultsOverlay`: focus-safe interruption controls and terminal run summaries
 - `electron/main.cjs` and `preload.cjs`: secured desktop shell
 
 ### Target module boundaries
