@@ -47,6 +47,10 @@ export interface ProgressionModifiers {
   frostSlowDuration: number;
   multiBallCount: number;
   multiBallDamageMultiplier: number;
+  blackHoleDamage: number;
+  blackHoleRadius: number;
+  blackHolePullStrength: number;
+  blackHoleDuration: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;

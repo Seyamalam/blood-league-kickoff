@@ -21,6 +21,7 @@ export type {
 } from './focusKick';
 export type {
   CombatTarget,
+  BlackHoleZoneState,
   GarlicZoneState,
   GhostPassState,
   GhostPassTrigger,

@@ -17,6 +17,10 @@ const EMPTY: SecondaryCombatModifiers = {
   frostSlowDuration: 0,
   multiBallCount: 0,
   multiBallDamageMultiplier: 0,
+  blackHoleDamage: 0,
+  blackHoleRadius: 0,
+  blackHolePullStrength: 0,
+  blackHoleDuration: 0,
 };
 
 describe('SecondaryWeaponSystem', () => {
@@ -188,5 +192,58 @@ describe('SecondaryWeaponSystem', () => {
     );
     expect(first.events).toContainEqual(expect.objectContaining({ type: 'multi-ball-spawned', count: 1 }));
     expect(system.step({ ...input, dt: 0 }).hits).toHaveLength(0);
+  });
+
+  it('pulses deterministic bounded black-hole damage and typed pull forces', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = {
+      ...EMPTY,
+      blackHoleDamage: 4,
+      blackHoleRadius: 0.4,
+      blackHolePullStrength: 6,
+      blackHoleDuration: 1,
+    };
+    expect(system.triggerBlackHole({ x: 0, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    const targets = Array.from({ length: 20 }, (_, index) => ({
+      id: 20 - index,
+      position: { x: 1, y: 0.9, z: 0 },
+      radius: 0.3,
+    }));
+    targets.push({ id: 50, position: { x: 6, y: 0.9, z: 0 }, radius: 0.3 });
+    const input = {
+      dt: 1 / 60,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets,
+    };
+
+    const first = system.step(input);
+    expect(first.hits.filter((hit) => hit.source === 'black-hole').map((hit) => hit.targetId)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    ]);
+    const pull = first.events.find((event) => event.type === 'black-hole-pull' && event.targetId === 1);
+    expect(pull).toMatchObject({ force: { x: -6, y: 0, z: 0 } });
+    expect(first.events).toContainEqual(
+      expect.objectContaining({ type: 'black-hole-spawned', radius: 2, duration: 1 }),
+    );
+    expect(system.step({ ...input, dt: 0.1 }).hits).toHaveLength(0);
+  });
+
+  it('keeps black-hole zones fixed-pool and rejects disabled triggers', () => {
+    const system = new SecondaryWeaponSystem();
+    expect(system.triggerBlackHole({ x: 0, y: 0, z: 0 }, EMPTY)).toBe(false);
+    const modifiers = {
+      ...EMPTY,
+      blackHolePullStrength: 3,
+      blackHoleDuration: 1,
+    };
+    for (let index = 0; index < 5; index += 1) {
+      expect(system.triggerBlackHole({ x: index, y: 0, z: 0 }, modifiers)).toBe(true);
+    }
+    expect(system.renderState.blackHoleZones.filter((zone) => zone.active)).toHaveLength(4);
   });
 });

@@ -1,5 +1,6 @@
 import type { Vec3 } from '../simulation/types';
 import type {
+  BlackHoleZoneState,
   CombatTarget,
   GarlicZoneState,
   GhostPassState,
@@ -41,6 +42,10 @@ const MULTI_BALL_SPEED = 22;
 const MULTI_BALL_LIFETIME = 1.2;
 const MULTI_BALL_RADIUS = 0.3;
 const MULTI_BALL_SPREAD_RADIANS = 0.14;
+const BLACK_HOLE_POOL_CAP = 4;
+const BLACK_HOLE_TARGET_CAP = 16;
+const BLACK_HOLE_BASE_RADIUS = 1.6;
+const BLACK_HOLE_PULSE_INTERVAL = 0.35;
 const HIT_CAP_PER_STEP = 256;
 const EVENT_CAP_PER_STEP = 64;
 
@@ -90,6 +95,13 @@ interface MultiBallInternal extends MultiBallShotState {
   shotIndex: number;
 }
 
+interface BlackHoleInternal extends BlackHoleZoneState {
+  damage: number;
+  pullStrength: number;
+  nextPulse: number;
+  spawnEventPending: boolean;
+}
+
 /**
  * Fixed-step secondary weapon simulation. It owns bounded pools and reports
  * typed damage queries instead of mutating enemies, keeping it independent of
@@ -105,6 +117,8 @@ export class SecondaryWeaponSystem {
   private readonly frostBurstTriggers: FrostBurstInternal[];
   private readonly frostVisitedIds = new Int32Array(FROST_BURST_TARGET_CAP);
   private readonly multiBallShots: MultiBallInternal[];
+  private readonly blackHoleZones: BlackHoleInternal[];
+  private readonly blackHoleVisitedIds = new Int32Array(BLACK_HOLE_TARGET_CAP);
   private readonly hits: SecondaryDamageHit[] = [];
   private readonly events: SecondaryWeaponEvent[] = [];
   private readonly result: SecondaryWeaponStepResult;
@@ -116,6 +130,7 @@ export class SecondaryWeaponSystem {
   private chainLightningCursor = 0;
   private frostBurstCursor = 0;
   private multiBallCursor = 0;
+  private blackHoleCursor = 0;
   private garlicPositionValid = false;
   private previousBallReturning = false;
   private readonly lastGarlicPosition: Vec3 = { x: 0, y: 0, z: 0 };
@@ -128,12 +143,14 @@ export class SecondaryWeaponSystem {
     this.chainLightningTriggers = Array.from({ length: CHAIN_LIGHTNING_TRIGGER_CAP }, createChainLightning);
     this.frostBurstTriggers = Array.from({ length: FROST_BURST_TRIGGER_CAP }, createFrostBurst);
     this.multiBallShots = Array.from({ length: MULTI_BALL_POOL_CAP }, createMultiBallShot);
+    this.blackHoleZones = Array.from({ length: BLACK_HOLE_POOL_CAP }, createBlackHole);
     this.result = { hits: this.hits, events: this.events };
     this.visibleState = {
       garlicZones: this.garlicZones,
       orbitingBalls: this.orbitingBalls,
       ghostPasses: this.ghostPasses,
       multiBallShots: this.multiBallShots,
+      blackHoleZones: this.blackHoleZones,
     };
   }
 
@@ -149,6 +166,7 @@ export class SecondaryWeaponSystem {
     this.chainLightningCursor = 0;
     this.frostBurstCursor = 0;
     this.multiBallCursor = 0;
+    this.blackHoleCursor = 0;
     this.garlicPositionValid = false;
     this.previousBallReturning = false;
     this.hits.length = 0;
@@ -171,6 +189,7 @@ export class SecondaryWeaponSystem {
       shot.spawnEventCount = 0;
       shot.hitTargets.clear();
     }
+    for (const zone of this.blackHoleZones) zone.active = false;
   }
 
   step(input: Readonly<SecondaryWeaponStepInput>): SecondaryWeaponStepResult {
@@ -199,6 +218,7 @@ export class SecondaryWeaponSystem {
     this.previousBallReturning = input.ballReturning;
     this.updateGhostPasses(input.targets, dt);
     this.updateMultiBallShots(input.targets, dt);
+    this.updateBlackHoles(input.targets, dt);
     return this.result;
   }
 
@@ -316,6 +336,27 @@ export class SecondaryWeaponSystem {
       shot.hitTargets.clear();
     }
     return count;
+  }
+
+  /** Queues a temporary pull/damage zone without mutating target movement. */
+  triggerBlackHole(position: Readonly<Vec3>, modifiers: SecondaryCombatModifiers): boolean {
+    const damage = safeFinite(modifiers.blackHoleDamage, 0, 80, 0);
+    const pullStrength = safeFinite(modifiers.blackHolePullStrength, 0, 30, 0);
+    const duration = safeFinite(modifiers.blackHoleDuration, 0, 8, 0);
+    if ((damage <= 0 && pullStrength <= 0) || duration <= 0) return false;
+    const bonusRadius = safeFinite(modifiers.blackHoleRadius, 0, 3, 0);
+    const zone = this.blackHoleZones[this.blackHoleCursor]!;
+    this.blackHoleCursor = (this.blackHoleCursor + 1) % this.blackHoleZones.length;
+    zone.active = true;
+    copyPosition(zone.position, position);
+    zone.radius = Math.min(4.6, BLACK_HOLE_BASE_RADIUS + bonusRadius);
+    zone.age = 0;
+    zone.lifetime = duration;
+    zone.damage = damage;
+    zone.pullStrength = pullStrength;
+    zone.nextPulse = 0;
+    zone.spawnEventPending = true;
+    return true;
   }
 
   private updateGarlicTrail(input: Readonly<SecondaryWeaponStepInput>, dt: number): void {
@@ -602,6 +643,83 @@ export class SecondaryWeaponSystem {
     }
   }
 
+  private updateBlackHoles(targets: readonly CombatTarget[], dt: number): void {
+    for (const zone of this.blackHoleZones) {
+      if (!zone.active) continue;
+      if (zone.spawnEventPending) {
+        pushCapped(
+          this.events,
+          {
+            type: 'black-hole-spawned',
+            position: zone.position,
+            radius: zone.radius,
+            duration: zone.lifetime,
+          },
+          EVENT_CAP_PER_STEP,
+        );
+        zone.spawnEventPending = false;
+      }
+      zone.age += dt;
+      if (zone.age >= zone.lifetime) {
+        zone.active = false;
+        continue;
+      }
+      if (zone.age < zone.nextPulse) continue;
+      zone.nextPulse += BLACK_HOLE_PULSE_INTERVAL;
+      pushCapped(
+        this.events,
+        { type: 'black-hole-pulse', position: zone.position, radius: zone.radius },
+        EVENT_CAP_PER_STEP,
+      );
+
+      const radiusSquared = zone.radius * zone.radius;
+      let visitedCount = 0;
+      while (visitedCount < BLACK_HOLE_TARGET_CAP) {
+        let nearest: CombatTarget | null = null;
+        let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+        for (const target of targets) {
+          if (containsId(this.blackHoleVisitedIds, visitedCount, target.id)) continue;
+          const dx = target.position.x - zone.position.x;
+          const dz = target.position.z - zone.position.z;
+          const distanceSquared = dx * dx + dz * dz;
+          if (distanceSquared > radiusSquared || Math.abs(target.position.y - zone.position.y) >= 1.7) {
+            continue;
+          }
+          if (
+            distanceSquared < nearestDistanceSquared ||
+            (distanceSquared === nearestDistanceSquared &&
+              target.id < (nearest?.id ?? Number.MAX_SAFE_INTEGER))
+          ) {
+            nearest = target;
+            nearestDistanceSquared = distanceSquared;
+          }
+        }
+        if (!nearest) break;
+
+        this.blackHoleVisitedIds[visitedCount] = nearest.id;
+        visitedCount += 1;
+        if (zone.damage > 0) this.pushHit(nearest, zone.damage, 'black-hole', nearest.position);
+        if (zone.pullStrength <= 0) continue;
+        const distance = Math.sqrt(nearestDistanceSquared);
+        const scale = distance > 0.0001 ? zone.pullStrength / distance : 0;
+        pushCapped(
+          this.events,
+          {
+            type: 'black-hole-pull',
+            position: nearest.position,
+            targetId: nearest.id,
+            force: {
+              x: (zone.position.x - nearest.position.x) * scale,
+              y: 0,
+              z: (zone.position.z - nearest.position.z) * scale,
+            },
+          },
+          EVENT_CAP_PER_STEP,
+        );
+      }
+    }
+  }
+
   private queryRadius(
     targets: readonly CombatTarget[],
     position: Readonly<Vec3>,
@@ -696,6 +814,20 @@ function createMultiBallShot(): MultiBallInternal {
     hitTargets: new Set<number>(),
     spawnEventCount: 0,
     shotIndex: 0,
+  };
+}
+
+function createBlackHole(): BlackHoleInternal {
+  return {
+    active: false,
+    position: { x: 0, y: 0, z: 0 },
+    radius: BLACK_HOLE_BASE_RADIUS,
+    age: 0,
+    lifetime: 0,
+    damage: 0,
+    pullStrength: 0,
+    nextPulse: 0,
+    spawnEventPending: false,
   };
 }
 

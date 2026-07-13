@@ -39,6 +39,10 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   frostSlowDuration: 0,
   multiBallCount: 0,
   multiBallDamageMultiplier: 0,
+  blackHoleDamage: 0,
+  blackHoleRadius: 0,
+  blackHolePullStrength: 0,
+  blackHoleDuration: 0,
 });
 
 /** Creates a fresh run progression state. */

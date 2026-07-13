@@ -19,6 +19,10 @@ export type SecondaryCombatModifiers = Readonly<
     | 'frostSlowDuration'
     | 'multiBallCount'
     | 'multiBallDamageMultiplier'
+    | 'blackHoleDamage'
+    | 'blackHoleRadius'
+    | 'blackHolePullStrength'
+    | 'blackHoleDuration'
   >
 >;
 
@@ -48,7 +52,8 @@ export type SecondaryDamageSource =
   | 'ghost-pass'
   | 'chain-lightning'
   | 'frost-burst'
-  | 'multi-ball';
+  | 'multi-ball'
+  | 'black-hole';
 
 export interface SecondaryDamageHit {
   targetId: number;
@@ -79,7 +84,10 @@ export type SecondaryWeaponEvent =
       duration: number;
     }
   | { type: 'multi-ball-spawned'; position: Readonly<Vec3>; count: number }
-  | { type: 'multi-ball-hit'; position: Readonly<Vec3>; targetId: number; shotIndex: number };
+  | { type: 'multi-ball-hit'; position: Readonly<Vec3>; targetId: number; shotIndex: number }
+  | { type: 'black-hole-spawned'; position: Readonly<Vec3>; radius: number; duration: number }
+  | { type: 'black-hole-pulse'; position: Readonly<Vec3>; radius: number }
+  | { type: 'black-hole-pull'; position: Readonly<Vec3>; targetId: number; force: Readonly<Vec3> };
 
 /** Arrays are reused by the system and remain valid only until its next step/reset. */
 export interface SecondaryWeaponStepResult {
@@ -119,11 +127,20 @@ export interface MultiBallShotState {
   lifetime: number;
 }
 
+export interface BlackHoleZoneState {
+  active: boolean;
+  position: Vec3;
+  radius: number;
+  age: number;
+  lifetime: number;
+}
+
 export interface SecondaryWeaponRenderState {
   readonly garlicZones: readonly GarlicZoneState[];
   readonly orbitingBalls: readonly OrbitingBallState[];
   readonly ghostPasses: readonly GhostPassState[];
   readonly multiBallShots: readonly MultiBallShotState[];
+  readonly blackHoleZones: readonly BlackHoleZoneState[];
 }
 
 export interface GhostPassTrigger {
