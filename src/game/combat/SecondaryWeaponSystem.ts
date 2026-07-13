@@ -27,6 +27,9 @@ const GHOST_PASS_CAP = 8;
 const GHOST_PASS_SPEED = 25;
 const GHOST_PASS_LIFETIME = 1.45;
 const GHOST_PASS_RADIUS = 0.34;
+const CHAIN_LIGHTNING_TRIGGER_CAP = 8;
+const CHAIN_LIGHTNING_TARGET_CAP = 6;
+const CHAIN_LIGHTNING_RANGE = 4.5;
 const HIT_CAP_PER_STEP = 256;
 const EVENT_CAP_PER_STEP = 64;
 
@@ -52,6 +55,14 @@ interface GhostPassInternal extends GhostPassState {
   spawnEventCount: number;
 }
 
+interface ChainLightningInternal {
+  active: boolean;
+  originTargetId: number;
+  originPosition: Vec3;
+  damage: number;
+  targetCount: number;
+}
+
 /**
  * Fixed-step secondary weapon simulation. It owns bounded pools and reports
  * typed damage queries instead of mutating enemies, keeping it independent of
@@ -62,6 +73,8 @@ export class SecondaryWeaponSystem {
   private readonly orbitingBalls: OrbitingBallInternal[];
   private readonly bloodBombs: BloodBombInternal[];
   private readonly ghostPasses: GhostPassInternal[];
+  private readonly chainLightningTriggers: ChainLightningInternal[];
+  private readonly chainVisitedIds = new Int32Array(CHAIN_LIGHTNING_TARGET_CAP + 1);
   private readonly hits: SecondaryDamageHit[] = [];
   private readonly events: SecondaryWeaponEvent[] = [];
   private readonly result: SecondaryWeaponStepResult;
@@ -70,6 +83,7 @@ export class SecondaryWeaponSystem {
   private garlicCursor = 0;
   private bombCursor = 0;
   private ghostCursor = 0;
+  private chainLightningCursor = 0;
   private garlicPositionValid = false;
   private previousBallReturning = false;
   private readonly lastGarlicPosition: Vec3 = { x: 0, y: 0, z: 0 };
@@ -79,6 +93,7 @@ export class SecondaryWeaponSystem {
     this.orbitingBalls = Array.from({ length: ORBIT_CAP }, createOrbitingBall);
     this.bloodBombs = Array.from({ length: BLOOD_BOMB_CAP }, createBloodBomb);
     this.ghostPasses = Array.from({ length: GHOST_PASS_CAP }, createGhostPass);
+    this.chainLightningTriggers = Array.from({ length: CHAIN_LIGHTNING_TRIGGER_CAP }, createChainLightning);
     this.result = { hits: this.hits, events: this.events };
     this.visibleState = {
       garlicZones: this.garlicZones,
@@ -96,6 +111,7 @@ export class SecondaryWeaponSystem {
     this.garlicCursor = 0;
     this.bombCursor = 0;
     this.ghostCursor = 0;
+    this.chainLightningCursor = 0;
     this.garlicPositionValid = false;
     this.previousBallReturning = false;
     this.hits.length = 0;
@@ -111,6 +127,7 @@ export class SecondaryWeaponSystem {
       ghost.spawnEventCount = 0;
       ghost.hitTargets.clear();
     }
+    for (const chain of this.chainLightningTriggers) chain.active = false;
   }
 
   step(input: Readonly<SecondaryWeaponStepInput>): SecondaryWeaponStepResult {
@@ -122,6 +139,7 @@ export class SecondaryWeaponSystem {
     this.updateGarlicTrail(input, dt);
     this.updateOrbitingBalls(input, dt);
     this.updateBloodBombs(input.targets);
+    this.updateChainLightning(input.targets);
 
     if (input.ballReturning && !this.previousBallReturning) {
       const dx = input.playerPosition.x - input.ballPosition.x;
@@ -183,6 +201,27 @@ export class SecondaryWeaponSystem {
       ghost.hitTargets.clear();
     }
     return count;
+  }
+
+  /** Queues a bounded nearest-neighbor lightning chain from a confirmed primary impact. */
+  triggerChainLightning(
+    originTargetId: number,
+    originPosition: Readonly<Vec3>,
+    modifiers: SecondaryCombatModifiers,
+  ): boolean {
+    const damage = safeFinite(modifiers.chainLightningDamage, 0, 80, 0);
+    const targetCount = Math.floor(
+      safeFinite(modifiers.chainLightningTargets, 0, CHAIN_LIGHTNING_TARGET_CAP, 0),
+    );
+    if (!Number.isInteger(originTargetId) || damage <= 0 || targetCount <= 0) return false;
+    const chain = this.chainLightningTriggers[this.chainLightningCursor]!;
+    this.chainLightningCursor = (this.chainLightningCursor + 1) % this.chainLightningTriggers.length;
+    chain.active = true;
+    chain.originTargetId = originTargetId;
+    copyPosition(chain.originPosition, originPosition);
+    chain.damage = damage;
+    chain.targetCount = targetCount;
+    return true;
   }
 
   private updateGarlicTrail(input: Readonly<SecondaryWeaponStepInput>, dt: number): void {
@@ -329,6 +368,56 @@ export class SecondaryWeaponSystem {
     }
   }
 
+  private updateChainLightning(targets: readonly CombatTarget[]): void {
+    const maximumDistanceSquared = CHAIN_LIGHTNING_RANGE * CHAIN_LIGHTNING_RANGE;
+    for (const chain of this.chainLightningTriggers) {
+      if (!chain.active) continue;
+      chain.active = false;
+      this.chainVisitedIds[0] = chain.originTargetId;
+      let visitedCount = 1;
+      let fromTargetId = chain.originTargetId;
+      let currentPosition: Readonly<Vec3> = chain.originPosition;
+
+      for (let jumpIndex = 0; jumpIndex < chain.targetCount; jumpIndex += 1) {
+        let nearest: CombatTarget | null = null;
+        let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+        for (const target of targets) {
+          if (containsId(this.chainVisitedIds, visitedCount, target.id)) continue;
+          const dx = target.position.x - currentPosition.x;
+          const dz = target.position.z - currentPosition.z;
+          const distanceSquared = dx * dx + dz * dz;
+          if (distanceSquared > maximumDistanceSquared) continue;
+          if (
+            distanceSquared < nearestDistanceSquared ||
+            (distanceSquared === nearestDistanceSquared &&
+              target.id < (nearest?.id ?? Number.MAX_SAFE_INTEGER))
+          ) {
+            nearest = target;
+            nearestDistanceSquared = distanceSquared;
+          }
+        }
+        if (!nearest) break;
+
+        this.chainVisitedIds[visitedCount] = nearest.id;
+        visitedCount += 1;
+        this.pushHit(nearest, chain.damage, 'chain-lightning', nearest.position);
+        pushCapped(
+          this.events,
+          {
+            type: 'chain-lightning-hit',
+            position: nearest.position,
+            fromTargetId,
+            targetId: nearest.id,
+            jumpIndex,
+          },
+          EVENT_CAP_PER_STEP,
+        );
+        fromTargetId = nearest.id;
+        currentPosition = nearest.position;
+      }
+    }
+  }
+
   private queryRadius(
     targets: readonly CombatTarget[],
     position: Readonly<Vec3>,
@@ -390,6 +479,16 @@ function createGhostPass(): GhostPassInternal {
   };
 }
 
+function createChainLightning(): ChainLightningInternal {
+  return {
+    active: false,
+    originTargetId: 0,
+    originPosition: { x: 0, y: 0, z: 0 },
+    damage: 0,
+    targetCount: 0,
+  };
+}
+
 function overlaps(position: Readonly<Vec3>, radius: number, target: CombatTarget): boolean {
   const dx = position.x - target.position.x;
   const dz = position.z - target.position.z;
@@ -417,4 +516,11 @@ function trimMap(map: Map<number, number>, cap: number): void {
     if (first === undefined) break;
     map.delete(first);
   }
+}
+
+function containsId(ids: Int32Array, count: number, id: number): boolean {
+  for (let index = 0; index < count; index += 1) {
+    if (ids[index] === id) return true;
+  }
+  return false;
 }

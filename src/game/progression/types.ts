@@ -36,6 +36,8 @@ export interface ProgressionModifiers {
   bloodBombRadius: number;
   ghostPassCount: number;
   ghostPassDamageMultiplier: number;
+  chainLightningDamage: number;
+  chainLightningTargets: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;

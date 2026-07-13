@@ -11,6 +11,8 @@ export type SecondaryCombatModifiers = Readonly<
     | 'bloodBombRadius'
     | 'ghostPassCount'
     | 'ghostPassDamageMultiplier'
+    | 'chainLightningDamage'
+    | 'chainLightningTargets'
   >
 >;
 
@@ -33,7 +35,8 @@ export interface SecondaryWeaponStepInput {
   targets: readonly CombatTarget[];
 }
 
-export type SecondaryDamageSource = 'garlic-trail' | 'spectral-ball' | 'blood-bomb' | 'ghost-pass';
+export type SecondaryDamageSource =
+  'garlic-trail' | 'spectral-ball' | 'blood-bomb' | 'ghost-pass' | 'chain-lightning';
 
 export interface SecondaryDamageHit {
   targetId: number;
@@ -47,7 +50,14 @@ export type SecondaryWeaponEvent =
   | { type: 'spectral-ball-hit'; position: Readonly<Vec3>; targetId: number }
   | { type: 'blood-bomb-triggered'; position: Readonly<Vec3>; radius: number }
   | { type: 'ghost-pass-spawned'; position: Readonly<Vec3>; count: number }
-  | { type: 'ghost-pass-hit'; position: Readonly<Vec3>; targetId: number };
+  | { type: 'ghost-pass-hit'; position: Readonly<Vec3>; targetId: number }
+  | {
+      type: 'chain-lightning-hit';
+      position: Readonly<Vec3>;
+      fromTargetId: number;
+      targetId: number;
+      jumpIndex: number;
+    };
 
 /** Arrays are reused by the system and remain valid only until its next step/reset. */
 export interface SecondaryWeaponStepResult {

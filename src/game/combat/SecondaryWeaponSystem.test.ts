@@ -9,6 +9,8 @@ const EMPTY: SecondaryCombatModifiers = {
   bloodBombRadius: 0,
   ghostPassCount: 0,
   ghostPassDamageMultiplier: 1,
+  chainLightningDamage: 0,
+  chainLightningTargets: 0,
 };
 
 describe('SecondaryWeaponSystem', () => {
@@ -45,5 +47,52 @@ describe('SecondaryWeaponSystem', () => {
       targets: [],
     });
     expect(system.renderState.ghostPasses.filter((ghost) => ghost.active)).toHaveLength(2);
+  });
+
+  it('chains deterministically through nearest unvisited targets', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = { ...EMPTY, chainLightningDamage: 9, chainLightningTargets: 3 };
+    expect(system.triggerChainLightning(1, { x: 0, y: 0.9, z: 0 }, modifiers)).toBe(true);
+    const result = system.step({
+      dt: 1 / 60,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets: [
+        { id: 1, position: { x: 0, y: 0.9, z: 0 }, radius: 0.5 },
+        { id: 10, position: { x: 6, y: 0.9, z: 0 }, radius: 0.5 },
+        { id: 30, position: { x: 3, y: 0.9, z: 0 }, radius: 0.5 },
+        { id: 20, position: { x: 2, y: 0.9, z: 0 }, radius: 0.5 },
+      ],
+    });
+
+    expect(result.hits.map((hit) => hit.targetId)).toEqual([20, 30, 10]);
+    expect(result.hits.every((hit) => hit.damage === 9 && hit.source === 'chain-lightning')).toBe(true);
+    expect(result.events.filter((event) => event.type === 'chain-lightning-hit')).toHaveLength(3);
+  });
+
+  it('uses stable IDs for equal-distance ties and stops outside chain range', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = { ...EMPTY, chainLightningDamage: 5, chainLightningTargets: 4 };
+    system.triggerChainLightning(1, { x: 0, y: 0.9, z: 0 }, modifiers);
+    const result = system.step({
+      dt: 1 / 60,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets: [
+        { id: 9, position: { x: 3, y: 0.9, z: 0 }, radius: 0.5 },
+        { id: 2, position: { x: -3, y: 0.9, z: 0 }, radius: 0.5 },
+        { id: 50, position: { x: 20, y: 0.9, z: 0 }, radius: 0.5 },
+      ],
+    });
+
+    expect(result.hits.map((hit) => hit.targetId)).toEqual([2]);
   });
 });

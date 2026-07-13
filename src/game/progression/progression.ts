@@ -31,6 +31,8 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   bloodBombRadius: 0,
   ghostPassCount: 0,
   ghostPassDamageMultiplier: 1,
+  chainLightningDamage: 0,
+  chainLightningTargets: 0,
 });
 
 /** Creates a fresh run progression state. */
