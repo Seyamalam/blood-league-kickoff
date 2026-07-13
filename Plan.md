@@ -110,9 +110,12 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   │   └── upgradeDefinitions.ts
 │   │   ├── pickups/BloodShardSystem.ts
 │   │   ├── combat/SecondaryWeaponSystem.ts
-│   │   └── simulation/
+│   │   ├── simulation/
 │   │       ├── gameState.ts
 │   │       ├── gameState.test.ts
+│   │       └── types.ts
+│   │   └── tutorial/
+│   │       ├── tutorialTracker.ts
 │   │       └── types.ts
 │   ├── physics/PhysicsWorld.ts
 │   ├── render/
@@ -134,6 +137,7 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   ├── PauseOverlay.ts
 │   │   ├── ResultsOverlay.ts
 │   │   ├── SettingsOverlay.ts
+│   │   ├── TutorialPrompt.ts
 │   │   └── UpgradeOverlay.ts
 │   ├── main.ts
 │   └── styles.css
@@ -160,15 +164,17 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
 - `HalftimeOverlay`: timed Power/Pace/Control decision with mouse and keyboard support
 - `MatchAnnouncement` / `PhaseAtmosphere`: pooled match-state presentation and stadium color/fog transitions
+- `TutorialTracker` / `TutorialPrompt`: persistent first-run lessons driven by demonstrated gameplay signals
+- `PerfMeter`: stable live snapshots for cadence, renderer work, fixed steps, enemies, and pool occupancy
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, four weighted archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
-- `PhysicsWorld`: Rapier arena/player/ball bodies, charged kick, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
+- `PhysicsWorld`: Rapier arena/player/ball bodies, charged/curved kicks, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, elite/shield/telegraph cues, and primitive visual lifecycles
-- `CameraController`: third-person orbit aim, camera smoothing, sensitivity, and restrained impact feedback
+- `CameraController`: third-person orbit aim, arena-boundary collision, camera smoothing, sensitivity, and restrained impact feedback
 - `Hud`: kickoff/death overlays and live combat/performance readouts
 - `PauseOverlay` / `ResultsOverlay`: focus-safe interruption controls and terminal run summaries
 - `electron/main.cjs` and `preload.cjs`: secured desktop shell

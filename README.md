@@ -50,7 +50,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 | --- | --- | --- |
 | Move | `WASD` | Implemented |
 | Aim / camera | Mouse | Implemented after entering the pitch/pointer lock |
-| Kick / charge | Hold and release left mouse button | Implemented |
+| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented |
 | Recall ball | Right mouse button or `E` | Implemented |
 | Restart after kickoff | `R` | Implemented |
 | Dash | `Space` | Implemented with cooldown and brief invulnerability |
@@ -131,6 +131,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Count Goalkeeper summons readable boosted Winger and Defender elites
 - [x] Accessible pause menu and detailed victory/defeat results with run statistics and final loadout
 - [x] Focus-loss and hidden-window pause protection
+- [x] Six-step first-run tutorial for movement, kick, recall, dash, progression, and scoring
+- [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
+- [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
+- [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
 - [x] Real title, gameplay, and settings screenshots stored in the repository and displayed above
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS

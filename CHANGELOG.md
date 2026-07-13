@@ -2,6 +2,13 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## Unreleased
+
+- Added a persistent six-step first-run tutorial driven by demonstrated gameplay actions.
+- Added restrained mouse-intent kick curve and arena-boundary camera collision.
+- Added live frame-time, render-work, fixed-step, enemy, and pool diagnostics.
+- Applied the Power halftime damage bonus consistently to Count Goalkeeper.
+
 ## v0.5.0 — 2026-07-14
 
 - Migrated the production plan from Unity to Three.js, TypeScript, Vite, Rapier, and Electron.

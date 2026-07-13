@@ -38,6 +38,8 @@ The game is not a football simulation. No passing rules, fouls, offside, or team
 
 Normal play uses a third-person orbit camera with camera-relative movement. Aim direction should be readable on the pitch. The optional Focus Kick briefly enters first person/time dilation, fires one precise shot, then restores third person automatically.
 
+While charging, deliberate sideways mouse movement adds a restrained curve to the kick. The bend fades quickly, respects the normal speed cap, and ends immediately when recall begins.
+
 ## Ball Rules
 
 - **Possessed:** ball stays at the dribble point and cannot deal contact damage.

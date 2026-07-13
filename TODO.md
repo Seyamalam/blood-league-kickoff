@@ -42,13 +42,13 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Graybox the stadium, rebound walls, center circle, goals, stands, and banners.
 - [x] `P0` Implement third-person camera-relative movement.
 - [x] `P0` Implement pointer-lock mouse orbit and pitch limits.
-- [ ] `P0` Implement camera collision and configurable sensitivity.
+- [x] `P0` Implement arena-boundary camera collision and configurable sensitivity.
 - [x] `P0` Implement dash, cooldown, and brief invulnerability.
 - [ ] `P0` Implement ball states: possessed, charging, launched, returning, volley, disabled.
 - [x] `P0` Implement aim indicator and charged kick.
 - [x] `P0` Implement Rapier wall/floor rebounds with CCD.
 - [x] `P0` Add explicit ball speed limits and tune controlled rebound behavior.
-- [ ] `P0` Implement optional kick curve.
+- [x] `P0` Implement optional kick curve.
 - [x] `P0` Implement manual and automatic recall.
 - [x] `P0` Implement perfect-volley timing and feedback.
 - [x] `P0` Add stalled, timeout, invalid-number, and out-of-bounds ball recovery.
@@ -59,7 +59,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add restrained camera feedback, ball trail, and pooled impacts; evaluate hit pause during playtest.
 - [ ] `P0` Test ball recovery at every wall, corner, goal, and player-death state.
 - [x] `P0` Add an FPS/enemy-count development readout in the HUD.
-- [ ] `P0` Expand diagnostics with frame time, draw calls, physics time, and pool counts.
+- [x] `P0` Expand diagnostics with frame time, draw calls, triangles, fixed steps, enemies, and pool counts; isolate physics timing during profiling.
 - [x] `P0` Produce and test browser and desktop builds.
 - [x] `P0` Update README/game docs with implemented controls and known issues.
 - [x] `P0` Commit and push coherent combat slices during implementation.
@@ -83,7 +83,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [x] `P0` Implement first goal opening, scoring, reset, and new kickoff.
 - [x] `P0` Create a three-minute mini-run with a clear win state.
-- [ ] `P0` Add tutorial prompts that clear after demonstrated actions.
+- [x] `P0` Add tutorial prompts that clear after demonstrated actions.
 - [x] `P0` Persist audio, sensitivity, and quality settings.
 - [ ] `P0` Conduct at least one external playtest.
 - [x] `P0` Update README/game docs and release notes.
@@ -134,7 +134,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Balance the full run to 8–10 minutes.
 - [x] `P0` Update all public documentation to match actual content.
 - [x] `P0` Commit/push the completed guaranteed-run implementation.
-- [ ] `P0` Tag `v0.5.0`, publish web/Windows artifacts, and test both.
+- [x] `P0` Tag `v0.5.0`, publish and smoke-test the web snapshot; Windows remains intentionally final-only.
 
 ### Gate C — Guaranteed feature freeze
 
@@ -185,7 +185,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 ## Performance
 
 - [ ] `P0` Select and document the reference machine/browser/GPU.
-- [ ] `P0` Track FPS, frame time, draw calls, triangles, enemies, pools, and physics time.
+- [x] `P0` Track FPS, frame time, draw calls, triangles, enemies, fixed steps, and pools; add isolated physics timing during profiling.
 - [ ] `P0` Confirm no recurring allocation/GC spikes during steady combat.
 - [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
 - [ ] `P0` Stagger enemy AI and animation updates.
