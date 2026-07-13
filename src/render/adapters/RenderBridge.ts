@@ -1,17 +1,43 @@
 import * as THREE from 'three';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 
+const TRAIL_POINTS = 16;
+const BURST_POOL_SIZE = 4;
+const BURST_PARTICLES = 14;
+
+interface HitBurst {
+  points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
+  positions: Float32Array;
+  velocities: Float32Array;
+  age: number;
+  duration: number;
+}
+
 export class RenderBridge {
   private readonly player: THREE.Group;
   private readonly ball: THREE.Mesh;
+  private readonly ballMaterial: THREE.MeshStandardMaterial;
+  private readonly ballLight: THREE.PointLight;
+  private readonly trail: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+  private readonly trailPositions: Float32Array;
+  private readonly bursts: HitBurst[];
   private readonly enemies = new Map<number, THREE.Group>();
   private readonly liveEnemyIds = new Set<number>();
   private ballSpin = 0;
+  private trailInitialized = false;
+  private nextBurst = 0;
 
   constructor(private readonly scene: THREE.Scene) {
     this.player = createPlayer();
     this.ball = createBall();
-    scene.add(this.player, this.ball);
+    this.ballMaterial = this.ball.material as THREE.MeshStandardMaterial;
+    const trail = createBallTrail();
+    this.trail = trail.line;
+    this.trailPositions = trail.positions;
+    this.ballLight = new THREE.PointLight(0xff315d, 0, 5.5, 2);
+    this.bursts = Array.from({ length: BURST_POOL_SIZE }, (_, index) => createHitBurst(index));
+    scene.add(this.player, this.trail, this.ball, this.ballLight);
+    for (const burst of this.bursts) scene.add(burst.points);
   }
 
   sync(state: GameState, ballPosition: Vec3, ballSpeed: number, dt: number, alpha: number): void {
@@ -28,6 +54,8 @@ export class RenderBridge {
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
     this.ball.rotation.set(this.ballSpin, this.ballSpin * 0.35, 0);
+    this.updateBallEnergy(ballPosition, ballSpeed);
+    this.updateBursts(dt);
 
     this.liveEnemyIds.clear();
     for (const enemy of state.enemies) {
@@ -60,7 +88,165 @@ export class RenderBridge {
       this.scene.remove(mesh);
     }
     this.enemies.clear();
+    this.trailInitialized = false;
+    this.trail.visible = false;
+    for (const burst of this.bursts) {
+      burst.age = burst.duration;
+      burst.points.visible = false;
+    }
   }
+
+  /** Reuses a small particle pool; safe to call for every registered ball hit. */
+  hitBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity, 0xff315d);
+  }
+
+  /** Slightly brighter variant intended for a successful returning volley. */
+  volleyBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 1.25, 0xffd66b);
+  }
+
+  dispose(): void {
+    this.reset();
+    this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
+    disposeObject(this.player);
+    this.ball.geometry.dispose();
+    this.ballMaterial.dispose();
+    this.trail.geometry.dispose();
+    this.trail.material.dispose();
+    for (const burst of this.bursts) {
+      this.scene.remove(burst.points);
+      burst.points.geometry.dispose();
+      burst.points.material.dispose();
+    }
+  }
+
+  private updateBallEnergy(position: Vec3, speed: number): void {
+    const energy = THREE.MathUtils.clamp((speed - 3) / 31, 0, 1);
+    this.ballMaterial.emissive.setRGB(0.32 * energy, 0.018 * energy, 0.065 * energy);
+    this.ballMaterial.emissiveIntensity = 1 + energy * 1.8;
+    this.ballLight.position.set(position.x, position.y, position.z);
+    this.ballLight.intensity = energy * 1.65;
+
+    if (!this.trailInitialized) {
+      for (let index = 0; index < TRAIL_POINTS; index += 1) {
+        const offset = index * 3;
+        this.trailPositions[offset] = position.x;
+        this.trailPositions[offset + 1] = position.y;
+        this.trailPositions[offset + 2] = position.z;
+      }
+      this.trailInitialized = true;
+    } else {
+      this.trailPositions.copyWithin(0, 3);
+      const tail = (TRAIL_POINTS - 1) * 3;
+      this.trailPositions[tail] = position.x;
+      this.trailPositions[tail + 1] = position.y;
+      this.trailPositions[tail + 2] = position.z;
+    }
+    this.trail.geometry.attributes.position!.needsUpdate = true;
+    this.trail.material.opacity = energy * 0.72;
+    this.trail.visible = energy > 0.035;
+  }
+
+  private startBurst(position: Vec3, intensity: number, color: number): void {
+    const burst = this.bursts[this.nextBurst]!;
+    this.nextBurst = (this.nextBurst + 1) % this.bursts.length;
+    const strength = Number.isFinite(intensity) ? THREE.MathUtils.clamp(intensity, 0.2, 2) : 1;
+    burst.age = 0;
+    burst.duration = 0.22 + strength * 0.07;
+    burst.points.position.set(position.x, position.y, position.z);
+    burst.points.material.color.setHex(color);
+    burst.points.material.opacity = 0.9;
+    burst.points.material.size = 0.13 + strength * 0.045;
+    burst.points.visible = true;
+    for (let index = 0; index < BURST_PARTICLES; index += 1) {
+      const offset = index * 3;
+      const angle = (index / BURST_PARTICLES) * Math.PI * 2 + Math.random() * 0.28;
+      const lift = 0.2 + Math.random() * 0.75;
+      const speed = (2.6 + Math.random() * 3.6) * strength;
+      burst.positions[offset] = 0;
+      burst.positions[offset + 1] = 0;
+      burst.positions[offset + 2] = 0;
+      burst.velocities[offset] = Math.cos(angle) * speed;
+      burst.velocities[offset + 1] = lift * speed;
+      burst.velocities[offset + 2] = Math.sin(angle) * speed;
+    }
+    burst.points.geometry.attributes.position!.needsUpdate = true;
+  }
+
+  private updateBursts(dt: number): void {
+    for (const burst of this.bursts) {
+      if (!burst.points.visible) continue;
+      burst.age += dt;
+      if (burst.age >= burst.duration) {
+        burst.points.visible = false;
+        continue;
+      }
+      for (let offset = 0; offset < burst.positions.length; offset += 3) {
+        burst.velocities[offset + 1]! -= 11 * dt;
+        burst.positions[offset]! += burst.velocities[offset]! * dt;
+        burst.positions[offset + 1]! += burst.velocities[offset + 1]! * dt;
+        burst.positions[offset + 2]! += burst.velocities[offset + 2]! * dt;
+      }
+      burst.points.material.opacity = 0.9 * (1 - burst.age / burst.duration);
+      burst.points.geometry.attributes.position!.needsUpdate = true;
+    }
+  }
+}
+
+function createBallTrail(): { line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>; positions: Float32Array } {
+  const positions = new Float32Array(TRAIL_POINTS * 3);
+  const colors = new Float32Array(TRAIL_POINTS * 3);
+  for (let index = 0; index < TRAIL_POINTS; index += 1) {
+    const energy = (index + 1) / TRAIL_POINTS;
+    const offset = index * 3;
+    colors[offset] = 0.62 + energy * 0.38;
+    colors[offset + 1] = 0.025 + energy * 0.28;
+    colors[offset + 2] = 0.12 + energy * 0.24;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const material = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const line = new THREE.Line(geometry, material);
+  line.frustumCulled = false;
+  line.visible = false;
+  return { line, positions };
+}
+
+function createHitBurst(index: number): HitBurst {
+  const positions = new Float32Array(BURST_PARTICLES * 3);
+  const velocities = new Float32Array(BURST_PARTICLES * 3);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+  const material = new THREE.PointsMaterial({
+    color: 0xff315d,
+    size: 0.16,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.name = `pooled-hit-burst-${index}`;
+  points.frustumCulled = false;
+  points.visible = false;
+  return { points, positions, velocities, age: 1, duration: 1 };
+}
+
+function disposeObject(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) material.dispose();
+  });
 }
 
 function createPlayer(): THREE.Group {

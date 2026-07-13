@@ -42,6 +42,8 @@ export interface MatchDirectorInput {
   readonly playerDead: boolean;
   /** A one-step signal emitted when the ball enters the active goal. */
   readonly goalScored?: boolean;
+  /** Defeating the final encounter immediately completes the final wave. */
+  readonly bossDefeated?: boolean;
 }
 
 export type MatchDirectorEvent =

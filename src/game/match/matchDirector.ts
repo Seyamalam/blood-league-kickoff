@@ -68,7 +68,9 @@ export function updateMatchDirector(
       stage = 'escalation';
     }
   } else {
-    const next = nextStage(stage, matchElapsed, totalKills, config);
+    const next = stage === 'finalWave' && input.bossDefeated
+      ? 'victory'
+      : nextStage(stage, matchElapsed, totalKills, config);
     if (next !== stage) {
       transition(events, stage, next);
       stage = next;

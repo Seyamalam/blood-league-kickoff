@@ -1,5 +1,6 @@
 import type { GameState } from '../game/simulation/types';
 import type { MatchObjective } from '../game/match';
+import type { CountGoalkeeperState } from '../game/boss';
 import { totalXpRequiredForLevel, type ProgressionState } from '../game/progression';
 import type { BallState } from '../physics/PhysicsWorld';
 
@@ -22,6 +23,8 @@ export class Hud {
   private readonly levelValue: HTMLElement;
   private readonly objective: HTMLElement;
   private readonly victory: HTMLElement;
+  private readonly bossPanel: HTMLElement;
+  private readonly bossFill: HTMLElement;
 
   constructor(root: HTMLElement) {
     root.insertAdjacentHTML('beforeend', `
@@ -43,10 +46,12 @@ export class Hud {
           <div class="health-track" style="margin-top:4px"><div id="xp-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#6f1f91,#d95eff);box-shadow:0 0 14px rgba(190,74,255,.42)"></div></div>
         </div>
         <div id="objective" class="objective">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
+        <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
         <div class="crosshair"><span></span><span></span><span></span><span></span></div>
         <div id="combo" class="combo"></div>
         <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL</div>
         <div class="perf"><span id="fps">-- FPS</span><span>WEBGL 2</span></div>
+        <button type="button" id="settings-button" class="settings-open" aria-label="Open settings">⚙ SETTINGS</button>
       </div>
       <section id="splash" class="modal splash">
         <div class="crest">BL</div>
@@ -54,6 +59,7 @@ export class Hud {
         <h1>BLOOD LEAGUE<br><em>KICKOFF</em></h1>
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
         <button type="button" id="kickoff-button">ENTER THE PITCH</button>
+        <button type="button" id="title-settings-button" class="title-settings">SETTINGS</button>
         <small>Click to lock the cursor · Headphones recommended</small>
       </section>
       <section id="death" class="modal death hidden">
@@ -89,6 +95,8 @@ export class Hud {
     this.levelValue = required('level-value');
     this.objective = required('objective');
     this.victory = required('victory');
+    this.bossPanel = required('boss-panel');
+    this.bossFill = required('boss-fill');
   }
 
   get kickoffButton(): HTMLElement {
@@ -103,6 +111,14 @@ export class Hud {
     return required('victory-restart-button');
   }
 
+  get settingsButton(): HTMLElement {
+    return required('settings-button');
+  }
+
+  get titleSettingsButton(): HTMLElement {
+    return required('title-settings-button');
+  }
+
   update(
     state: GameState,
     ballState: BallState,
@@ -110,6 +126,7 @@ export class Hud {
     kickCharge: number,
     progression: Readonly<ProgressionState>,
     objective: Readonly<MatchObjective>,
+    boss: Readonly<CountGoalkeeperState> | null,
   ): void {
     const health = state.player.health;
     this.healthFill.style.width = `${health}%`;
@@ -131,6 +148,8 @@ export class Hud {
     this.xpFill.style.width = `${Math.max(0, Math.min(1, xpProgress)) * 100}%`;
     this.levelValue.textContent = String(progression.level);
     this.objective.textContent = `${objective.title} · ${objective.detail}`.toUpperCase();
+    this.bossPanel.classList.toggle('hidden', !boss || boss.phase === 'defeated');
+    if (boss) this.bossFill.style.width = `${Math.max(0, boss.health / boss.maxHealth) * 100}%`;
     this.fps.textContent = fps > 0 ? `${fps} FPS` : '-- FPS';
     this.combo.textContent = state.combo > 1 && state.comboTimer > 0 ? `${state.combo}× BLOOD COMBO` : '';
     this.combo.classList.toggle('visible', state.combo > 1 && state.comboTimer > 0);

@@ -3,6 +3,12 @@ import * as THREE from 'three';
 import { AudioManager } from './audio';
 import { PerfMeter } from './diagnostics/PerfMeter';
 import { InputController } from './game/input/InputController';
+import {
+  damageCountGoalkeeper,
+  spawnCountGoalkeeper,
+  updateCountGoalkeeper,
+  type CountGoalkeeperState,
+} from './game/boss';
 import { createMatchDirectorState, getMatchObjective, updateMatchDirector } from './game/match';
 import {
   chooseUpgrade,
@@ -18,7 +24,10 @@ import { CameraController } from './render/app/CameraController';
 import { createRenderer } from './render/app/createRenderer';
 import { createScene } from './render/app/createScene';
 import { GoalBeacon } from './render/objects/GoalBeacon';
+import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
+import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
+import { SettingsOverlay } from './ui/SettingsOverlay';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 
 const FIXED_STEP = 1 / 60;
@@ -29,6 +38,8 @@ async function bootstrap(): Promise<void> {
   const root = document.getElementById('app');
   if (!root) throw new Error('Missing application root');
 
+  const settingsStore = new SettingsStore();
+  let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
   const scene = createScene();
   const cameraController = new CameraController();
@@ -38,8 +49,13 @@ async function bootstrap(): Promise<void> {
   const state = createGameState();
   const bridge = new RenderBridge(scene);
   const goalBeacon = new GoalBeacon(scene);
+  const bossVisual = new CountGoalkeeperVisual(scene);
   const hud = new Hud(root);
   const upgradeOverlay = new UpgradeOverlay(root);
+  const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
+    playerSettings = settings;
+    applyPlayerSettings(settings);
+  });
   const perf = new PerfMeter();
   const clock = new THREE.Clock();
   let accumulator = 0;
@@ -47,9 +63,11 @@ async function bootstrap(): Promise<void> {
   let progression = createProgressionState();
   let match = createMatchDirectorState();
   let goalLatched = false;
+  let boss: CountGoalkeeperState | null = null;
+  let lastRenderedAt = 0;
 
   const offerUpgrade = (): void => {
-    if (upgradeOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
+    if (upgradeOverlay.isVisible || settingsOverlay.isVisible || progression.pendingLevelUps <= 0 || state.phase !== 'playing') return;
     const choices = PLAYABLE_UPGRADES.filter(
       (upgradeId) => getUpgradeAvailability(progression, upgradeId).available,
     );
@@ -68,11 +86,21 @@ async function bootstrap(): Promise<void> {
 
   const resize = (): void => {
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+    const qualityScale = playerSettings.renderQuality === 'performance'
+      ? 0.82
+      : playerSettings.renderQuality === 'quality' ? 1.12 : 1;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio * playerSettings.renderScale * qualityScale, 1.6));
     cameraController.resize(window.innerWidth, window.innerHeight);
   };
+  const applyPlayerSettings = (settings: Readonly<PlayerSettings>): void => {
+    audio.setVolume(settings.masterVolume);
+    cameraController.setSensitivity(settings.mouseSensitivity);
+    cameraController.setReducedShake(settings.reducedCameraShake);
+    renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
+    resize();
+  };
   window.addEventListener('resize', resize);
-  resize();
+  applyPlayerSettings(playerSettings);
   cameraController.update(state.player.position, 1);
 
   const begin = (): void => {
@@ -88,11 +116,14 @@ async function bootstrap(): Promise<void> {
     physics.reset(state.player.position);
     bridge.reset();
     goalBeacon.reset();
+    bossVisual.reset();
     upgradeOverlay.reset();
+    settingsOverlay.hide();
     hud.reset();
     progression = createProgressionState();
     match = createMatchDirectorState();
     goalLatched = false;
+    boss = null;
     state.phase = 'playing';
     previousBallState = physics.ballState;
     audio.playPhase(0);
@@ -101,19 +132,28 @@ async function bootstrap(): Promise<void> {
   hud.kickoffButton.addEventListener('click', begin);
   hud.restartButton.addEventListener('click', restart);
   hud.victoryRestartButton.addEventListener('click', restart);
+  const openSettings = (): void => {
+    if (input.isLocked) void document.exitPointerLock();
+    settingsOverlay.show();
+  };
+  hud.settingsButton.addEventListener('click', openSettings);
+  hud.titleSettingsButton.addEventListener('click', openSettings);
   renderer.domElement.addEventListener('click', () => {
     if (state.phase === 'ready') begin();
-    else if (state.phase === 'playing' && !input.isLocked) input.requestPointerLock();
+    else if (state.phase === 'playing' && !input.isLocked && !settingsOverlay.isVisible) input.requestPointerLock();
   });
 
-  renderer.setAnimationLoop(() => {
+  renderer.setAnimationLoop((time) => {
+    const frameInterval = playerSettings.fpsLimit === 'unlimited' ? 0 : 1_000 / playerSettings.fpsLimit;
+    if (frameInterval > 0 && time - lastRenderedAt < frameInterval - 0.25) return;
+    lastRenderedAt = time;
     const frameTime = Math.min(MAX_FRAME_TIME, clock.getDelta());
     const mouse = input.consumeMouseDelta();
     cameraController.applyMouseDelta(mouse.x, mouse.y);
 
-    if (input.consumeRestart() && state.phase !== 'ready' && !upgradeOverlay.isVisible) restart();
+    if (input.consumeRestart() && state.phase !== 'ready' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible) restart();
     const kick = input.consumeKick();
-    if (state.phase === 'playing' && !upgradeOverlay.isVisible && kick) {
+    if (state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && kick) {
       const result = physics.kick(
         state.player.position,
         cameraController.aimDirection(),
@@ -122,19 +162,29 @@ async function bootstrap(): Promise<void> {
       );
       if (result) {
         audio.playKick(result.charge);
-        if (result.perfectVolley) audio.playVolley();
+        if (result.perfectVolley) {
+          audio.playVolley();
+          bridge.volleyBurst(physics.ballPosition, 1 + result.charge * 0.4);
+          cameraController.volleyImpulse(1 + result.charge * 0.25);
+        }
       }
     }
-    physics.setRecall(state.phase === 'playing' && !upgradeOverlay.isVisible && input.recall, progression.modifiers);
+    physics.setRecall(
+      state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible && input.recall,
+      progression.modifiers,
+    );
 
     accumulator += frameTime;
     while (accumulator >= FIXED_STEP) {
-      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible;
+      const simulationActive = state.phase === 'playing' && !upgradeOverlay.isVisible && !settingsOverlay.isVisible;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
         updatePlayer(state, input.movement(cameraController.yaw), cameraController.yaw, FIXED_STEP);
         updateEnemies(state, FIXED_STEP);
-        if (state.player.health < healthBeforeUpdate) audio.playPlayerHurt();
+        if (state.player.health < healthBeforeUpdate) {
+          audio.playPlayerHurt();
+          cameraController.addImpulse(0.24);
+        }
       }
       physics.syncPlayer(state.player.position);
       if (simulationActive) physics.step(state.player.position, state.player.facing, FIXED_STEP);
@@ -146,9 +196,51 @@ async function bootstrap(): Promise<void> {
           physics.ballSpeed,
           progression.modifiers.ballDamageMultiplier,
         );
-        if (hits > 0) audio.playHit(Math.min(1, physics.ballSpeed / physics.maxBallSpeed));
+        if (hits > 0) {
+          const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
+          audio.playHit(hitIntensity);
+          bridge.hitBurst(physics.ballPosition, hitIntensity);
+          cameraController.hitImpulse(hitIntensity);
+        }
         if (state.combo > comboBeforeHit) audio.playKill(state.combo);
         if (kills > 0) progression = grantBloodXp(progression, kills * 10).state;
+
+        let bossDefeatedThisStep = false;
+        if (boss && boss.phase !== 'defeated') {
+          const bossUpdate = updateCountGoalkeeper(boss, {
+            dt: FIXED_STEP,
+            playerPosition: state.player.position,
+          });
+          boss = bossUpdate.state;
+          for (const event of bossUpdate.events) {
+            if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
+              state.player.health = Math.max(0, state.player.health - event.damage);
+              state.player.invulnerability = 0.7;
+              audio.playPlayerHurt();
+              cameraController.addImpulse(0.32);
+              if (state.player.health <= 0) state.phase = 'dead';
+            }
+            if (event.type === 'phaseChanged') audio.playPhase(event.to === 'desperation' ? 3 : 2);
+          }
+
+          const bossDistance = Math.hypot(
+            physics.ballPosition.x - boss.position.x,
+            physics.ballPosition.z - boss.position.z,
+          );
+          if (physics.ballSpeed >= 7 && bossDistance < 1.7 && Math.abs(physics.ballPosition.y - 1.15) < 1.8) {
+            const damage = damageCountGoalkeeper(boss, {
+              amount: (physics.ballSpeed > 20 ? 10 : 6) * progression.modifiers.ballDamageMultiplier,
+              source: 'ball',
+            });
+            boss = damage.state;
+            if (damage.appliedDamage > 0) {
+              bridge.hitBurst(boss.position, 1.4);
+              cameraController.hitImpulse(1.25);
+              audio.playHit(1);
+            }
+            bossDefeatedThisStep = damage.events.some((event) => event.type === 'defeated');
+          }
+        }
 
         const ball = physics.ballPosition;
         const insideGoal = ball.z < -14 && Math.abs(ball.x) < 2.55 && ball.y < 3.2;
@@ -159,10 +251,14 @@ async function bootstrap(): Promise<void> {
           totalKills: state.kills,
           playerDead: state.phase === 'dead',
           goalScored: scored,
+          bossDefeated: bossDefeatedThisStep,
         });
         match = matchUpdate.state;
         for (const event of matchUpdate.events) {
-          if (event.type === 'stageChanged') audio.playPhase(matchUpdate.state.matchElapsed);
+          if (event.type === 'stageChanged') {
+            audio.playPhase(matchUpdate.state.matchElapsed);
+            if (event.to === 'finalWave' && !boss) boss = spawnCountGoalkeeper();
+          }
           if (event.type === 'goalScored') {
             state.score += 1_000;
             audio.playGoal();
@@ -195,6 +291,7 @@ async function bootstrap(): Promise<void> {
     );
     cameraController.update(renderPlayerPosition, frameTime);
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
+    bossVisual.sync(boss, alpha);
     hud.update(
       state,
       physics.ballState,
@@ -202,6 +299,7 @@ async function bootstrap(): Promise<void> {
       input.kickCharge,
       progression,
       getMatchObjective(match),
+      boss,
     );
     if ((state.phase === 'dead' || state.phase === 'won') && input.isLocked) void document.exitPointerLock();
     renderer.render(scene, cameraController.camera);
@@ -216,7 +314,10 @@ async function bootstrap(): Promise<void> {
     input.dispose();
     void audio.dispose();
     goalBeacon.dispose();
+    bossVisual.dispose();
     upgradeOverlay.dispose();
+    settingsOverlay.dispose();
+    bridge.dispose();
   }, { once: true });
 }
 
