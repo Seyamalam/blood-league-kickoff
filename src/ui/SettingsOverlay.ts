@@ -12,6 +12,10 @@ export class SettingsOverlay {
   private readonly element: HTMLElement;
   private readonly masterVolume: HTMLInputElement;
   private readonly masterVolumeValue: HTMLOutputElement;
+  private readonly musicVolume: HTMLInputElement;
+  private readonly musicVolumeValue: HTMLOutputElement;
+  private readonly effectsVolume: HTMLInputElement;
+  private readonly effectsVolumeValue: HTMLOutputElement;
   private readonly mouseSensitivity: HTMLInputElement;
   private readonly mouseSensitivityValue: HTMLOutputElement;
   private readonly renderQuality: HTMLSelectElement;
@@ -20,6 +24,11 @@ export class SettingsOverlay {
   private readonly fpsLimit: HTMLSelectElement;
   private readonly reducedCameraShake: HTMLInputElement;
   private readonly closeButton: HTMLButtonElement;
+  private readonly desktopSettings: HTMLElement;
+  private readonly windowSize: HTMLSelectElement;
+  private readonly fullscreenButton: HTMLButtonElement;
+  private readonly quitButton: HTMLButtonElement;
+  private readonly unsubscribeFullscreen: (() => void) | null;
   private readonly unsubscribe: () => void;
   private onChange: SettingsChangeCallback | null;
   private previouslyFocused: HTMLElement | null = null;
@@ -49,6 +58,14 @@ export class SettingsOverlay {
             <input id="setting-master-volume" type="range" min="0" max="1" step="0.01">
           </div>
           <div class="settings-field">
+            <div class="settings-field__label"><label for="setting-music-volume">Music volume</label><output for="setting-music-volume"></output></div>
+            <input id="setting-music-volume" type="range" min="0" max="1" step="0.01">
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__label"><label for="setting-effects-volume">Effects volume</label><output for="setting-effects-volume"></output></div>
+            <input id="setting-effects-volume" type="range" min="0" max="1" step="0.01">
+          </div>
+          <div class="settings-field">
             <div class="settings-field__label"><label for="setting-mouse-sensitivity">Mouse sensitivity</label><output for="setting-mouse-sensitivity"></output></div>
             <input id="setting-mouse-sensitivity" type="range" min="0.25" max="2.5" step="0.05">
           </div>
@@ -76,6 +93,20 @@ export class SettingsOverlay {
             <span><strong>Reduced camera shake</strong><small>Limits impact movement and intense screen feedback.</small></span>
             <input id="setting-reduced-shake" type="checkbox">
           </label>
+          <div class="settings-desktop hidden" id="settings-desktop">
+            <div class="settings-field">
+              <label for="setting-window-size">Window size</label>
+              <select id="setting-window-size">
+                <option value="1280x720">1280 × 720</option>
+                <option value="1600x900">1600 × 900</option>
+                <option value="1920x1080">1920 × 1080</option>
+              </select>
+            </div>
+            <div class="settings-desktop__actions">
+              <button type="button" id="setting-fullscreen">ENTER FULLSCREEN</button>
+              <button type="button" id="setting-quit" class="settings-desktop__danger">QUIT GAME</button>
+            </div>
+          </div>
         </div>
         <footer class="settings-panel__footer">Changes save automatically · Press Escape to close</footer>
       </div>
@@ -83,6 +114,10 @@ export class SettingsOverlay {
 
     this.masterVolume = requiredInput(this.element, '#setting-master-volume');
     this.masterVolumeValue = requiredOutput(this.element, '[for="setting-master-volume"]');
+    this.musicVolume = requiredInput(this.element, '#setting-music-volume');
+    this.musicVolumeValue = requiredOutput(this.element, '[for="setting-music-volume"]');
+    this.effectsVolume = requiredInput(this.element, '#setting-effects-volume');
+    this.effectsVolumeValue = requiredOutput(this.element, '[for="setting-effects-volume"]');
     this.mouseSensitivity = requiredInput(this.element, '#setting-mouse-sensitivity');
     this.mouseSensitivityValue = requiredOutput(this.element, '[for="setting-mouse-sensitivity"]');
     this.renderQuality = requiredSelect(this.element, '#setting-render-quality');
@@ -91,11 +126,25 @@ export class SettingsOverlay {
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
     this.reducedCameraShake = requiredInput(this.element, '#setting-reduced-shake');
     this.closeButton = requiredButton(this.element, '.settings-panel__close');
+    this.desktopSettings = requiredElement(this.element, '#settings-desktop');
+    this.windowSize = requiredSelect(this.element, '#setting-window-size');
+    this.fullscreenButton = requiredButton(this.element, '#setting-fullscreen');
+    this.quitButton = requiredButton(this.element, '#setting-quit');
 
     this.element.addEventListener('input', this.handleInput);
     this.element.addEventListener('change', this.handleInput);
     this.closeButton.addEventListener('click', this.hide);
+    this.windowSize.addEventListener('change', this.handleWindowSize);
+    this.fullscreenButton.addEventListener('click', this.handleFullscreen);
+    this.quitButton.addEventListener('click', this.handleQuit);
     this.unsubscribe = this.store.subscribe((settings) => this.render(settings), true);
+    const desktopWindow = window.desktopRuntime?.window;
+    this.desktopSettings.classList.toggle('hidden', !desktopWindow);
+    this.unsubscribeFullscreen =
+      desktopWindow?.onFullscreenChanged((enabled) => {
+        this.renderFullscreenState(enabled);
+      }) ?? null;
+    if (desktopWindow) void this.refreshDesktopState();
     root.append(this.element);
   }
 
@@ -111,6 +160,7 @@ export class SettingsOverlay {
     this.previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.element.hidden = false;
     this.element.classList.remove('hidden');
+    void this.refreshDesktopState();
     window.addEventListener('keydown', this.handleKeyDown, { capture: true });
     window.requestAnimationFrame(() => {
       if (this.open) this.closeButton.focus();
@@ -138,12 +188,20 @@ export class SettingsOverlay {
     this.element.removeEventListener('input', this.handleInput);
     this.element.removeEventListener('change', this.handleInput);
     this.closeButton.removeEventListener('click', this.hide);
+    this.windowSize.removeEventListener('change', this.handleWindowSize);
+    this.fullscreenButton.removeEventListener('click', this.handleFullscreen);
+    this.quitButton.removeEventListener('click', this.handleQuit);
+    this.unsubscribeFullscreen?.();
     this.element.remove();
   }
 
   private render(settings: Readonly<PlayerSettings>): void {
     this.masterVolume.value = String(settings.masterVolume);
     this.masterVolumeValue.value = `${Math.round(settings.masterVolume * 100)}%`;
+    this.musicVolume.value = String(settings.musicVolume);
+    this.musicVolumeValue.value = `${Math.round(settings.musicVolume * 100)}%`;
+    this.effectsVolume.value = String(settings.effectsVolume);
+    this.effectsVolumeValue.value = `${Math.round(settings.effectsVolume * 100)}%`;
     this.mouseSensitivity.value = String(settings.mouseSensitivity);
     this.mouseSensitivityValue.value = `${settings.mouseSensitivity.toFixed(2)}×`;
     this.renderQuality.value = settings.renderQuality;
@@ -155,20 +213,83 @@ export class SettingsOverlay {
 
   private readonly handleInput = (event: Event): void => {
     const target = event.target;
-    if (event.type === 'change' && (target === this.masterVolume || target === this.mouseSensitivity || target === this.renderScale)) {
+    if (
+      event.type === 'change' &&
+      (target === this.masterVolume ||
+        target === this.musicVolume ||
+        target === this.effectsVolume ||
+        target === this.mouseSensitivity ||
+        target === this.renderScale)
+    ) {
       return;
     }
     let patch: Partial<PlayerSettings> | null = null;
     if (target === this.masterVolume) patch = { masterVolume: this.masterVolume.valueAsNumber };
-    else if (target === this.mouseSensitivity) patch = { mouseSensitivity: this.mouseSensitivity.valueAsNumber };
-    else if (target === this.renderQuality) patch = { renderQuality: this.renderQuality.value as RenderQuality };
+    else if (target === this.musicVolume) patch = { musicVolume: this.musicVolume.valueAsNumber };
+    else if (target === this.effectsVolume) patch = { effectsVolume: this.effectsVolume.valueAsNumber };
+    else if (target === this.mouseSensitivity)
+      patch = { mouseSensitivity: this.mouseSensitivity.valueAsNumber };
+    else if (target === this.renderQuality)
+      patch = { renderQuality: this.renderQuality.value as RenderQuality };
     else if (target === this.renderScale) patch = { renderScale: this.renderScale.valueAsNumber };
     else if (target === this.fpsLimit) patch = { fpsLimit: parseFpsLimit(this.fpsLimit.value) };
-    else if (target === this.reducedCameraShake) patch = { reducedCameraShake: this.reducedCameraShake.checked };
+    else if (target === this.reducedCameraShake)
+      patch = { reducedCameraShake: this.reducedCameraShake.checked };
     if (!patch) return;
     const settings = this.store.update(patch);
     this.onChange?.(settings);
   };
+
+  private readonly handleFullscreen = (): void => {
+    const desktopWindow = window.desktopRuntime?.window;
+    if (!desktopWindow) return;
+    void desktopWindow
+      .toggleFullscreen()
+      .then((enabled) => {
+        this.renderFullscreenState(enabled);
+      })
+      .catch(() => undefined);
+  };
+
+  private readonly handleQuit = (): void => {
+    void window.desktopRuntime?.window.quit();
+  };
+
+  private readonly handleWindowSize = (): void => {
+    const desktopWindow = window.desktopRuntime?.window;
+    if (!desktopWindow) return;
+    const size = parseWindowSize(this.windowSize.value);
+    if (!size) return;
+    void desktopWindow
+      .setWindowSize(size.width, size.height)
+      .then((state) => {
+        this.renderDesktopState(state);
+      })
+      .catch(() => undefined);
+  };
+
+  private async refreshDesktopState(): Promise<void> {
+    const desktopWindow = window.desktopRuntime?.window;
+    if (!desktopWindow) return;
+    try {
+      this.renderDesktopState(await desktopWindow.getState());
+    } catch {
+      // Window controls are optional; browser gameplay remains fully functional.
+    }
+  }
+
+  private renderDesktopState(state: DesktopWindowState): void {
+    const value = `${state.width}x${state.height}`;
+    if ([...this.windowSize.options].some((option) => option.value === value)) {
+      this.windowSize.value = value;
+    }
+    this.renderFullscreenState(state.isFullScreen);
+  }
+
+  private renderFullscreenState(enabled: boolean): void {
+    this.fullscreenButton.textContent = enabled ? 'EXIT FULLSCREEN' : 'ENTER FULLSCREEN';
+    this.windowSize.disabled = enabled;
+  }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (!this.open) return;
@@ -179,8 +300,9 @@ export class SettingsOverlay {
       return;
     }
     if (event.key !== 'Tab') return;
-    const controls = [...this.element.querySelectorAll<HTMLElement>('button,input,select')]
-      .filter((control) => !control.hasAttribute('disabled'));
+    const controls = [...this.element.querySelectorAll<HTMLElement>('button,input,select')].filter(
+      (control) => !control.hasAttribute('disabled'),
+    );
     const first = controls[0];
     const last = controls.at(-1);
     if (!first || !last) return;
@@ -222,4 +344,17 @@ function requiredButton(root: ParentNode, selector: string): HTMLButtonElement {
   const element = root.querySelector<HTMLButtonElement>(selector);
   if (!element) throw new Error(`Missing settings button ${selector}`);
   return element;
+}
+
+function requiredElement(root: ParentNode, selector: string): HTMLElement {
+  const element = root.querySelector<HTMLElement>(selector);
+  if (!element) throw new Error(`Missing settings element ${selector}`);
+  return element;
+}
+
+function parseWindowSize(value: string): { width: 1280 | 1600 | 1920; height: 720 | 900 | 1080 } | null {
+  if (value === '1280x720') return { width: 1280, height: 720 };
+  if (value === '1600x900') return { width: 1600, height: 900 };
+  if (value === '1920x1080') return { width: 1920, height: 1080 };
+  return null;
 }

@@ -4,6 +4,10 @@ import type { MatchStage } from '../game/match';
 export interface AudioManagerOptions {
   /** Master volume in the range 0–1. The default is deliberately conservative. */
   volume?: number;
+  /** Music bus volume in the range 0–1. Defaults to the current full-level mix. */
+  musicVolume?: number;
+  /** Gameplay effects bus volume in the range 0–1. Defaults to full level. */
+  effectsVolume?: number;
   muted?: boolean;
 }
 
@@ -57,16 +61,22 @@ const MAX_ACTIVE_SOURCES = 48;
 export class AudioManager {
   private context: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private musicBusGain: GainNode | null = null;
+  private effectsBusGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private musicGraph: ProceduralMusicGraph | null = null;
   private readonly activeSources = new Set<AudioScheduledSourceNode>();
   private volume: number;
+  private musicVolume: number;
+  private effectsVolume: number;
   private muted: boolean;
   private matchIntensity = 0;
   private disposed = false;
 
   public constructor(options: AudioManagerOptions = {}) {
     this.volume = clamp01(options.volume ?? DEFAULT_VOLUME);
+    this.musicVolume = clamp01(options.musicVolume ?? 1);
+    this.effectsVolume = clamp01(options.effectsVolume ?? 1);
     this.muted = options.muted ?? false;
   }
 
@@ -106,6 +116,26 @@ export class AudioManager {
   public setMuted(muted: boolean): void {
     this.muted = muted;
     this.updateMasterGain();
+  }
+
+  public get currentMusicVolume(): number {
+    return this.musicVolume;
+  }
+
+  public get currentEffectsVolume(): number {
+    return this.effectsVolume;
+  }
+
+  /** Changes only the procedural music mix, below master volume/mute. */
+  public setMusicVolume(value: number): void {
+    this.musicVolume = clamp01(value);
+    this.updateBusGains();
+  }
+
+  /** Changes only gameplay effects, below master volume/mute. */
+  public setEffectsVolume(value: number): void {
+    this.effectsVolume = clamp01(value);
+    this.updateBusGains();
   }
 
   /** Current normalized procedural music intensity. */
@@ -157,8 +187,22 @@ export class AudioManager {
   public playVolley(): void {
     const now = this.now();
     if (now === null) return;
-    this.tone({ frequency: 240, endFrequency: 720, duration: 0.09, gain: 0.18, start: now, type: 'triangle' });
-    this.tone({ frequency: 840, endFrequency: 520, duration: 0.12, gain: 0.08, start: now + 0.025, type: 'sine' });
+    this.tone({
+      frequency: 240,
+      endFrequency: 720,
+      duration: 0.09,
+      gain: 0.18,
+      start: now,
+      type: 'triangle',
+    });
+    this.tone({
+      frequency: 840,
+      endFrequency: 520,
+      duration: 0.12,
+      gain: 0.08,
+      start: now + 0.025,
+      type: 'sine',
+    });
     this.noise({ duration: 0.035, gain: 0.1, start: now, filterFrequency: 2_600, filterType: 'highpass' });
   }
 
@@ -190,8 +234,22 @@ export class AudioManager {
     if (now === null) return;
     const comboStep = Math.min(Math.max(0, Math.floor(combo) - 1), 12);
     const root = 210 * 2 ** (comboStep / 24);
-    this.tone({ frequency: root, endFrequency: root * 1.35, duration: 0.1, gain: 0.1, start: now, type: 'triangle' });
-    this.tone({ frequency: root * 1.5, endFrequency: root * 2, duration: 0.13, gain: 0.055, start: now + 0.035, type: 'sine' });
+    this.tone({
+      frequency: root,
+      endFrequency: root * 1.35,
+      duration: 0.1,
+      gain: 0.1,
+      start: now,
+      type: 'triangle',
+    });
+    this.tone({
+      frequency: root * 1.5,
+      endFrequency: root * 2,
+      duration: 0.13,
+      gain: 0.055,
+      start: now + 0.035,
+      type: 'sine',
+    });
   }
 
   /** Dark, deliberately non-musical damage cue that stays below the kick volume. */
@@ -199,7 +257,14 @@ export class AudioManager {
     const now = this.now();
     if (now === null) return;
     this.tone({ frequency: 150, endFrequency: 58, duration: 0.28, gain: 0.2, start: now, type: 'sawtooth' });
-    this.noise({ duration: 0.16, gain: 0.12, start: now, filterFrequency: 760, filterEndFrequency: 220, filterType: 'lowpass' });
+    this.noise({
+      duration: 0.16,
+      gain: 0.12,
+      start: now,
+      filterFrequency: 760,
+      filterEndFrequency: 220,
+      filterType: 'lowpass',
+    });
   }
 
   /** Airy inward sweep used when the ball starts returning to the player. */
@@ -214,7 +279,14 @@ export class AudioManager {
       filterEndFrequency: 3_100,
       filterType: 'bandpass',
     });
-    this.tone({ frequency: 190, endFrequency: 520, duration: 0.2, gain: 0.055, start: now + 0.02, type: 'sine' });
+    this.tone({
+      frequency: 190,
+      endFrequency: 520,
+      duration: 0.2,
+      gain: 0.055,
+      start: now + 0.02,
+      type: 'sine',
+    });
   }
 
   /** Short original goal fanfare, suitable for a goal or major phase transition. */
@@ -224,10 +296,23 @@ export class AudioManager {
     const notes = [220, 293.66, 369.99, 440];
     notes.forEach((frequency, index) => {
       const start = now + index * 0.105;
-      this.tone({ frequency, endFrequency: frequency * 1.012, duration: 0.24, gain: 0.12, start, type: 'triangle' });
+      this.tone({
+        frequency,
+        endFrequency: frequency * 1.012,
+        duration: 0.24,
+        gain: 0.12,
+        start,
+        type: 'triangle',
+      });
       this.tone({ frequency: frequency * 2, duration: 0.16, gain: 0.035, start, type: 'sine' });
     });
-    this.noise({ duration: 0.12, gain: 0.1, start: now + 0.31, filterFrequency: 2_000, filterType: 'highpass' });
+    this.noise({
+      duration: 0.12,
+      gain: 0.1,
+      start: now + 0.31,
+      filterFrequency: 2_000,
+      filterType: 'highpass',
+    });
   }
 
   /** Two-note transition cue. The phase number subtly varies the pitch. */
@@ -235,8 +320,22 @@ export class AudioManager {
     const now = this.now();
     if (now === null) return;
     const root = 130 * 2 ** (Math.min(Math.max(0, phase), 6) / 12);
-    this.tone({ frequency: root, endFrequency: root * 1.5, duration: 0.22, gain: 0.1, start: now, type: 'triangle' });
-    this.tone({ frequency: root * 2, endFrequency: root * 2.5, duration: 0.28, gain: 0.09, start: now + 0.11, type: 'sine' });
+    this.tone({
+      frequency: root,
+      endFrequency: root * 1.5,
+      duration: 0.22,
+      gain: 0.1,
+      start: now,
+      type: 'triangle',
+    });
+    this.tone({
+      frequency: root * 2,
+      endFrequency: root * 2.5,
+      duration: 0.28,
+      gain: 0.09,
+      start: now + 0.11,
+      type: 'sine',
+    });
   }
 
   /** Stops all effects and closes the underlying browser audio device. */
@@ -252,9 +351,13 @@ export class AudioManager {
     }
     this.activeSources.clear();
     this.disposeMusicGraph();
+    this.musicBusGain?.disconnect();
+    this.effectsBusGain?.disconnect();
     const context = this.context;
     this.context = null;
     this.masterGain = null;
+    this.musicBusGain = null;
+    this.effectsBusGain = null;
     this.noiseBuffer = null;
     if (context && context.state !== 'closed') {
       try {
@@ -268,18 +371,25 @@ export class AudioManager {
   private createAudioGraph(): void {
     const context = new AudioContext({ latencyHint: 'interactive' });
     const master = context.createGain();
+    const musicBus = context.createGain();
+    const effectsBus = context.createGain();
     const compressor = context.createDynamicsCompressor();
     compressor.threshold.value = -18;
     compressor.knee.value = 18;
     compressor.ratio.value = 5;
     compressor.attack.value = 0.003;
     compressor.release.value = 0.18;
+    musicBus.connect(master);
+    effectsBus.connect(master);
     master.connect(compressor);
     compressor.connect(context.destination);
     this.context = context;
     this.masterGain = master;
-    this.musicGraph = this.createMusicGraph(context, master);
+    this.musicBusGain = musicBus;
+    this.effectsBusGain = effectsBus;
+    this.musicGraph = this.createMusicGraph(context, musicBus);
     this.updateMasterGain();
+    this.updateBusGains();
     this.updateMusicIntensity();
   }
 
@@ -287,6 +397,13 @@ export class AudioManager {
     if (!this.context || !this.masterGain) return;
     const target = this.muted ? 0 : this.volume;
     this.masterGain.gain.setTargetAtTime(target, this.context.currentTime, 0.012);
+  }
+
+  private updateBusGains(): void {
+    if (!this.context) return;
+    const now = this.context.currentTime;
+    this.musicBusGain?.gain.setTargetAtTime(this.musicVolume, now, 0.018);
+    this.effectsBusGain?.gain.setTargetAtTime(this.effectsVolume, now, 0.012);
   }
 
   private createMusicGraph(context: AudioContext, output: AudioNode): ProceduralMusicGraph {
@@ -341,7 +458,18 @@ export class AudioManager {
       filter,
       pulseLfo,
       sources,
-      nodes: [drone, droneGain, tension, tensionGain, pulse, pulseGain, pulseLfo, pulseDepth, filter, musicOutput],
+      nodes: [
+        drone,
+        droneGain,
+        tension,
+        tensionGain,
+        pulse,
+        pulseGain,
+        pulseLfo,
+        pulseDepth,
+        filter,
+        musicOutput,
+      ],
     };
   }
 
@@ -377,13 +505,14 @@ export class AudioManager {
   }
 
   private now(): number | null {
-    if (this.disposed || !this.context || !this.masterGain || this.context.state !== 'running') return null;
+    if (this.disposed || !this.context || !this.effectsBusGain || this.context.state !== 'running')
+      return null;
     return this.context.currentTime;
   }
 
   private tone(options: ToneOptions): void {
     const context = this.context;
-    const output = this.masterGain;
+    const output = this.effectsBusGain;
     if (!context || !output) return;
     const start = options.start ?? context.currentTime;
     const end = start + options.duration;
@@ -403,7 +532,7 @@ export class AudioManager {
 
   private noise(options: NoiseOptions): void {
     const context = this.context;
-    const output = this.masterGain;
+    const output = this.effectsBusGain;
     if (!context || !output) return;
     const start = options.start ?? context.currentTime;
     const end = start + options.duration;
@@ -485,17 +614,29 @@ function rampTarget(parameter: AudioParam, value: number, now: number, timeConst
 function resolveMatchIntensity(intensity: MatchMusicIntensity): number {
   if (typeof intensity === 'number') return clamp01(intensity);
   switch (intensity) {
-    case 'menu': return 0.12;
-    case 'paused': return 0.08;
-    case 'opening': return 0.24;
-    case 'firstHalf': return 0.38;
-    case 'goalOpportunity': return 0.62;
-    case 'escalation': return 0.55;
-    case 'halftimeChoice': return 0.18;
-    case 'bloodMoon': return 0.78;
-    case 'finalGoal': return 0.9;
-    case 'finalWave': return 1;
-    case 'victory': return 0.14;
-    case 'dead': return 0;
+    case 'menu':
+      return 0.12;
+    case 'paused':
+      return 0.08;
+    case 'opening':
+      return 0.24;
+    case 'firstHalf':
+      return 0.38;
+    case 'goalOpportunity':
+      return 0.62;
+    case 'escalation':
+      return 0.55;
+    case 'halftimeChoice':
+      return 0.18;
+    case 'bloodMoon':
+      return 0.78;
+    case 'finalGoal':
+      return 0.9;
+    case 'finalWave':
+      return 1;
+    case 'victory':
+      return 0.14;
+    case 'dead':
+      return 0;
   }
 }

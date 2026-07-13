@@ -21,4 +21,14 @@ describe('AudioManager match intensity', () => {
     audio.setMatchIntensity('dead');
     expect(audio.currentMatchIntensity).toBe(0);
   });
+
+  it('tracks independently clamped music and effects levels before unlock', () => {
+    const audio = new AudioManager({ musicVolume: 0.4, effectsVolume: 0.8 });
+    expect(audio.currentMusicVolume).toBe(0.4);
+    expect(audio.currentEffectsVolume).toBe(0.8);
+    audio.setMusicVolume(-1);
+    audio.setEffectsVolume(3);
+    expect(audio.currentMusicVolume).toBe(0);
+    expect(audio.currentEffectsVolume).toBe(1);
+  });
 });

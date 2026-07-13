@@ -3,6 +3,8 @@ export type FpsLimit = 60 | 120 | 'unlimited';
 
 export interface PlayerSettings {
   masterVolume: number;
+  musicVolume: number;
+  effectsVolume: number;
   mouseSensitivity: number;
   renderQuality: RenderQuality;
   renderScale: number;
@@ -12,11 +14,13 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 1;
+const SETTINGS_VERSION = 2;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   masterVolume: 0.42,
+  musicVolume: 1,
+  effectsVolume: 1,
   mouseSensitivity: 1,
   renderQuality: 'balanced',
   renderScale: 1,
@@ -44,7 +48,7 @@ export class SettingsStore {
 
   /** Validates, persists, and broadcasts a partial update. */
   public update(patch: Partial<PlayerSettings>): Readonly<PlayerSettings> {
-    const next = sanitizeSettings({ ...this.settings, ...patch });
+    const next = sanitizePlayerSettings({ ...this.settings, ...patch });
     if (settingsEqual(this.settings, next)) return this.value;
     this.settings = next;
     this.persist();
@@ -73,10 +77,11 @@ export class SettingsStore {
       if (!serialized) return { ...DEFAULT_PLAYER_SETTINGS };
       const parsed: unknown = JSON.parse(serialized);
       if (!isRecord(parsed)) return { ...DEFAULT_PLAYER_SETTINGS };
-      const stored = parsed.version === SETTINGS_VERSION && isRecord(parsed.settings)
-        ? parsed.settings
-        : parsed;
-      return sanitizeSettings(stored);
+      const version = parsed.version;
+      const wrappedSettings =
+        (version === 1 || version === SETTINGS_VERSION) && isRecord(parsed.settings) ? parsed.settings : null;
+      if ('version' in parsed && !wrappedSettings) return { ...DEFAULT_PLAYER_SETTINGS };
+      return sanitizePlayerSettings(wrappedSettings ?? parsed);
     } catch {
       return { ...DEFAULT_PLAYER_SETTINGS };
     }
@@ -100,16 +105,27 @@ export class SettingsStore {
   }
 }
 
-function sanitizeSettings(value: Record<string, unknown>): PlayerSettings {
+export function sanitizePlayerSettings(value: unknown): PlayerSettings {
+  const source = isRecord(value) ? value : {};
   return {
-    masterVolume: boundedNumber(value.masterVolume, 0, 1, DEFAULT_PLAYER_SETTINGS.masterVolume),
-    mouseSensitivity: boundedNumber(value.mouseSensitivity, 0.25, 2.5, DEFAULT_PLAYER_SETTINGS.mouseSensitivity),
-    renderQuality: isRenderQuality(value.renderQuality) ? value.renderQuality : DEFAULT_PLAYER_SETTINGS.renderQuality,
-    renderScale: boundedNumber(value.renderScale, 0.5, 1.25, DEFAULT_PLAYER_SETTINGS.renderScale),
-    fpsLimit: isFpsLimit(value.fpsLimit) ? value.fpsLimit : DEFAULT_PLAYER_SETTINGS.fpsLimit,
-    reducedCameraShake: typeof value.reducedCameraShake === 'boolean'
-      ? value.reducedCameraShake
-      : DEFAULT_PLAYER_SETTINGS.reducedCameraShake,
+    masterVolume: boundedNumber(source.masterVolume, 0, 1, DEFAULT_PLAYER_SETTINGS.masterVolume),
+    musicVolume: boundedNumber(source.musicVolume, 0, 1, DEFAULT_PLAYER_SETTINGS.musicVolume),
+    effectsVolume: boundedNumber(source.effectsVolume, 0, 1, DEFAULT_PLAYER_SETTINGS.effectsVolume),
+    mouseSensitivity: boundedNumber(
+      source.mouseSensitivity,
+      0.25,
+      2.5,
+      DEFAULT_PLAYER_SETTINGS.mouseSensitivity,
+    ),
+    renderQuality: isRenderQuality(source.renderQuality)
+      ? source.renderQuality
+      : DEFAULT_PLAYER_SETTINGS.renderQuality,
+    renderScale: boundedNumber(source.renderScale, 0.5, 1.25, DEFAULT_PLAYER_SETTINGS.renderScale),
+    fpsLimit: isFpsLimit(source.fpsLimit) ? source.fpsLimit : DEFAULT_PLAYER_SETTINGS.fpsLimit,
+    reducedCameraShake:
+      typeof source.reducedCameraShake === 'boolean'
+        ? source.reducedCameraShake
+        : DEFAULT_PLAYER_SETTINGS.reducedCameraShake,
   };
 }
 
@@ -132,10 +148,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
-  return left.masterVolume === right.masterVolume
-    && left.mouseSensitivity === right.mouseSensitivity
-    && left.renderQuality === right.renderQuality
-    && left.renderScale === right.renderScale
-    && left.fpsLimit === right.fpsLimit
-    && left.reducedCameraShake === right.reducedCameraShake;
+  return (
+    left.masterVolume === right.masterVolume &&
+    left.musicVolume === right.musicVolume &&
+    left.effectsVolume === right.effectsVolume &&
+    left.mouseSensitivity === right.mouseSensitivity &&
+    left.renderQuality === right.renderQuality &&
+    left.renderScale === right.renderScale &&
+    left.fpsLimit === right.fpsLimit &&
+    left.reducedCameraShake === right.reducedCameraShake
+  );
 }

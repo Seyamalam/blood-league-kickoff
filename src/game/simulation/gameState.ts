@@ -160,16 +160,8 @@ export function updateEnemies(state: GameState, dt: number): void {
     const knockbackDamping = Math.exp(-7.5 * dt);
     movementX += enemy.knockbackVelocity.x;
     movementZ += enemy.knockbackVelocity.z;
-    enemy.position.x = clamp(
-      enemy.position.x + movementX * dt,
-      -ARENA_HALF_WIDTH,
-      ARENA_HALF_WIDTH,
-    );
-    enemy.position.z = clamp(
-      enemy.position.z + movementZ * dt,
-      -ARENA_HALF_DEPTH,
-      ARENA_HALF_DEPTH,
-    );
+    enemy.position.x = clamp(enemy.position.x + movementX * dt, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
+    enemy.position.z = clamp(enemy.position.z + movementZ * dt, -ARENA_HALF_DEPTH, ARENA_HALF_DEPTH);
     enemy.knockbackVelocity.x *= knockbackDamping;
     enemy.knockbackVelocity.z *= knockbackDamping;
 
@@ -241,9 +233,10 @@ export function damageEnemiesWithBall(
           const normalLength = Math.hypot(normalX, normalZ);
           rebound ??= {
             enemyId: enemy.id,
-            normal: normalLength > 0.001
-              ? { x: normalX / normalLength, y: 0, z: normalZ / normalLength }
-              : { x: -velocityX, y: 0, z: -velocityZ },
+            normal:
+              normalLength > 0.001
+                ? { x: normalX / normalLength, y: 0, z: normalZ / normalLength }
+                : { x: -velocityX, y: 0, z: -velocityZ },
             velocityMultiplier: pierceCount > 0 ? 0.88 : 0.72,
           };
         } else if (approachDot > 0.3) {
@@ -322,11 +315,7 @@ function spawnEnemy(state: GameState): EnemyState {
 }
 
 /** Adds a boss-requested elite near the opponent goal and returns its live state. */
-export function spawnEliteEnemy(
-  state: GameState,
-  archetype: EliteEnemyArchetype,
-  side: -1 | 1,
-): EnemyState {
+export function spawnEliteEnemy(state: GameState, archetype: EliteEnemyArchetype, side: -1 | 1): EnemyState {
   const stats = enemyStats(archetype, state.elapsed);
   const position = {
     x: side * (4.8 + Math.random() * 1.8),
@@ -408,13 +397,18 @@ function pickArchetype(elapsed: number): EnemyArchetype {
   const defenderWeight = elapsed < 24 ? 0 : Math.min(24, 5 + (elapsed - 24) * 0.15);
   const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
   let roll = Math.random() * (fanWeight + wingerWeight + defenderWeight + coachWeight);
-  if ((roll -= fanWeight) < 0) return 'bloodFan';
-  if ((roll -= wingerWeight) < 0) return 'winger';
-  if ((roll -= defenderWeight) < 0) return 'defender';
+  if (roll < fanWeight) return 'bloodFan';
+  roll -= fanWeight;
+  if (roll < wingerWeight) return 'winger';
+  roll -= wingerWeight;
+  if (roll < defenderWeight) return 'defender';
   return 'coach';
 }
 
-function enemyStats(archetype: EnemyArchetype, elapsed: number): {
+function enemyStats(
+  archetype: EnemyArchetype,
+  elapsed: number,
+): {
   radius: number;
   speed: number;
   attackDamage: number;

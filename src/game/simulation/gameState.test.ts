@@ -3,6 +3,7 @@ import {
   createGameState,
   resetKickoffFormation,
   spawnEliteEnemy,
+  updateEnemies,
   updatePlayer,
 } from './gameState';
 
@@ -42,5 +43,28 @@ describe('game state match helpers', () => {
     updatePlayer(boosted, { x: 1, z: 0 }, 0, 1, 1.15);
 
     expect(boosted.player.position.x).toBeGreaterThan(baseline.player.position.x);
+  });
+
+  it('holds the ordinary population cap under a dense mixed final-wave crowd', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.elapsed = 600;
+    const archetypes = ['bloodFan', 'winger', 'defender', 'coach'] as const;
+    for (let index = 0; index < 71; index += 1) {
+      const spawned = spawnEliteEnemy(
+        state,
+        index % 2 === 0 ? 'winger' : 'defender',
+        index % 3 === 0 ? -1 : 1,
+      );
+      spawned.archetype = archetypes[index % archetypes.length]!;
+    }
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    expect(state.enemies).toHaveLength(72);
+    expect(state.enemies.some((enemy) => enemy.buffed)).toBe(true);
+
+    state.spawnTimer = 0;
+    updateEnemies(state, 1 / 60);
+    expect(state.enemies).toHaveLength(72);
   });
 });

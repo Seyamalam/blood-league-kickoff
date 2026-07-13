@@ -18,11 +18,7 @@ describe('EnemySpatialGrid', () => {
 
   it('matches the separation formula for neighbors and ignores distant enemies', () => {
     const grid = new EnemySpatialGrid();
-    const crowd = [
-      enemy(1, 'bloodFan', 0, 0),
-      enemy(2, 'bloodFan', 0.5, 0),
-      enemy(3, 'bloodFan', 12, 0),
-    ];
+    const crowd = [enemy(1, 'bloodFan', 0, 0), enemy(2, 'bloodFan', 0.5, 0), enemy(3, 'bloodFan', 12, 0)];
     grid.rebuild(crowd);
     grid.accumulateSeparation(crowd, 0, 0.18);
     const separationRadius = 0.52 + 0.52 + 0.18;
@@ -30,14 +26,20 @@ describe('EnemySpatialGrid', () => {
     expect(grid.separationZ).toBe(0);
   });
 
-  it('grows capacity geometrically and retains every inserted candidate', () => {
-    const grid = new EnemySpatialGrid(-22, -14, 22, 14, 2.5, 2);
-    const crowd = Array.from({ length: 73 }, (_, index) => (
-      enemy(index, index === 72 ? 'coach' : 'bloodFan', (index % 8) * 0.01, 0)
-    ));
+  it('grows capacity geometrically and handles a dense mixed 257-enemy crowd', () => {
+    const grid = new EnemySpatialGrid(-22, -14, 22, 14, 2.5, 4);
+    const archetypes: readonly EnemyArchetype[] = ['bloodFan', 'winger', 'defender', 'coach'];
+    const crowd = Array.from({ length: 257 }, (_, index) =>
+      enemy(index, archetypes[index % archetypes.length]!, (index % 17) * 0.06, (index % 11) * 0.06),
+    );
     grid.rebuild(crowd);
-    expect(grid.capacity).toBeGreaterThanOrEqual(73);
+    expect(grid.capacity).toBeGreaterThanOrEqual(257);
     expect(grid.hasNearbyCoach(crowd, 0, 5.5)).toBe(true);
+    for (let index = 0; index < crowd.length; index += 1) {
+      grid.accumulateSeparation(crowd, index, 0.18);
+      expect(Number.isFinite(grid.separationX)).toBe(true);
+      expect(Number.isFinite(grid.separationZ)).toBe(true);
+    }
   });
 });
 

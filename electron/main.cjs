@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
@@ -19,6 +19,15 @@ if (process.platform === 'win32') {
 
 let mainWindow = null;
 
+const IPC = Object.freeze({
+  getWindowState: 'desktop:get-window-state',
+  setFullscreen: 'desktop:set-fullscreen',
+  toggleFullscreen: 'desktop:toggle-fullscreen',
+  setWindowSize: 'desktop:set-window-size',
+  quit: 'desktop:quit',
+  fullscreenChanged: 'desktop:fullscreen-changed',
+});
+
 function isTrustedDevUrl(url) {
   if (!IS_DEV) return false;
 
@@ -35,6 +44,64 @@ function isTrustedAppUrl(url) {
   if (IS_DEV) return isTrustedDevUrl(url);
   return url.startsWith(APP_URL_ROOT);
 }
+
+function requireTrustedWindow(event) {
+  const window = mainWindow;
+  const senderUrl = event.senderFrame?.url ?? event.sender.getURL();
+  if (!window || window.isDestroyed() || event.sender !== window.webContents || !isTrustedAppUrl(senderUrl)) {
+    throw new Error('Unauthorized desktop IPC sender');
+  }
+  return window;
+}
+
+function windowState(window) {
+  const [width, height] = window.getContentSize();
+  return {
+    isFullScreen: window.isFullScreen(),
+    isMaximized: window.isMaximized(),
+    isMinimized: window.isMinimized(),
+    isFocused: window.isFocused(),
+    isVisible: window.isVisible(),
+    width,
+    height,
+  };
+}
+
+ipcMain.handle(IPC.getWindowState, (event) => windowState(requireTrustedWindow(event)));
+
+ipcMain.handle(IPC.setFullscreen, (event, enabled) => {
+  const window = requireTrustedWindow(event);
+  if (typeof enabled !== 'boolean') throw new TypeError('Fullscreen state must be a boolean');
+  window.setFullScreen(enabled);
+  return enabled;
+});
+
+ipcMain.handle(IPC.toggleFullscreen, (event) => {
+  const window = requireTrustedWindow(event);
+  const enabled = !window.isFullScreen();
+  window.setFullScreen(enabled);
+  return enabled;
+});
+
+ipcMain.handle(IPC.setWindowSize, (event, width, height) => {
+  const window = requireTrustedWindow(event);
+  const supported =
+    (width === 1280 && height === 720) ||
+    (width === 1600 && height === 900) ||
+    (width === 1920 && height === 1080);
+  if (!supported) throw new RangeError('Unsupported desktop window size');
+  if (window.isFullScreen()) window.setFullScreen(false);
+  window.setContentSize(width, height, true);
+  window.center();
+  return windowState(window);
+});
+
+ipcMain.handle(IPC.quit, (event) => {
+  requireTrustedWindow(event);
+  // Explicit Quit is intentionally different from closing the last macOS
+  // window. The normal window-all-closed behavior below remains unchanged.
+  app.quit();
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -62,6 +129,14 @@ function createWindow() {
     mainWindow?.show();
     mainWindow?.focus();
   });
+
+  const fullscreenWindow = mainWindow;
+  const emitFullscreenState = () => {
+    if (fullscreenWindow.isDestroyed() || fullscreenWindow.webContents.isDestroyed()) return;
+    fullscreenWindow.webContents.send(IPC.fullscreenChanged, fullscreenWindow.isFullScreen());
+  };
+  fullscreenWindow.on('enter-full-screen', emitFullscreenState);
+  fullscreenWindow.on('leave-full-screen', emitFullscreenState);
 
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
