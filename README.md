@@ -402,6 +402,7 @@ Planned release line:
 | `v0.11.0-alpha.1` | Animated striker, rival clubs, living arenas, and mastery   |
 | `v0.12.0-alpha.1` | Football systems, tournament foundation, and photo mode     |
 | `v0.13.0-alpha.1` | Shared-rig variants and original-hero production foundation |
+| `v0.13.0-alpha.2` | Verified all-platform release checkpoint                    |
 | `v1.0.0`          | Jam submission freeze                                       |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.

@@ -2,6 +2,11 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.13.0-alpha.2 — 2026-07-14
+
+- Rebuilt the latest unified `main` revision for web, macOS Intel, macOS Apple silicon, Windows x64, and Linux x64.
+- Published native-runner artifacts with combined SHA-256 verification; no gameplay or content changes were introduced after `v0.13.0-alpha.1`.
+
 ## v0.13.0-alpha.1 — 2026-07-14
 
 - Defined the original Rook Vesper hero turnaround, face, kit, palette, equipment, mesh partitions, shared-rig rules, likeness exclusions, and provenance gate.
