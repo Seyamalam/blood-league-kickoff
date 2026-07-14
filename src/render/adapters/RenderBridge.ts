@@ -75,6 +75,10 @@ export class RenderBridge {
     playerMaterial.jersey.color.setHex(style.primaryColor);
     playerMaterial.crimson.color.setHex(style.accentColor);
     playerMaterial.sole.color.setHex(style.bootColor);
+    for (const id of Object.keys(CHARACTER_DEFINITIONS) as CharacterId[]) {
+      const accessory = this.player.getObjectByName(`player-accessory-${id}`);
+      if (accessory) accessory.visible = id === characterId;
+    }
   }
 
   sync(state: GameState, ballPosition: Vec3, ballSpeed: number, dt: number, alpha: number): void {
@@ -90,6 +94,7 @@ export class RenderBridge {
       !this.firstPerson &&
       (this.reducedFlashes ||
         !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0));
+    animatePlayer(this.player, state.elapsed, previousPlayer, p);
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
@@ -357,6 +362,12 @@ const playerGeometry = {
   bootUpper: new THREE.BoxGeometry(0.62, 0.3, 0.82),
   bootToe: new THREE.DodecahedronGeometry(0.35, 0),
   bootSole: new THREE.BoxGeometry(0.68, 0.1, 1.22),
+  maestroScarf: new THREE.BoxGeometry(0.17, 0.85, 0.06),
+  breakawayFin: new THREE.ConeGeometry(0.12, 0.58, 4),
+  towerPad: new THREE.BoxGeometry(0.42, 0.2, 0.54),
+  finisherCollar: new THREE.TorusGeometry(0.36, 0.055, 5, 16),
+  engineRing: new THREE.TorusGeometry(0.58, 0.045, 5, 20),
+  guardianPlate: new THREE.BoxGeometry(0.72, 0.54, 0.08),
 };
 
 const playerMaterial = {
@@ -438,7 +449,70 @@ function createPlayer(): THREE.Group {
     bootToe,
     bootSole,
   );
+  addCharacterAccessories(group);
   return group;
+}
+
+function addCharacterAccessories(group: THREE.Group): void {
+  const maestro = playerMesh(playerGeometry.maestroScarf, playerMaterial.crimson, 'player-accessory-maestro');
+  maestro.position.set(-0.25, 1.38, 0.34);
+  maestro.rotation.z = 0.42;
+
+  const breakaway = new THREE.Group();
+  breakaway.name = 'player-accessory-breakaway';
+  for (const side of [-1, 1]) {
+    const fin = playerMesh(playerGeometry.breakawayFin, playerMaterial.crimson, 'breakaway-speed-fin');
+    fin.position.set(side * 0.4, 0.2, 0.25);
+    fin.rotation.z = side * 0.62;
+    breakaway.add(fin);
+  }
+
+  const tower = new THREE.Group();
+  tower.name = 'player-accessory-tower';
+  for (const side of [-1, 1]) {
+    const pad = playerMesh(playerGeometry.towerPad, playerMaterial.crimson, 'tower-shoulder-pad');
+    pad.position.set(side * 0.62, 1.5, 0);
+    tower.add(pad);
+  }
+
+  const finisher = playerMesh(
+    playerGeometry.finisherCollar,
+    playerMaterial.crimson,
+    'player-accessory-finisher',
+  );
+  finisher.position.y = 1.65;
+  finisher.rotation.x = Math.PI / 2;
+
+  const engine = playerMesh(playerGeometry.engineRing, playerMaterial.crimson, 'player-accessory-engine');
+  engine.position.y = 0.08;
+  engine.rotation.x = -Math.PI / 2;
+
+  const guardian = playerMesh(
+    playerGeometry.guardianPlate,
+    playerMaterial.crimson,
+    'player-accessory-guardian',
+  );
+  guardian.position.set(0, 1.18, -0.44);
+
+  for (const accessory of [maestro, breakaway, tower, finisher, engine, guardian]) accessory.visible = false;
+  group.add(maestro, breakaway, tower, finisher, engine, guardian);
+}
+
+function animatePlayer(group: THREE.Group, elapsed: number, previous: Vec3, current: Vec3): void {
+  const moving = (current.x - previous.x) ** 2 + (current.z - previous.z) ** 2 > 0.000001;
+  const stride = moving ? Math.sin(elapsed * 11) : Math.sin(elapsed * 2.4) * 0.08;
+  const leftArm = group.getObjectByName('player-arm-left');
+  const rightArm = group.getObjectByName('player-arm-right');
+  const supportLeg = group.getObjectByName('player-support-leg');
+  const torso = group.getObjectByName('player-torso');
+  if (leftArm) leftArm.rotation.x = stride * 0.42;
+  if (rightArm) rightArm.rotation.x = -stride * 0.42;
+  if (supportLeg) supportLeg.rotation.x = -stride * 0.28;
+  if (torso) torso.rotation.z = moving ? stride * 0.025 : 0;
+  const engine = group.getObjectByName('player-accessory-engine');
+  if (engine) engine.rotation.z = elapsed * 1.8;
+  const scarf = group.getObjectByName('player-accessory-maestro');
+  if (scarf) scarf.rotation.x = Math.sin(elapsed * 5) * 0.16;
 }
 
 function createBall(): THREE.Mesh {

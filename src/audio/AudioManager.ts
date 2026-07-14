@@ -79,6 +79,7 @@ export class AudioManager {
   private effectsVolume: number;
   private muted: boolean;
   private matchIntensity = 0;
+  private cueVariation = 0;
   private disposed = false;
 
   public constructor(options: AudioManagerOptions = {}) {
@@ -897,6 +898,86 @@ export class AudioManager {
     });
   }
 
+  /** Full-screen transformation hit for the Count's winged second form. */
+  public playBossTransformation(): void {
+    const now = this.eventNow('boss-transformation', 1.2);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    this.tone({
+      frequency: 55 * variation,
+      endFrequency: 27.5,
+      duration: 1.15,
+      gain: 0.2,
+      start: now,
+      type: 'sawtooth',
+    });
+    this.noise({
+      duration: 0.9,
+      gain: 0.14,
+      start: now,
+      filterFrequency: 220,
+      filterEndFrequency: 4_800,
+      filterType: 'bandpass',
+    });
+    [110, 164.81, 246.94, 369.99].forEach((frequency, index) => {
+      this.tone({
+        frequency: frequency * variation,
+        endFrequency: frequency * 0.72,
+        duration: 0.42 + index * 0.05,
+        gain: 0.08 + index * 0.012,
+        start: now + 0.12 + index * 0.075,
+        type: index < 2 ? 'square' : 'triangle',
+      });
+    });
+  }
+
+  /** Layered crowd swell for goals, boss reveals, and terminal presentation. */
+  public playCrowdRise(intensity = 0.65): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('crowd-rise', 0.35);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    this.noise({
+      duration: 0.45 + amount * 0.75,
+      gain: 0.035 + amount * 0.075,
+      start: now,
+      filterFrequency: 260 + amount * 220,
+      filterEndFrequency: 1_500 + amount * 2_400,
+      filterType: 'bandpass',
+    });
+    this.tone({
+      frequency: (82.41 + amount * 28) * variation,
+      endFrequency: (146.83 + amount * 90) * variation,
+      duration: 0.5 + amount * 0.38,
+      gain: 0.03 + amount * 0.035,
+      start: now + 0.04,
+      type: 'triangle',
+    });
+  }
+
+  /** Bright impact tail paired with the existing evolution arpeggio. */
+  public playEvolutionImpact(): void {
+    const now = this.eventNow('evolution-impact', 0.5);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    this.tone({
+      frequency: 65.41 * variation,
+      endFrequency: 32.7,
+      duration: 0.5,
+      gain: 0.14,
+      start: now,
+      type: 'sine',
+    });
+    this.noise({
+      duration: 0.32,
+      gain: 0.09,
+      start: now + 0.02,
+      filterFrequency: 640,
+      filterEndFrequency: 6_200,
+      filterType: 'bandpass',
+    });
+  }
+
   /** Resolving final-whistle fanfare for a completed run. */
   public playVictory(): void {
     const now = this.now();
@@ -928,6 +1009,7 @@ export class AudioManager {
       filterEndFrequency: 5_800,
       filterType: 'highpass',
     });
+    this.playCrowdRise(1);
   }
 
   /** Heavy downward cadence for player death or a lost match. */
@@ -951,6 +1033,14 @@ export class AudioManager {
       filterFrequency: 620,
       filterEndFrequency: 90,
       filterType: 'lowpass',
+    });
+    this.tone({
+      frequency: 41.2,
+      endFrequency: 24,
+      duration: 1.2,
+      gain: 0.08,
+      start: now + 0.3,
+      type: 'sine',
     });
   }
 
@@ -1177,6 +1267,11 @@ export class AudioManager {
     if (previous !== undefined && now - previous < cooldown) return null;
     this.lastEventTimes.set(eventId, now);
     return now;
+  }
+
+  private nextCueVariation(): number {
+    this.cueVariation = (this.cueVariation + 1) % 7;
+    return 2 ** ((this.cueVariation - 3) / 120);
   }
 
   private tone(options: ToneOptions): void {

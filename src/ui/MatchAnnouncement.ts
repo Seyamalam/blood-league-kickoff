@@ -1,5 +1,5 @@
 export type MatchAnnouncementKind =
-  'kickoff' | 'goal' | 'halftime' | 'bloodMoon' | 'finalGoal' | 'finalWhistle';
+  'kickoff' | 'goal' | 'halftime' | 'bloodMoon' | 'boss' | 'finalGoal' | 'finalWhistle';
 
 interface AnnouncementStyle {
   title: string;
@@ -38,6 +38,13 @@ const ANNOUNCEMENTS: Readonly<Record<MatchAnnouncementKind, AnnouncementStyle>> 
     glow: 'rgba(255, 20, 66, .88)',
     duration: 2.35,
   },
+  boss: {
+    title: 'THE COUNT',
+    subtitle: 'SECOND FORM · THE NIGHT HAS WINGS',
+    color: '#ff315d',
+    glow: 'rgba(255, 10, 62, .96)',
+    duration: 2.65,
+  },
   finalGoal: {
     title: 'FINAL GOAL',
     subtitle: 'ONE LAST CHANCE',
@@ -54,10 +61,15 @@ const ANNOUNCEMENTS: Readonly<Record<MatchAnnouncementKind, AnnouncementStyle>> 
   },
 });
 
+export function createMatchAnnouncementView(kind: MatchAnnouncementKind): Readonly<AnnouncementStyle> {
+  return ANNOUNCEMENTS[kind];
+}
+
 /** A single pooled, pointer-transparent announcement surface. */
 export class MatchAnnouncement {
   private readonly container: HTMLDivElement;
   private readonly rule: HTMLDivElement;
+  private readonly veil: HTMLDivElement;
   private readonly title: HTMLDivElement;
   private readonly subtitle: HTMLDivElement;
   private age = 0;
@@ -68,10 +80,12 @@ export class MatchAnnouncement {
   constructor(root: HTMLElement) {
     this.container = document.createElement('div');
     this.rule = document.createElement('div');
+    this.veil = document.createElement('div');
     this.title = document.createElement('div');
     this.subtitle = document.createElement('div');
 
     this.container.setAttribute('role', 'status');
+    this.container.className = 'match-announcement';
     this.container.setAttribute('aria-live', 'assertive');
     this.container.setAttribute('aria-hidden', 'true');
     Object.assign(this.container.style, {
@@ -90,6 +104,7 @@ export class MatchAnnouncement {
       fontFamily: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
     });
     Object.assign(this.title.style, {
+      position: 'relative',
       fontSize: 'clamp(56px, 10vw, 132px)',
       fontWeight: '900',
       fontStyle: 'italic',
@@ -98,6 +113,7 @@ export class MatchAnnouncement {
       textShadow: '0 8px 32px #000',
     });
     Object.assign(this.rule.style, {
+      position: 'relative',
       width: 'min(480px, 62vw)',
       height: '2px',
       marginBottom: '16px',
@@ -105,6 +121,7 @@ export class MatchAnnouncement {
       transformOrigin: 'center',
     });
     Object.assign(this.subtitle.style, {
+      position: 'relative',
       marginTop: '16px',
       color: '#d7d1d7',
       fontFamily: 'Arial, sans-serif',
@@ -113,14 +130,16 @@ export class MatchAnnouncement {
       letterSpacing: '.34em',
       textShadow: '0 2px 10px #000',
     });
-    this.container.append(this.rule, this.title, this.subtitle);
+    this.veil.className = 'match-announcement__veil';
+    this.container.append(this.veil, this.rule, this.title, this.subtitle);
     root.append(this.container);
   }
 
   show(kind: MatchAnnouncementKind, subtitle?: string, duration?: number): void {
     if (this.disposed) return;
-    const presentation = ANNOUNCEMENTS[kind];
+    const presentation = createMatchAnnouncementView(kind);
     this.title.textContent = presentation.title;
+    this.container.dataset.kind = kind;
     this.subtitle.textContent = subtitle ?? presentation.subtitle;
     this.title.style.color = presentation.color;
     this.rule.style.color = presentation.color;
@@ -165,6 +184,7 @@ export class MatchAnnouncement {
     this.container.style.opacity = visibility.toFixed(3);
     this.container.style.transform = `scale(${(0.84 + intro * 0.16 + overshoot).toFixed(3)})`;
     this.rule.style.transform = `scaleX(${visibility.toFixed(3)})`;
+    this.veil.style.opacity = (visibility * 0.94).toFixed(3);
     this.subtitle.style.opacity = Math.max(0, Math.min(1, intro * 1.25 - 0.2)).toFixed(3);
   }
 

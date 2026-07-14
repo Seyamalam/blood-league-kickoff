@@ -17,8 +17,8 @@ describe('RenderBridge player visual', () => {
     const firstMeshes = playerMeshes(firstScene);
     const secondMeshes = playerMeshes(secondScene);
 
-    expect(firstMeshes).toHaveLength(13);
-    expect(new Set(firstMeshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(11);
+    expect(firstMeshes).toHaveLength(17);
+    expect(new Set(firstMeshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(15);
     expect(new Set(firstMeshes.map((mesh) => mesh.material)).size).toBeLessThanOrEqual(6);
 
     const torso = firstScene.getObjectByName('player-torso')!;
@@ -28,6 +28,10 @@ describe('RenderBridge player visual', () => {
     expect((boot.material as THREE.MeshStandardMaterial).color.getHex()).toBe(0xb5123f);
     expect(toe.position.z).toBeLessThan(boot.position.z);
     expect(boot.position.z).toBeLessThan(torso.position.z);
+
+    firstBridge.setCharacter('tower');
+    expect(firstScene.getObjectByName('player-accessory-tower')?.visible).toBe(true);
+    expect(firstScene.getObjectByName('player-accessory-maestro')?.visible).toBe(false);
 
     for (let index = 0; index < firstMeshes.length; index += 1) {
       expect(secondMeshes[index]!.geometry).toBe(firstMeshes[index]!.geometry);
