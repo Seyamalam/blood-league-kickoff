@@ -40,7 +40,11 @@ The larger field and stadium-variety pass creates room for deeper systems. These
 - Added stadium-specific weather, reactive crowds, flags, banners, floodlights, rails, and progressively fracturing architecture props.
 - Added slide tackles, bicycle-kick impact lanes, four seeded rival clubs, Blood Multiball windows, and possession objectives.
 - Added twenty stadium-mastery challenges with cosmetic-only titles, banners, goal effects, and trails plus Career equip controls.
-- Added audited CC0 PBR grass maps. AI-generated hero production, full football animation authoring, teammates, campaign branching, ghosts, and replay/photo mode remain future slices.
+- Added audited CC0 PBR grass maps, controlled ground/lob passes, possession tackles, and shot-reading goalkeeper dives with missed-save vulnerability windows.
+- Added a deterministic 24-minute production-match plan, an eight-club tournament bracket foundation, adaptive match-audio state, bounded highlight recording, and integrated photo capture mode.
+- Formalized eleven enemy combat roles and silhouette signatures while retaining low-cost procedural rendering for dense waves.
+
+Remaining production work includes the authenticated AI-generated hero and cleanup pipeline, complete authored football animation set, persistent visible tournament UI/save flow, commanded teammate one-twos, full ghost-frame playback, penalty shootouts/overtime, elemental pitch zones, and model/LOD families for ordinary enemies.
 
 ## AI-generated 3D production boundary
 

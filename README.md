@@ -4,18 +4,18 @@
 
 ![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
 
-| Project   | Value                                        |
-| --------- | -------------------------------------------- |
-| Status    | Feature-complete v0.9 release candidate      |
-| Theme     | Kickoff                                      |
-| Team      | Huntrix — 2 participants                     |
-| Platforms | Web, macOS, Windows x64, and Linux x64       |
-| Stack     | Three.js, TypeScript, Vite, Rapier, Electron |
-| Input     | Keyboard/mouse and standard gamepad          |
+| Project   | Value                                         |
+| --------- | --------------------------------------------- |
+| Status    | Active v0.12 gameplay-expansion alpha         |
+| Theme     | Kickoff                                       |
+| Team      | Huntrix — 2 participants                      |
+| Platforms | Web and macOS first; Windows/Linux final-only |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron  |
+| Input     | Keyboard/mouse and standard gamepad           |
 
-### Release-candidate title screen
+### Current alpha title screen
 
-![Blood League: Kickoff release-candidate title screen](docs/screenshots/title-screen-rc.jpg)
+![Blood League: Kickoff v0.12 title screen](docs/screenshots/title-screen-v012.jpg)
 
 ### Production gameplay trailer
 
@@ -65,7 +65,11 @@ The playable pitch is now 136×88 world metres—roughly 68% more surface than t
 
 ### Settings
 
-![Persistent graphics, frame-rate, audio, sensitivity, and camera settings](docs/screenshots/settings.jpg)
+![Persistent graphics, frame-rate, audio, motion, accessibility, and camera settings](docs/screenshots/settings-v012.jpg)
+
+### Photo mode
+
+![Photo mode with orbit, zoom, exposure, filters, and clean capture](docs/screenshots/photo-mode-v012.jpg)
 
 ### Career
 
@@ -88,7 +92,7 @@ The playable pitch is now 136×88 world metres—roughly 68% more surface than t
 1. Move through the stadium and control space.
 2. Kick the ball through vampire crowds.
 3. Recall, redirect, or perfectly volley the returning ball.
-4. Dash through a forward slide tackle or turn a perfect volley into a bicycle-kick impact lane.
+4. Use ground/lob passes, or dash through a forward slide tackle and turn a perfect volley into a bicycle-kick impact lane.
 5. Collect blood shards and choose one of three upgrades.
 6. Score when the enemy goal opens.
 7. Survive the more dangerous kickoff phase.
@@ -125,19 +129,22 @@ Each stadium now has four mastery objectives—debut, victories, goals, and enem
 
 ## Controls
 
-| Action                | Input                                                                                  | Status                                                    |
-| --------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Move                  | `WASD`                                                                                 | Implemented                                               |
-| Aim / camera          | Mouse                                                                                  | Conventional vertical look by default; inversion optional |
-| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend         | Implemented                                               |
-| Recall ball           | Right mouse button or `E`                                                              | Implemented                                               |
-| Restart after kickoff | `R`                                                                                    | Implemented                                               |
-| Dash                  | `Space`                                                                                | Implemented with cooldown and brief invulnerability       |
-| Focus Kick ultimate   | `F`                                                                                    | Implemented with first-person slow-time aiming            |
-| Character ultimate    | `Q`                                                                                    | Unique signature ability for each of six characters       |
-| Pause                 | `Esc`                                                                                  | Implemented; also activates when the game loses focus     |
-| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                            | Implemented and persistent                                |
-| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus, `X` ultimate, Menu pause | Implemented with sensitivity and vibration settings       |
+| Action                | Input                                                                                          | Status                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Move                  | `WASD`                                                                                         | Implemented                                               |
+| Aim / camera          | Mouse                                                                                          | Conventional vertical look by default; inversion optional |
+| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend                 | Implemented                                               |
+| Ground pass           | Middle mouse button                                                                            | Implemented                                               |
+| Lob pass              | `Shift` + middle mouse button                                                                  | Implemented                                               |
+| Recall ball           | Right mouse button or `E`                                                                      | Implemented                                               |
+| Restart after kickoff | `R`                                                                                            | Implemented                                               |
+| Dash                  | `Space`                                                                                        | Implemented with cooldown and brief invulnerability       |
+| Focus Kick ultimate   | `F`                                                                                            | Implemented with first-person slow-time aiming            |
+| Character ultimate    | `Q`                                                                                            | Unique signature ability for each of six characters       |
+| Pause                 | `Esc`                                                                                          | Implemented; also activates when the game loses focus     |
+| Photo mode            | Pause → `PHOTO MODE`; arrows orbit, wheel zooms, `H` hides controls                            | Implemented with PNG capture                              |
+| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                                    | Implemented and persistent                                |
+| Gamepad               | Sticks move/aim, `RT` kick, `B` pass, right-stick click lob, `LT` recall, `A` dash, Menu pause | Implemented with sensitivity and vibration settings       |
 
 Controls and bindings may change during playtesting.
 
@@ -234,6 +241,11 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add twenty stadium-mastery challenges with persistent cosmetic-only rewards and Career equip controls
 - [x] Add architecture-specific reactive props that progressively fracture during match events
 - [x] Integrate audited ambientCG CC0 PBR turf maps
+- [x] Add ground/lob passes, enemy possession tackles, live goalkeeper shot prediction, and missed-dive punish windows
+- [x] Formalize eleven enemy combat roles with stable threat/silhouette metadata and stronger miniboss identities
+- [x] Add a deterministic 24-minute production-run plan and serializable eight-club tournament bracket foundation
+- [x] Add replay-highlight recording and an integrated photo mode with camera/exposure/filter/capture controls
+- [x] Add shake intensity, reduced-motion, and damage-number visibility settings
 - [x] Swept whole-ball goal detection prevents tunneling and requires the complete ball to cross the goal line inside the physical frame
 - [x] Special goalkeeper blocker protects the active scoring goal with dedicated state, elite presentation, and interception behavior
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback

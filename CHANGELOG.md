@@ -2,6 +2,16 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.12.0-alpha.1 — 2026-07-14
+
+- Added controlled ground passes and lob passes alongside charged, curved shots; enemy contact can now knock the ball loose and create a real possession-recovery duel.
+- Upgraded Count Goalkeeper with live trajectory prediction and a punishable vulnerability window after a missed dive.
+- Formalized all eleven ordinary enemies as readable combat roles with threat ratings and stable silhouette signatures; strengthened both miniboss silhouettes.
+- Added a deterministic 24-minute production-match plan and a serializable eight-club tournament bracket foundation without replacing the current faster standard-run pacing.
+- Added adaptive procedural match-audio state for pressure, crowd momentum, boss phases, pausing, goals, and outcomes.
+- Added Pause-menu Photo Mode with orbit, zoom, FOV, exposure, color filters, clean captures, and a bounded replay-highlight event buffer.
+- Added screen-shake intensity, reduced-motion, and damage-number visibility settings with schema migration and responsive UI.
+
 ## v0.11.0-alpha.1 — 2026-07-14
 
 - Added two always-available football combat verbs: dashing now performs a forward slide tackle, while successful volleys unleash a charge-scaled bicycle-kick impact lane with dedicated knockback and presentation feedback.

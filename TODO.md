@@ -100,8 +100,15 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Blood Multiball windows and possession objectives.
 - [x] `P1` Add twenty stadium mastery challenges and cosmetic-only unlock/equip progression.
 - [x] `P1` Add architecture-specific reactive props and audited CC0 PBR grass.
+- [x] `P1` Add ground/lob passes, contact possession loss, predictive goalkeeper dives, and missed-dive vulnerability.
+- [x] `P1` Add stable enemy combat-role/threat/silhouette metadata for all eleven archetypes.
+- [x] `P1` Add the deterministic production-match, tournament-bracket, and adaptive-audio foundations.
+- [x] `P1` Add integrated photo controls, PNG capture, bounded highlight events, and expanded motion/feedback settings.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
+- [ ] `P1` Connect tournament state to a persistent visible campaign screen and authored fixture flow.
+- [ ] `P1` Add commanded teammate formations/one-twos and full ghost-frame playback.
+- [ ] `P1` Add penalty shootouts, overtime, elemental pitch zones, and ordinary-enemy GLB/LOD families.
 - [x] `P0` Require swept whole-ball crossing inside the posts and under the crossbar for scoring.
 - [x] `P0` Create a three-minute mini-run with a clear win state.
 - [x] `P0` Add tutorial prompts that clear after demonstrated actions.
