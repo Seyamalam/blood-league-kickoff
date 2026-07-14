@@ -2,6 +2,18 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.9.0-rc.1 — 2026-07-14
+
+- Added weighted Common/Rare/Epic/Legendary upgrade drafting with two rerolls, one banish, one skip, owned-stack context, evolution partners, and build previews.
+- Added account-level weapon and curse unlocks, mastery-level-five bonuses, a full Career Codex, four difficulty leagues, and five stackable risk/reward modifiers.
+- Added long-shot, volley, rebound, setup-touch, placement, and goal-streak scoring with stronger hit-stop, camera, FOV, roll, and chromatic combat feedback.
+- Added deterministic nine-minute balance simulation across all six characters, representative builds, curses, elite modifiers, minibosses, and every Count Goalkeeper phase; simulated character power spread is bounded to 35%.
+- Gave all six characters distinct procedural accessories and locomotion, transformed Count Goalkeeper into a winged desperation form, and added animated Blood Moon stadium geometry and lighting.
+- Strengthened match announcements, cinematic letterboxing/vignettes, crowd response, evolution impact, boss transformation, and outcome-tail audio.
+- Added safe edge-triggered standard-gamepad pause/restart controls and retained conventional/inverted vertical camera settings.
+- Added deterministic upgrade/boss QA routes, fixed hidden evolution-toast leakage on the title screen, refreshed five 1280×720 release-candidate captures, and recorded a 15-second production gameplay trailer.
+- Added original Windows/macOS/Linux application icons and bumped desktop package metadata for the release-candidate line.
+
 ## v0.8.0-alpha.8 — 2026-07-14
 
 - Gave all six original characters fixed starting loadouts and distinct charge-based signature ultimates with authored icons, HUD feedback, rebindable keyboard/gamepad input, audio/VFX responses, and onboarding.

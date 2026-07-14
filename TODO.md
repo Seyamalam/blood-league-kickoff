@@ -170,6 +170,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] Add live run statistics to pause and fix short-viewport scrolling across every major overlay.
 - [x] Add consistent inline menu/action icons plus dedicated weapon, evolution, curse, and ultimate art.
 - [x] Add procedural ultimate, curse-contract, and miniboss cues.
+- [x] Add unique procedural character silhouettes and locomotion accents for all six archetypes.
+- [x] Give Count Goalkeeper a clearly readable winged second-form transformation.
+- [x] Transform the stadium during escalation/Blood Moon with moon, corona, runes, pylons, and phase light.
+- [x] Strengthen boss/evolution/outcome presentation and add varied crowd, evolution-impact, and transformation audio layers.
 
 - [x] `P0` Lock the low-poly gothic visual palette.
 - [x] `P0` Generate original key art, itch cover, and menu background.
@@ -194,11 +198,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add the multiball path.
 - [x] `P1` Add the black-hole path.
 - [x] `P1` Add remaining evolution combinations.
-- [ ] `P2` Add uniform/material variants and stadium transformations.
+- [x] `P2` Add uniform/material variants and stadium transformations.
 - [x] `P2` Add expanded victory presentation.
-- [ ] `P0` Update screenshots, feature list, credits, controls, and known issues.
+- [x] `P0` Update screenshots, feature list, credits, controls, and known issues.
 - [x] `P0` Refresh alpha.5 gameplay/settings captures, add the goalkeeper capture, and record current dimensions/hashes.
-- [ ] `P0` Commit/push verified content batches.
+- [x] `P0` Commit/push verified content batches.
 - [ ] `P0` Tag `v0.8.0`, publish artifacts, and test the downloaded release.
 
 ## UI, settings, and accessibility

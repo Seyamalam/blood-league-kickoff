@@ -6,16 +6,20 @@
 
 | Project   | Value                                                            |
 | --------- | ---------------------------------------------------------------- |
-| Status    | Complete nine-minute run alpha in active development             |
+| Status    | Feature-complete v0.9 release candidate                          |
 | Theme     | Kickoff                                                          |
 | Team      | Huntrix — 2 participants                                         |
-| Platforms | Web and macOS during alpha; Windows x64 and Linux x64 final-only |
+| Platforms | Web, macOS, Windows x64, and Linux x64                          |
 | Stack     | Three.js, TypeScript, Vite, Rapier, Electron                     |
 | Input     | Keyboard/mouse and standard gamepad                              |
 
-### Current title screen
+### Release-candidate title screen
 
-![Blood League: Kickoff title screen](docs/screenshots/title-screen-alpha8.jpg)
+![Blood League: Kickoff release-candidate title screen](docs/screenshots/title-screen-rc.jpg)
+
+### Production gameplay trailer
+
+[Watch the 15-second production WebGL gameplay capture](docs/media/gameplay-trailer-rc.webm)
 
 ## The Game
 
@@ -37,15 +41,23 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![The special goalkeeper blocker guarding the regulation-size goal](docs/screenshots/goalkeeper.jpg)
 
+![Count Goalkeeper's winged second form during Blood Moon](docs/screenshots/boss-second-form-rc.jpg)
+
 ### Secondary weapon spectacle
 
 ![All five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons.jpg)
 
 ### Progression
 
-![Three-choice upgrade selection with authored icons](docs/screenshots/upgrade.jpg)
+![Weighted upgrade draft with reroll, banish, skip, rarity, and evolution preview](docs/screenshots/upgrade-draft-rc.jpg)
 
 ![Moon Breaker evolution unlock presentation](docs/screenshots/evolution.jpg)
+
+### Difficulty and Codex
+
+![League difficulty and optional match modifiers](docs/screenshots/difficulty-rc.jpg)
+
+![Unlockable character, weapon, evolution, enemy, and curse Codex](docs/screenshots/codex-rc.jpg)
 
 ### Settings
 
@@ -93,6 +105,10 @@ The next replayability layer uses six original football-style archetypes. They d
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. Original portraits/models remain future visual polish.
 
 Five passive upgrades now join twenty-one active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. The football armory adds Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone. Four new combinations—**Royal Header**, **Tempest Set Piece**, **Phantom Formation**, and **Referee's Reckoning**—expand the evolution roster to eleven. Six optional cursed contracts trade safety for stronger rewards and a more aggressive encounter director.
+
+Each level-up is now a weighted Common/Rare/Epic/Legendary draft with two rerolls, one banish, and one skip per run. Cards expose owned stacks, evolution partners, and the build they advance. Account level unlocks additional weapons, curses, league tiers, and characters; the Career Codex records characters, weapons, evolutions, enemies, elite affixes, and curses.
+
+Four league tiers—Rookie, Professional, Champion, and Nightmare—can be combined with up to three of five challenge modifiers. Enemy pressure and career rewards scale together, so higher difficulty changes both the match and its progression payoff.
 
 A versioned local profile records account XP, six character unlock levels, 20-level character mastery with gameplay perks and rewards, eighteen achievements, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. Standard, daily, weekly, cursed-contract, and custom-seed runs preserve their seed and ruleset metadata. The Career screen exposes exact-build local score, fastest-victory, current-daily, and current-weekly tables. These rankings never claim to be global or cheat-proof.
 
@@ -201,6 +217,9 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, conventional/inverted vertical look, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
+- [x] Count Goalkeeper desperation phase transforms into a winged second form with an animated blood cape, halo, crown, and phase light
+- [x] Escalation and Blood Moon stadium transformations add an animated moon/corona, pitch runes, pylons, and phase lighting with owned-resource cleanup
+- [x] Six character archetypes have distinct procedural silhouette accessories and locomotion animation without external runtime assets
 - [x] Every secondary weapon and evolution can damage Count Goalkeeper through capped boss-only routing without granting ordinary kill rewards
 - [x] Five automatic evolutions: Moon Breaker, Crimson Meteor, Grave-Frost Wake, Storm Halo, and Phantom Singularity
 - [x] Add six football-armory weapons and four football-themed evolutions with bounded pools and authored icons
@@ -211,10 +230,16 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Power, Pace, and Control halftime choices apply distinct second-half combat bonuses
 - [x] Goal celebrations reset the live formation and begin a fresh kickoff without erasing run progress
 - [x] Stage-reactive fog, lighting, embers, and animated match announcements communicate escalation
+- [x] Cinematic letterbox/vignette presentation strengthens boss reveals, evolutions, Blood Moon, victory, and defeat beats
 - [x] Count Goalkeeper summons readable boosted Winger and Defender elites
 - [x] Accessible pause menu and detailed victory/defeat results with run statistics and final loadout
 - [x] Add a live in-run telemetry screen with damage-source shares, healing, blocks, kicks, dashes, volleys, and goals
 - [x] Add custom-seed runs, goal-quality rewards, and eighteen persistent achievements
+- [x] Add weighted Common/Rare/Epic/Legendary upgrade drafts with two rerolls, one banish, one skip, owned-stack context, and evolution previews
+- [x] Add account-level weapon/curse unlocks, mastery-level-five bonuses, and a full Career Codex
+- [x] Add Rookie, Professional, Champion, and Nightmare leagues plus five stackable challenge modifiers and reward scaling
+- [x] Add long-shot, volley, rebound, setup-touch, placement, and goal-streak scoring feedback
+- [x] Add deterministic nine-minute simulations for every character, representative builds, curses, elites, minibosses, and Count phases
 - [x] Focus-loss and hidden-window pause protection
 - [x] Seven-step first-run tutorial for movement, kick, recall, dash, character ultimate, progression, and scoring
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
@@ -255,7 +280,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Electron shell created and booted on macOS
 - [x] Tag-triggered verified web/macOS prerelease workflow added; Windows/Linux packaging remains explicit manual final-only work
 - [x] `v0.8.0-alpha.4` published with nine CI-built artifacts and a verified combined SHA-256 manifest
-- [ ] Download and smoke-test the exact published `v0.8.0-alpha.5` web/macOS artifacts
+- [ ] Download and smoke-test the exact published `v0.9.0-rc.1` web/macOS artifacts
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
@@ -273,6 +298,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [Release process](docs/RELEASE_PROCESS.md)
 - [Asset credits](docs/ASSET_CREDITS.md)
 - [Submission asset inventory](docs/ASSET_INVENTORY.md)
+- [Release-candidate QA record](docs/RELEASE_CANDIDATE_QA.md)
 - [Performance baseline](docs/PERFORMANCE_BASELINE.md)
 - [Changelog](CHANGELOG.md)
 
@@ -323,8 +349,9 @@ Planned release line:
 | `v0.8.0-alpha.3` | Cross-platform packaging, pacing, and release hardening  |
 | `v0.8.0-alpha.4` | Native release-pipeline correction                       |
 | `v0.8.0-alpha.5` | Regulation field, scoring, goalkeeper, and aiming pass   |
+| `v0.8.0-alpha.8` | Content, encounters, characters, and UI expansion        |
 | `v0.8.0`         | Content and presentation complete                        |
-| `v0.9.0`         | Release candidate                                        |
+| `v0.9.0-rc.1`    | Feature-complete release candidate                       |
 | `v1.0.0`         | Jam submission freeze                                    |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.

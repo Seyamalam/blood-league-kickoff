@@ -145,10 +145,18 @@ Evolutions unlock automatically when both components are owned. Component availa
 | Phantom Singularity | Ghost Pass + Void Goal               | Each ghost opens one pooled gravity well on first hit |
 | Thunderclap Rush    | Dash Shockwave + Storm Studs         | Wider, stronger, storm-charged dash eruptions         |
 | Sacred Aegis        | Consecrated Pitch + Blood Barrier    | Stronger holy zones and faster barrier recovery       |
+| Royal Header        | Header Cannon + Silver Ball          | Charged headers create a devastating shock ring       |
+| Tempest Set Piece   | Corner Storm + Penalty Mine          | Corner strikes seed stronger explosive penalty mines  |
+| Phantom Formation   | Spectral Teammate + Spectral Volley  | Adds a striker and accelerates the spectral attack    |
+| Referee's Reckoning | Red Card + Boot Cyclone              | Executions trigger stronger boot cyclones             |
 
 ## Persistent Progression and Rankings
 
-Run upgrades reset at kickoff; the local profile persists replay goals without turning the standard leaderboard into a permanent-stat advantage contest. The implemented data/store foundation includes account XP and level, 20-level per-character mastery rewards/perks, character unlock levels, ten challenges, deterministic standard/daily/weekly run metadata, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs.
+Run upgrades reset at kickoff; the local profile persists replay goals without turning the standard leaderboard into a permanent-stat advantage contest. The implemented data/store foundation includes account XP and level, 20-level per-character mastery rewards/perks, character/weapon/curse unlock levels, eighteen achievements, deterministic standard/daily/weekly run metadata, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. The Career Codex records discovery and unlock state across characters, weapons, evolutions, enemies, elite affixes, and curses.
+
+Level-up offers use weighted Common/Rare/Epic/Legendary rarity, always preserve weapon/passive offer diversity when possible, and provide two rerolls, one banish, and one skip per run. Cards show current stacks, relevant evolution recipes, and a preview of what the selection changes.
+
+Rookie, Professional, Champion, and Nightmare leagues scale encounter pressure and career rewards. Players may combine up to three optional modifiers—Extra Time, Dry Veins, Elite League, One Touch, and Blood Rush—for additional risk and reward.
 
 Local/offline rankings expose highest score and fastest victory. They are partitioned by exact build version and may be filtered by character so balance changes and archetypes are not mixed unfairly. The Career screen presents profile, challenge, mastery, run history, character selection, and these device-local tables. They are not global, server-verified, or cheat-proof.
 
