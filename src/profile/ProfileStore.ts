@@ -3,20 +3,31 @@ import { accountLevelForXp, updateLifetime, updateMastery, updatePersonalBests }
 import { calculateRunAccountXp } from './runRewards';
 import { masteryLevelForXp, newlyUnlockedMasteryRewards } from './mastery';
 import {
+  challengesForStadium,
+  cloneStadiumMastery,
+  createEmptyStadiumMastery,
+  stadiumCosmetic,
+  updateStadiumMastery,
+} from './stadiumMastery';
+import {
   CHALLENGE_IDS,
   CHARACTER_IDS,
+  PROFILE_STADIUM_IDS,
   type ChallengeId,
   type ChallengeProgress,
   type CharacterId,
   type CharacterMastery,
+  type CosmeticSlot,
   type CompletedRun,
   type LifetimeStatistics,
   type PersonalBests,
   type PlayerProfile,
+  type ProfileStadiumId,
   type ProfileDocumentV1,
   type RunRecord,
   type RunSettlement,
   type StorageLike,
+  type StadiumMasteryProgress,
 } from './types';
 import { unlockedCharactersForLevel } from './unlocks';
 
@@ -58,6 +69,8 @@ export class ProfileStore {
         newlyUnlockedCharacterIds: [],
         completedChallengeIds: [],
         newlyUnlockedMasteryRewardIds: [],
+        completedStadiumChallengeIds: [],
+        newlyUnlockedCosmeticIds: [],
       };
     }
 
@@ -68,6 +81,7 @@ export class ProfileStore {
       masteryXpEarned: accountXpEarned,
     };
     const previousUnlocked = new Set(this.profile.unlockedCharacterIds);
+    const previousCosmetics = new Set(this.profile.unlockedCosmeticIds);
     const characterMastery = cloneMastery(this.profile.characterMastery);
     const previousMasteryLevel = masteryLevelForXp(characterMastery[run.characterId].xp);
     characterMastery[run.characterId] = updateMastery(
@@ -75,11 +89,20 @@ export class ProfileStore {
       run,
       record.masteryXpEarned,
     );
+    const stadiumUpdate = updateStadiumMastery(this.profile.stadiumMastery, run);
+    const newlyUnlockedCosmeticIds = stadiumUpdate.unlockedCosmeticIds.filter(
+      (cosmeticId) => !previousCosmetics.has(cosmeticId),
+    );
     const next: PlayerProfile = {
       ...cloneProfile(this.profile),
       updatedAt: run.completedAt,
       accountXp: this.profile.accountXp + accountXpEarned,
       characterMastery,
+      stadiumMastery: stadiumUpdate.progress,
+      unlockedCosmeticIds: uniqueStrings([
+        ...this.profile.unlockedCosmeticIds,
+        ...stadiumUpdate.unlockedCosmeticIds,
+      ]),
       lifetime: updateLifetime(this.profile.lifetime, run),
       personalBests: updatePersonalBests(this.profile.personalBests, run),
       recentRuns: [record, ...this.profile.recentRuns].slice(0, MAX_RECENT_RUNS),
@@ -120,6 +143,8 @@ export class ProfileStore {
       newlyUnlockedCharacterIds,
       completedChallengeIds: challengeUpdate.completed,
       newlyUnlockedMasteryRewardIds,
+      completedStadiumChallengeIds: stadiumUpdate.completedChallengeIds,
+      newlyUnlockedCosmeticIds,
     };
   }
 
@@ -127,6 +152,31 @@ export class ProfileStore {
     if (!this.profile.unlockedCharacterIds.includes(characterId)) return false;
     if (this.profile.selectedCharacterId === characterId) return true;
     this.profile = { ...cloneProfile(this.profile), selectedCharacterId: characterId, updatedAt: this.now() };
+    this.persist();
+    this.emit();
+    return true;
+  }
+
+  /** Equip an earned presentation-only reward. This never changes combat modifiers. */
+  public equipCosmetic(cosmeticId: string): boolean {
+    const cosmetic = stadiumCosmetic(cosmeticId);
+    if (!cosmetic || !this.profile.unlockedCosmeticIds.includes(cosmeticId)) return false;
+    if (this.profile.equippedCosmetics[cosmetic.slot] === cosmeticId) return true;
+    this.profile = {
+      ...cloneProfile(this.profile),
+      equippedCosmetics: { ...this.profile.equippedCosmetics, [cosmetic.slot]: cosmeticId },
+      updatedAt: this.now(),
+    };
+    this.persist();
+    this.emit();
+    return true;
+  }
+
+  public unequipCosmetic(slot: CosmeticSlot): boolean {
+    if (!this.profile.equippedCosmetics[slot]) return false;
+    const equippedCosmetics = { ...this.profile.equippedCosmetics };
+    delete equippedCosmetics[slot];
+    this.profile = { ...cloneProfile(this.profile), equippedCosmetics, updatedAt: this.now() };
     this.persist();
     this.emit();
     return true;
@@ -186,6 +236,9 @@ export function createDefaultProfile(now = new Date().toISOString()): PlayerProf
     unlockedCharacterIds: ['maestro'],
     characterMastery: emptyMastery(),
     challengeProgress: emptyChallengeProgress(),
+    stadiumMastery: createEmptyStadiumMastery(),
+    unlockedCosmeticIds: [],
+    equippedCosmetics: {},
     lifetime: emptyLifetime(),
     personalBests: emptyPersonalBests(),
     recentRuns: [],
@@ -221,6 +274,9 @@ export function sanitizeProfile(value: unknown, fallback = createDefaultProfile(
     unlockedCharacterIds,
     characterMastery: sanitizeMastery(value.characterMastery),
     challengeProgress: sanitizeChallenges(value.challengeProgress),
+    stadiumMastery: sanitizeStadiumMastery(value.stadiumMastery),
+    unlockedCosmeticIds: sanitizeUnlockedCosmetics(value.unlockedCosmeticIds),
+    equippedCosmetics: sanitizeEquippedCosmetics(value.equippedCosmetics, value.unlockedCosmeticIds),
     lifetime: sanitizeLifetime(value.lifetime),
     personalBests: sanitizePersonalBests(value.personalBests),
     recentRuns,
@@ -262,6 +318,7 @@ function sanitizeReplayMetadata(
   | 'difficultyId'
   | 'challengeModifierIds'
   | 'rewardMultiplier'
+  | 'stadiumId'
 > {
   const metadata: Pick<
     CompletedRun,
@@ -273,6 +330,7 @@ function sanitizeReplayMetadata(
     | 'difficultyId'
     | 'challengeModifierIds'
     | 'rewardMultiplier'
+    | 'stadiumId'
   > = {};
   if (typeof value.seed === 'number' && Number.isFinite(value.seed))
     metadata.seed = Math.floor(value.seed) >>> 0;
@@ -286,6 +344,7 @@ function sanitizeReplayMetadata(
   if (typeof value.rewardMultiplier === 'number' && Number.isFinite(value.rewardMultiplier)) {
     metadata.rewardMultiplier = Math.max(0.1, Math.min(5, value.rewardMultiplier));
   }
+  if (isProfileStadiumId(value.stadiumId)) metadata.stadiumId = value.stadiumId;
   return metadata;
 }
 
@@ -344,6 +403,48 @@ function sanitizeChallenges(value: unknown): Record<ChallengeId, ChallengeProgre
       ];
     }),
   ) as Record<ChallengeId, ChallengeProgress>;
+}
+
+function sanitizeStadiumMastery(value: unknown): Record<ProfileStadiumId, StadiumMasteryProgress> {
+  const source = isRecord(value) ? value : {};
+  return Object.fromEntries(
+    PROFILE_STADIUM_IDS.map((stadiumId) => {
+      const item = isRecord(source[stadiumId]) ? source[stadiumId] : {};
+      const validChallengeIds = new Set(challengesForStadium(stadiumId).map((definition) => definition.id));
+      return [
+        stadiumId,
+        {
+          matches: integer(item.matches),
+          wins: integer(item.wins),
+          goals: integer(item.goals),
+          kills: integer(item.kills),
+          bestScore: integer(item.bestScore),
+          completedChallengeIds: uniqueStrings(array(item.completedChallengeIds)).filter((id) =>
+            validChallengeIds.has(id),
+          ),
+        },
+      ];
+    }),
+  ) as Record<ProfileStadiumId, StadiumMasteryProgress>;
+}
+
+function sanitizeUnlockedCosmetics(value: unknown): string[] {
+  return uniqueStrings(array(value)).filter((cosmeticId) => stadiumCosmetic(cosmeticId) !== null);
+}
+
+function sanitizeEquippedCosmetics(
+  value: unknown,
+  unlockedValue: unknown,
+): Partial<Record<CosmeticSlot, string>> {
+  const source = isRecord(value) ? value : {};
+  const unlocked = new Set(sanitizeUnlockedCosmetics(unlockedValue));
+  const result: Partial<Record<CosmeticSlot, string>> = {};
+  for (const slot of ['title', 'banner', 'goalEffect', 'trail'] as const) {
+    const cosmeticId = source[slot];
+    const cosmetic = typeof cosmeticId === 'string' ? stadiumCosmetic(cosmeticId) : null;
+    if (cosmetic && cosmetic.slot === slot && unlocked.has(cosmetic.id)) result[slot] = cosmetic.id;
+  }
+  return result;
 }
 
 function emptyLifetime(): LifetimeStatistics {
@@ -407,6 +508,9 @@ function cloneProfile(profile: Readonly<PlayerProfile>): PlayerProfile {
     challengeProgress: Object.fromEntries(
       CHALLENGE_IDS.map((id) => [id, { ...profile.challengeProgress[id] }]),
     ) as Record<ChallengeId, ChallengeProgress>,
+    stadiumMastery: cloneStadiumMastery(profile.stadiumMastery),
+    unlockedCosmeticIds: [...profile.unlockedCosmeticIds],
+    equippedCosmetics: { ...profile.equippedCosmetics },
     lifetime: { ...profile.lifetime },
     personalBests: { ...profile.personalBests },
     recentRuns: profile.recentRuns.map((run) => ({
@@ -438,6 +542,10 @@ function browserStorage(): StorageLike | null {
 
 function isCharacterId(value: unknown): value is CharacterId {
   return typeof value === 'string' && CHARACTER_IDS.includes(value as CharacterId);
+}
+
+function isProfileStadiumId(value: unknown): value is ProfileStadiumId {
+  return typeof value === 'string' && PROFILE_STADIUM_IDS.includes(value as ProfileStadiumId);
 }
 
 function isRecordedRunMode(value: unknown): value is CompletedRun['runMode'] {

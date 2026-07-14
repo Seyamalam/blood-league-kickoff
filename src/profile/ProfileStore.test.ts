@@ -80,6 +80,7 @@ describe('ProfileStore', () => {
         difficultyId: 'champion',
         challengeModifierIds: ['noHealing', 'eliteLeague'],
         rewardMultiplier: 1.75,
+        stadiumId: 'emerald-cathedral',
       }),
     );
     const document = JSON.parse(values.get('profile') ?? '{}');
@@ -92,7 +93,34 @@ describe('ProfileStore', () => {
       difficultyId: 'champion',
       challengeModifierIds: ['noHealing', 'eliteLeague'],
       rewardMultiplier: 1.75,
+      stadiumId: 'emerald-cathedral',
     });
+  });
+
+  it('persists stadium mastery cosmetics and equips only earned rewards', () => {
+    const { storage } = memoryStorage();
+    const store = new ProfileStore('profile', storage, () => '2026-07-14T13:00:00.000Z');
+    const first = store.recordRun(
+      run('stadium', {
+        stadiumId: 'blood-court',
+        outcome: 'victory',
+        goals: 2,
+        kills: 20,
+      }),
+    );
+
+    expect(first.completedStadiumChallengeIds).toEqual(['blood-court-debut']);
+    expect(first.newlyUnlockedCosmeticIds).toEqual(['blood-court-title']);
+    expect(store.equipCosmetic('moonlit-classic-title')).toBe(false);
+    expect(store.equipCosmetic('blood-court-title')).toBe(true);
+    expect(store.value.equippedCosmetics).toEqual({ title: 'blood-court-title' });
+    expect(store.unequipCosmetic('banner')).toBe(false);
+    expect(new ProfileStore('profile', storage).value).toMatchObject({
+      unlockedCosmeticIds: ['blood-court-title'],
+      equippedCosmetics: { title: 'blood-court-title' },
+      stadiumMastery: { 'blood-court': { matches: 1, wins: 1, goals: 2, kills: 20 } },
+    });
+    expect(store.unequipCosmetic('title')).toBe(true);
   });
 
   it('caps visible history at twenty while retaining duplicate guards', () => {
@@ -139,6 +167,7 @@ describe('ProfileStore', () => {
     expect(store.value.lifetime.matchesPlayed).toBe(1);
     expect(store.reset()).toMatchObject(createDefaultProfile(store.value.updatedAt));
     expect(store.value.lifetime.matchesPlayed).toBe(0);
+    expect(store.value.unlockedCosmeticIds).toEqual([]);
   });
 
   it('sanitizes partial stored profiles and rejects invalid run identities', () => {
@@ -155,6 +184,7 @@ describe('ProfileStore', () => {
     expect(store.value.unlockedCharacterIds).toEqual(['maestro', 'breakaway', 'guardian']);
     expect(store.value.selectedCharacterId).toBe('guardian');
     expect(store.value.lifetime.matchesPlayed).toBe(0);
+    expect(store.value.stadiumMastery['blood-court'].matches).toBe(0);
     expect(store.recordRun({ ...run(''), id: '' }).applied).toBe(false);
   });
 });

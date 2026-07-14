@@ -2850,6 +2850,39 @@ button {
     sans-serif;
   letter-spacing: 0.14em;
 }
+
+.career-stadiums {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.career-stadium {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--blood) 34%, transparent);
+  background: rgba(8, 8, 15, 0.78);
+}
+
+.career-stadium > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.career-stadium__cosmetics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.career-stadium__cosmetics button {
+  min-height: 2.4rem;
+  padding: 0.4rem;
+  font-size: 0.66rem;
+}
 .career-account__summary {
   padding: 14px;
   border: 1px solid #4b3347;

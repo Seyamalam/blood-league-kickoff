@@ -6,3 +6,4 @@ export * from './challenges';
 export * from './unlocks';
 export * from './mastery';
 export * from './contentUnlocks';
+export * from './stadiumMastery';

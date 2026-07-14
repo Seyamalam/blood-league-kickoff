@@ -4,6 +4,17 @@ export type CharacterId = (typeof CHARACTER_IDS)[number];
 export type RunOutcome = 'victory' | 'defeat';
 export type RecordedRunMode = 'standard' | 'daily' | 'weekly' | 'custom';
 
+export const PROFILE_STADIUM_IDS = [
+  'blood-court',
+  'moonlit-classic',
+  'emerald-cathedral',
+  'royal-amethyst',
+  'frostbound-arena',
+] as const;
+
+export type ProfileStadiumId = (typeof PROFILE_STADIUM_IDS)[number];
+export type CosmeticSlot = 'title' | 'banner' | 'goalEffect' | 'trail';
+
 export const CHALLENGE_IDS = [
   'firstMatch',
   'firstVictory',
@@ -57,6 +68,8 @@ export interface CompletedRun {
   difficultyId?: string;
   challengeModifierIds?: readonly string[];
   rewardMultiplier?: number;
+  /** Stadium provenance used by cosmetic-only stadium mastery. */
+  stadiumId?: ProfileStadiumId;
 }
 
 export interface RunRecord extends CompletedRun {
@@ -74,6 +87,15 @@ export interface CharacterMastery {
 export interface ChallengeProgress {
   value: number;
   completedAt: string | null;
+}
+
+export interface StadiumMasteryProgress {
+  matches: number;
+  wins: number;
+  goals: number;
+  kills: number;
+  bestScore: number;
+  completedChallengeIds: string[];
 }
 
 export interface LifetimeStatistics {
@@ -104,6 +126,9 @@ export interface PlayerProfile {
   unlockedCharacterIds: CharacterId[];
   characterMastery: Record<CharacterId, CharacterMastery>;
   challengeProgress: Record<ChallengeId, ChallengeProgress>;
+  stadiumMastery: Record<ProfileStadiumId, StadiumMasteryProgress>;
+  unlockedCosmeticIds: string[];
+  equippedCosmetics: Partial<Record<CosmeticSlot, string>>;
   lifetime: LifetimeStatistics;
   personalBests: PersonalBests;
   recentRuns: RunRecord[];
@@ -126,6 +151,8 @@ export interface RunSettlement {
   newlyUnlockedCharacterIds: readonly CharacterId[];
   completedChallengeIds: readonly ChallengeId[];
   newlyUnlockedMasteryRewardIds: readonly string[];
+  completedStadiumChallengeIds: readonly string[];
+  newlyUnlockedCosmeticIds: readonly string[];
 }
 
 export interface StorageLike {

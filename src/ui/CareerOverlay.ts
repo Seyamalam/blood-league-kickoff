@@ -22,7 +22,10 @@ import {
   UPGRADE_UNLOCK_LEVELS,
   masteryLevelForXp,
   masteryRewardsFor,
+  PROFILE_STADIUM_IDS,
   ProfileStore,
+  STADIUM_COSMETICS,
+  challengesForStadium,
   totalAccountXpForLevel,
   type ChallengeId,
   type CharacterId,
@@ -72,11 +75,24 @@ export interface CareerViewModel {
   levelXpTarget: number;
   characters: readonly CareerCharacterView[];
   challenges: readonly CareerChallengeView[];
+  stadiums: readonly CareerStadiumView[];
   recentRuns: readonly RunRecord[];
   scoreBoard: readonly RunRecord[];
   fastestVictoryBoard: readonly RunRecord[];
   dailyBoard: readonly RunRecord[];
   weeklyBoard: readonly RunRecord[];
+}
+
+export interface CareerStadiumView {
+  id: string;
+  name: string;
+  matches: number;
+  wins: number;
+  goals: number;
+  kills: number;
+  completed: number;
+  target: number;
+  cosmetics: readonly { id: string; name: string; unlocked: boolean; equipped: boolean }[];
 }
 
 export interface CodexEntryView {
@@ -100,6 +116,7 @@ export class CareerOverlay {
   private readonly personalBests: HTMLElement;
   private readonly characterGrid: HTMLElement;
   private readonly challengeList: HTMLElement;
+  private readonly stadiumGrid: HTMLElement;
   private readonly codex: HTMLElement;
   private readonly recentRuns: HTMLElement;
   private readonly scoreBoard: HTMLElement;
@@ -148,6 +165,10 @@ export class CareerOverlay {
             <header><h3 id="career-challenges-title">CHALLENGES</h3><p>Career objectives update after each completed run.</p></header>
             <ol class="career-challenges"></ol>
           </section>
+          <section class="career-section" aria-labelledby="career-stadiums-title">
+            <header><h3 id="career-stadiums-title">STADIUM MASTERY</h3><p>Complete arena-specific objectives to unlock cosmetic titles, banners, goal effects, and trails.</p></header>
+            <div class="career-stadiums"></div>
+          </section>
           <section class="career-section career-codex" aria-labelledby="career-codex-title">
             <header><h3 id="career-codex-title">NIGHT LEAGUE CODEX</h3><p>Discover characters, armory, evolutions, opposition, and curse contracts.</p></header>
             <div class="career-codex__groups"></div>
@@ -179,6 +200,7 @@ export class CareerOverlay {
     this.personalBests = requiredElement(this.element, '.career-account__bests');
     this.characterGrid = requiredElement(this.element, '.career-characters');
     this.challengeList = requiredElement(this.element, '.career-challenges');
+    this.stadiumGrid = requiredElement(this.element, '.career-stadiums');
     this.codex = requiredElement(this.element, '.career-codex__groups');
     this.recentRuns = requiredElement(this.element, '.career-runs');
     this.scoreBoard = requiredElement(this.element, '.career-score-board');
@@ -228,6 +250,7 @@ export class CareerOverlay {
     this.renderAccount(profile, view);
     this.renderCharacters(view.characters);
     this.renderChallenges(view.challenges);
+    this.renderStadiums(view.stadiums);
     this.renderCodex(createCodexViewModel(profile));
     renderRuns(this.recentRuns, view.recentRuns, 'No completed runs saved yet.');
     renderBoard(this.scoreBoard, view.scoreBoard, 'score');
@@ -309,6 +332,26 @@ export class CareerOverlay {
     );
   }
 
+  private renderStadiums(stadiums: readonly CareerStadiumView[]): void {
+    this.stadiumGrid.replaceChildren(
+      ...stadiums.map((stadium) => {
+        const article = document.createElement('article');
+        article.className = 'career-stadium';
+        article.innerHTML = `
+          <header><h4>${stadium.name}</h4><strong>${stadium.completed} / ${stadium.target}</strong></header>
+          <progress value="${stadium.completed}" max="${stadium.target}" aria-label="${stadium.name} mastery"></progress>
+          <small>${stadium.matches} matches · ${stadium.wins} wins · ${stadium.goals} goals · ${stadium.kills} kills</small>
+          <div class="career-stadium__cosmetics">${stadium.cosmetics
+            .map(
+              (cosmetic) =>
+                `<button type="button" data-cosmetic-id="${cosmetic.id}" ${cosmetic.unlocked && !cosmetic.equipped ? '' : 'disabled'}>${cosmetic.equipped ? '✓ ' : cosmetic.unlocked ? '' : '🔒 '}${cosmetic.name}</button>`,
+            )
+            .join('')}</div>`;
+        return article;
+      }),
+    );
+  }
+
   private renderCodex(entries: readonly CodexEntryView[]): void {
     const categories: readonly CodexEntryView['category'][] = [
       'character',
@@ -343,6 +386,13 @@ export class CareerOverlay {
   }
 
   private readonly handleClick = (event: MouseEvent): void => {
+    const cosmeticButton =
+      event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-cosmetic-id]') : null;
+    if (cosmeticButton && !cosmeticButton.disabled) {
+      const cosmeticId = cosmeticButton.dataset.cosmeticId;
+      if (cosmeticId) this.store.equipCosmetic(cosmeticId);
+      return;
+    }
     const target =
       event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-character-id]') : null;
     if (!target || target.disabled) return;
@@ -532,6 +582,29 @@ export function createCareerViewModel(
         completed: progress.completedAt !== null,
       };
     }),
+    stadiums: PROFILE_STADIUM_IDS.map((id) => {
+      const progress = profile.stadiumMastery[id];
+      const challenges = challengesForStadium(id);
+      return {
+        id,
+        name: stadiumName(id),
+        matches: progress.matches,
+        wins: progress.wins,
+        goals: progress.goals,
+        kills: progress.kills,
+        completed: progress.completedChallengeIds.length,
+        target: challenges.length,
+        cosmetics: challenges.map((challenge) => {
+          const cosmetic = STADIUM_COSMETICS[challenge.cosmeticId]!;
+          return {
+            id: cosmetic.id,
+            name: cosmetic.name,
+            unlocked: profile.unlockedCosmeticIds.includes(cosmetic.id),
+            equipped: profile.equippedCosmetics[cosmetic.slot] === cosmetic.id,
+          };
+        }),
+      };
+    }),
     recentRuns: profile.recentRuns.map(cloneRun),
     scoreBoard: repository
       .getEntries({ category: 'score', buildVersion, limit: 10 })
@@ -558,6 +631,13 @@ export function createCareerViewModel(
       })
       .map((entry) => cloneRun(entry.run)),
   };
+}
+
+function stadiumName(id: (typeof PROFILE_STADIUM_IDS)[number]): string {
+  return id
+    .split('-')
+    .map((part) => part[0]!.toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function renderRuns(root: HTMLElement, runs: readonly RunRecord[], emptyMessage: string): void {

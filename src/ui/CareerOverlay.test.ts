@@ -39,6 +39,8 @@ describe('career overlay view model', () => {
     });
     expect(view.characters[1]).toMatchObject({ id: 'breakaway', unlocked: false, unlockLevel: 2 });
     expect(view.challenges).toHaveLength(Object.keys(CHALLENGE_DEFINITIONS).length);
+    expect(view.stadiums).toHaveLength(5);
+    expect(view.stadiums[0]).toMatchObject({ name: 'Blood Court', completed: 0, target: 4 });
     expect(view.recentRuns).toEqual([]);
     expect(view.scoreBoard).toEqual([]);
     expect(view.fastestVictoryBoard).toEqual([]);
