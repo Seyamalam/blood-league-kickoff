@@ -86,9 +86,9 @@ The base rig is locked to a cool moon key, dim hemisphere fill, and one crimson 
 
 - Background and opening fog: `night-950`; exponential fog density `0.018`.
 - Moon: `moon-300`, intensity `3.2`, from high camera-left; one `2048x2048` soft shadow map.
-- Hemisphere: `moon-500` over deep burgundy `#1D0811`, intensity `1.15`.
+- Hemisphere: `moon-500` over deep burgundy `#1D0811`, intensity `1.45`.
 - Blood light: `#C51F4D`, intensity `22`, range `36`, behind the opponent side.
-- Renderer: sRGB output, ACES filmic tone mapping, exposure `1.05`, pixel ratio capped at `1.6`.
+- Renderer: sRGB output, ACES filmic tone mapping, exposure `1.14`, pixel ratio capped at `1.6`.
 
 Match phases may shift background, fog, and the single atmosphere accent, but must preserve the bone player/ball anchor. Blood Moon and final wave can reach `blood-400`; victory shifts to `#FFDC78`; defeat falls toward `#040407` with a muted `#68112C` accent.
 

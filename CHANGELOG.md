@@ -4,6 +4,9 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Rebuilt the stadium readability layer with brighter pitch landmarks, low boards plus collision-matched upper fencing, spatially deep goals and nets, arena rails, tiered stands, and two-ended instanced crowds.
+- Simplified the scoring beacon into a goal-aligned halo, arrow, beam, and shadow-free light so it highlights the authored goal instead of drawing a second offset frame.
+- Added semantic render regression coverage for stadium landmarks, goal structure, instanced crowd resources, arena lighting, and the goal-beacon lifecycle.
 - Replaced the continuous time-only enemy formula with a data-driven Spawn Director: every combat stage now owns its ramping population cap, cadence, and weighted roster, while goals, halftime, victory, and death stop ordinary spawns.
 - Added deterministic Spawn Director and non-combat rest-stage coverage; the complete suite now contains 128 passing tests.
 

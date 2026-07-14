@@ -147,6 +147,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Full nine-minute match director with two goals, halftime tactics, Blood Moon, boss wave, and victory screen
 - [x] Phase-aware Spawn Director with authored population caps, spawn cadence, roster weights, and rest stages
 - [x] On-pitch animated goal beacon during scoring opportunities
+- [x] Readable two-tier arena boards, collision-matched upper fencing, deep goal frames/nets, full pitch markings, and instanced crowds at both ends
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
