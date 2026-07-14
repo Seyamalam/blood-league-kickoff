@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
+import { PlayerCharacterAsset } from '../objects/PlayerCharacterAsset';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -39,6 +40,7 @@ interface EnemyVisual {
 
 export class RenderBridge {
   private readonly player: THREE.Group;
+  private readonly playerAsset: PlayerCharacterAsset;
   private readonly ball: THREE.Mesh;
   private readonly ballMaterial: THREE.MeshStandardMaterial;
   private readonly ballLight: THREE.PointLight;
@@ -59,6 +61,8 @@ export class RenderBridge {
   constructor(private readonly scene: THREE.Scene) {
     activeBridgeCount += 1;
     this.player = createPlayer();
+    this.playerAsset = new PlayerCharacterAsset(this.player);
+    this.playerAsset.load();
     this.ball = createBall();
     this.ballMaterial = this.ball.material as THREE.MeshStandardMaterial;
     const trail = createBallTrail();
@@ -94,7 +98,8 @@ export class RenderBridge {
       !this.firstPerson &&
       (this.reducedFlashes ||
         !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0));
-    animatePlayer(this.player, state.elapsed, previousPlayer, p);
+    if (this.playerAsset.ready) this.playerAsset.update(dt, state.player);
+    else animatePlayer(this.player, state.elapsed, previousPlayer, p);
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
@@ -188,6 +193,10 @@ export class RenderBridge {
     this.reducedFlashes = active;
   }
 
+  playPlayerTechnique(technique: 'kick' | 'bicycle'): void {
+    this.playerAsset.playTechnique(technique);
+  }
+
   /** Reuses a small particle pool; safe to call for every registered ball hit. */
   hitBurst(position: Vec3, intensity = 1): void {
     this.startBurst(position, intensity, 0xff315d);
@@ -214,6 +223,7 @@ export class RenderBridge {
     if (this.disposed) return;
     this.disposed = true;
     this.reset();
+    this.playerAsset.dispose();
     this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
     this.ball.geometry.dispose();
     this.ballMaterial.dispose();
