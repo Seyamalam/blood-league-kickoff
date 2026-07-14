@@ -1247,7 +1247,9 @@ button {
   transform: scaleX(calc(1 - var(--evolution-progress)));
   transform-origin: left;
 }
-.evolution-toast.hidden {
+.evolution-toast.hidden,
+.evolution-toast[hidden] {
+  display: none;
   opacity: 0;
   translate: 24px 0;
 }

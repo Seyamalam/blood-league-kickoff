@@ -17,9 +17,11 @@ describe('development QA scenarios', () => {
     expect(readQaScenario('?qa=upgrade', true)).toBe('upgrade');
     expect(readQaScenario('?qa=evolution', true)).toBe('evolution');
     expect(readQaScenario('?qa=goal', true)).toBe('goal');
+    expect(readQaScenario('?qa=boss', true)).toBe('boss');
     expect(readQaScenario('?qa=halftime', true)).toBeNull();
     expect(readQaScenario('?qa=victory', false)).toBeNull();
     expect(readQaScenario('?qa=goal', false)).toBeNull();
+    expect(readQaScenario('?qa=boss', false)).toBeNull();
   });
 
   it('validates evolution fixture IDs only in development', () => {

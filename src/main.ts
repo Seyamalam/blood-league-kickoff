@@ -260,12 +260,23 @@ async function bootstrap(): Promise<void> {
     state.player.health = qaScenario === 'victory' ? 42 : 0;
     state.enemies.length = 0;
   }
-  if (qaScenario === 'upgrade' || qaScenario === 'evolution' || qaScenario === 'goal') {
+  if (
+    qaScenario === 'upgrade' ||
+    qaScenario === 'evolution' ||
+    qaScenario === 'goal' ||
+    qaScenario === 'boss'
+  ) {
     state.phase = 'playing';
   }
   if (qaScenario === 'goal') {
     state.player.position.z = OPPONENT_GOAL_LINE_Z + 18;
     state.player.previousPosition = { ...state.player.position };
+    physics.reset(state.player.position);
+  }
+  if (qaScenario === 'boss') {
+    state.player.position.z = OPPONENT_GOAL_LINE_Z + 15;
+    state.player.previousPosition = { ...state.player.position };
+    state.player.invulnerability = 9_999;
     physics.reset(state.player.position);
   }
   const bridge = new RenderBridge(scene);
@@ -376,8 +387,30 @@ async function bootstrap(): Promise<void> {
           stageElapsed: 1,
           matchElapsed: MATCH_CONFIG.opening.deadlineMatchTime,
         }
-      : createMatchDirectorState();
-  let boss: CountGoalkeeperState | null = null;
+      : qaScenario === 'boss'
+        ? {
+            ...createMatchDirectorState(),
+            stage: 'finalWave' as const,
+            stageElapsed: 12,
+            matchElapsed: MATCH_CONFIG.bloodMoon.deadlineMatchTime + 35,
+            goalsScored: 2,
+            goalScored: true,
+          }
+        : createMatchDirectorState();
+  let boss: CountGoalkeeperState | null =
+    qaScenario === 'boss'
+      ? (() => {
+          const spawned = spawnCountGoalkeeper({ seed: 42417 });
+          return {
+            ...spawned,
+            phase: 'desperation',
+            action: 'telegraph',
+            health: spawned.maxHealth * 0.2,
+            phaseElapsed: 2,
+            actionElapsed: 0.4,
+          };
+        })()
+      : null;
   let miniboss: MinibossState | null = null;
   const spawnedMinibossKinds = new Set<MinibossKind>();
   const eliteModifierBindings: EliteModifierBinding[] = [];
@@ -400,6 +433,8 @@ async function bootstrap(): Promise<void> {
   let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
   const difficultyAdjustedEnemyIds = new Set<number>();
+  atmosphere.setPhase(match.stage);
+  stadiumPhaseVisual.setPhase(match.stage);
 
   const applyProgressionHealth = (previousMaxHealth = state.player.maxHealth): void => {
     const nextMaxHealth = Math.max(50, 100 + progression.modifiers.maxHealthBonus);
