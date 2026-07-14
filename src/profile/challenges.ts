@@ -1,7 +1,16 @@
 import type { ChallengeId, ChallengeProgress, CompletedRun, PlayerProfile } from './types';
 
 export type ChallengeMetric =
-  'matches' | 'wins' | 'score' | 'kills' | 'goals' | 'survival' | 'runLevel' | 'runEvolutions';
+  | 'matches'
+  | 'wins'
+  | 'score'
+  | 'kills'
+  | 'goals'
+  | 'survival'
+  | 'runLevel'
+  | 'runEvolutions'
+  | 'dailyRuns'
+  | 'weeklyRuns';
 
 export interface ChallengeDefinition {
   id: ChallengeId;
@@ -21,6 +30,14 @@ export const CHALLENGE_DEFINITIONS: Readonly<Record<ChallengeId, ChallengeDefini
   surviveFiveMinutes: define('surviveFiveMinutes', 'Still Standing', 'survival', 300),
   reachRunLevelFive: define('reachRunLevelFive', 'Building Momentum', 'runLevel', 5),
   unlockTwoEvolutions: define('unlockTwoEvolutions', 'Double Evolution', 'runEvolutions', 2),
+  completeDailyRun: define('completeDailyRun', 'Daily Bloodshed', 'dailyRuns', 1),
+  completeWeeklyRun: define('completeWeeklyRun', 'Weekly Champion', 'weeklyRuns', 1),
+  playTenMatches: define('playTenMatches', 'Regular Starter', 'matches', 10),
+  winFiveMatches: define('winFiveMatches', 'Unbeaten Run', 'wins', 5),
+  scoreFiftyThousand: define('scoreFiftyThousand', 'Scoreboard Terror', 'score', 50_000),
+  killOneThousand: define('killOneThousand', 'Night Exterminator', 'kills', 1_000),
+  reachRunLevelTen: define('reachRunLevelTen', 'Fully Awakened', 'runLevel', 10),
+  unlockThreeEvolutions: define('unlockThreeEvolutions', 'Unholy Trinity', 'runEvolutions', 3),
 });
 
 export function evaluateChallenges(
@@ -63,6 +80,10 @@ function metricValue(
       return Math.max(1, integer(run.level));
     case 'runEvolutions':
       return new Set(run.evolutionIds).size;
+    case 'dailyRuns':
+      return run.runMode === 'daily' ? 1 : 0;
+    case 'weeklyRuns':
+      return run.runMode === 'weekly' ? 1 : 0;
   }
 }
 

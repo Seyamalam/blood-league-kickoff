@@ -103,6 +103,67 @@ export const EVOLUTION_DEFINITIONS = Object.freeze({
       bloodBarrierRechargeMultiplier: -0.2,
     },
   }),
+  royalHeader: define({
+    id: 'royalHeader',
+    name: 'Royal Header',
+    description: 'The Moon Breaker crowns every charged header with a devastating shock ring.',
+    requirements: [
+      { upgradeId: 'headerCannon', minStacks: 1 },
+      { upgradeId: 'silverBall', minStacks: 1 },
+    ],
+    modifierBonus: {
+      headerCannonDamage: 18,
+      headerCannonRadius: 0.8,
+      headerCannonKnockback: 4,
+      ballDamageMultiplier: 0.2,
+    },
+  }),
+  tempestSetPiece: define({
+    id: 'tempestSetPiece',
+    name: 'Tempest Set Piece',
+    description: 'Corner strikes seed explosive penalty mines across the storm front.',
+    requirements: [
+      { upgradeId: 'cornerStorm', minStacks: 1 },
+      { upgradeId: 'penaltyMine', minStacks: 1 },
+    ],
+    modifierBonus: {
+      cornerStormDamage: 11,
+      cornerStormStrikes: 2,
+      penaltyMineDamage: 14,
+      penaltyMineRadius: 0.5,
+    },
+  }),
+  phantomFormation: define({
+    id: 'phantomFormation',
+    name: 'Phantom Formation',
+    description: 'Ghost passes recruit another striker and quicken the entire spectral attack.',
+    requirements: [
+      { upgradeId: 'spectralTeammate', minStacks: 1 },
+      { upgradeId: 'spectralVolley', minStacks: 1 },
+    ],
+    modifierBonus: {
+      spectralTeammateCount: 1,
+      spectralTeammateDamage: 12,
+      spectralTeammateInterval: -0.25,
+      multiBallDamageMultiplier: 0.2,
+    },
+  }),
+  refereesReckoning: define({
+    id: 'refereesReckoning',
+    name: "Referee's Reckoning",
+    description: 'The final whistle sends weakened foes off and turns every dismissal into a cyclone.',
+    requirements: [
+      { upgradeId: 'redCard', minStacks: 1 },
+      { upgradeId: 'bootCyclone', minStacks: 1 },
+    ],
+    modifierBonus: {
+      redCardDamage: 15,
+      redCardExecuteThreshold: 0.1,
+      redCardStunDuration: 0.8,
+      bootCycloneDamage: 7,
+      bootCycloneRadius: 0.35,
+    },
+  }),
 } satisfies Record<EvolutionId, EvolutionDefinition>);
 
 function define(definition: EvolutionDefinition): Readonly<EvolutionDefinition> {

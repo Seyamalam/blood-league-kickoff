@@ -43,6 +43,9 @@ describe('AudioManager event cues', () => {
       audio.playBossPhase('desperation');
       audio.playBossPhase(2);
       audio.playEvolutionUnlock();
+      audio.playUltimate();
+      audio.playMinibossEntrance();
+      audio.playCurseAccepted();
       audio.playVictory();
       audio.playDefeat();
     }).not.toThrow();

@@ -5,7 +5,10 @@ import { totalXpRequiredForLevel, type ProgressionState } from '../game/progress
 import type { BallState } from '../physics/PhysicsWorld';
 import type { PerformanceSnapshot } from '../diagnostics/PerfMeter';
 import type { FocusKickState } from '../game/combat';
+import { CHARACTER_ULTIMATE_DEFINITIONS, type CharacterUltimateState } from '../game/combat';
+import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import type { KeyBindings } from '../settings/SettingsStore';
+import { uiIcon } from './icons';
 
 export class Hud {
   private readonly healthFill: HTMLElement;
@@ -27,6 +30,9 @@ export class Hud {
   private readonly dashStatus: HTMLElement;
   private readonly focusFill: HTMLElement;
   private readonly focusStatus: HTMLElement;
+  private readonly ultimateFill: HTMLElement;
+  private readonly ultimateStatus: HTMLElement;
+  private readonly ultimateIcon: HTMLImageElement;
   private readonly xpFill: HTMLElement;
   private readonly levelValue: HTMLElement;
   private readonly objective: HTMLElement;
@@ -55,13 +61,15 @@ export class Hud {
           <div class="status-row" style="margin-top:6px"><span>MOBILITY</span><span id="dash-status">DASH READY</span></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>FOCUS KICK</span><span id="focus-status">0%</span></div>
           <div class="health-track" style="margin-top:4px"><div id="focus-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#b89526,#fff0a6);box-shadow:0 0 14px rgba(255,207,64,.4)"></div></div>
+          <div class="ultimate-status-row"><span><img id="ultimate-icon" alt="">CHARACTER ULTIMATE</span><span id="ultimate-status">0%</span></div>
+          <div class="health-track" style="margin-top:4px"><div id="ultimate-fill" class="health-fill ultimate-fill" style="width:0%"></div></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>BLOOD LEVEL</span><span id="level-value">1</span></div>
           <div class="health-track" style="margin-top:4px"><div id="xp-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#6f1f91,#d95eff);box-shadow:0 0 14px rgba(190,74,255,.42)"></div></div>
         </div>
         <div id="objective" class="objective">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
         <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
         <div id="combo" class="combo"></div>
-        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS</div>
+        <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS <b>Q</b> ULTIMATE</div>
         <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
         <button type="button" id="settings-button" class="settings-open" aria-label="Open settings">⚙ SETTINGS</button>
       </div>
@@ -70,13 +78,18 @@ export class Hud {
         <p class="eyebrow">THE FINAL MATCH BEGINS</p>
         <h1>BLOOD LEAGUE<br><em>KICKOFF</em></h1>
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
-        <button type="button" id="kickoff-button">ENTER THE PITCH</button>
+        <button type="button" id="kickoff-button">${uiIcon('play')}<span>ENTER THE PITCH</span></button>
         <div class="title-challenge-runs" aria-label="Seeded challenge runs">
-          <button type="button" id="daily-run-button" class="title-settings">DAILY RUN</button>
-          <button type="button" id="weekly-run-button" class="title-settings">WEEKLY RUN</button>
+          <button type="button" id="daily-run-button" class="title-settings">${uiIcon('calendar')}<span>DAILY RUN</span></button>
+          <button type="button" id="weekly-run-button" class="title-settings">${uiIcon('trophy')}<span>WEEKLY RUN</span></button>
         </div>
-        <button type="button" id="title-career-button" class="title-settings">CAREER & CHARACTERS</button>
-        <button type="button" id="title-settings-button" class="title-settings">SETTINGS</button>
+        <button type="button" id="cursed-run-button" class="title-settings title-cursed">${uiIcon('loadout')}<span>CURSED CONTRACT RUN</span></button>
+        <div class="title-seed-run">
+          <label for="custom-seed-input">SHARED SEED</label>
+          <div><input id="custom-seed-input" maxlength="32" autocomplete="off" placeholder="ENTER SEED"><button type="button" id="custom-seed-button" class="title-settings">${uiIcon('seed')}<span>PLAY</span></button></div>
+        </div>
+        <button type="button" id="title-career-button" class="title-settings">${uiIcon('career')}<span>CAREER & CHARACTERS</span></button>
+        <button type="button" id="title-settings-button" class="title-settings">${uiIcon('settings')}<span>SETTINGS</span></button>
         <button type="button" id="title-quit-button" class="title-settings title-quit">QUIT GAME</button>
         <small>Click to lock the cursor · Headphones recommended</small>
       </section>
@@ -115,6 +128,11 @@ export class Hud {
     this.dashStatus = required('dash-status');
     this.focusFill = required('focus-fill');
     this.focusStatus = required('focus-status');
+    this.ultimateFill = required('ultimate-fill');
+    this.ultimateStatus = required('ultimate-status');
+    const ultimateIcon = required('ultimate-icon');
+    if (!(ultimateIcon instanceof HTMLImageElement)) throw new Error('Ultimate icon must be an image');
+    this.ultimateIcon = ultimateIcon;
     this.xpFill = required('xp-fill');
     this.levelValue = required('level-value');
     this.objective = required('objective');
@@ -138,6 +156,20 @@ export class Hud {
 
   get weeklyRunButton(): HTMLElement {
     return required('weekly-run-button');
+  }
+
+  get customSeedButton(): HTMLElement {
+    return required('custom-seed-button');
+  }
+
+  get cursedRunButton(): HTMLElement {
+    return required('cursed-run-button');
+  }
+
+  get customSeedInput(): HTMLInputElement {
+    const input = document.getElementById('custom-seed-input');
+    if (!(input instanceof HTMLInputElement)) throw new Error('Missing custom seed input');
+    return input;
   }
 
   get victoryRestartButton(): HTMLElement {
@@ -169,6 +201,7 @@ export class Hud {
     objective: Readonly<MatchObjective>,
     boss: Readonly<CountGoalkeeperState> | null,
     focusKick: Readonly<FocusKickState>,
+    characterUltimate: Readonly<CharacterUltimateState>,
   ): void {
     const health = state.player.health;
     this.healthFill.style.width = `${healthPercent(health, state.player.maxHealth)}%`;
@@ -197,6 +230,20 @@ export class Hud {
             ? `COOLDOWN ${focusKick.cooldownRemaining.toFixed(1)}s`
             : `${focusPercent}%`;
     this.focusStatus.classList.toggle('warn', focusKick.phase === 'aiming');
+    const ultimateDefinition = CHARACTER_ULTIMATE_DEFINITIONS[characterUltimate.characterId];
+    const ultimatePercent = Math.round(
+      Math.max(0, Math.min(1, characterUltimate.charge / characterUltimate.chargeRequired)) * 100,
+    );
+    this.ultimateFill.style.width = `${characterUltimate.activeRemaining > 0 ? 100 : ultimatePercent}%`;
+    this.ultimateStatus.textContent =
+      characterUltimate.activeRemaining > 0
+        ? `${ultimateDefinition.name.toUpperCase()} ${characterUltimate.activeRemaining.toFixed(1)}s`
+        : characterUltimate.ready
+          ? `Q · ${ultimateDefinition.callout}`
+          : `${ultimatePercent}%`;
+    this.ultimateStatus.classList.toggle('warn', characterUltimate.ready);
+    this.ultimateIcon.src = CHARACTER_ULTIMATE_ICON_URLS[characterUltimate.ultimateId];
+    this.ultimateIcon.alt = `${ultimateDefinition.name} icon`;
     const currentLevelXp = totalXpRequiredForLevel(progression.level);
     const nextLevelXp = totalXpRequiredForLevel(progression.level + 1);
     const xpProgress =
@@ -248,7 +295,7 @@ export class Hud {
   }
 
   setControlBindings(bindings: Readonly<KeyBindings>): void {
-    this.hint.textContent = `${shortKey(bindings.moveForward)}/${shortKey(bindings.moveLeft)}/${shortKey(bindings.moveBackward)}/${shortKey(bindings.moveRight)} MOVE · ${shortKey(bindings.dash)} DASH · MOUSE AIM/KICK · RMB/${shortKey(bindings.recall)} RECALL · ${shortKey(bindings.focusKick)} FOCUS`;
+    this.hint.textContent = `${shortKey(bindings.moveForward)}/${shortKey(bindings.moveLeft)}/${shortKey(bindings.moveBackward)}/${shortKey(bindings.moveRight)} MOVE · ${shortKey(bindings.dash)} DASH · MOUSE AIM/KICK · RMB/${shortKey(bindings.recall)} RECALL · ${shortKey(bindings.focusKick)} FOCUS · ${shortKey(bindings.characterUltimate)} ULTIMATE`;
   }
 
   dispose(): void {

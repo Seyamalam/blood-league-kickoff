@@ -105,6 +105,13 @@ describe('evolution unlocks', () => {
       'dashShockwave',
       'consecratedPitch',
       'bloodBarrier',
+      'headerCannon',
+      'cornerStorm',
+      'penaltyMine',
+      'spectralTeammate',
+      'spectralVolley',
+      'redCard',
+      'bootCyclone',
     ];
     for (const upgradeId of buildOrder) ({ state } = ensureUpgrade(state, upgradeId, 1, events));
 

@@ -20,6 +20,7 @@ export class InputController {
   private restartQueued = false;
   private dashQueued = false;
   private focusKickQueued = false;
+  private characterUltimateQueued = false;
   private gamepadMoveX = 0;
   private gamepadMoveZ = 0;
   private gamepadRecallHeld = false;
@@ -119,6 +120,12 @@ export class InputController {
     return queued;
   }
 
+  consumeCharacterUltimate(): boolean {
+    const queued = this.characterUltimateQueued;
+    this.characterUltimateQueued = false;
+    return queued;
+  }
+
   rumble(strength = 0.5, durationMs = 90): void {
     if (!this.gamepadVibration) return;
     const actuator = this.activeGamepad?.vibrationActuator;
@@ -150,6 +157,8 @@ export class InputController {
     if (event.code === this.keyBindings.restart) this.restartQueued = true;
     if (event.code === this.keyBindings.focusKick && this.isLocked && !event.repeat)
       this.focusKickQueued = true;
+    if (event.code === this.keyBindings.characterUltimate && this.isLocked && !event.repeat)
+      this.characterUltimateQueued = true;
     if (event.code === this.keyBindings.dash && this.isLocked) {
       event.preventDefault();
       if (!event.repeat) this.dashQueued = true;
@@ -202,6 +211,7 @@ export class InputController {
     this.kickCurvePixels = 0;
     this.dashQueued = false;
     this.focusKickQueued = false;
+    this.characterUltimateQueued = false;
     this.gamepadMoveX = 0;
     this.gamepadMoveZ = 0;
     this.gamepadRecallHeld = false;
@@ -240,9 +250,11 @@ export class InputController {
 
     const dashPressed = buttonPressed(gamepad, 0);
     const focusPressed = buttonPressed(gamepad, 3);
+    const ultimatePressed = buttonPressed(gamepad, 2);
     const restartPressed = buttonPressed(gamepad, 9);
     if (dashPressed && !this.previousGamepadButtons[0]) this.dashQueued = true;
     if (focusPressed && !this.previousGamepadButtons[3]) this.focusKickQueued = true;
+    if (ultimatePressed && !this.previousGamepadButtons[2]) this.characterUltimateQueued = true;
     if (restartPressed && !this.previousGamepadButtons[9]) this.restartQueued = true;
     this.gamepadRecallHeld = buttonValue(gamepad, 6) > 0.28;
 

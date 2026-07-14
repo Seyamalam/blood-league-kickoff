@@ -204,4 +204,42 @@ describe('progression', () => {
     expect(state.modifiers.bloodBarrierRechargeMultiplier).toBeCloseTo(0.68);
     expect(state.evolutions.sacredAegis).toBe(true);
   });
+
+  it('builds six football armory paths and unlocks their cross-weapon evolutions', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(30)).state;
+    for (const upgradeId of [
+      'powerKick',
+      'headerCannon',
+      'silverBall',
+      'stormStuds',
+      'cornerStorm',
+      'bloodBomb',
+      'penaltyMine',
+      'rapidRecall',
+      'ghostPass',
+      'spectralTeammate',
+      'orbitingSpectralBall',
+      'spectralVolley',
+      'redCard',
+      'bootCyclone',
+    ] as const) {
+      const result = chooseUpgrade(state, upgradeId);
+      expect(result.applied).toBe(true);
+      if (!result.applied) return;
+      state = result.state;
+    }
+
+    expect(state.modifiers.headerCannonDamage).toBe(27);
+    expect(state.modifiers.cornerStormStrikes).toBe(3);
+    expect(state.modifiers.penaltyMineDamage).toBe(25);
+    expect(state.modifiers.spectralTeammateCount).toBe(2);
+    expect(state.modifiers.redCardExecuteThreshold).toBeCloseTo(0.135);
+    expect(state.modifiers.bootCycloneDamage).toBeCloseTo(10.5);
+    expect(state.evolutions).toMatchObject({
+      royalHeader: true,
+      tempestSetPiece: true,
+      phantomFormation: true,
+      refereesReckoning: true,
+    });
+  });
 });

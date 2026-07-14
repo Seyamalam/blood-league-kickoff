@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LocalLeaderboardRepository } from '../leaderboard';
-import { createDefaultProfile, type RunRecord } from '../profile';
+import { CHALLENGE_DEFINITIONS, createDefaultProfile, type RunRecord } from '../profile';
 import { createCareerViewModel } from './CareerOverlay';
 
 function run(id: string, patch: Partial<RunRecord> = {}): RunRecord {
@@ -38,7 +38,7 @@ describe('career overlay view model', () => {
       unlockLevel: 1,
     });
     expect(view.characters[1]).toMatchObject({ id: 'breakaway', unlocked: false, unlockLevel: 2 });
-    expect(view.challenges).toHaveLength(10);
+    expect(view.challenges).toHaveLength(Object.keys(CHALLENGE_DEFINITIONS).length);
     expect(view.recentRuns).toEqual([]);
     expect(view.scoreBoard).toEqual([]);
     expect(view.fastestVictoryBoard).toEqual([]);

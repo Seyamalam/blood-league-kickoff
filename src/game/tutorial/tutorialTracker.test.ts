@@ -10,7 +10,23 @@ describe('tutorial tracker', () => {
     tracker.signal('kick-demonstrated');
     tracker.signal('recall-demonstrated');
     tracker.signal('dash-demonstrated');
+    expect(tracker.activePrompt?.id).toBe('ultimate');
+    tracker.signal('ultimate-demonstrated');
     expect(tracker.activePrompt?.id).toBe('progression');
+  });
+
+  it('teaches the character ultimate after movement fundamentals', () => {
+    let state = createTutorialState();
+    for (const signal of [
+      'movement-demonstrated',
+      'kick-demonstrated',
+      'recall-demonstrated',
+      'dash-demonstrated',
+    ] as const) {
+      state = reduceTutorialState(state, signal).state;
+    }
+    expect(getActiveTutorialPrompt(state)?.id).toBe('ultimate');
+    expect(reduceTutorialState(state, 'ultimate-demonstrated').completedNow).toEqual(['ultimate']);
   });
 
   it('requires both collecting XP and selecting an upgrade for progression', () => {
@@ -29,6 +45,7 @@ describe('tutorial tracker', () => {
     state = reduceTutorialState(state, 'movement-demonstrated').state;
     state = reduceTutorialState(state, 'kick-demonstrated').state;
     state = reduceTutorialState(state, 'recall-demonstrated').state;
+    state = reduceTutorialState(state, 'ultimate-demonstrated').state;
     state = reduceTutorialState(state, 'upgrade-selected').state;
     state = reduceTutorialState(state, 'xp-collected').state;
     expect(getActiveTutorialPrompt(state)).toBeNull();

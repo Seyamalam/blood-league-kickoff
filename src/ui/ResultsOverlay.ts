@@ -3,6 +3,8 @@ import { EVOLUTION_DEFINITIONS, UPGRADE_DEFINITIONS } from '../game/progression'
 import { BUILD_METADATA } from '../build/buildMetadata';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../game/characters';
 import type { ChallengeId } from '../profile';
+import { uiIcon } from './icons';
+import type { RunTelemetrySnapshot } from '../game/stats';
 
 export type GameResultOutcome = 'victory' | 'defeat';
 
@@ -28,6 +30,7 @@ export interface GameResultStats {
   masteryRewardIds?: readonly string[];
   runMode?: 'standard' | 'daily' | 'weekly' | 'custom';
   seedCode?: string;
+  telemetry?: RunTelemetrySnapshot;
 }
 
 export interface ResultsOverlayCallbacks {
@@ -60,6 +63,7 @@ export class ResultsOverlay {
   private readonly gradeLabel: HTMLElement;
   private readonly statsGrid: HTMLElement;
   private readonly upgradesList: HTMLElement;
+  private readonly breakdown: HTMLElement;
   private readonly restartButton: HTMLButtonElement;
   private readonly menuButton: HTMLButtonElement;
   private callbacks: ResultsOverlayCallbacks;
@@ -95,9 +99,13 @@ export class ResultsOverlay {
           <h3 id="results-upgrades-title">FINAL LOADOUT</h3>
           <ul></ul>
         </section>
+        <section class="results-breakdown" aria-labelledby="results-breakdown-title">
+          <h3 id="results-breakdown-title">${uiIcon('stats')} COMBAT BREAKDOWN</h3>
+          <div></div>
+        </section>
         <div class="results-panel__actions">
-          <button type="button" data-action="restart">KICK OFF AGAIN</button>
-          <button type="button" data-action="menu" class="results-panel__secondary">MAIN MENU</button>
+          <button type="button" data-action="restart">${uiIcon('restart')}<span>KICK OFF AGAIN</span></button>
+          <button type="button" data-action="menu" class="results-panel__secondary">${uiIcon('home')}<span>MAIN MENU</span></button>
         </div>
         <p class="results-panel__build" aria-label="Build ${BUILD_METADATA.label}">${BUILD_METADATA.label}</p>
       </div>
@@ -111,6 +119,7 @@ export class ResultsOverlay {
     this.gradeLabel = requiredElement(this.element, '.results-grade small');
     this.statsGrid = requiredElement(this.element, '.results-stats');
     this.upgradesList = requiredElement(this.element, '.results-upgrades ul');
+    this.breakdown = requiredElement(this.element, '.results-breakdown > div');
     this.restartButton = requiredButton(this.element, '[data-action="restart"]');
     this.menuButton = requiredButton(this.element, '[data-action="menu"]');
     this.restartButton.addEventListener('click', this.restart);
@@ -150,6 +159,7 @@ export class ResultsOverlay {
     this.hide();
     this.statsGrid.replaceChildren();
     this.upgradesList.replaceChildren();
+    this.breakdown.replaceChildren();
     this.element.classList.remove('results-overlay--victory', 'results-overlay--defeat');
   }
 
@@ -254,6 +264,33 @@ export class ResultsOverlay {
       upgradeNodes.push(empty);
     }
     this.upgradesList.replaceChildren(...upgradeNodes);
+    this.renderBreakdown(stats.telemetry);
+  }
+
+  private renderBreakdown(telemetry: RunTelemetrySnapshot | undefined): void {
+    if (!telemetry) {
+      this.breakdown.textContent = 'Combat telemetry unavailable for this run.';
+      return;
+    }
+    const entries: ReadonlyArray<readonly [string, number]> = [
+      ['Total damage', telemetry.totalDamage],
+      ['Ball damage', telemetry.damageByCategory['primary-ball']],
+      ['Weapon damage', telemetry.damageByCategory['secondary-weapons']],
+      ['Healing', telemetry.healing],
+      ['Damage blocked', telemetry.damageBlocked],
+      ['Perfect volleys', telemetry.perfectVolleys],
+    ];
+    this.breakdown.replaceChildren(
+      ...entries.map(([label, value]) => {
+        const item = document.createElement('span');
+        const name = document.createElement('small');
+        const amount = document.createElement('strong');
+        name.textContent = label;
+        amount.textContent = integer(value).toLocaleString();
+        item.append(name, amount);
+        return item;
+      }),
+    );
   }
 
   private readonly restart = (): void => {

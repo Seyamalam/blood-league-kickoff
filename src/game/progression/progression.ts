@@ -2,6 +2,8 @@ import {
   EVOLUTION_IDS,
   UPGRADE_IDS,
   type BloodXpResult,
+  type CurseDirectorModifiers,
+  type CurseId,
   type EvolutionId,
   type EvolutionUnlockEvent,
   type EvolutionUnlocks,
@@ -15,6 +17,7 @@ import {
 } from './types';
 import { EVOLUTION_DEFINITIONS } from './evolutionDefinitions';
 import { UPGRADE_DEFINITIONS } from './upgradeDefinitions';
+import { CURSE_DEFINITIONS } from './curseDefinitions';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../characters';
 
 const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
@@ -76,6 +79,24 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   ricochetRange: 0,
   bloodBarrierCharges: 0,
   bloodBarrierRechargeMultiplier: 1,
+  headerCannonDamage: 0,
+  headerCannonRadius: 0,
+  headerCannonKnockback: 0,
+  cornerStormDamage: 0,
+  cornerStormStrikes: 0,
+  cornerStormInterval: 1,
+  redCardDamage: 0,
+  redCardExecuteThreshold: 0,
+  redCardStunDuration: 0,
+  spectralTeammateCount: 0,
+  spectralTeammateDamage: 0,
+  spectralTeammateInterval: 1,
+  penaltyMineDamage: 0,
+  penaltyMineRadius: 0,
+  penaltyMineCount: 0,
+  bootCycloneDamage: 0,
+  bootCycloneRadius: 0,
+  bootCycloneInterval: 1,
 });
 
 /** Total Blood XP preserved across the shard burst created by one enemy kill. */
@@ -85,6 +106,7 @@ export const BLOOD_XP_PER_KILL = 2;
 export function createProgressionState(
   characterId: CharacterId | null = null,
   masteryModifierBonus: Readonly<Partial<ProgressionModifiers>> = {},
+  activeCurses: readonly CurseId[] = [],
 ): ProgressionState {
   const upgradeStacks = createEmptyStacks();
   const evolutions = createEmptyEvolutions();
@@ -95,8 +117,9 @@ export function createProgressionState(
     pendingLevelUps: 0,
     upgradeStacks,
     evolutions,
+    activeCurses: normalizeCurses(activeCurses),
     masteryModifierBonus: { ...masteryModifierBonus },
-    modifiers: calculateModifiers(upgradeStacks, evolutions, characterId, masteryModifierBonus),
+    modifiers: calculateModifiers(upgradeStacks, evolutions, characterId, masteryModifierBonus, activeCurses),
   };
 }
 
@@ -217,7 +240,13 @@ export function chooseUpgrade(state: Readonly<ProgressionState>, upgradeId: Upgr
     pendingLevelUps: state.pendingLevelUps - 1,
     upgradeStacks,
     evolutions,
-    modifiers: calculateModifiers(upgradeStacks, evolutions, state.characterId, state.masteryModifierBonus),
+    modifiers: calculateModifiers(
+      upgradeStacks,
+      evolutions,
+      state.characterId,
+      state.masteryModifierBonus,
+      state.activeCurses,
+    ),
   };
   return {
     applied: true,
@@ -249,12 +278,18 @@ export function calculateModifiers(
   evolutions?: Readonly<EvolutionUnlocks>,
   characterId: CharacterId | null = null,
   masteryModifierBonus: Readonly<Partial<ProgressionModifiers>> = {},
+  activeCurses: readonly CurseId[] = [],
 ): ProgressionModifiers {
   const modifiers: ProgressionModifiers = { ...BASE_MODIFIERS };
   if (characterId) {
     applyModifierValues(modifiers, CHARACTER_DEFINITIONS[characterId].modifierBonus);
   }
   applyModifierValues(modifiers, masteryModifierBonus);
+  for (const curseId of normalizeCurses(activeCurses)) {
+    const curse = CURSE_DEFINITIONS[curseId];
+    applyModifierValues(modifiers, curse.benefitModifiers);
+    applyModifierValues(modifiers, curse.drawbackModifiers);
+  }
   for (const upgradeId of UPGRADE_IDS) {
     const definition = UPGRADE_DEFINITIONS[upgradeId];
     const stackCount = Math.min(definition.maxStacks, Math.max(0, Math.floor(stacks[upgradeId])));
@@ -295,6 +330,24 @@ export function calculateModifiers(
     0.35,
     2,
   );
+  modifiers.headerCannonDamage = clampMultiplier(modifiers.headerCannonDamage, 0, 120);
+  modifiers.headerCannonRadius = clampMultiplier(modifiers.headerCannonRadius, 0, 4);
+  modifiers.headerCannonKnockback = clampMultiplier(modifiers.headerCannonKnockback, 0, 20);
+  modifiers.cornerStormDamage = clampMultiplier(modifiers.cornerStormDamage, 0, 100);
+  modifiers.cornerStormStrikes = Math.floor(clampMultiplier(modifiers.cornerStormStrikes, 0, 8));
+  modifiers.cornerStormInterval = clampMultiplier(modifiers.cornerStormInterval, 0.2, 2);
+  modifiers.redCardDamage = clampMultiplier(modifiers.redCardDamage, 0, 100);
+  modifiers.redCardExecuteThreshold = clampMultiplier(modifiers.redCardExecuteThreshold, 0, 0.35);
+  modifiers.redCardStunDuration = clampMultiplier(modifiers.redCardStunDuration, 0, 3);
+  modifiers.spectralTeammateCount = Math.floor(clampMultiplier(modifiers.spectralTeammateCount, 0, 5));
+  modifiers.spectralTeammateDamage = clampMultiplier(modifiers.spectralTeammateDamage, 0, 100);
+  modifiers.spectralTeammateInterval = clampMultiplier(modifiers.spectralTeammateInterval, 0.2, 2);
+  modifiers.penaltyMineDamage = clampMultiplier(modifiers.penaltyMineDamage, 0, 140);
+  modifiers.penaltyMineRadius = clampMultiplier(modifiers.penaltyMineRadius, 0, 3);
+  modifiers.penaltyMineCount = Math.floor(clampMultiplier(modifiers.penaltyMineCount, 0, 6));
+  modifiers.bootCycloneDamage = clampMultiplier(modifiers.bootCycloneDamage, 0, 80);
+  modifiers.bootCycloneRadius = clampMultiplier(modifiers.bootCycloneRadius, 0, 3);
+  modifiers.bootCycloneInterval = clampMultiplier(modifiers.bootCycloneInterval, 0.2, 2);
   return modifiers;
 }
 
@@ -332,6 +385,12 @@ function createEmptyStacks(): UpgradeStacks {
     consecratedPitch: 0,
     ricochetBall: 0,
     bloodBarrier: 0,
+    headerCannon: 0,
+    cornerStorm: 0,
+    redCard: 0,
+    spectralTeammate: 0,
+    penaltyMine: 0,
+    bootCyclone: 0,
   };
 }
 
@@ -344,6 +403,10 @@ function createEmptyEvolutions(): EvolutionUnlocks {
     phantomSingularity: false,
     thunderclapRush: false,
     sacredAegis: false,
+    royalHeader: false,
+    tempestSetPiece: false,
+    phantomFormation: false,
+    refereesReckoning: false,
   };
 }
 
@@ -362,9 +425,58 @@ function cloneState(state: Readonly<ProgressionState>): ProgressionState {
     ...state,
     upgradeStacks: { ...state.upgradeStacks },
     evolutions: { ...state.evolutions },
+    activeCurses: [...state.activeCurses],
     masteryModifierBonus: { ...state.masteryModifierBonus },
     modifiers: { ...state.modifiers },
   };
+}
+
+/** Rebuilds a run with up to three unique pre-match curse contracts. */
+export function setActiveCurses(
+  state: Readonly<ProgressionState>,
+  curseIds: readonly CurseId[],
+): ProgressionState {
+  const activeCurses = normalizeCurses(curseIds);
+  const next = cloneState(state);
+  next.activeCurses = activeCurses;
+  next.modifiers = calculateModifiers(
+    next.upgradeStacks,
+    next.evolutions,
+    next.characterId,
+    next.masteryModifierBonus,
+    activeCurses,
+  );
+  return next;
+}
+
+/** Aggregates encounter and reward tuning for the selected curse contracts. */
+export function calculateCurseDirectorModifiers(curseIds: readonly CurseId[]): CurseDirectorModifiers {
+  const result: CurseDirectorModifiers = {
+    enemyHealthMultiplier: 1,
+    enemySpeedMultiplier: 1,
+    enemyDamageMultiplier: 1,
+    spawnRateMultiplier: 1,
+    eliteChanceBonus: 0,
+    bossHealthMultiplier: 1,
+    rewardMultiplier: 1,
+  };
+  for (const curseId of normalizeCurses(curseIds)) {
+    const values = CURSE_DEFINITIONS[curseId].directorModifiers;
+    result.enemyHealthMultiplier *= values.enemyHealthMultiplier ?? 1;
+    result.enemySpeedMultiplier *= values.enemySpeedMultiplier ?? 1;
+    result.enemyDamageMultiplier *= values.enemyDamageMultiplier ?? 1;
+    result.spawnRateMultiplier *= values.spawnRateMultiplier ?? 1;
+    result.eliteChanceBonus += values.eliteChanceBonus ?? 0;
+    result.bossHealthMultiplier *= values.bossHealthMultiplier ?? 1;
+    result.rewardMultiplier *= values.rewardMultiplier ?? 1;
+  }
+  result.eliteChanceBonus = Math.min(0.5, result.eliteChanceBonus);
+  result.rewardMultiplier = Math.min(2, result.rewardMultiplier);
+  return result;
+}
+
+function normalizeCurses(curseIds: readonly CurseId[]): CurseId[] {
+  return [...new Set(curseIds)].slice(0, 3);
 }
 
 function normalizeRandom(value: number): number {

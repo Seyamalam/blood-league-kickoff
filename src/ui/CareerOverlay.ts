@@ -1,4 +1,7 @@
-import { CHARACTER_DEFINITIONS } from '../game/characters';
+import { CHARACTER_DEFINITIONS, startingLoadoutFor } from '../game/characters';
+import { CHARACTER_ULTIMATE_DEFINITIONS } from '../game/combat';
+import { UPGRADE_DEFINITIONS } from '../game/progression';
+import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { LocalLeaderboardRepository } from '../leaderboard';
 import {
@@ -15,6 +18,7 @@ import {
   type PlayerProfile,
   type RunRecord,
 } from '../profile';
+import { uiIcon } from './icons';
 
 export type CareerCharacterSelectedCallback = (characterId: CharacterId) => void;
 
@@ -30,6 +34,12 @@ export interface CareerCharacterView {
   masteryXp: number;
   masteryLevel: number;
   nextMasteryReward: string | null;
+  loadoutName: string;
+  loadoutDescription: string;
+  loadoutItems: readonly string[];
+  ultimateName: string;
+  ultimateDescription: string;
+  ultimateIconUrl: string;
   matches: number;
   wins: number;
   bestScore: number;
@@ -97,7 +107,7 @@ export class CareerOverlay {
             <p class="career-panel__eyebrow">BLOOD LEAGUE CAREER</p>
             <h2 id="career-overlay-title">PROGRESSION</h2>
           </div>
-          <button type="button" class="career-panel__close" data-action="close" aria-label="Close career">×</button>
+          <button type="button" class="career-panel__close icon-button" data-action="close" aria-label="Close career">${uiIcon('close')}</button>
         </header>
         <div class="career-panel__body">
           <section class="career-account" aria-labelledby="career-account-title">
@@ -246,6 +256,10 @@ export class CareerOverlay {
           <p><strong>WEAKNESS</strong> ${character.weakness}</p>
           <dl><div><dt>Mastery</dt><dd>LV ${character.masteryLevel}</dd></div><div><dt>Mastery XP</dt><dd>${character.masteryXp.toLocaleString()}</dd></div><div><dt>Matches</dt><dd>${character.matches}</dd></div><div><dt>Wins</dt><dd>${character.wins}</dd></div><div><dt>Best score</dt><dd>${character.bestScore.toLocaleString()}</dd></div></dl>
           <p class="career-character__mastery"><strong>NEXT REWARD</strong> ${character.nextMasteryReward ?? 'All signature rewards unlocked'}</p>
+          <section class="career-character__identity">
+            <div><strong>STARTING LOADOUT · ${character.loadoutName}</strong><small>${character.loadoutItems.join(' + ')}</small><p>${character.loadoutDescription}</p></div>
+            <div class="career-character__ultimate"><img src="${character.ultimateIconUrl}" alt=""><span><strong>ULTIMATE · ${character.ultimateName}</strong><small>${character.ultimateDescription}</small></span></div>
+          </section>
           <button type="button" data-character-id="${character.id}" ${character.unlocked && !character.selected ? '' : 'disabled'}>${character.selected ? 'CURRENT PLAYER' : character.unlocked ? `SELECT ${character.name.toUpperCase()}` : `LOCKED · ACCOUNT LEVEL ${character.unlockLevel}`}</button>
         `;
         return article;
@@ -317,6 +331,8 @@ export function createCareerViewModel(
       const mastery = profile.characterMastery[id];
       const masteryLevel = masteryLevelForXp(mastery.xp);
       const nextMasteryReward = masteryRewardsFor(id).find((reward) => reward.level > masteryLevel);
+      const loadout = startingLoadoutFor(id);
+      const ultimate = CHARACTER_ULTIMATE_DEFINITIONS[id];
       return {
         id,
         name: definition.name,
@@ -331,6 +347,12 @@ export function createCareerViewModel(
         nextMasteryReward: nextMasteryReward
           ? `LV ${nextMasteryReward.level} · ${nextMasteryReward.name}`
           : null,
+        loadoutName: loadout.name,
+        loadoutDescription: loadout.description,
+        loadoutItems: loadout.entries.map((entry) => UPGRADE_DEFINITIONS[entry.upgradeId].name),
+        ultimateName: ultimate.name,
+        ultimateDescription: ultimate.description,
+        ultimateIconUrl: CHARACTER_ULTIMATE_ICON_URLS[ultimate.id],
         matches: mastery.matches,
         wins: mastery.wins,
         bestScore: mastery.bestScore,

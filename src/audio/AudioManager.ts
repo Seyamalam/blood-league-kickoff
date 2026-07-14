@@ -770,6 +770,61 @@ export class AudioManager {
     });
   }
 
+  /** Character-signature cue: a rising blood pulse followed by a bright release. */
+  public playUltimate(): void {
+    const now = this.now();
+    if (now === null) return;
+    [110, 165, 247, 370].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * 1.5,
+        duration: 0.24,
+        gain: 0.1 + index * 0.012,
+        start: now + index * 0.055,
+        type: index < 2 ? 'sawtooth' : 'triangle',
+      });
+    });
+    this.noise({
+      duration: 0.34,
+      gain: 0.11,
+      start: now + 0.08,
+      filterFrequency: 420,
+      filterEndFrequency: 5_400,
+      filterType: 'bandpass',
+    });
+  }
+
+  /** Short warning identity used when a named miniboss enters the pitch. */
+  public playMinibossEntrance(): void {
+    const now = this.now();
+    if (now === null) return;
+    [82.41, 123.47, 98].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * 0.72,
+        duration: 0.3,
+        gain: 0.14,
+        start: now + index * 0.12,
+        type: 'sawtooth',
+      });
+    });
+    this.noise({ duration: 0.18, gain: 0.1, start: now + 0.16, filterFrequency: 760, filterType: 'lowpass' });
+  }
+
+  /** Risk-selection sting for starting a cursed contract. */
+  public playCurseAccepted(): void {
+    const now = this.now();
+    if (now === null) return;
+    this.tone({ frequency: 330, endFrequency: 55, duration: 0.55, gain: 0.16, start: now, type: 'triangle' });
+    this.noise({
+      duration: 0.28,
+      gain: 0.08,
+      start: now + 0.04,
+      filterFrequency: 1_200,
+      filterType: 'bandpass',
+    });
+  }
+
   /** Ominous brass-like reveal and heartbeat used when the Count enters the pitch. */
   public playBossEntrance(): void {
     const now = this.now();

@@ -15,6 +15,14 @@ export const CHALLENGE_IDS = [
   'surviveFiveMinutes',
   'reachRunLevelFive',
   'unlockTwoEvolutions',
+  'completeDailyRun',
+  'completeWeeklyRun',
+  'playTenMatches',
+  'winFiveMatches',
+  'scoreFiftyThousand',
+  'killOneThousand',
+  'reachRunLevelTen',
+  'unlockThreeEvolutions',
 ] as const;
 
 export type ChallengeId = (typeof CHALLENGE_IDS)[number];

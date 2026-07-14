@@ -1,5 +1,6 @@
 import type { ProgressionModifiers } from '../progression';
 import type { Vec3 } from '../simulation/types';
+import type { CharacterUltimateId } from './characterUltimateTypes';
 
 export type SecondaryCombatModifiers = Readonly<
   Pick<
@@ -64,7 +65,14 @@ export type SecondaryDamageSource =
   | 'black-hole'
   | 'dash-shockwave'
   | 'holy-penalty-zone'
-  | 'ricochet-ball';
+  | 'ricochet-ball'
+  | 'header-cannon'
+  | 'corner-storm'
+  | 'red-card'
+  | 'spectral-teammate'
+  | 'penalty-mine'
+  | 'boot-cyclone'
+  | CharacterUltimateId;
 
 export interface SecondaryDamageHit {
   targetId: number;

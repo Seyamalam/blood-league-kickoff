@@ -1,4 +1,12 @@
-export const TUTORIAL_STEP_IDS = ['movement', 'kick', 'recall', 'dash', 'progression', 'scoring'] as const;
+export const TUTORIAL_STEP_IDS = [
+  'movement',
+  'kick',
+  'recall',
+  'dash',
+  'ultimate',
+  'progression',
+  'scoring',
+] as const;
 
 export type TutorialStepId = (typeof TUTORIAL_STEP_IDS)[number];
 
@@ -7,6 +15,7 @@ export type TutorialSignal =
   | 'kick-demonstrated'
   | 'recall-demonstrated'
   | 'dash-demonstrated'
+  | 'ultimate-demonstrated'
   | 'xp-collected'
   | 'upgrade-selected'
   | 'goal-scored';

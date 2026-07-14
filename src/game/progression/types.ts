@@ -21,6 +21,12 @@ export const UPGRADE_IDS = [
   'consecratedPitch',
   'ricochetBall',
   'bloodBarrier',
+  'headerCannon',
+  'cornerStorm',
+  'redCard',
+  'spectralTeammate',
+  'penaltyMine',
+  'bootCyclone',
 ] as const;
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
@@ -33,9 +39,24 @@ export const EVOLUTION_IDS = [
   'phantomSingularity',
   'thunderclapRush',
   'sacredAegis',
+  'royalHeader',
+  'tempestSetPiece',
+  'phantomFormation',
+  'refereesReckoning',
 ] as const;
 
 export type EvolutionId = (typeof EVOLUTION_IDS)[number];
+
+export const CURSE_IDS = [
+  'bloodMoonPact',
+  'glassGoal',
+  'hungryPitch',
+  'suddenDeath',
+  'offsideTrap',
+  'cursedCrowd',
+] as const;
+
+export type CurseId = (typeof CURSE_IDS)[number];
 
 export interface UpgradePrerequisite {
   upgradeId: UpgradeId;
@@ -102,6 +123,24 @@ export interface ProgressionModifiers {
   ricochetRange: number;
   bloodBarrierCharges: number;
   bloodBarrierRechargeMultiplier: number;
+  headerCannonDamage: number;
+  headerCannonRadius: number;
+  headerCannonKnockback: number;
+  cornerStormDamage: number;
+  cornerStormStrikes: number;
+  cornerStormInterval: number;
+  redCardDamage: number;
+  redCardExecuteThreshold: number;
+  redCardStunDuration: number;
+  spectralTeammateCount: number;
+  spectralTeammateDamage: number;
+  spectralTeammateInterval: number;
+  penaltyMineDamage: number;
+  penaltyMineRadius: number;
+  penaltyMineCount: number;
+  bootCycloneDamage: number;
+  bootCycloneRadius: number;
+  bootCycloneInterval: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;
@@ -127,6 +166,27 @@ export interface EvolutionDefinition {
   modifierBonus: Readonly<Partial<ProgressionModifiers>>;
 }
 
+export interface CurseDirectorModifiers {
+  enemyHealthMultiplier: number;
+  enemySpeedMultiplier: number;
+  enemyDamageMultiplier: number;
+  spawnRateMultiplier: number;
+  eliteChanceBonus: number;
+  bossHealthMultiplier: number;
+  rewardMultiplier: number;
+}
+
+export interface CurseDefinition {
+  id: CurseId;
+  name: string;
+  description: string;
+  benefit: string;
+  drawback: string;
+  benefitModifiers: Readonly<Partial<ProgressionModifiers>>;
+  drawbackModifiers: Readonly<Partial<ProgressionModifiers>>;
+  directorModifiers: Readonly<Partial<CurseDirectorModifiers>>;
+}
+
 export type UpgradeStacks = Record<UpgradeId, number>;
 export type EvolutionUnlocks = Record<EvolutionId, boolean>;
 
@@ -147,6 +207,8 @@ export interface ProgressionState {
   pendingLevelUps: number;
   upgradeStacks: UpgradeStacks;
   evolutions: EvolutionUnlocks;
+  /** Optional high-risk contracts selected before kickoff. */
+  activeCurses: readonly CurseId[];
   /** Permanent character bonuses active for this run, such as mastery perks. */
   masteryModifierBonus: Readonly<Partial<ProgressionModifiers>>;
   modifiers: ProgressionModifiers;

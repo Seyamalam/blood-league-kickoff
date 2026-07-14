@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Redline Counter">
+  <defs><linearGradient id="a" x1="8" y1="76" x2="88" y2="20"><stop stop-color="#7b0828"/><stop offset="1" stop-color="#ff5a42"/></linearGradient></defs>
+  <path fill="#150a10" d="M48 3 90 28 82 76 48 93 14 76 6 28z"/>
+  <path fill="url(#a)" d="m15 58 27-38 4 20 32-17-23 31 27-2-44 27 3-23z"/>
+  <path fill="none" stroke="#ffd25a" stroke-width="4" stroke-linecap="round" d="M10 73h29M15 82h17"/>
+</svg>

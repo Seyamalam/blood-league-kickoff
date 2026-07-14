@@ -9,6 +9,7 @@ import {
   SettingsStore,
   isBindableKeyboardCode,
 } from '../settings/SettingsStore';
+import { uiIcon } from './icons';
 
 export type SettingsChangeCallback = (settings: Readonly<PlayerSettings>) => void;
 
@@ -67,7 +68,7 @@ export class SettingsOverlay {
       <div class="settings-panel">
         <header class="settings-panel__header">
           <div><p>TACTICAL CONFIGURATION</p><h2 id="settings-overlay-title">SETTINGS</h2></div>
-          <button type="button" class="settings-panel__close" aria-label="Close settings">×</button>
+          <button type="button" class="settings-panel__close icon-button" aria-label="Close settings">${uiIcon('close')}</button>
         </header>
         <div class="settings-panel__body">
           <div class="settings-field">
@@ -165,6 +166,7 @@ export class SettingsOverlay {
               <label>Dash<button type="button" data-binding="dash"></button></label>
               <label>Recall ball<button type="button" data-binding="recall"></button></label>
               <label>Focus Kick<button type="button" data-binding="focusKick"></button></label>
+              <label>Character Ultimate<button type="button" data-binding="characterUltimate"></button></label>
               <label>Restart match<button type="button" data-binding="restart"></button></label>
             </div>
             <p id="settings-binding-status" class="settings-controls__status" aria-live="polite"></p>
@@ -492,6 +494,7 @@ const CONTROL_ACTION_LABELS: Readonly<Record<ControlAction, string>> = {
   dash: 'dash',
   recall: 'recall ball',
   focusKick: 'Focus Kick',
+  characterUltimate: 'Character Ultimate',
   restart: 'restart match',
 };
 

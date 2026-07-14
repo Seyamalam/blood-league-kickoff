@@ -9,6 +9,23 @@ export {
   updateCountGoalkeeper,
 } from './countGoalkeeper';
 export { damageFinalElite, resetFinalElite, spawnFinalElite, updateFinalElite } from './finalElite';
+export {
+  damageMiniboss,
+  MINIBOSS_CONFIGS,
+  MINIBOSS_ENCOUNTER_SCHEDULE,
+  spawnMiniboss,
+  updateMiniboss,
+} from './minibosses';
+export type {
+  MinibossAction,
+  MinibossConfig,
+  MinibossEncounterDefinition,
+  MinibossEvent,
+  MinibossKind,
+  MinibossPhase,
+  MinibossState,
+  MinibossUpdate,
+} from './minibosses';
 export type { SpawnCountGoalkeeperOptions } from './countGoalkeeper';
 export type {
   BossAction,

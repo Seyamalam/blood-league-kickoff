@@ -25,8 +25,15 @@ import {
   didDefeatCountGoalkeeper,
   isCountGoalkeeperDamageable,
   spawnCountGoalkeeper,
+  damageMiniboss,
+  MINIBOSS_CONFIGS,
+  MINIBOSS_ENCOUNTER_SCHEDULE,
+  spawnMiniboss,
   updateCountGoalkeeper,
+  updateMiniboss,
   type CountGoalkeeperState,
+  type MinibossKind,
+  type MinibossState,
 } from './game/boss';
 import {
   activateFocusKick,
@@ -37,12 +44,17 @@ import {
   resetFocusKick,
   SecondaryWeaponSystem,
   WeaponExpansionSystem,
+  CharacterUltimateSystem,
+  FootballArmorySystem,
   selectAimAssistTarget,
   sumSecondaryBossDamage,
   steerAimDirection,
   stepFocusKick,
   type FocusKickCombatAction,
   type CombatTarget,
+  type UltimateTarget,
+  type CharacterUltimateEffects,
+  type FootballArmoryTarget,
 } from './game/combat';
 import {
   createMatchDirectorState,
@@ -53,10 +65,11 @@ import {
   type MatchStage,
 } from './game/match';
 import { BloodShardSystem } from './game/pickups';
-import { CHARACTER_DEFINITIONS, type CharacterId } from './game/characters';
+import { applyStartingLoadout, CHARACTER_DEFINITIONS, type CharacterId } from './game/characters';
 import { createRunDescriptor, createRunRandomStreams, type RunMode } from './game/runs';
 import {
   BLOOD_XP_PER_KILL,
+  calculateModifiers,
   chooseUpgrade,
   createUpgradeOffer,
   createProgressionState,
@@ -64,6 +77,8 @@ import {
   grantBloodXp,
   totalXpRequiredForLevel,
   UPGRADE_IDS,
+  setActiveCurses,
+  type CurseId,
 } from './game/progression';
 import {
   createGameState,
@@ -78,7 +93,23 @@ import {
   updatePlayer,
 } from './game/simulation/gameState';
 import { detectOpponentGoalCrossing, OPPONENT_GOAL_LINE_Z } from './game/field';
+import {
+  createEnvironmentInteraction,
+  createPitchEventDirectorState,
+  damageEnvironmentInteraction,
+  findInteractionHit,
+  resetPitchEventDirector,
+  spawnEnemyFormation,
+  updateEliteModifiers,
+  updateEnvironmentInteractions,
+  updatePitchEventDirector,
+  type EliteModifierBinding,
+  type EnvironmentInteractionEvent,
+  type EnvironmentInteractionState,
+} from './game/encounters';
+import { evaluateGoalQuality } from './game/scoring';
 import { TutorialTracker, type TutorialSignal } from './game/tutorial';
+import { RunTelemetry } from './game/stats';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
 import { CameraController } from './render/app/CameraController';
@@ -90,10 +121,12 @@ import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
 import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
 import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
+import { EncounterRenderer } from './render/objects/EncounterRenderer';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { masteryLevelForXp, masteryModifierBonusFor, ProfileStore, type RunSettlement } from './profile';
 import { Hud } from './ui/Hud';
 import { CareerOverlay } from './ui/CareerOverlay';
+import { CurseOverlay } from './ui/CurseOverlay';
 import { EvolutionToast } from './ui/EvolutionToast';
 import { HalftimeOverlay } from './ui/HalftimeOverlay';
 import { MatchAnnouncement } from './ui/MatchAnnouncement';
@@ -107,6 +140,21 @@ const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
 const MATCH_CONFIG = FULL_MATCH_CONFIG;
 const TUTORIAL_STORAGE_KEY = 'blood-league-kickoff:tutorial-complete';
+const NEUTRAL_ULTIMATE_EFFECTS: Readonly<CharacterUltimateEffects> = Object.freeze({
+  movementSpeedMultiplier: 1,
+  dashCooldownMultiplier: 1,
+  ballDamageMultiplier: 1,
+  eliteDamageMultiplier: 1,
+  recallSpeedMultiplier: 1,
+  volleyWindowBonus: 0,
+  pickupRadiusMultiplier: 1,
+  damageTakenMultiplier: 1,
+  knockbackMultiplier: 1,
+});
+const MINIBOSS_TARGET_IDS: Readonly<Record<MinibossKind, number>> = Object.freeze({
+  crimsonCaptain: -20_001,
+  graveyardPlaymaker: -20_002,
+});
 const spawnDirectorInputScratch: {
   stage: MatchStage;
   stageElapsed: number;
@@ -127,14 +175,26 @@ async function bootstrap(): Promise<void> {
   let selectedCharacterId: CharacterId = profileStore.value.selectedCharacterId;
   const createSelectedProgression = (characterId: CharacterId) => {
     const masteryLevel = masteryLevelForXp(profileStore.value.characterMastery[characterId].xp);
-    return createProgressionState(characterId, masteryModifierBonusFor(characterId, masteryLevel));
+    const progressionState = createProgressionState(
+      characterId,
+      masteryModifierBonusFor(characterId, masteryLevel),
+    );
+    progressionState.upgradeStacks = applyStartingLoadout(progressionState.upgradeStacks, characterId);
+    progressionState.modifiers = calculateModifiers(
+      progressionState.upgradeStacks,
+      progressionState.evolutions,
+      characterId,
+      progressionState.masteryModifierBonus,
+    );
+    return progressionState;
   };
   let selectedRunMode: RunMode = 'standard';
+  let selectedCurses: CurseId[] = [];
   let runDescriptor = createRunDescriptor({ mode: selectedRunMode, rulesetVersion: BUILD_METADATA.version });
   let runRandomStreams = createRunRandomStreams(runDescriptor);
-  const prepareRun = (mode: RunMode = selectedRunMode): void => {
+  const prepareRun = (mode: RunMode = selectedRunMode, seed?: string): void => {
     selectedRunMode = mode;
-    runDescriptor = createRunDescriptor({ mode, rulesetVersion: BUILD_METADATA.version });
+    runDescriptor = createRunDescriptor({ mode, seed, rulesetVersion: BUILD_METADATA.version });
     runRandomStreams = createRunRandomStreams(runDescriptor);
   };
   let playerSettings = settingsStore.value;
@@ -174,15 +234,28 @@ async function bootstrap(): Promise<void> {
   const aimGuide = new AimGuide(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
+  const encounterRenderer = new EncounterRenderer(scene);
   const bloodShards = new BloodShardSystem();
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
   const weaponExpansion = new WeaponExpansionSystem();
+  const footballArmory = new FootballArmorySystem();
+  let characterUltimate = new CharacterUltimateSystem(selectedCharacterId);
+  const runTelemetry = new RunTelemetry();
   const secondaryTargets: CombatTarget[] = [];
-  const bossCombatTarget: CombatTarget = {
+  const ultimateTargets: UltimateTarget[] = [];
+  const armoryTargets: FootballArmoryTarget[] = [];
+  const bossCombatTarget: UltimateTarget = {
     id: COUNT_GOALKEEPER_COMBAT_TARGET_ID,
     position: { x: 0, y: 0, z: 0 },
     radius: DEFAULT_COUNT_GOALKEEPER_CONFIG.radius,
+    threat: 'boss',
+  };
+  const minibossCombatTarget: UltimateTarget = {
+    id: MINIBOSS_TARGET_IDS.crimsonCaptain,
+    position: { x: 0, y: 0, z: 0 },
+    radius: MINIBOSS_CONFIGS.crimsonCaptain.radius,
+    threat: 'boss',
   };
   const secondaryRenderState =
     denseWaveStress?.secondaryPools === 'full'
@@ -194,12 +267,15 @@ async function bootstrap(): Promise<void> {
   const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
     selectedCharacterId = characterId;
     bridge.setCharacter(characterId);
+    characterUltimate = new CharacterUltimateSystem(characterId);
+    activeUltimateEffects = NEUTRAL_ULTIMATE_EFFECTS;
     if (state.phase === 'ready') {
       progression = createSelectedProgression(characterId);
       applyProgressionHealth(state.player.maxHealth);
     }
     audio.playUiSelect();
   });
+  const curseOverlay = new CurseOverlay(root);
   const upgradeOverlay = new UpgradeOverlay(root);
   const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
     playerSettings = settings;
@@ -256,6 +332,12 @@ async function bootstrap(): Promise<void> {
         }
       : createMatchDirectorState();
   let boss: CountGoalkeeperState | null = null;
+  let miniboss: MinibossState | null = null;
+  const spawnedMinibossKinds = new Set<MinibossKind>();
+  const eliteModifierBindings: EliteModifierBinding[] = [];
+  const pitchEventDirector = createPitchEventDirectorState();
+  let environmentInteractions = createPitchInteractions();
+  let lastEnvironmentHitId: number | null = null;
   if (qaScenario === 'goal') spawnGoalkeeperGuard(state);
   let resultsShown = false;
   let runId = createRunId();
@@ -267,6 +349,8 @@ async function bootstrap(): Promise<void> {
   let recallSpeedMultiplier = 1;
   let volleyWindowBonus = 0;
   let fixedStepsThisFrame = 0;
+  let ultimateRequested = false;
+  let activeUltimateEffects: Readonly<CharacterUltimateEffects> = NEUTRAL_ULTIMATE_EFFECTS;
   let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
 
@@ -286,6 +370,7 @@ async function bootstrap(): Promise<void> {
     const before = state.player.health;
     state.player.health = Math.min(state.player.maxHealth, state.player.health + amount);
     if (state.player.health > before) {
+      runTelemetry.recordHealing(state.player.health - before);
       if (lifeSteal) audio.playLifeSteal();
       else audio.playHeal();
     }
@@ -294,11 +379,119 @@ async function bootstrap(): Promise<void> {
   const absorbIncomingDamage = (damage: number): number => {
     const barrier = weaponExpansion.absorbWithBloodBarrier(damage, progression.modifiers);
     if (barrier.absorbedDamage > 0) {
+      runTelemetry.recordBlocked(barrier.absorbedDamage);
       audio.playWallImpact(0.9);
       bridge.volleyBurst(state.player.position, 1.15);
       input.rumble(0.42, 95);
     }
     return barrier.remainingDamage;
+  };
+  const damagePlayerFromEncounter = (rawDamage: number): void => {
+    if (rawDamage <= 0 || state.player.invulnerability > 0) return;
+    const damage = absorbIncomingDamage(
+      rawDamage * progression.modifiers.damageTakenMultiplier * activeUltimateEffects.damageTakenMultiplier,
+    );
+    if (damage <= 0) return;
+    state.player.health = Math.max(0, state.player.health - damage);
+    state.player.invulnerability = 0.68;
+    runTelemetry.recordDamageTaken(damage);
+    audio.playPlayerHurt();
+    input.rumble(0.72, 145);
+    cameraController.addImpulse(0.3);
+    if (state.player.health <= 0) state.phase = 'dead';
+  };
+  const rewardEncounterKills = (
+    kills: number,
+    position: Readonly<{ x: number; y: number; z: number }>,
+  ): void => {
+    if (kills <= 0) return;
+    bloodShards.spawnOnKill(position, kills * BLOOD_XP_PER_KILL, Math.min(9, kills * 3));
+    audio.playKill(state.combo);
+  };
+  const damageEncounterArea = (
+    position: Readonly<{ x: number; y: number; z: number }>,
+    radius: number,
+    damage: number,
+  ): void => {
+    const hits = state.enemies
+      .filter(
+        (enemy) =>
+          Math.hypot(enemy.position.x - position.x, enemy.position.z - position.z) <= radius + enemy.radius,
+      )
+      .map((enemy) => ({
+        targetId: enemy.id,
+        damage,
+        source: 'blood-bomb' as const,
+        position: enemy.position,
+      }));
+    const result = damageEnemiesWithSecondary(
+      state,
+      hits,
+      undefined,
+      progression.modifiers.allDamageMultiplier,
+      progression.modifiers.eliteDamageMultiplier,
+    );
+    rewardEncounterKills(result.kills, position);
+    if (
+      miniboss &&
+      miniboss.phase !== 'defeated' &&
+      Math.hypot(miniboss.position.x - position.x, miniboss.position.z - position.z) <=
+        radius + MINIBOSS_CONFIGS[miniboss.kind].radius
+    ) {
+      const update = damageMiniboss(miniboss, { amount: damage, source: 'other' });
+      miniboss = update.state;
+      if (update.events.some((event) => event.type === 'defeated')) finishMiniboss();
+    }
+  };
+  const finishMiniboss = (): void => {
+    if (!miniboss) return;
+    const defeatedKind = miniboss.kind;
+    const defeatedPosition = miniboss.position;
+    const reward =
+      MINIBOSS_ENCOUNTER_SCHEDULE.find((definition) => definition.kind === defeatedKind)?.rewardShards ?? 18;
+    state.score += defeatedKind === 'graveyardPlaymaker' ? 3_000 : 2_500;
+    bloodShards.spawnOnKill(defeatedPosition, reward, Math.min(12, reward));
+    characterUltimate.gainCharge(22);
+    audio.playBossPhase('desperation');
+    bridge.volleyBurst(defeatedPosition, 2);
+    announcement.show('kickoff', `${MINIBOSS_CONFIGS[defeatedKind].name.toUpperCase()} DEFEATED`, 1.8);
+    miniboss = null;
+  };
+  const applyMinibossDamage = (amount: number, source: 'ball' | 'secondary' | 'holy' | 'other'): void => {
+    if (!miniboss || miniboss.phase === 'defeated' || amount <= 0) return;
+    const update = damageMiniboss(miniboss, { amount, source });
+    miniboss = update.state;
+    const damaged = update.events.find((event) => event.type === 'damaged');
+    if (damaged?.type === 'damaged') {
+      bridge.hitBurst(miniboss.position, source === 'ball' ? 1.25 : 0.75);
+      audio.playHit(source === 'ball' ? 1 : 0.65);
+      runTelemetry.recordDamage(source === 'ball' ? 'primary-ball' : 'secondary-weapons', damaged.amount);
+    }
+    if (update.events.some((event) => event.type === 'defeated')) finishMiniboss();
+  };
+  const resolveEnvironmentEvents = (events: readonly EnvironmentInteractionEvent[]): void => {
+    for (const event of events) {
+      if (event.type === 'barrierBroken') {
+        bridge.hitBurst(event.position, 1.1);
+        audio.playWallImpact(0.9);
+        continue;
+      }
+      damageEncounterArea(event.position, event.radius, event.damage);
+      if (event.type === 'barrelExploded') {
+        damagePlayerFromEncounter(
+          Math.hypot(
+            state.player.position.x - event.position.x,
+            state.player.position.z - event.position.z,
+          ) <= event.radius
+            ? event.damage
+            : 0,
+        );
+        bridge.volleyBurst(event.position, 1.7);
+        cameraController.addImpulse(0.3);
+      } else {
+        bridge.frostBurst(event.position, 0.82);
+      }
+    }
   };
   const uninstallQaSnapshotHook = qaScenario
     ? installQaSnapshotHook(window, () => ({
@@ -330,10 +523,43 @@ async function bootstrap(): Promise<void> {
 
   const refreshCombatTargets = (): void => {
     secondaryTargets.length = 0;
-    for (const enemy of state.enemies) secondaryTargets.push(enemy);
+    ultimateTargets.length = 0;
+    armoryTargets.length = 0;
+    for (const enemy of state.enemies) {
+      secondaryTargets.push(enemy);
+      ultimateTargets.push({
+        id: enemy.id,
+        position: enemy.position,
+        radius: enemy.radius,
+        threat: enemy.elite ? 'elite' : 'normal',
+      });
+      armoryTargets.push({
+        id: enemy.id,
+        position: enemy.position,
+        radius: enemy.radius,
+        healthRatio: Math.max(0, enemy.hitPoints / Math.max(1, enemy.maxHitPoints)),
+      });
+    }
     if (boss && isCountGoalkeeperDamageable(boss)) {
       bossCombatTarget.position = boss.position;
       secondaryTargets.push(bossCombatTarget);
+      ultimateTargets.push(bossCombatTarget);
+      armoryTargets.push({
+        ...bossCombatTarget,
+        healthRatio: Math.max(0, boss.health / Math.max(1, boss.maxHealth)),
+      });
+    }
+    if (miniboss && miniboss.phase !== 'defeated') {
+      const config = MINIBOSS_CONFIGS[miniboss.kind];
+      minibossCombatTarget.id = MINIBOSS_TARGET_IDS[miniboss.kind];
+      minibossCombatTarget.position = miniboss.position;
+      minibossCombatTarget.radius = config.radius;
+      secondaryTargets.push(minibossCombatTarget);
+      ultimateTargets.push(minibossCombatTarget);
+      armoryTargets.push({
+        ...minibossCombatTarget,
+        healthRatio: Math.max(0, miniboss.health / Math.max(1, miniboss.maxHealth)),
+      });
     }
   };
 
@@ -444,10 +670,25 @@ async function bootstrap(): Promise<void> {
     hud.start();
     input.requestPointerLock();
   };
+  const prepareProgressionForRun = (): void => {
+    progression = setActiveCurses(createSelectedProgression(selectedCharacterId), selectedCurses);
+    applyProgressionHealth(100);
+  };
   const beginChallengeRun = (mode: 'daily' | 'weekly'): void => {
+    selectedCurses = [];
     prepareRun(mode);
+    prepareProgressionForRun();
     begin();
     announcement.show('kickoff', `${mode.toUpperCase()} CHALLENGE · SEED ${runDescriptor.seedCode}`);
+  };
+  const resetEncounterState = (): void => {
+    miniboss = null;
+    spawnedMinibossKinds.clear();
+    eliteModifierBindings.length = 0;
+    resetPitchEventDirector(pitchEventDirector);
+    environmentInteractions = createPitchInteractions();
+    lastEnvironmentHitId = null;
+    encounterRenderer.reset();
   };
   const restart = (): void => {
     void audio.unlock();
@@ -457,10 +698,13 @@ async function bootstrap(): Promise<void> {
     aimGuide.reset();
     goalBeacon.reset();
     bossVisual.reset();
+    resetEncounterState();
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
     weaponExpansion.reset();
+    footballArmory.reset();
+    runTelemetry.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -469,14 +713,16 @@ async function bootstrap(): Promise<void> {
     upgradeOverlay.reset();
     settingsOverlay.hide();
     careerOverlay.hide();
+    curseOverlay.reset();
     pauseOverlay.hide();
     resultsOverlay.reset();
     hud.reset();
     selectedCharacterId = profileStore.value.selectedCharacterId;
     bridge.setCharacter(selectedCharacterId);
+    characterUltimate = new CharacterUltimateSystem(selectedCharacterId);
+    activeUltimateEffects = NEUTRAL_ULTIMATE_EFFECTS;
     prepareRun(selectedRunMode);
-    progression = createSelectedProgression(selectedCharacterId);
-    applyProgressionHealth(100);
+    prepareProgressionForRun();
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
     boss = null;
@@ -507,11 +753,45 @@ async function bootstrap(): Promise<void> {
   const kickoffButton = hud.kickoffButton;
   const dailyRunButton = hud.dailyRunButton;
   const weeklyRunButton = hud.weeklyRunButton;
+  const customSeedButton = hud.customSeedButton;
+  const customSeedInput = hud.customSeedInput;
+  const cursedRunButton = hud.cursedRunButton;
   const restartButton = hud.restartButton;
   const victoryRestartButton = hud.victoryRestartButton;
-  kickoffButton.addEventListener('click', begin);
+  kickoffButton.addEventListener('click', () => {
+    selectedCurses = [];
+    prepareRun('standard');
+    prepareProgressionForRun();
+    begin();
+  });
   dailyRunButton.addEventListener('click', () => beginChallengeRun('daily'));
   weeklyRunButton.addEventListener('click', () => beginChallengeRun('weekly'));
+  const beginCustomSeedRun = (): void => {
+    const seed = customSeedInput.value.trim();
+    if (!seed) {
+      customSeedInput.focus();
+      return;
+    }
+    selectedCurses = [];
+    prepareRun('custom', seed);
+    prepareProgressionForRun();
+    begin();
+    announcement.show('kickoff', `CUSTOM RUN · SEED ${runDescriptor.seedCode}`);
+  };
+  customSeedButton.addEventListener('click', beginCustomSeedRun);
+  customSeedInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') beginCustomSeedRun();
+  });
+  cursedRunButton.addEventListener('click', () => {
+    curseOverlay.show((curseIds) => {
+      selectedCurses = [...curseIds];
+      audio.playCurseAccepted();
+      prepareRun('standard');
+      prepareProgressionForRun();
+      begin();
+      announcement.show('kickoff', `${selectedCurses.length} CURSES ACCEPTED`);
+    });
+  });
   restartButton.addEventListener('click', restart);
   victoryRestartButton.addEventListener('click', restart);
   const openSettings = (): void => {
@@ -538,11 +818,15 @@ async function bootstrap(): Promise<void> {
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
+    bossVisual.reset();
+    resetEncounterState();
     aimGuide.reset();
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
     weaponExpansion.reset();
+    footballArmory.reset();
+    runTelemetry.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -550,11 +834,15 @@ async function bootstrap(): Promise<void> {
     halftimeOverlay.reset();
     resultsOverlay.reset();
     careerOverlay.hide();
+    curseOverlay.reset();
     pauseOverlay.hide();
     state.phase = 'ready';
     selectedCharacterId = profileStore.value.selectedCharacterId;
     bridge.setCharacter(selectedCharacterId);
+    characterUltimate = new CharacterUltimateSystem(selectedCharacterId);
+    activeUltimateEffects = NEUTRAL_ULTIMATE_EFFECTS;
     prepareRun('standard');
+    selectedCurses = [];
     progression = createSelectedProgression(selectedCharacterId);
     applyProgressionHealth(100);
     focusKick = resetFocusKick();
@@ -590,6 +878,7 @@ async function bootstrap(): Promise<void> {
         input.requestPointerLock();
       },
       onSettings: openSettings,
+      getTelemetry: () => runTelemetry.snapshot(),
       onRestart: restart,
       onMainMenu: returnToMenu,
     });
@@ -636,6 +925,17 @@ async function bootstrap(): Promise<void> {
       !halftimeOverlay.isVisible
     ) {
       focusKick = activateFocusKick(focusKick);
+    }
+    if (
+      input.consumeCharacterUltimate() &&
+      state.phase === 'playing' &&
+      !upgradeOverlay.isVisible &&
+      !settingsOverlay.isVisible &&
+      !careerOverlay.isVisible &&
+      !pauseOverlay.isVisible &&
+      !halftimeOverlay.isVisible
+    ) {
+      ultimateRequested = true;
     }
     cameraController.setFocusMode(focusKick.phase === 'aiming');
     bridge.setFirstPerson(focusKick.phase === 'aiming');
@@ -684,13 +984,16 @@ async function bootstrap(): Promise<void> {
           kickPowerMultiplier:
             progression.modifiers.kickPowerMultiplier *
             kickPowerMultiplier *
-            (focusShot.empowered ? 1.75 : 1),
+            (focusShot.empowered ? 1.75 : 1) *
+            activeUltimateEffects.ballDamageMultiplier,
         },
         kick.curve * progression.modifiers.curveStrengthMultiplier,
       );
       if (result) {
+        runTelemetry.recordKick();
         if (result.charge >= 0.72) {
           weaponExpansion.triggerHolyPenaltyZone(state.player.position, progression.modifiers);
+          footballArmory.triggerHeader(state.player.position, rawAim, progression.modifiers);
         }
         if (focusShot.empowered) {
           focusKick = focusShot.state;
@@ -701,6 +1004,7 @@ async function bootstrap(): Promise<void> {
         audio.playKick(result.charge);
         input.rumble(0.25 + result.charge * 0.45, 85);
         if (result.perfectVolley) {
+          runTelemetry.recordPerfectVolley();
           audio.playVolley();
           bridge.volleyBurst(physics.ballPosition, 1 + result.charge * 0.4);
           cameraController.volleyImpulse(1 + result.charge * 0.25);
@@ -716,9 +1020,12 @@ async function bootstrap(): Promise<void> {
         !halftimeOverlay.isVisible &&
         input.recall,
       {
-        recallSpeedMultiplier: progression.modifiers.recallSpeedMultiplier * recallSpeedMultiplier,
+        recallSpeedMultiplier:
+          progression.modifiers.recallSpeedMultiplier *
+          recallSpeedMultiplier *
+          activeUltimateEffects.recallSpeedMultiplier,
       },
-      volleyWindowBonus + progression.modifiers.volleyWindowBonus,
+      volleyWindowBonus + progression.modifiers.volleyWindowBonus + activeUltimateEffects.volleyWindowBonus,
     );
 
     accumulator += frameTime * getFocusKickTimeScale(focusKick);
@@ -730,8 +1037,77 @@ async function bootstrap(): Promise<void> {
         !settingsOverlay.isVisible &&
         !pauseOverlay.isVisible &&
         !halftimeOverlay.isVisible;
+      let ultimateBossDamageThisStep = 0;
+      let ultimateMinibossDamageThisStep = 0;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
+        refreshCombatTargets();
+        const aim = cameraController.aimDirection();
+        const ultimateStep = characterUltimate.step({
+          dt: FIXED_STEP,
+          playerPosition: state.player.position,
+          facingDirection: aim,
+          targets: ultimateTargets,
+          activate: ultimateRequested,
+        });
+        ultimateRequested = false;
+        activeUltimateEffects = ultimateStep.effects;
+        if (ultimateStep.activated) {
+          audio.playUltimate();
+          signalTutorial('ultimate-demonstrated');
+          input.rumble(0.9, 240);
+          bridge.volleyBurst(state.player.position, 2.2);
+          cameraController.volleyImpulse(1.35);
+        }
+        healPlayer(ultimateStep.healing);
+        ultimateBossDamageThisStep = ultimateStep.hits.reduce(
+          (total, hit) => total + (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID ? hit.damage : 0),
+          0,
+        );
+        if (miniboss && miniboss.phase !== 'defeated') {
+          const targetId = MINIBOSS_TARGET_IDS[miniboss.kind];
+          ultimateMinibossDamageThisStep = ultimateStep.hits.reduce(
+            (total, hit) => total + (hit.targetId === targetId ? hit.damage : 0),
+            0,
+          );
+        }
+        const ultimateDamage = damageEnemiesWithSecondary(
+          state,
+          ultimateStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+          progression.modifiers.allDamageMultiplier,
+          progression.modifiers.eliteDamageMultiplier * ultimateStep.effects.eliteDamageMultiplier,
+        );
+        runTelemetry.recordDamage(
+          'ultimate',
+          ultimateStep.hits.reduce(
+            (total, hit) => total + (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID ? 0 : hit.damage),
+            0,
+          ),
+        );
+        if (ultimateDamage.kills > 0) {
+          bloodShards.spawnOnKill(
+            state.player.position,
+            ultimateDamage.kills * BLOOD_XP_PER_KILL,
+            Math.min(9, ultimateDamage.kills * 3),
+          );
+          audio.playKill(state.combo);
+        }
+        for (const event of ultimateStep.events) {
+          if (event.type === 'spectral-assist') bridge.lightningBurst(event.to, 0.85);
+          if (event.type === 'redline-pulse') bridge.volleyBurst(event.position, 1.05);
+          if (event.type === 'meteor-header') bridge.volleyBurst(event.position, 1.8);
+          if (event.type === 'last-touch-strike') bridge.hitBurst(event.position, 1.7);
+          if (event.type === 'full-pitch-pulse') bridge.frostBurst(event.position, 1.25);
+          if (event.type === 'clean-sheet-aegis') bridge.volleyBurst(event.position, 1.45);
+          if (event.type === 'ultimate-knockback') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
+            if (enemy) {
+              enemy.knockbackVelocity.x += event.force.x;
+              enemy.knockbackVelocity.z += event.force.z;
+            }
+          }
+        }
         const movement = input.movement(cameraController.yaw);
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
@@ -741,11 +1117,14 @@ async function bootstrap(): Promise<void> {
           movement,
           cameraController.yaw,
           FIXED_STEP,
-          movementSpeedMultiplier * progression.modifiers.movementSpeedMultiplier,
-          progression.modifiers.dashCooldownMultiplier,
+          movementSpeedMultiplier *
+            progression.modifiers.movementSpeedMultiplier *
+            activeUltimateEffects.movementSpeedMultiplier,
+          progression.modifiers.dashCooldownMultiplier * activeUltimateEffects.dashCooldownMultiplier,
         );
         const dashStarted = !dashWasActive && state.player.dashTime > 0;
         if (dashStarted) {
+          runTelemetry.recordDash();
           audio.playDash();
           input.rumble(0.32, 70);
           weaponExpansion.triggerDashShockwave(state.player.position, progression.modifiers);
@@ -759,7 +1138,7 @@ async function bootstrap(): Promise<void> {
           spawnDirectorInputScratch,
           runRandomStreams.spawn.next,
           physics.ballPosition,
-          progression.modifiers.damageTakenMultiplier,
+          progression.modifiers.damageTakenMultiplier * activeUltimateEffects.damageTakenMultiplier,
           absorbIncomingDamage,
         );
         for (const event of state.enemyEvents) {
@@ -779,7 +1158,34 @@ async function bootstrap(): Promise<void> {
             audio.playHit(event.damage > 0 ? 1 : 0.6);
           }
         }
+        const pitchEvent = updatePitchEventDirector(pitchEventDirector, state, match.stage);
+        if (pitchEvent) {
+          eliteModifierBindings.push(...pitchEvent.eliteBindings);
+          announcement.show('kickoff', pitchEvent.announcement, 1.55);
+          audio.playBossPhase('bloodRush');
+          bridge.voidBurst(pitchEvent.formation.enemies[0]?.position ?? state.player.position, 1.2);
+        }
+        if (!miniboss || miniboss.phase === 'defeated') {
+          const scheduledEncounter = MINIBOSS_ENCOUNTER_SCHEDULE.find(
+            (definition) =>
+              !spawnedMinibossKinds.has(definition.kind) &&
+              definition.stage === match.stage &&
+              match.matchElapsed >= definition.triggerTime,
+          );
+          if (scheduledEncounter) {
+            miniboss = spawnMiniboss(scheduledEncounter.kind, MINIBOSS_TARGET_IDS[scheduledEncounter.kind], {
+              x: scheduledEncounter.kind === 'crimsonCaptain' ? -8 : 8,
+              y: 1,
+              z: -18,
+            });
+            spawnedMinibossKinds.add(scheduledEncounter.kind);
+            audio.playMinibossEntrance();
+            announcement.show('kickoff', scheduledEncounter.announcement, 2.2);
+            bridge.voidBurst(miniboss.position, 1.8);
+          }
+        }
         if (state.player.health < healthBeforeUpdate) {
+          runTelemetry.recordDamageTaken(healthBeforeUpdate - state.player.health);
           audio.playPlayerHurt();
           input.rumble(0.7, 130);
           cameraController.addImpulse(0.24);
@@ -801,6 +1207,16 @@ async function bootstrap(): Promise<void> {
           progression.modifiers.eliteDamageMultiplier,
         );
         const { hits, kills } = primaryDamage;
+        characterUltimate.gainCharge(hits * 1.5 + kills * 6);
+        runTelemetry.recordDamage(
+          'primary-ball',
+          hits *
+            (physics.ballSpeed > 17 ? 2 : 1) *
+            progression.modifiers.ballDamageMultiplier *
+            progression.modifiers.allDamageMultiplier *
+            ballDamageMultiplier *
+            activeUltimateEffects.ballDamageMultiplier,
+        );
         if (primaryDamage.rebound) {
           physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
         }
@@ -840,6 +1256,11 @@ async function bootstrap(): Promise<void> {
               })
             : null;
         if (bossUpdateThisStep) boss = bossUpdateThisStep.state;
+        const minibossUpdateThisStep =
+          miniboss && miniboss.phase !== 'defeated'
+            ? updateMiniboss(miniboss, state.player.position, FIXED_STEP)
+            : null;
+        if (minibossUpdateThisStep) miniboss = minibossUpdateThisStep.state;
 
         refreshCombatTargets();
         const secondaryStep = secondaryWeapons.step({
@@ -862,17 +1283,33 @@ async function bootstrap(): Promise<void> {
           modifiers: progression.modifiers,
           targets: secondaryTargets,
         });
+        const armoryStep = footballArmory.step({
+          dt: FIXED_STEP,
+          playerPosition: state.player.position,
+          modifiers: progression.modifiers,
+          targets: armoryTargets,
+        });
         const secondaryBossDamage =
           (sumSecondaryBossDamage(secondaryStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) +
-            sumSecondaryBossDamage(expansionStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID)) *
+            sumSecondaryBossDamage(expansionStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) +
+            sumSecondaryBossDamage(armoryStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) +
+            ultimateBossDamageThisStep) *
           progression.modifiers.allDamageMultiplier *
           progression.modifiers.secondaryDamageMultiplier;
+        const secondaryMinibossDamage = miniboss
+          ? (sumSecondaryBossDamage(secondaryStep.hits, MINIBOSS_TARGET_IDS[miniboss.kind]) +
+              sumSecondaryBossDamage(expansionStep.hits, MINIBOSS_TARGET_IDS[miniboss.kind]) +
+              sumSecondaryBossDamage(armoryStep.hits, MINIBOSS_TARGET_IDS[miniboss.kind]) +
+              ultimateMinibossDamageThisStep) *
+            progression.modifiers.allDamageMultiplier *
+            progression.modifiers.secondaryDamageMultiplier
+          : 0;
         const secondaryDamage = damageEnemiesWithSecondary(
           state,
           secondaryStep.hits,
           COUNT_GOALKEEPER_COMBAT_TARGET_ID,
           progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
-          progression.modifiers.eliteDamageMultiplier,
+          progression.modifiers.eliteDamageMultiplier * activeUltimateEffects.eliteDamageMultiplier,
         );
         const expansionDamage = damageEnemiesWithSecondary(
           state,
@@ -880,6 +1317,46 @@ async function bootstrap(): Promise<void> {
           COUNT_GOALKEEPER_COMBAT_TARGET_ID,
           progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
           progression.modifiers.eliteDamageMultiplier,
+        );
+        const armoryDamage = damageEnemiesWithSecondary(
+          state,
+          armoryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+          progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
+          progression.modifiers.eliteDamageMultiplier,
+        );
+        characterUltimate.gainCharge(
+          secondaryDamage.hits +
+            expansionDamage.hits +
+            armoryDamage.hits +
+            (secondaryDamage.kills + expansionDamage.kills + armoryDamage.kills) * 4,
+        );
+        const secondaryTelemetryDamage = secondaryStep.hits.reduce(
+          (total, hit) => total + (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID ? 0 : hit.damage),
+          0,
+        );
+        const expansionTelemetryDamage = expansionStep.hits.reduce(
+          (total, hit) => total + (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID ? 0 : hit.damage),
+          0,
+        );
+        runTelemetry.recordDamage(
+          'secondary-weapons',
+          secondaryTelemetryDamage *
+            progression.modifiers.allDamageMultiplier *
+            progression.modifiers.secondaryDamageMultiplier,
+        );
+        runTelemetry.recordDamage(
+          'dash',
+          expansionTelemetryDamage *
+            progression.modifiers.allDamageMultiplier *
+            progression.modifiers.secondaryDamageMultiplier,
+        );
+        runTelemetry.recordDamage(
+          'secondary-weapons',
+          armoryStep.hits.reduce(
+            (total, hit) => total + (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID ? 0 : hit.damage),
+            0,
+          ),
         );
         if (secondaryDamage.hits > 0) {
           chargeFocusKick('enemy-hit', secondaryDamage.hits);
@@ -916,6 +1393,34 @@ async function bootstrap(): Promise<void> {
           audio.playKill(state.combo);
           healPlayer(expansionDamage.kills * progression.modifiers.lifeStealOnSecondaryKill, true);
         }
+        if (armoryDamage.kills > 0) {
+          bloodShards.spawnOnKill(
+            state.player.position,
+            armoryDamage.kills * BLOOD_XP_PER_KILL,
+            Math.min(9, armoryDamage.kills * 3),
+          );
+          audio.playKill(state.combo);
+          healPlayer(armoryDamage.kills * progression.modifiers.lifeStealOnSecondaryKill, true);
+        }
+        for (const event of armoryStep.events) {
+          if (event.type === 'header-fired') bridge.volleyBurst(event.position, 1.25);
+          if (event.type === 'corner-strike') bridge.lightningBurst(event.position, 1.05);
+          if (event.type === 'red-card') {
+            bridge.hitBurst(event.position, event.executed ? 1.8 : 1.1);
+            if (event.stunDuration > 0) applyEnemySlow(state, event.targetId, 0.2, event.stunDuration);
+          }
+          if (event.type === 'teammate-volley') bridge.volleyBurst(event.position, 0.8);
+          if (event.type === 'penalty-mine-planted') bridge.frostBurst(event.position, 0.55);
+          if (event.type === 'penalty-mine-detonated') bridge.volleyBurst(event.position, 1.35);
+          if (event.type === 'boot-cyclone') bridge.voidBurst(event.position, 0.9);
+          if (event.type === 'header-knockback') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
+            if (enemy) {
+              enemy.knockbackVelocity.x += event.force.x;
+              enemy.knockbackVelocity.z += event.force.z;
+            }
+          }
+        }
         for (const event of expansionStep.events) {
           if (event.type === 'dash-shockwave') bridge.lightningBurst(event.position, 1.35);
           if (event.type === 'holy-zone-spawned') bridge.volleyBurst(event.position, 1.15);
@@ -950,11 +1455,107 @@ async function bootstrap(): Promise<void> {
           }
         }
 
+        if (miniboss && minibossUpdateThisStep) {
+          for (const event of minibossUpdateThisStep.events) {
+            if (event.type === 'phaseChanged' && event.to === 'enraged') {
+              audio.playBossPhase('bloodRush');
+              bridge.voidBurst(miniboss.position, 1.35);
+            }
+            if (event.type === 'attackTelegraphed') {
+              bridge.volleyBurst(event.target, 0.52);
+              audio.playGoalkeeperParry();
+            }
+            if (event.type === 'chargeStarted') cameraController.addImpulse(0.18);
+            if (event.type === 'contactAttack') damagePlayerFromEncounter(event.damage);
+            if (event.type === 'bloodVolley') {
+              bridge.voidBurst(event.origin, 1.15);
+              bridge.hitBurst(event.target, 0.72);
+              const distance = Math.hypot(
+                state.player.position.x - event.target.x,
+                state.player.position.z - event.target.z,
+              );
+              if (distance <= 2.3) damagePlayerFromEncounter(event.damage);
+            }
+            if (event.type === 'summonFormation') {
+              const formation = spawnEnemyFormation(state, event.formationId, event.anchor, 1);
+              eliteModifierBindings.push(...formation.eliteBindings);
+              announcement.show('kickoff', 'MINIBOSS CALLS REINFORCEMENTS', 1.25);
+            }
+          }
+
+          const minibossDistance = Math.hypot(
+            physics.ballPosition.x - miniboss.position.x,
+            physics.ballPosition.z - miniboss.position.z,
+          );
+          if (
+            physics.ballSpeed >= 7 &&
+            minibossDistance <= MINIBOSS_CONFIGS[miniboss.kind].radius + 0.58 &&
+            Math.abs(physics.ballPosition.y - miniboss.position.y) < 1.7
+          ) {
+            applyMinibossDamage(
+              (physics.ballSpeed > 20 ? 9 : 5) *
+                progression.modifiers.ballDamageMultiplier *
+                progression.modifiers.allDamageMultiplier *
+                ballDamageMultiplier,
+              'ball',
+            );
+          }
+          applyMinibossDamage(secondaryMinibossDamage, 'secondary');
+        }
+
+        const modifierEvents = updateEliteModifiers(eliteModifierBindings, state.enemies, FIXED_STEP);
+        for (const event of modifierEvents) {
+          if (event.type === 'regenerated') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.enemyId);
+            if (enemy) bridge.frostBurst(enemy.position, 0.38);
+          } else if (event.type === 'possessionPulse') {
+            for (const enemy of state.enemies) {
+              if (enemy.id === event.enemyId) continue;
+              if (
+                Math.hypot(enemy.position.x - event.position.x, enemy.position.z - event.position.z) <=
+                event.radius
+              ) {
+                enemy.slowSpeedMultiplier = Math.max(enemy.slowSpeedMultiplier, event.speedMultiplier);
+                enemy.slowTimer = Math.max(enemy.slowTimer, 1.3);
+              }
+            }
+            bridge.voidBurst(event.position, 0.58);
+          } else {
+            damageEncounterArea(event.position, event.radius, event.damage);
+            const playerDistance = Math.hypot(
+              state.player.position.x - event.position.x,
+              state.player.position.z - event.position.z,
+            );
+            if (playerDistance <= event.radius) damagePlayerFromEncounter(event.damage);
+            bridge.volleyBurst(event.position, 1.5);
+          }
+        }
+
+        resolveEnvironmentEvents(updateEnvironmentInteractions(environmentInteractions, FIXED_STEP));
+        const environmentHit = findInteractionHit(environmentInteractions, physics.ballPosition, 0.42);
+        if (environmentHit && physics.ballSpeed >= 7) {
+          if (lastEnvironmentHitId !== environmentHit.id) {
+            resolveEnvironmentEvents(
+              damageEnvironmentInteraction(environmentHit, physics.ballSpeed > 17 ? 3 : 1),
+            );
+            if (environmentHit.kind === 'breakableBarrier' && environmentHit.active) {
+              const dx = physics.ballPosition.x - environmentHit.position.x;
+              const dz = physics.ballPosition.z - environmentHit.position.z;
+              const length = Math.max(0.001, Math.hypot(dx, dz));
+              physics.applyBallRebound({ x: dx / length, y: 0, z: dz / length }, 0.68);
+              audio.playWallImpact(0.72);
+            }
+          }
+          lastEnvironmentHitId = environmentHit.id;
+        } else {
+          lastEnvironmentHitId = null;
+        }
+
         const collectedXp = bloodShards.update(
           state.player.position,
           FIXED_STEP,
           undefined,
-          progression.modifiers.pickupRadiusMultiplier,
+          progression.modifiers.pickupRadiusMultiplier * activeUltimateEffects.pickupRadiusMultiplier,
         );
         if (collectedXp > 0) {
           const xpResult = grantBloodXp(progression, collectedXp);
@@ -969,8 +1570,11 @@ async function bootstrap(): Promise<void> {
           for (const event of bossUpdateThisStep?.events ?? []) {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
               const incomingDamage = absorbIncomingDamage(
-                event.damage * progression.modifiers.damageTakenMultiplier,
+                event.damage *
+                  progression.modifiers.damageTakenMultiplier *
+                  activeUltimateEffects.damageTakenMultiplier,
               );
+              runTelemetry.recordDamageTaken(incomingDamage);
               state.player.health = Math.max(0, state.player.health - incomingDamage);
               state.player.invulnerability = 0.7;
               audio.playPlayerHurt();
@@ -988,8 +1592,11 @@ async function bootstrap(): Promise<void> {
             if (event.type === 'counterattackStarted') audio.playBossPhase('bloodRush');
             if (event.type === 'counterattackReleased' && state.player.invulnerability <= 0) {
               const incomingDamage = absorbIncomingDamage(
-                event.damage * progression.modifiers.damageTakenMultiplier,
+                event.damage *
+                  progression.modifiers.damageTakenMultiplier *
+                  activeUltimateEffects.damageTakenMultiplier,
               );
+              runTelemetry.recordDamageTaken(incomingDamage);
               state.player.health = Math.max(0, state.player.health - incomingDamage);
               state.player.invulnerability = 0.7;
               if (incomingDamage > 0) {
@@ -1031,6 +1638,7 @@ async function bootstrap(): Promise<void> {
               if (event.type === 'counterattackStarted') audio.playBossPhase('bloodRush');
             }
             if (damage.appliedDamage > 0) {
+              runTelemetry.recordDamage('primary-ball', damage.appliedDamage);
               healPlayer(damage.appliedDamage * progression.modifiers.bossLifeStealRatio, true);
               chargeFocusKick('boss-hit');
               // The secondary system already stepped; these bounded triggers
@@ -1055,6 +1663,7 @@ async function bootstrap(): Promise<void> {
             });
             boss = damage.state;
             if (damage.appliedDamage > 0) {
+              runTelemetry.recordDamage('secondary-weapons', damage.appliedDamage);
               healPlayer(damage.appliedDamage * progression.modifiers.bossLifeStealRatio, true);
               chargeFocusKick('boss-hit');
               bridge.hitBurst(boss.position, 0.72);
@@ -1069,6 +1678,8 @@ async function bootstrap(): Promise<void> {
         const goalCrossing = detectOpponentGoalCrossing(physics.previousBallStepPosition, ball);
         const scored =
           (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && goalCrossing !== null;
+        const goalQuality =
+          scored && goalCrossing ? evaluateGoalQuality(goalCrossing.crossing.x, physics.ballSpeed) : null;
         const matchUpdate = updateMatchDirector(
           match,
           {
@@ -1095,22 +1706,32 @@ async function bootstrap(): Promise<void> {
             }
           }
           if (event.type === 'goalScored') {
+            runTelemetry.recordGoal();
+            characterUltimate.gainCharge(goalQuality?.ultimateCharge ?? 24);
             chargeFocusKick('goal');
             signalTutorial('goal-scored');
-            state.score += 1_000;
+            state.score += goalQuality?.score ?? 1_000;
             audio.playGoal();
             audio.playNetImpact();
-            announcement.show('goal', event.goal === 'final' ? 'THE FINAL KEEPER AWAKENS' : undefined);
+            announcement.show(
+              'goal',
+              event.goal === 'final'
+                ? `${goalQuality?.label ?? 'GOAL'} · THE FINAL KEEPER AWAKENS`
+                : goalQuality?.label,
+            );
+            eliteModifierBindings.length = 0;
             resetKickoffFormation(state);
             physics.reset(state.player.position);
             bloodShards.reset();
             secondaryWeapons.reset();
             weaponExpansion.reset();
+            footballArmory.reset();
           }
           if (event.type === 'goalOpportunityStarted' && event.goal === 'final') {
             announcement.show('finalGoal');
           }
           if (event.type === 'goalOpportunityStarted') {
+            eliteModifierBindings.length = 0;
             resetKickoffFormation(state);
             physics.reset(state.player.position);
             spawnGoalkeeperGuard(state, event.goal === 'final');
@@ -1118,6 +1739,7 @@ async function bootstrap(): Promise<void> {
           }
           if (event.type === 'goalMissed') {
             audio.playGoalMissed();
+            eliteModifierBindings.length = 0;
             resetKickoffFormation(state);
             physics.reset(state.player.position);
             previousBallState = physics.ballState;
@@ -1208,6 +1830,14 @@ async function bootstrap(): Promise<void> {
         !halftimeOverlay.isVisible,
     );
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
+    encounterRenderer.sync(
+      eliteModifierBindings,
+      state.enemies,
+      miniboss,
+      environmentInteractions,
+      state.elapsed,
+      alpha,
+    );
     bossVisual.sync(boss, alpha);
     bloodShardRenderer.sync(bloodShards.state, alpha);
     secondaryRenderer.sync(secondaryRenderState);
@@ -1220,6 +1850,7 @@ async function bootstrap(): Promise<void> {
       getMatchObjective(match, MATCH_CONFIG),
       boss,
       focusKick,
+      characterUltimate.state,
     );
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
       resultsShown = true;
@@ -1270,6 +1901,7 @@ async function bootstrap(): Promise<void> {
           masteryRewardIds: settlement?.newlyUnlockedMasteryRewardIds,
           runMode: runDescriptor.mode,
           seedCode: runDescriptor.seedCode,
+          telemetry: runTelemetry.snapshot(),
         },
         { onRestart: restart, onMainMenu: returnToMenu },
       );
@@ -1329,6 +1961,7 @@ async function bootstrap(): Promise<void> {
     void audio.dispose();
     goalBeacon.dispose();
     bossVisual.dispose();
+    encounterRenderer.dispose();
     bloodShardRenderer.dispose();
     secondaryRenderer.dispose();
     upgradeOverlay.dispose();
@@ -1336,6 +1969,7 @@ async function bootstrap(): Promise<void> {
     pauseOverlay.dispose();
     resultsOverlay.dispose();
     careerOverlay.dispose();
+    curseOverlay.dispose();
     halftimeOverlay.dispose();
     announcement.dispose();
     evolutionToast.dispose();
@@ -1381,6 +2015,18 @@ function disposeSceneResources(scene: THREE.Scene): void {
   for (const material of materials) material.dispose();
   for (const geometry of geometries) geometry.dispose();
   scene.clear();
+}
+
+function createPitchInteractions(): EnvironmentInteractionState[] {
+  return [
+    createEnvironmentInteraction(1, 'bloodBarrel', { x: -12, y: 0.62, z: -8 }),
+    createEnvironmentInteraction(2, 'bloodBarrel', { x: 12, y: 0.62, z: -8 }),
+    createEnvironmentInteraction(3, 'bloodBarrel', { x: -18, y: 0.62, z: 18 }),
+    createEnvironmentInteraction(4, 'bloodBarrel', { x: 18, y: 0.62, z: 18 }),
+    createEnvironmentInteraction(5, 'holyBeacon', { x: 0, y: 0.82, z: 13 }),
+    createEnvironmentInteraction(6, 'breakableBarrier', { x: -8, y: 0.7, z: -24 }),
+    createEnvironmentInteraction(7, 'breakableBarrier', { x: 8, y: 0.7, z: -24 }),
+  ];
 }
 
 function hasCompletedTutorial(): boolean {

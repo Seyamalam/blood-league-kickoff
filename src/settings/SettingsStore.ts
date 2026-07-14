@@ -3,7 +3,15 @@ export type FpsLimit = 60 | 120 | 'unlimited';
 export type AimAssistStrength = 'off' | 'low' | 'high';
 export type ColorVisionMode = 'default' | 'deuteranopia' | 'protanopia' | 'tritanopia';
 export type ControlAction =
-  'moveForward' | 'moveBackward' | 'moveLeft' | 'moveRight' | 'dash' | 'recall' | 'focusKick' | 'restart';
+  | 'moveForward'
+  | 'moveBackward'
+  | 'moveLeft'
+  | 'moveRight'
+  | 'dash'
+  | 'recall'
+  | 'focusKick'
+  | 'characterUltimate'
+  | 'restart';
 
 export type KeyBindings = Record<ControlAction, string>;
 
@@ -29,7 +37,7 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 6;
+const SETTINGS_VERSION = 7;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -40,6 +48,7 @@ export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
   dash: 'Space',
   recall: 'KeyE',
   focusKick: 'KeyF',
+  characterUltimate: 'KeyQ',
   restart: 'KeyR',
 });
 
@@ -119,6 +128,7 @@ export class SettingsStore {
           version === 3 ||
           version === 4 ||
           version === 5 ||
+          version === 6 ||
           version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
@@ -241,6 +251,7 @@ export const CONTROL_ACTIONS: readonly ControlAction[] = [
   'dash',
   'recall',
   'focusKick',
+  'characterUltimate',
   'restart',
 ];
 

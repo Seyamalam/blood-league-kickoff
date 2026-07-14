@@ -34,6 +34,12 @@ const PROMPTS: Readonly<Record<TutorialStepId, Omit<TutorialPromptDefinition, 's
       description: 'Dash out of a closing crowd. The first instant protects you from damage.',
       control: 'SPACE',
     },
+    ultimate: {
+      id: 'ultimate',
+      title: 'Unleash Your Signature',
+      description: 'Build charge through combat, then trigger your character’s unique ultimate.',
+      control: 'Q',
+    },
     progression: {
       id: 'progression',
       title: 'Drink Their Power',
@@ -84,6 +90,9 @@ export function reduceTutorialState(
       break;
     case 'dash-demonstrated':
       complete(state, 'dash', completedNow);
+      break;
+    case 'ultimate-demonstrated':
+      complete(state, 'ultimate', completedNow);
       break;
     case 'xp-collected':
       state.xpCollected = true;
@@ -169,6 +178,7 @@ function createCompletionMap(value: boolean): TutorialCompletion {
     kick: value,
     recall: value,
     dash: value,
+    ultimate: value,
     progression: value,
     scoring: value,
   };

@@ -3,7 +3,11 @@ import { createRunDescriptor, createRunRandomStreams, dailyRunSeed, weeklyRunSee
 
 describe('run descriptors', () => {
   it('creates reproducible named streams from a shareable custom seed', () => {
-    const descriptorA = createRunDescriptor({ seed: 'HUNTRIX', mode: 'custom', rulesetVersion: 'alpha.7' });
+    const descriptorA = createRunDescriptor({
+      seed: '  HUNTRIX  ',
+      mode: 'custom',
+      rulesetVersion: 'alpha.7',
+    });
     const descriptorB = createRunDescriptor({ seed: 'HUNTRIX', mode: 'custom', rulesetVersion: 'alpha.7' });
     const streamsA = createRunRandomStreams(descriptorA);
     const streamsB = createRunRandomStreams(descriptorB);

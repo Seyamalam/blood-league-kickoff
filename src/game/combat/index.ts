@@ -1,5 +1,9 @@
 export { SecondaryWeaponSystem } from './SecondaryWeaponSystem';
+export { CharacterUltimateSystem } from './CharacterUltimateSystem';
+export { CHARACTER_ULTIMATE_DEFINITIONS } from './characterUltimateDefinitions';
+export { CHARACTER_ULTIMATE_IDS } from './characterUltimateTypes';
 export { WeaponExpansionSystem } from './WeaponExpansionSystem';
+export { FootballArmorySystem } from './FootballArmorySystem';
 export { MAX_SECONDARY_BOSS_DAMAGE_PER_STEP, sumSecondaryBossDamage } from './secondaryBossDamage';
 export { selectAimAssistTarget, steerAimDirection } from './aimAssist';
 export type { AimAssistCandidate, AimAssistTarget, AimVector } from './aimAssist';
@@ -45,3 +49,22 @@ export type {
   WeaponExpansionStepInput,
   WeaponExpansionStepResult,
 } from './weaponExpansionTypes';
+export type {
+  FootballArmoryEvent,
+  FootballArmoryModifiers,
+  FootballArmoryStepInput,
+  FootballArmoryStepResult,
+  FootballArmoryTarget,
+  PenaltyMineRenderState,
+} from './footballArmoryTypes';
+export type {
+  CharacterUltimateDefinition,
+  CharacterUltimateEffects,
+  CharacterUltimateEvent,
+  CharacterUltimateHit,
+  CharacterUltimateId,
+  CharacterUltimateState,
+  CharacterUltimateStepInput,
+  CharacterUltimateStepResult,
+  UltimateTarget,
+} from './characterUltimateTypes';
