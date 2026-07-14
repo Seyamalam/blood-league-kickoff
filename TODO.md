@@ -251,7 +251,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Complete credits, licenses, controls, known issues, and asset inventory.
 - [ ] `P0` Verify README and itch.io description exactly match the build.
 - [x] `P0` Generate web, Windows, macOS, and Linux release artifacts in CI (`v0.8.0-alpha.4`).
-- [ ] `P0` Tag, publish, download, and smoke-test the web/macOS `v0.8.0-alpha.5` prerelease.
+- [ ] `P0` Download and smoke-test the exact published web/macOS `v0.8.0-alpha.5` artifacts.
 - [ ] `P0` Test downloaded artifacts on clean target systems and a fresh browser.
 - [ ] `P0` Tag/publish `v0.9.0` with checksums and test notes.
 

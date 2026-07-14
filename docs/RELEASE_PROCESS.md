@@ -6,16 +6,16 @@ Every major playable milestone receives a reproducible, documented snapshot. Fre
 
 ## Version Line
 
-| Version          | Exit condition                                                               |
-| ---------------- | ---------------------------------------------------------------------------- |
-| `v0.1.0`         | Foundation builds in browser; Electron/Windows pipeline established          |
-| `v0.2.0`         | Player–ball–enemy combat prototype passes Gate A                             |
-| `v0.3.0`         | Three-minute vertical slice passes Gate B                                    |
-| `v0.5.0`         | Full guaranteed run passes Gate C                                            |
-| `v0.8.0-alpha.5` | Regulation field/scoring/goalkeeper/aiming web+macOS prerelease; not yet cut |
-| `v0.8.0`         | Presentation/content complete                                                |
-| `v0.9.0`         | Tested release candidate; features frozen                                    |
-| `v1.0.0`         | Exact itch.io submission revision and repository freeze                      |
+| Version          | Exit condition                                                      |
+| ---------------- | ------------------------------------------------------------------- |
+| `v0.1.0`         | Foundation builds in browser; Electron/Windows pipeline established |
+| `v0.2.0`         | Player–ball–enemy combat prototype passes Gate A                    |
+| `v0.3.0`         | Three-minute vertical slice passes Gate B                           |
+| `v0.5.0`         | Full guaranteed run passes Gate C                                   |
+| `v0.8.0-alpha.5` | Regulation field/scoring/goalkeeper/aiming web+macOS prerelease     |
+| `v0.8.0`         | Presentation/content complete                                       |
+| `v0.9.0`         | Tested release candidate; features frozen                           |
+| `v1.0.0`         | Exact itch.io submission revision and repository freeze             |
 
 Patch releases may fix verified blockers between milestones. Do not tag broken or untested revisions merely to match a schedule.
 
@@ -52,7 +52,7 @@ git tag -a vX.Y.Z -m "Blood League: Kickoff vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Pushing a version tag runs the verified web/macOS workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the web archive, macOS Intel/Apple-silicon packages, and a combined SHA-256 manifest. Alpha tags are prerelease snapshots; creating the `v0.8.0-alpha.5` tag and release remains a future action and must not be claimed before the workflow succeeds. Release notes must include:
+Pushing a version tag runs the verified web/macOS workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the web archive, macOS Intel/Apple-silicon packages, and a combined SHA-256 manifest. Alpha tags are prerelease snapshots. Release notes must include:
 
 - milestone and commit SHA;
 - implemented gameplay/content;

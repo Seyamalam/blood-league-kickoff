@@ -206,7 +206,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Electron shell created and booted on macOS
 - [x] Tag-triggered verified web/macOS prerelease workflow added; Windows/Linux packaging remains explicit manual final-only work
 - [x] `v0.8.0-alpha.4` published with nine CI-built artifacts and a verified combined SHA-256 manifest
-- [ ] Publish and download-test the `v0.8.0-alpha.5` web/macOS prerelease; it is not published yet
+- [ ] Download and smoke-test the exact published `v0.8.0-alpha.5` web/macOS artifacts
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
