@@ -93,6 +93,13 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Momentum Gates and a wide-field Blood Moon formation so the larger pitch changes play.
 - [x] `P1` Replace the crude player placeholder with a detailed articulated original humanoid and six character variants.
 - [x] `P1` Define the production GLB/rig/animation/LOD/provenance acceptance contract.
+- [x] `P1` Import and optimize an audited CC0 skinned humanoid and compatible authored animation library while preserving the procedural fallback.
+- [x] `P1` Add stadium-specific weather, reactive crowd presentation, animated banners/flags, rails, and floodlights.
+- [x] `P1` Add slide-tackle and bicycle-kick combat verbs with boss, telemetry, VFX, and knockback routing.
+- [x] `P1` Add four seeded rival vampire clubs with bounded match identities.
+- [x] `P1` Add Blood Multiball windows and possession objectives.
+- [x] `P1` Add twenty stadium mastery challenges and cosmetic-only unlock/equip progression.
+- [x] `P1` Add architecture-specific reactive props and audited CC0 PBR grass.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
 - [x] `P0` Require swept whole-ball crossing inside the posts and under the crossbar for scoring.

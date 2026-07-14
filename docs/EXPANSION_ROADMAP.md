@@ -34,6 +34,14 @@ The larger field and stadium-variety pass creates room for deeper systems. These
 19. Add cosmetic kit, boot, trail, goal-explosion, banner, and stadium-theme unlocks.
 20. Add a replay/photo mode with free camera, slow motion, match highlights, and exportable clips.
 
+## Implemented expansion slices
+
+- Imported and optimized an audited CC0 skinned humanoid and compatible authored animation library; the original procedural character remains the load-safe fallback.
+- Added stadium-specific weather, reactive crowds, flags, banners, floodlights, rails, and progressively fracturing architecture props.
+- Added slide tackles, bicycle-kick impact lanes, four seeded rival clubs, Blood Multiball windows, and possession objectives.
+- Added twenty stadium-mastery challenges with cosmetic-only titles, banners, goal effects, and trails plus Career equip controls.
+- Added audited CC0 PBR grass maps. AI-generated hero production, full football animation authoring, teammates, campaign branching, ghosts, and replay/photo mode remain future slices.
+
 ## AI-generated 3D production boundary
 
 A genuine AI-generated model requires an authenticated external generator and may consume paid credits. The recommended path is image/multiview-to-model, rigging, and GLB export, followed by Blender cleanup and glTF validation. Do not place API keys in browser or Electron code. Do not merge generated output until topology, rig, animations, texture rights, likeness risk, scale, pivots, collision, memory, and fallback behavior pass the contract in `CHARACTER_ASSET_PIPELINE.md`.

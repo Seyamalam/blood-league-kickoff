@@ -2,11 +2,11 @@
 
 ## Current shipping character
 
-The player is an original, project-created stylized humanoid assembled at runtime in `RenderBridge.ts`. It now has a readable head and face, hair, ears, hands, jersey collar and badge, cuffs, shorts, socks, articulated limbs, a layered hero boot, sole, and studs. Shared geometry and materials keep the model bounded and disposable, while named body parts drive idle, run, and kick motion.
+The preferred runtime player is now the CC0 Quaternius Universal Base Characters superhero-male mesh paired with the compatible CC0 Universal Animation Library. `PlayerCharacterAsset.ts` asynchronously loads the optimized skinned GLBs, plays idle/jog/sprint/roll/technique clips, and never owns gameplay position or collision.
 
-This character is **not an AI-generated 3D model** and is not based on a real footballer, club kit, or third-party likeness. No imported model file is currently shipped.
+This imported character is **not AI-generated** and is not presented as a real footballer or club identity. Its author, source downloads, included licenses, transformations, and hashes are recorded in `ASSET_CREDITS.md`.
 
-The procedural model is the safe fallback while a final authored GLB is produced and approved. It protects offline startup, avoids an undeclared network dependency, and keeps the game playable if a future model fails validation.
+The original 36-part procedural model remains the safe fallback. It protects startup and keeps the game playable if a GLB fails validation or loading.
 
 ## Audited tool route
 

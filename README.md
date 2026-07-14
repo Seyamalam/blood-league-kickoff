@@ -31,7 +31,9 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![Expanded Royal Amethyst stadium and detailed humanoid striker](docs/screenshots/expanded-stadium-humanoid.jpg)
 
-The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Five live-switchable stadium designs change the pitch, stripes, markings, walls, stands, crowd, sky, fog, lighting, and architecture. Select Blood Court, Moonlit Classic, Emerald Cathedral, Royal Amethyst, Frostbound Arena, or a random stadium each launch from Settings.
+![Animated CC0 skinned striker on the PBR pitch](docs/screenshots/cc0-animated-striker.jpg)
+
+The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
 ### Cursed contracts and live telemetry
 
@@ -86,10 +88,11 @@ The playable pitch is now 136×88 world metres—roughly 68% more surface than t
 1. Move through the stadium and control space.
 2. Kick the ball through vampire crowds.
 3. Recall, redirect, or perfectly volley the returning ball.
-4. Collect blood shards and choose one of three upgrades.
-5. Score when the enemy goal opens.
-6. Survive the more dangerous kickoff phase.
-7. Defeat Count Goalkeeper or fall and begin a new run.
+4. Dash through a forward slide tackle or turn a perfect volley into a bicycle-kick impact lane.
+5. Collect blood shards and choose one of three upgrades.
+6. Score when the enemy goal opens.
+7. Survive the more dangerous kickoff phase.
+8. Defeat Count Goalkeeper or fall and begin a new run.
 
 ## Characters and Long-Term Progression
 
@@ -104,17 +107,21 @@ The next replayability layer uses six original football-style archetypes. They d
 | The Engine    | Relentless runner       | Pickup range and pitch coverage     | Lower starting damage    |
 | The Guardian  | Defensive anchor        | Damage resistance                   | Lower kick power         |
 
-Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The former placeholder has been replaced by a 36-part original stylized humanoid with a face, hair, hands, articulated limbs, layered kit, socks, and studded hero boots. All six archetypes retain their own palettes and silhouette accessories.
+Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The player now uses an optimized, skinned Quaternius CC0 humanoid and compatible authored animation library for idle, jog, sprint, roll, tackles, and kick techniques. The 36-part original procedural humanoid remains an automatic fallback.
 
-The current humanoid is an honest project-created fallback, not an imported or AI-generated model. A GLB replacement contract covering rigging, animation clips, node naming, budgets, provenance, and validation is documented in the [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md). A genuine generated model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
+The imported Quaternius character is human-authored and CC0, not AI-generated. Exact sources, bundled licenses, hashes, and optimization steps are in the [asset credits](docs/ASSET_CREDITS.md), while the [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md) defines the eventual original AI-generated replacement gate. A model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
 
 Five passive upgrades now join twenty-one active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. The football armory adds Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone. Four new combinations—**Royal Header**, **Tempest Set Piece**, **Phantom Formation**, and **Referee's Reckoning**—expand the evolution roster to eleven. Six optional cursed contracts trade safety for stronger rewards and a more aggressive encounter director.
+
+Every seeded run now draws one of four original rival clubs—Nightwing Athletic, Iron Coven FC, Velvet Fangs, or Graveyard United. Their identities alter bounded enemy health, speed, damage, and pressure. Timed Blood Multiball windows add up to four pooled spectral shots, while possession objectives reward sustained control with score and ultimate charge.
 
 Each level-up is now a weighted Common/Rare/Epic/Legendary draft with two rerolls, one banish, and one skip per run. Cards expose owned stacks, evolution partners, and the build they advance. Account level unlocks additional weapons, curses, league tiers, and characters; the Career Codex records characters, weapons, evolutions, enemies, elite affixes, and curses.
 
 Four league tiers—Rookie, Professional, Champion, and Nightmare—can be combined with up to three of five challenge modifiers. Enemy pressure and career rewards scale together, so higher difficulty changes both the match and its progression payoff.
 
 A versioned local profile records account XP, six character unlock levels, 20-level character mastery with gameplay perks and rewards, eighteen achievements, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. Standard, daily, weekly, cursed-contract, and custom-seed runs preserve their seed and ruleset metadata. The Career screen exposes exact-build local score, fastest-victory, current-daily, and current-weekly tables. These rankings never claim to be global or cheat-proof.
+
+Each stadium now has four mastery objectives—debut, victories, goals, and enemy defeats—for twenty cosmetic-only challenges. Rewards include profile titles, supporter banners, goal effects, and movement trails; they persist and can be equipped from the scroll-safe Career screen without adding permanent combat power.
 
 ## Controls
 
@@ -220,6 +227,13 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add three reusable Momentum Gates with speed bursts, dash refunds, cooldown presentation, and ball-safe collision rules
 - [x] Add a touchline-spanning Wide Overload Blood Moon formation and authored event-spacing protection
 - [x] Replace the player placeholder with a detailed 36-part original humanoid, articulated animation, six character identities, resource budgets, and a documented GLB upgrade path
+- [x] Import, optimize, license, and integrate a real skinned CC0 humanoid plus authored animation library with automatic fallback
+- [x] Add stadium-specific weather, reactive crowds, pulsing rails, flags, banners, and floodlights
+- [x] Add always-available slide tackles and charge-scaled bicycle-kick impact lanes
+- [x] Add four seeded rival vampire clubs, Blood Multiball windows, and possession objectives
+- [x] Add twenty stadium-mastery challenges with persistent cosmetic-only rewards and Career equip controls
+- [x] Add architecture-specific reactive props that progressively fracture during match events
+- [x] Integrate audited ambientCG CC0 PBR turf maps
 - [x] Swept whole-ball goal detection prevents tunneling and requires the complete ball to cross the goal line inside the physical frame
 - [x] Special goalkeeper blocker protects the active scoring goal with dedicated state, elite presentation, and interception behavior
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
