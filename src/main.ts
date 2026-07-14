@@ -45,6 +45,7 @@ import {
   SecondaryWeaponSystem,
   WeaponExpansionSystem,
   CharacterUltimateSystem,
+  CombatFeedbackSystem,
   FootballArmorySystem,
   selectAimAssistTarget,
   sumSecondaryBossDamage,
@@ -107,7 +108,7 @@ import {
   type EnvironmentInteractionEvent,
   type EnvironmentInteractionState,
 } from './game/encounters';
-import { evaluateGoalQuality } from './game/scoring';
+import { GoalComboSystem } from './game/scoring';
 import { TutorialTracker, type TutorialSignal } from './game/tutorial';
 import { RunTelemetry } from './game/stats';
 import { PhysicsWorld } from './physics/PhysicsWorld';
@@ -201,6 +202,7 @@ async function bootstrap(): Promise<void> {
   const renderer = createRenderer(root);
   const scene = createScene();
   const cameraController = new CameraController();
+  const combatFeedback = new CombatFeedbackSystem();
   const input = new InputController(renderer.domElement);
   const audio = new AudioManager();
   audio.setMatchIntensity('menu');
@@ -242,6 +244,11 @@ async function bootstrap(): Promise<void> {
   const footballArmory = new FootballArmorySystem();
   let characterUltimate = new CharacterUltimateSystem(selectedCharacterId);
   const runTelemetry = new RunTelemetry();
+  const goalCombo = new GoalComboSystem();
+  let lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
+  let lastKickWasVolley = false;
+  let reboundsSinceKick = 0;
+  let setupTouchesSinceKick = 0;
   const secondaryTargets: CombatTarget[] = [];
   const ultimateTargets: UltimateTarget[] = [];
   const armoryTargets: FootballArmoryTarget[] = [];
@@ -398,6 +405,7 @@ async function bootstrap(): Promise<void> {
     audio.playPlayerHurt();
     input.rumble(0.72, 145);
     cameraController.addImpulse(0.3);
+    combatFeedback.addImpact({ kind: 'player-hit', damage });
     if (state.player.health <= 0) state.phase = 'dead';
   };
   const rewardEncounterKills = (
@@ -705,6 +713,8 @@ async function bootstrap(): Promise<void> {
     weaponExpansion.reset();
     footballArmory.reset();
     runTelemetry.reset();
+    combatFeedback.reset();
+    goalCombo.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -827,6 +837,8 @@ async function bootstrap(): Promise<void> {
     weaponExpansion.reset();
     footballArmory.reset();
     runTelemetry.reset();
+    combatFeedback.reset();
+    goalCombo.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -994,6 +1006,16 @@ async function bootstrap(): Promise<void> {
         kick.curve * progression.modifiers.curveStrengthMultiplier,
       );
       if (result) {
+        lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
+        lastKickWasVolley = result.perfectVolley;
+        reboundsSinceKick = 0;
+        setupTouchesSinceKick = 0;
+        combatFeedback.addImpact({
+          kind: 'kick',
+          damage: result.charge * 20,
+          direction: rawAim,
+          perfect: result.perfectVolley,
+        });
         runTelemetry.recordKick();
         if (result.charge >= 0.72) {
           weaponExpansion.triggerHolyPenaltyZone(state.player.position, progression.modifiers);
@@ -1032,7 +1054,8 @@ async function bootstrap(): Promise<void> {
       volleyWindowBonus + progression.modifiers.volleyWindowBonus + activeUltimateEffects.volleyWindowBonus,
     );
 
-    accumulator += frameTime * getFocusKickTimeScale(focusKick);
+    const combatTimeScale = combatFeedback.consumeHitStop(frameTime) ? 0 : 1;
+    accumulator += frameTime * combatTimeScale * getFocusKickTimeScale(focusKick);
     while (accumulator >= FIXED_STEP) {
       const simulationActive =
         !denseWaveStress &&
@@ -1222,6 +1245,7 @@ async function bootstrap(): Promise<void> {
             activeUltimateEffects.ballDamageMultiplier,
         );
         if (primaryDamage.rebound) {
+          reboundsSinceKick += 1;
           physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
         }
         if (primaryDamage.blockedHits > 0) {
@@ -1243,6 +1267,11 @@ async function bootstrap(): Promise<void> {
           input.rumble(0.28 + hitIntensity * 0.34, 75);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
           cameraController.hitImpulse(hitIntensity);
+          combatFeedback.addImpact({
+            kind: primaryDamage.blockedHits > 0 ? 'elite-hit' : 'enemy-hit',
+            damage: physics.ballSpeed,
+            direction: physics.ballVelocity,
+          });
         }
         if (state.combo > comboBeforeHit) audio.playKill(state.combo);
         if (kills > 0) {
@@ -1653,6 +1682,11 @@ async function bootstrap(): Promise<void> {
               secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
               bridge.hitBurst(boss.position, 1.4);
               cameraController.hitImpulse(1.25);
+              combatFeedback.addImpact({
+                kind: 'boss-hit',
+                damage: damage.appliedDamage,
+                direction: physics.ballVelocity,
+              });
               audio.playHit(1);
             }
             bossDefeatedThisStep = didDefeatCountGoalkeeper(damage.events);
@@ -1683,7 +1717,20 @@ async function bootstrap(): Promise<void> {
         const scored =
           (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && goalCrossing !== null;
         const goalQuality =
-          scored && goalCrossing ? evaluateGoalQuality(goalCrossing.crossing.x, physics.ballSpeed) : null;
+          scored && goalCrossing
+            ? goalCombo.score({
+                crossingX: goalCrossing.crossing.x,
+                ballSpeed: physics.ballSpeed,
+                shotDistance: Math.hypot(
+                  goalCrossing.crossing.x - lastKickOrigin.x,
+                  goalCrossing.crossing.z - lastKickOrigin.z,
+                ),
+                airborne: lastKickWasVolley,
+                reboundCount: reboundsSinceKick,
+                setupTouches: setupTouchesSinceKick,
+                scoredAt: match.matchElapsed,
+              })
+            : null;
         const matchUpdate = updateMatchDirector(
           match,
           {
@@ -1714,7 +1761,8 @@ async function bootstrap(): Promise<void> {
             characterUltimate.gainCharge(goalQuality?.ultimateCharge ?? 24);
             chargeFocusKick('goal');
             signalTutorial('goal-scored');
-            state.score += goalQuality?.score ?? 1_000;
+            state.score += goalQuality?.totalScore ?? 1_000;
+            combatFeedback.addImpact({ kind: 'goal', damage: physics.ballSpeed, perfect: lastKickWasVolley });
             audio.playGoal();
             audio.playNetImpact();
             announcement.show(
@@ -1789,6 +1837,7 @@ async function bootstrap(): Promise<void> {
         previousBallState !== 'recalling' &&
         previousBallState !== 'recovering';
       if (recallStarted) audio.playRecall();
+      if (recallStarted) setupTouchesSinceKick += 1;
       if (recallStarted) signalTutorial('recall-demonstrated');
       if (
         physics.ballState === 'possessed' &&
@@ -1824,6 +1873,9 @@ async function bootstrap(): Promise<void> {
       alpha,
     );
     cameraController.update(renderPlayerPosition, frameTime);
+    const feedbackState = combatFeedback.step(frameTime);
+    cameraController.applyCombatFeedback(feedbackState);
+    root.style.setProperty('--combat-pulse', feedbackState.chromaticPulse.toFixed(3));
     aimGuide.sync(
       renderPlayerPosition,
       cameraController.aimDirection(),

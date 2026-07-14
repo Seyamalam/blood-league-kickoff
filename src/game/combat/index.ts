@@ -68,3 +68,5 @@ export type {
   CharacterUltimateStepResult,
   UltimateTarget,
 } from './characterUltimateTypes';
+export { CombatFeedbackSystem } from './CombatFeedbackSystem';
+export type { CombatFeedbackState, CombatImpact, ImpactKind } from './CombatFeedbackSystem';

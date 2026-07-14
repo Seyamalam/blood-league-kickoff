@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Vec3 } from '../../game/simulation/types';
+import type { CombatFeedbackState } from '../../game/combat';
 import { ARENA_WALL_HALF_LENGTH, ARENA_WALL_HALF_WIDTH } from '../../game/field';
 
 const CAMERA_ARENA_HALF_WIDTH = ARENA_WALL_HALF_WIDTH - 0.55;
@@ -109,6 +110,18 @@ export class CameraController {
     const nextFov = 64 + this.fovKick;
     if (Math.abs(this.camera.fov - nextFov) > 0.01) {
       this.camera.fov = nextFov;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  /** Applies one presentation-only combat impulse after the follow rig updates. */
+  applyCombatFeedback(feedback: Readonly<CombatFeedbackState>): void {
+    this.camera.position.x += feedback.cameraOffset.x;
+    this.camera.position.y += feedback.cameraOffset.y;
+    this.camera.position.z += feedback.cameraOffset.z;
+    this.camera.rotateZ(feedback.cameraRoll);
+    if (feedback.fovKick > 0.01) {
+      this.camera.fov += feedback.fovKick;
       this.camera.updateProjectionMatrix();
     }
   }
