@@ -3,7 +3,7 @@
   "description": "A third-person football-combat horde-survival roguelite.",
   "author": "Huntrix",
   "private": true,
-  "version": "0.10.0-alpha.1",
+  "version": "0.11.0-alpha.1",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {

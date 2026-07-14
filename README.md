@@ -377,6 +377,7 @@ Planned release line:
 | `v0.8.0`          | Content and presentation complete                         |
 | `v0.9.0-rc.1`     | Feature-complete release candidate                        |
 | `v0.10.0-alpha.1` | Larger fields, stadium variety, and humanoid presentation |
+| `v0.11.0-alpha.1` | Animated striker, rival clubs, living arenas, and mastery |
 | `v1.0.0`          | Jam submission freeze                                     |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.

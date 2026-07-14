@@ -2,6 +2,15 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.11.0-alpha.1 — 2026-07-14
+
+- Added two always-available football combat verbs: dashing now performs a forward slide tackle, while successful volleys unleash a charge-scaled bicycle-kick impact lane with dedicated knockback and presentation feedback.
+- Integrated and optimized Quaternius's CC0 Universal Base Character and compatible animation library as the live skinned player, retaining the original procedural humanoid as a load-safe fallback and preserving exact licenses and hashes.
+- Added five stadium-specific weather identities, reactive crowd waves, event surges, animated flags and banners, pulsing rails, and shadow-free floodlight structures.
+- Added four seeded rival vampire clubs with distinct bounded enemy identities, timed Blood Multiball windows, and possession objectives that reward score and ultimate charge.
+- Added twenty stadium-mastery challenges, persistent cosmetic-only title/banner/goal-effect/trail rewards, equip controls in Career, and architecture-specific reactive props that progressively fracture during match events.
+- Added ambientCG's CC0 Grass 007 PBR maps as repeated, palette-tinted pitch detail with an audited source, bundled license, and exact provenance.
+
 ## v0.10.0-alpha.1 — 2026-07-14
 
 - Expanded the pitch from 105×68 to 136×88 while keeping goals, physics walls, camera limits, spawns, formations, bosses, and scoring on shared field constants.
@@ -9,12 +18,6 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Added three reusable Momentum Gates, a touchline-spanning Wide Overload Blood Moon formation, and authored event spacing.
 - Rebuilt the striker as a detailed 36-part original humanoid with articulated locomotion, six character identities, bounded shared resources, and a documented production GLB replacement contract.
 - Captured and visually verified the expanded production stadium at 1280×720; all five stadiums were exercised through live Settings switching.
-- Added two always-available football combat verbs: dashing now performs a forward slide tackle, while successful volleys unleash a charge-scaled bicycle-kick impact lane with dedicated knockback and presentation feedback.
-- Integrated and optimized Quaternius's CC0 Universal Base Character and compatible animation library as the live skinned player, retaining the original procedural humanoid as a load-safe fallback and preserving exact licenses and hashes.
-- Added five stadium-specific weather identities, reactive crowd waves, event surges, animated flags and banners, pulsing rails, and shadow-free floodlight structures.
-- Added four seeded rival vampire clubs with distinct bounded enemy identities, timed Blood Multiball windows, and possession objectives that reward score and ultimate charge.
-- Added twenty stadium-mastery challenges, persistent cosmetic-only title/banner/goal-effect/trail rewards, equip controls in Career, and architecture-specific reactive props that progressively fracture during match events.
-- Added ambientCG's CC0 Grass 007 PBR maps as repeated, palette-tinted pitch detail with an audited source, bundled license, and exact provenance.
 
 ## v0.9.0-rc.1 — 2026-07-14
 
