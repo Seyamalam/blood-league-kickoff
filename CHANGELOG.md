@@ -2,7 +2,7 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
-## Unreleased — post-RC expansion
+## v0.10.0-alpha.1 — 2026-07-14
 
 - Expanded the pitch from 105×68 to 136×88 while keeping goals, physics walls, camera limits, spawns, formations, bosses, and scoring on shared field constants.
 - Added Blood Court, Moonlit Classic, Emerald Cathedral, Royal Amethyst, and Frostbound Arena with distinct palettes, skies, fog, lighting, crowds, and architecture plus a persisted random option.
