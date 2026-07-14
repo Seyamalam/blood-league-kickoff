@@ -1,6 +1,6 @@
 import type { EvolutionDefinition, EvolutionId } from './types';
 
-/** The two automatic weapon evolutions required for the jam build. */
+/** Automatic cross-weapon evolutions for the complete jam build. */
 export const EVOLUTION_DEFINITIONS = Object.freeze({
   moonBreaker: define({
     id: 'moonBreaker',
@@ -28,6 +28,50 @@ export const EVOLUTION_DEFINITIONS = Object.freeze({
       bloodBombRadius: 0.75,
       kickPowerMultiplier: 0.25,
       ballSpeedMultiplier: 0.12,
+    },
+  }),
+  graveFrostWake: define({
+    id: 'graveFrostWake',
+    name: 'Grave-Frost Wake',
+    description: 'The garlic trail freezes every enemy caught in its cursed wake.',
+    requirements: [
+      { upgradeId: 'garlicTrail', minStacks: 1 },
+      { upgradeId: 'frostCleats', minStacks: 1 },
+    ],
+    modifierBonus: {
+      garlicTrailDamage: 4,
+      garlicSlowAmount: 0.28,
+      garlicSlowDuration: 1.6,
+    },
+  }),
+  stormHalo: define({
+    id: 'stormHalo',
+    name: 'Storm Halo',
+    description: 'Spectral orbiters unleash lightning chains on every fresh collision.',
+    requirements: [
+      { upgradeId: 'orbitingSpectralBall', minStacks: 1 },
+      { upgradeId: 'stormStuds', minStacks: 1 },
+    ],
+    modifierBonus: {
+      orbitingBallDamage: 4,
+      orbitChainDamage: 6,
+      orbitChainTargets: 2,
+    },
+  }),
+  phantomSingularity: define({
+    id: 'phantomSingularity',
+    name: 'Phantom Singularity',
+    description: 'Each ghost pass tears open a gravity well on its first victim.',
+    requirements: [
+      { upgradeId: 'ghostPass', minStacks: 1 },
+      { upgradeId: 'voidGoal', minStacks: 1 },
+    ],
+    modifierBonus: {
+      ghostPassDamageMultiplier: 0.15,
+      ghostVoidDamage: 2,
+      ghostVoidRadius: 0.25,
+      ghostVoidPullStrength: 5,
+      ghostVoidDuration: 1.2,
     },
   }),
 } satisfies Record<EvolutionId, EvolutionDefinition>);

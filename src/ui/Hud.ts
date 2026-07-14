@@ -60,7 +60,6 @@ export class Hud {
         </div>
         <div id="objective" class="objective">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
         <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
-        <div class="crosshair"><span></span><span></span><span></span><span></span></div>
         <div id="combo" class="combo"></div>
         <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> CHARGE / KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS</div>
         <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
@@ -73,6 +72,7 @@ export class Hud {
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
         <button type="button" id="kickoff-button">ENTER THE PITCH</button>
         <button type="button" id="title-settings-button" class="title-settings">SETTINGS</button>
+        <button type="button" id="title-quit-button" class="title-settings title-quit">QUIT GAME</button>
         <small>Click to lock the cursor · Headphones recommended</small>
       </section>
       <section id="death" class="modal death hidden">
@@ -116,6 +116,7 @@ export class Hud {
     this.victory = required('victory');
     this.bossPanel = required('boss-panel');
     this.bossFill = required('boss-fill');
+    this.titleQuitButton.hidden = !window.desktopRuntime?.window;
   }
 
   get kickoffButton(): HTMLElement {
@@ -136,6 +137,10 @@ export class Hud {
 
   get titleSettingsButton(): HTMLElement {
     return required('title-settings-button');
+  }
+
+  get titleQuitButton(): HTMLElement {
+    return required('title-quit-button');
   }
 
   update(

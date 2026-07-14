@@ -13,6 +13,9 @@ import type {
 
 const ZERO: BossVec3 = { x: 0, y: 0, z: 0 };
 
+/** Reserved target id used to route secondary hits without colliding with ordinary enemy ids. */
+export const COUNT_GOALKEEPER_COMBAT_TARGET_ID = -1;
+
 export interface SpawnCountGoalkeeperOptions {
   readonly id?: number;
   readonly seed?: number;
@@ -39,6 +42,7 @@ export function spawnCountGoalkeeper(
     actionElapsed: 0,
     actionCooldown: config.chargeCooldown,
     hitInvulnerability: 0,
+    secondaryHitInvulnerability: 0,
     contactCooldown: 0,
     eliteSummonCooldown: config.eliteSummonInterval,
     rngState: normalizeSeed(options.seed ?? 0xc01dcafe),
@@ -74,6 +78,7 @@ export function updateCountGoalkeeper(
     actionElapsed: state.actionElapsed + dt,
     actionCooldown: Math.max(0, state.actionCooldown - dt),
     hitInvulnerability: Math.max(0, state.hitInvulnerability - dt),
+    secondaryHitInvulnerability: Math.max(0, state.secondaryHitInvulnerability - dt),
     contactCooldown: Math.max(0, state.contactCooldown - dt),
     eliteSummonCooldown: Math.max(0, state.eliteSummonCooldown - dt),
   };
@@ -127,19 +132,27 @@ export function damageCountGoalkeeper(
   if (
     state.phase === 'entrance' ||
     state.phase === 'defeated' ||
-    state.hitInvulnerability > 0 ||
+    (hit.source === 'secondary' ? state.secondaryHitInvulnerability > 0 : state.hitInvulnerability > 0) ||
     hit.amount === 0
   ) {
     return { state, events: [], appliedDamage: 0 };
   }
 
-  const multiplier = hit.source === 'ball' ? config.ballDamageMultiplier : 1;
+  const multiplier =
+    hit.source === 'ball'
+      ? config.ballDamageMultiplier
+      : hit.source === 'secondary'
+        ? config.secondaryDamageMultiplier
+        : 1;
   const appliedDamage = Math.min(state.health, hit.amount * multiplier);
   const health = Math.max(0, state.health - appliedDamage);
   const events: CountGoalkeeperEvent[] = [
     { type: 'damaged', amount: appliedDamage, remainingHealth: health },
   ];
-  let next: CountGoalkeeperState = { ...state, health, hitInvulnerability: config.hitInvulnerability };
+  let next: CountGoalkeeperState =
+    hit.source === 'secondary'
+      ? { ...state, health, secondaryHitInvulnerability: config.secondaryHitInvulnerability }
+      : { ...state, health, hitInvulnerability: config.hitInvulnerability };
 
   if (health <= 0) {
     events.push({ type: 'phaseChanged', from: state.phase, to: 'defeated' }, { type: 'defeated' });
@@ -152,6 +165,15 @@ export function damageCountGoalkeeper(
     }
   }
   return { state: next, events, appliedDamage };
+}
+
+/** Entrance and defeated states stay outside generic combat-target queries. */
+export function isCountGoalkeeperDamageable(state: CountGoalkeeperState): boolean {
+  return state.phase !== 'entrance' && state.phase !== 'defeated';
+}
+
+export function didDefeatCountGoalkeeper(events: readonly CountGoalkeeperEvent[]): boolean {
+  return events.some((event) => event.type === 'defeated');
 }
 
 function updateChargeCycle(
@@ -253,6 +275,18 @@ function validateConfig(config: CountGoalkeeperConfig): void {
     throw new Error('Boss health phase ratios must be ordered between zero and one.');
   }
   if (config.bloodRushHealthRatio >= 1) throw new Error('Blood Rush ratio must be below one.');
+  if (
+    !Number.isFinite(config.ballDamageMultiplier) ||
+    config.ballDamageMultiplier < 0 ||
+    !Number.isFinite(config.secondaryDamageMultiplier) ||
+    config.secondaryDamageMultiplier < 0 ||
+    !Number.isFinite(config.hitInvulnerability) ||
+    config.hitInvulnerability < 0 ||
+    !Number.isFinite(config.secondaryHitInvulnerability) ||
+    config.secondaryHitInvulnerability < 0
+  ) {
+    throw new Error('Boss damage multipliers and cooldowns must be finite and non-negative.');
+  }
 }
 
 function clamp(value: number, min: number, max: number): number {

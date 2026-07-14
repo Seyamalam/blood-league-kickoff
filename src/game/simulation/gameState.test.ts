@@ -5,9 +5,11 @@ import {
   damageEnemiesWithBall,
   resetKickoffFormation,
   spawnEliteEnemy,
+  spawnGoalkeeperGuard,
   updateEnemies,
   updatePlayer,
 } from './gameState';
+import { GOALKEEPER_GUARD_Z, GOAL_HALF_WIDTH } from '../field';
 
 describe('game state match helpers', () => {
   afterEach(() => {
@@ -42,6 +44,26 @@ describe('game state match helpers', () => {
     expect(state.enemies).toContain(normal);
   });
 
+  it('spawns a special goalkeeper that tracks the ball across the real goal mouth', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const goalkeeper = spawnGoalkeeperGuard(state, true);
+
+    updateEnemies(state, 0.1, { stage: 'finalGoal', stageElapsed: 1, matchElapsed: 500 }, () => 0.5, {
+      x: GOAL_HALF_WIDTH,
+      y: 0.7,
+      z: GOALKEEPER_GUARD_Z,
+    });
+
+    expect(goalkeeper.goalkeeper).toBe(true);
+    expect(goalkeeper.archetype).toBe('goalkeeperBrute');
+    expect(goalkeeper.position.x).toBeGreaterThan(0);
+    expect(goalkeeper.position.x).toBeLessThanOrEqual(GOAL_HALF_WIDTH - goalkeeper.radius);
+    expect(goalkeeper.position.z).toBeCloseTo(GOALKEEPER_GUARD_Z);
+    expect(goalkeeper.hitPoints).toBe(16);
+  });
+
   it('applies the halftime Pace multiplier to ordinary movement', () => {
     const baseline = createGameState();
     const boosted = createGameState();
@@ -72,6 +94,26 @@ describe('game state match helpers', () => {
     state.spawnTimer = 0;
     updateEnemies(state, 1 / 60);
     expect(state.enemies).toHaveLength(72);
+  });
+
+  it('rests the ordinary spawn director during goal and halftime stages', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1, {
+      stage: 'goalOpportunity',
+      stageElapsed: 2,
+      matchElapsed: 100,
+    });
+    updateEnemies(state, 1, {
+      stage: 'halftimeChoice',
+      stageElapsed: 2,
+      matchElapsed: 200,
+    });
+
+    expect(state.enemies).toHaveLength(0);
+    expect(state.spawnTimer).toBe(0);
   });
 
   it('keeps ordinary enemies at full decision fidelity through the near-distance boundary', () => {

@@ -4,6 +4,32 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Rebuilt play around a shared 68×105 regulation-proportioned pitch, physical goal posts/crossbar, and swept whole-ball scoring that rejects partial crossings and high/wide shots while preventing fast-ball tunneling.
+- Added a special goalkeeper blocker to the active scoring end, with dedicated state, presentation, and interception coverage.
+- Replaced the fixed HUD crosshair with a long red world-space aim line that follows the live camera direction.
+- Corrected vertical mouse look to the conventional default and added a persisted inversion setting with safe schema migration.
+- Moved desktop Quit out of Settings and onto the title screen only; browser builds do not show the control.
+- Added a tag-triggered verified web/macOS prerelease workflow. Windows and Linux builds are now explicit, confirmation-gated, manual final-only outputs after the game is complete.
+- Refreshed gameplay and settings captures and added the goalkeeper screenshot to the public documentation and hashed asset inventory.
+- Prepared the `v0.8.0-alpha.5` documentation and release notes; the tag and release have not been published yet.
+- Added one-command local and automatic `main`-branch itch.io HTML5 deployment through the official Butler CLI, with the API key kept in ignored local configuration and GitHub's encrypted secret store.
+- Made every secondary weapon and evolution damage Count Goalkeeper through a reserved boss target, a 12-raw-damage fixed-step cap, and a 0.4 boss multiplier without awarding ordinary kills, combo, score, or Blood XP.
+- Gave boss kicks the normal impact-weapon triggers plus Blood Bomb, separated primary/secondary hit cooldowns to prevent either path starving the other, kept boss crowd control immune, removed per-kick target-array allocation, and covered secondary defeat-to-victory forwarding in the same fixed step; the suite now contains 171 passing tests.
+- Replaced 45 individual secondary-weapon meshes with five fixed `InstancedMesh` batches sharing three geometries; all full pools now add exactly five draw calls instead of as many as 45.
+- Made black-hole rotation fixed-step-age-driven, added semantic renderer capacity/matrix/resource-lifecycle tests, and added a deterministic full-pool WebGL stress route with a 1600×900 capture.
+- Completed pool diagnostics for multiball and black-hole objects, correcting aggregate visible pool capacity from 195 to 205; the suite now contains 162 passing tests.
+- Completed the five-evolution roster with Grave-Frost Wake, Storm Halo, and Phantom Singularity, adding freezing garlic trails, chain-lightning orbiters, and ghost-triggered gravity wells through existing bounded combat pools.
+- Added three original evolution icons, visible and accessible evolution-partner hints on upgrade cards, evolution entries in final results, and deterministic development fixtures for every evolution.
+- Added data-contract, exact-boundary, idempotency, all-build, progression-to-combat, and UI coverage for the complete evolution graph.
+- Rebuilt the stadium readability layer with brighter pitch landmarks, low boards plus collision-matched upper fencing, spatially deep goals and nets, arena rails, tiered stands, and two-ended instanced crowds.
+- Simplified the scoring beacon into a goal-aligned halo, arrow, beam, and shadow-free light so it highlights the authored goal instead of drawing a second offset frame.
+- Added semantic render regression coverage for stadium landmarks, goal structure, instanced crowd resources, arena lighting, and the goal-beacon lifecycle.
+- Replaced nine recursive scene-tree lookups per enemy per frame with typed visual references captured once at spawn.
+- Added state-driven Winger, Defender, Coach, Bat Swarm, Leech, Referee, and Goalkeeper Brute poses while preserving ground-space telegraphs and locked attack facing.
+- Merged Bat Swarm ears and Corrupt Referee stripes into shared geometry so every ordinary archetype stays within the five-visible-mesh budget; the 72-enemy scene dropped from 188 to 178 draw calls.
+- Replaced the continuous time-only enemy formula with a data-driven Spawn Director: every combat stage now owns its ramping population cap, cadence, and weighted roster, while goals, halftime, victory, and death stop ordinary spawns.
+- Added deterministic Spawn Director, non-combat rest-stage, enemy visual/resource, and complete evolution-graph coverage; the complete suite now contains 158 passing tests.
+
 ## v0.8.0-alpha.4 — 2026-07-14
 
 - Disabled electron-builder's implicit tag publishing so native runner jobs hand completed artifacts to the explicit, least-privilege release publisher.

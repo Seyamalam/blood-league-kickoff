@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-
-const OPPONENT_GOAL_Z = -14.4;
+import { OPPONENT_GOAL_LINE_Z } from '../../game/field';
 
 /** Lightweight world-space marker for the limited goal-scoring window. */
 export class GoalBeacon {
@@ -25,7 +24,7 @@ export class GoalBeacon {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
-  private readonly light = new THREE.PointLight(0xff285f, 0, 8, 2);
+  private readonly light = new THREE.PointLight(0xffcf40, 0, 11, 2);
   private readonly halo: THREE.Mesh;
   private readonly arrow: THREE.Mesh;
   private readonly geometries: THREE.BufferGeometry[] = [];
@@ -35,29 +34,27 @@ export class GoalBeacon {
 
   constructor(scene: THREE.Scene) {
     this.group.name = 'GoalOpportunityBeacon';
-    this.group.position.set(0, 0, OPPONENT_GOAL_Z);
+    this.group.position.set(0, 0, OPPONENT_GOAL_LINE_Z);
 
-    const postGeometry = this.track(new THREE.BoxGeometry(0.16, 2.7, 0.16));
-    const crossbarGeometry = this.track(new THREE.BoxGeometry(5.3, 0.16, 0.16));
-    const haloGeometry = this.track(new THREE.TorusGeometry(1.05, 0.09, 8, 28));
-    const arrowGeometry = this.track(new THREE.ConeGeometry(0.32, 0.72, 5));
+    const haloGeometry = this.track(new THREE.TorusGeometry(1.3, 0.12, 8, 28));
+    const arrowGeometry = this.track(new THREE.ConeGeometry(0.4, 0.9, 5));
     const beamGeometry = this.track(new THREE.CylinderGeometry(1.45, 2.35, 5.5, 16, 1, true));
 
-    const leftPost = this.makeMesh(postGeometry, this.goldMaterial, -2.55, 1.35, 0);
-    const rightPost = this.makeMesh(postGeometry, this.goldMaterial, 2.55, 1.35, 0);
-    const crossbar = this.makeMesh(crossbarGeometry, this.goldMaterial, 0, 2.62, 0);
-
-    this.halo = this.makeMesh(haloGeometry, this.crimsonMaterial, 0, 2.85, 0.08);
-    this.arrow = this.makeMesh(arrowGeometry, this.goldMaterial, 0, 4.1, 0.08);
+    this.halo = this.makeMesh(haloGeometry, this.crimsonMaterial, 0, 3.55, 0.08);
+    this.halo.name = 'goal-beacon-halo';
+    this.arrow = this.makeMesh(arrowGeometry, this.goldMaterial, 0, 4.75, 0.08);
+    this.arrow.name = 'goal-beacon-arrow';
     this.arrow.rotation.z = Math.PI;
 
     const beam = this.makeMesh(beamGeometry, this.beamMaterial, 0, 2.75, -0.12);
+    beam.name = 'goal-beacon-beam';
     beam.castShadow = false;
     beam.renderOrder = 1;
 
     this.light.position.set(0, 2.3, 0.8);
+    this.light.name = 'goal-beacon-light';
     this.light.castShadow = false;
-    this.group.add(leftPost, rightPost, crossbar, beam, this.halo, this.arrow, this.light);
+    this.group.add(beam, this.halo, this.arrow, this.light);
     this.group.visible = false;
     scene.add(this.group);
   }
@@ -77,11 +74,11 @@ export class GoalBeacon {
     const scale = 1 + pulse * 0.12;
     this.halo.scale.setScalar(scale);
     this.halo.rotation.z = this.elapsed * 0.65;
-    this.arrow.position.y = 4.1 + Math.sin(this.elapsed * 4.2) * 0.16;
+    this.arrow.position.y = 4.75 + Math.sin(this.elapsed * 4.2) * 0.16;
     this.goldMaterial.emissiveIntensity = 0.62 + pulse * 0.52;
     this.crimsonMaterial.emissiveIntensity = 0.9 + pulse * 1.1;
-    this.beamMaterial.opacity = 0.07 + pulse * 0.07;
-    this.light.intensity = 1.2 + pulse * 1.3;
+    this.beamMaterial.opacity = 0.05 + pulse * 0.05;
+    this.light.intensity = 14 + pulse * 10;
   }
 
   reset(): void {
@@ -91,7 +88,7 @@ export class GoalBeacon {
     this.group.visible = false;
     this.halo.scale.setScalar(1);
     this.halo.rotation.z = 0;
-    this.arrow.position.y = 4.1;
+    this.arrow.position.y = 4.75;
     this.light.intensity = 0;
   }
 

@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import type { Vec3 } from '../../game/simulation/types';
+import { ARENA_WALL_HALF_LENGTH, ARENA_WALL_HALF_WIDTH } from '../../game/field';
 
-const CAMERA_ARENA_HALF_WIDTH = 22.45;
-const CAMERA_ARENA_HALF_DEPTH = 14.45;
+const CAMERA_ARENA_HALF_WIDTH = ARENA_WALL_HALF_WIDTH - 0.55;
+const CAMERA_ARENA_HALF_DEPTH = ARENA_WALL_HALF_LENGTH - 0.55;
 
 export class CameraController {
   readonly camera = new THREE.PerspectiveCamera(64, 1, 0.08, 180);
-  yaw = Math.PI;
+  yaw = 0;
   pitch = 0.32;
   private readonly target = new THREE.Vector3();
   private readonly desired = new THREE.Vector3();
@@ -15,6 +16,7 @@ export class CameraController {
   private impulseTime = 0;
   private fovKick = 0;
   private sensitivity = 1;
+  private invertVerticalLook = false;
   private shakeScale = 1;
   private focusMode = false;
 
@@ -24,6 +26,10 @@ export class CameraController {
 
   setSensitivity(value: number): void {
     this.sensitivity = Number.isFinite(value) ? THREE.MathUtils.clamp(value, 0.25, 2.5) : 1;
+  }
+
+  setInvertVerticalLook(inverted: boolean): void {
+    this.invertVerticalLook = inverted;
   }
 
   setReducedShake(reduced: boolean): void {
@@ -48,7 +54,12 @@ export class CameraController {
 
   applyMouseDelta(dx: number, dy: number): void {
     this.yaw -= dx * 0.0022 * this.sensitivity;
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0018 * this.sensitivity, -0.08, 0.82);
+    const verticalDirection = this.invertVerticalLook ? -1 : 1;
+    this.pitch = THREE.MathUtils.clamp(
+      this.pitch + dy * 0.0018 * this.sensitivity * verticalDirection,
+      -0.08,
+      0.82,
+    );
   }
 
   update(player: Vec3, dt: number): void {

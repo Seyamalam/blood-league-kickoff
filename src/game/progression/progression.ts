@@ -37,12 +37,20 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   frostBurstRadius: 0,
   frostSlowAmount: 0,
   frostSlowDuration: 0,
+  garlicSlowAmount: 0,
+  garlicSlowDuration: 0,
   multiBallCount: 0,
   multiBallDamageMultiplier: 0,
+  orbitChainDamage: 0,
+  orbitChainTargets: 0,
   blackHoleDamage: 0,
   blackHoleRadius: 0,
   blackHolePullStrength: 0,
   blackHoleDuration: 0,
+  ghostVoidDamage: 0,
+  ghostVoidRadius: 0,
+  ghostVoidPullStrength: 0,
+  ghostVoidDuration: 0,
 });
 
 /** Total Blood XP preserved across the shard burst created by one enemy kill. */
@@ -258,6 +266,9 @@ function createEmptyEvolutions(): EvolutionUnlocks {
   return {
     moonBreaker: false,
     crimsonMeteor: false,
+    graveFrostWake: false,
+    stormHalo: false,
+    phantomSingularity: false,
   };
 }
 

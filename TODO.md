@@ -45,7 +45,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement arena-boundary camera collision and configurable sensitivity.
 - [x] `P0` Implement dash, cooldown, and brief invulnerability.
 - [x] `P0` Implement the runtime ball states: possessed, free/launched, recalling, volley window, and recovering/disabled.
-- [x] `P0` Implement aim indicator and charged kick.
+- [x] `P0` Replace the screen crosshair with a long red world-space aim line and retain charged kicking.
 - [x] `P0` Implement Rapier wall/floor rebounds with CCD.
 - [x] `P0` Add explicit ball speed limits and tune controlled rebound behavior.
 - [x] `P0` Implement optional kick curve.
@@ -77,12 +77,14 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Implement reusable pools for effects, shards, projectiles, and UI feedback.
 - [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
 - [x] `P0` Implement crowd separation with reusable typed-array spatial queries.
-- [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
+- [x] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [x] `P0` Implement pooled physical blood shard collection and XP levels.
 - [x] `P0` Calibrate kill XP for a bounded full-match upgrade cadence and cover phase checkpoints.
 - [x] `P0` Implement three-choice upgrade selection.
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [x] `P0` Implement first goal opening, scoring, reset, and new kickoff.
+- [x] `P0` Rebuild the field around shared 68×105 regulation proportions and physical goal frames.
+- [x] `P0` Require swept whole-ball crossing inside the posts and under the crossbar for scoring.
 - [x] `P0` Create a three-minute mini-run with a clear win state.
 - [x] `P0` Add tutorial prompts that clear after demonstrated actions.
 - [x] `P0` Persist audio, sensitivity, and quality settings.
@@ -120,6 +122,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Ghost Pass.
 - [x] `P0` Moon Breaker evolution.
 - [x] `P0` Crimson Meteor evolution.
+- [x] `P1` Grave-Frost Wake evolution.
+- [x] `P1` Storm Halo evolution.
+- [x] `P1` Phantom Singularity evolution.
 - [x] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
 
 ### Complete run
@@ -130,8 +135,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Blood Moon phase in the full match director.
 - [x] `P0` Final-wave transition and prototype victory condition.
 - [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
+- [x] `P0` Route every secondary damage source into Count Goalkeeper with capped scaling, independent hit cooldowns, and no ordinary enemy rewards.
 - [x] `P0` Victory and defeat sequences.
-- [x] `P0` Results with time, kills, goals, level, and upgrades.
+- [x] `P0` Results with time, kills, goals, level, upgrades, and evolutions.
 - [ ] `P0` Balance the full run to 8–10 minutes.
 - [x] `P0` Update all public documentation to match actual content.
 - [x] `P0` Commit/push the completed guaranteed-run implementation.
@@ -160,14 +166,16 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add Leech Striker.
 - [x] `P1` Add Corrupt Referee.
 - [x] `P1` Add Goalkeeper Brute.
+- [x] `P1` Add the special goalkeeper blocker to the active scoring goal.
 - [x] `P1` Add the lightning path.
 - [x] `P1` Add the frost path.
 - [x] `P1` Add the multiball path.
 - [x] `P1` Add the black-hole path.
-- [ ] `P1` Add remaining evolution combinations.
+- [x] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
 - [x] `P2` Add expanded victory presentation.
 - [ ] `P0` Update screenshots, feature list, credits, controls, and known issues.
+- [x] `P0` Refresh alpha.5 gameplay/settings captures, add the goalkeeper capture, and record current dimensions/hashes.
 - [ ] `P0` Commit/push verified content batches.
 - [ ] `P0` Tag `v0.8.0`, publish artifacts, and test the downloaded release.
 
@@ -178,8 +186,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Results, restart, and return-to-menu flow.
 - [x] `P0` Persistent independent master, music, and effects volume controls.
 - [x] `P0` Mouse sensitivity.
+- [x] `P0` Use conventional vertical mouse look by default and persist an inversion toggle.
 - [x] `P0` Quality presets and render-scale control.
-- [x] `P0` Desktop window-size, fullscreen/windowed, and quit behavior verified on macOS.
+- [x] `P0` Desktop window-size and fullscreen/windowed behavior verified on macOS; Quit is title-screen-only.
 - [x] `P0` 60, 120, and unlimited frame-rate options where supported.
 - [x] `P1` Reduced camera-shake option.
 - [x] `P1` Aim-assist strength.
@@ -194,6 +203,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
 - [x] `P0` Stagger far ordinary enemy decision/separation updates without reducing movement fidelity.
 - [x] `P0` Use instancing for blood shards and secondary weapons and shared geometry/materials for enemy visuals.
+- [x] `P0` Verify all 45 secondary instances add no more than five WebGL draw calls.
 - [ ] `P0` Add distance/update LOD and simple collision/query shapes.
 - [ ] `P0` Profile CPU and GPU in production web and Electron builds.
 - [ ] `P0` Maintain stable 60 FPS in the densest guaranteed wave.
@@ -206,8 +216,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Pin the Node/package-manager version used by local and CI builds.
 - [x] `P0` Make clean installs reproducible from the lockfile.
 - [x] `P0` Run format/lint/tests/type-check/web build on pushes to main and pull requests.
+- [x] `P0` Auto-deploy verified `main` web builds to the itch.io `html5` channel with official Butler and an encrypted GitHub secret.
 - [x] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
-- [x] `P0` Add tag-triggered native Windows, macOS, Linux, and web release packaging with checksums.
+- [x] `P0` Add tag-triggered verified web/macOS prerelease packaging with checksums.
+- [x] `P0` Keep Windows/Linux behind the confirmation-gated manual final-platform workflow.
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
 - [ ] `P0` Confirm hardware acceleration/GPU diagnostics in the Windows build.
 - [x] `P0` Include commit SHA/version in the results metadata.
@@ -220,7 +232,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Test Chrome/Chromium web build and production Electron shell on macOS.
 - [ ] `P0` Test 1080p and one lower resolution/aspect ratio.
 - [ ] `P0` Test ball recovery from walls, corners, goals, death, pause, and boss control.
-- [ ] `P0` Test pool/population-cap exhaustion behavior.
+- [x] `P0` Test swept whole-ball goal crossing, partial crossing, post/crossbar bounds, and fast-ball tunneling.
+- [x] `P0` Test secondary simulation/render pool capacity, packing, reset, exhaustion, and disposal behavior.
+- [x] `P0` Test secondary boss targeting, all-source aggregation, damage scaling, independent hit cooldowns, and same-step final-wave victory.
+- [ ] `P0` Test remaining population-cap and UI/VFX pool exhaustion behavior.
 - [ ] `P0` Test every upgrade/evolution alone and in combinations.
 - [ ] `P0` Test every enemy alone and in mixed waves.
 - [ ] `P0` Test pause/focus loss during combat and upgrade selection.
@@ -236,6 +251,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Complete credits, licenses, controls, known issues, and asset inventory.
 - [ ] `P0` Verify README and itch.io description exactly match the build.
 - [x] `P0` Generate web, Windows, macOS, and Linux release artifacts in CI (`v0.8.0-alpha.4`).
+- [ ] `P0` Tag, publish, download, and smoke-test the web/macOS `v0.8.0-alpha.5` prerelease.
 - [ ] `P0` Test downloaded artifacts on clean target systems and a fresh browser.
 - [ ] `P0` Tag/publish `v0.9.0` with checksums and test notes.
 

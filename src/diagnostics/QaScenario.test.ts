@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createQaEvolutionFixture,
   createQaTerminalFixture,
   installQaSnapshotHook,
   QA_SNAPSHOT_HOOK,
   readQaScenario,
+  readQaEvolutionId,
   type QaSnapshot,
 } from './QaScenario';
+import { EVOLUTION_DEFINITIONS, EVOLUTION_IDS, chooseUpgrade } from '../game/progression';
 
 describe('development QA scenarios', () => {
   it('accepts only supported scenarios in development', () => {
@@ -13,8 +16,31 @@ describe('development QA scenarios', () => {
     expect(readQaScenario('?qa=defeat', true)).toBe('defeat');
     expect(readQaScenario('?qa=upgrade', true)).toBe('upgrade');
     expect(readQaScenario('?qa=evolution', true)).toBe('evolution');
+    expect(readQaScenario('?qa=goal', true)).toBe('goal');
     expect(readQaScenario('?qa=halftime', true)).toBeNull();
     expect(readQaScenario('?qa=victory', false)).toBeNull();
+    expect(readQaScenario('?qa=goal', false)).toBeNull();
+  });
+
+  it('validates evolution fixture IDs only in development', () => {
+    expect(readQaEvolutionId('?qa=evolution', true)).toBe('moonBreaker');
+    expect(readQaEvolutionId('?qa=evolution&evolution=stormHalo', true)).toBe('stormHalo');
+    expect(readQaEvolutionId('?qa=evolution&evolution=unknown', true)).toBeNull();
+    expect(readQaEvolutionId('?qa=evolution&evolution=stormHalo', false)).toBeNull();
+  });
+
+  it.each(EVOLUTION_IDS)('creates one-choice deterministic QA fixture for %s', (evolutionId) => {
+    const fixture = createQaEvolutionFixture(evolutionId);
+    expect(fixture.evolutionId).toBe(evolutionId);
+    expect(fixture.state.pendingLevelUps).toBe(1);
+    expect(fixture.state.evolutions[evolutionId]).toBe(false);
+
+    const result = chooseUpgrade(fixture.state, fixture.finalUpgradeId);
+    expect(result.applied).toBe(true);
+    if (!result.applied) return;
+    expect(result.evolutionEvents.map((event) => event.evolutionId)).toEqual([evolutionId]);
+    expect(result.state.evolutions[evolutionId]).toBe(true);
+    expect(result.evolutionEvents[0]?.definition).toBe(EVOLUTION_DEFINITIONS[evolutionId]);
   });
 
   it('creates deterministic terminal fixtures for both outcomes', () => {
@@ -65,6 +91,10 @@ function snapshot(resultsVisible: boolean): QaSnapshot {
     resultsOutcome: resultsVisible ? 'victory' : null,
     upgradeVisible: false,
     evolutionVisible: false,
+    requestedEvolutionId: null,
+    unlockedEvolutionIds: [],
+    evolutionToastId: null,
+    evolutionToastName: null,
     pointerLocked: false,
   };
 }

@@ -1,6 +1,9 @@
 export { DEFAULT_COUNT_GOALKEEPER_CONFIG, DEFAULT_FINAL_ELITE_CONFIG } from './config';
 export {
+  COUNT_GOALKEEPER_COMBAT_TARGET_ID,
   damageCountGoalkeeper,
+  didDefeatCountGoalkeeper,
+  isCountGoalkeeperDamageable,
   resetCountGoalkeeper,
   spawnCountGoalkeeper,
   updateCountGoalkeeper,

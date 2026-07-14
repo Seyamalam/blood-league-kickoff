@@ -32,6 +32,17 @@ Sampling: 15 seconds after a two-second warm-up in headless Chrome, background t
 
 The measured renderer workload is below the visual-direction ceiling. The first actionable issue was frame-limiter cadence, not enemy instancing or triangle count; `22b2268` replaced last-accepted-frame anchoring with a deadline scheduler and removed the 25 ms tail. Simulation and render synchronization micro-probes were also far below one millisecond at 72 enemies, but those probes are diagnostic evidence rather than shipping acceptance.
 
+## Secondary-Weapon Instancing A/B
+
+The Unreleased instancing pass adds `?stress=72&secondary=full`, which freezes the same crowd while activating all 45 persistent secondary-weapon render records. Both routes were sampled at 1600×900, Balanced quality, and the 120 FPS cap in the Codex in-app Chromium browser after a three-second warm-up.
+
+| Route                       | Active pool | Calls | Triangles | Five-sample mean FPS | Mean frame time |
+| --------------------------- | ----------: | ----: | --------: | -------------------: | --------------: |
+| `?stress=72`                |       0/205 |   178 |       13K |                103.4 |         9.76 ms |
+| `?stress=72&secondary=full` |      45/205 |   183 |       18K |                103.8 |         9.64 ms |
+
+The full 24/3/8/6/4 pool set adds exactly five draw calls and approximately 5K triangles. The short cadence sample is intentionally diagnostic rather than a release acceptance claim, but it showed no meaningful frame-time regression under identical instrumentation. The 1600×900 capture in `docs/screenshots/secondary-weapons.jpg` confirms visible garlic transparency, three orbiters, eight ghost passes, six multiballs, and four gravity wells without instance disappearance or obvious ordering failure.
+
 ## Remaining Acceptance Work
 
 - Re-run the 72-enemy sample in a production web build and Electron on macOS after the limiter fix.

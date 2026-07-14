@@ -17,12 +17,20 @@ export type SecondaryCombatModifiers = Readonly<
     | 'frostBurstRadius'
     | 'frostSlowAmount'
     | 'frostSlowDuration'
+    | 'garlicSlowAmount'
+    | 'garlicSlowDuration'
     | 'multiBallCount'
     | 'multiBallDamageMultiplier'
+    | 'orbitChainDamage'
+    | 'orbitChainTargets'
     | 'blackHoleDamage'
     | 'blackHoleRadius'
     | 'blackHolePullStrength'
     | 'blackHoleDuration'
+    | 'ghostVoidDamage'
+    | 'ghostVoidRadius'
+    | 'ghostVoidPullStrength'
+    | 'ghostVoidDuration'
   >
 >;
 
@@ -64,6 +72,13 @@ export interface SecondaryDamageHit {
 
 export type SecondaryWeaponEvent =
   | { type: 'garlic-zone-spawned'; position: Readonly<Vec3>; radius: number }
+  | {
+      type: 'garlic-frost-hit';
+      position: Readonly<Vec3>;
+      targetId: number;
+      speedMultiplier: number;
+      duration: number;
+    }
   | { type: 'spectral-ball-hit'; position: Readonly<Vec3>; targetId: number }
   | { type: 'blood-bomb-triggered'; position: Readonly<Vec3>; radius: number }
   | { type: 'ghost-pass-spawned'; position: Readonly<Vec3>; count: number }

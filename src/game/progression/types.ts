@@ -15,7 +15,13 @@ export const UPGRADE_IDS = [
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
 
-export const EVOLUTION_IDS = ['moonBreaker', 'crimsonMeteor'] as const;
+export const EVOLUTION_IDS = [
+  'moonBreaker',
+  'crimsonMeteor',
+  'graveFrostWake',
+  'stormHalo',
+  'phantomSingularity',
+] as const;
 
 export type EvolutionId = (typeof EVOLUTION_IDS)[number];
 
@@ -46,12 +52,20 @@ export interface ProgressionModifiers {
   frostBurstRadius: number;
   frostSlowAmount: number;
   frostSlowDuration: number;
+  garlicSlowAmount: number;
+  garlicSlowDuration: number;
   multiBallCount: number;
   multiBallDamageMultiplier: number;
+  orbitChainDamage: number;
+  orbitChainTargets: number;
   blackHoleDamage: number;
   blackHoleRadius: number;
   blackHolePullStrength: number;
   blackHoleDuration: number;
+  ghostVoidDamage: number;
+  ghostVoidRadius: number;
+  ghostVoidPullStrength: number;
+  ghostVoidDuration: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;

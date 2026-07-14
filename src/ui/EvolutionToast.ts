@@ -1,4 +1,4 @@
-import type { EvolutionUnlockEvent } from '../game/progression';
+import type { EvolutionId, EvolutionUnlockEvent } from '../game/progression';
 import { EVOLUTION_ICON_URLS } from './progressionIcons';
 
 const DEFAULT_DURATION = 2.8;
@@ -28,6 +28,7 @@ export class EvolutionToast {
   private age = 0;
   private active = false;
   private disposed = false;
+  private currentId: EvolutionId | null = null;
 
   public constructor(root: HTMLElement) {
     this.element = document.createElement('section');
@@ -65,6 +66,14 @@ export class EvolutionToast {
     return this.active;
   }
 
+  public get currentEvolutionId(): EvolutionId | null {
+    return this.currentId;
+  }
+
+  public get currentName(): string | null {
+    return this.active ? this.name.textContent : null;
+  }
+
   public enqueue(events: readonly EvolutionUnlockEvent[]): void {
     if (this.disposed || events.length === 0) return;
     this.queue.push(...events);
@@ -88,6 +97,7 @@ export class EvolutionToast {
     this.name.textContent = '';
     this.description.textContent = '';
     this.icon.removeAttribute('src');
+    this.currentId = null;
   }
 
   public dispose(): void {
@@ -101,6 +111,7 @@ export class EvolutionToast {
     const event = this.queue.shift();
     if (!event) return;
     const view = createEvolutionToastView(event);
+    this.currentId = event.evolutionId;
     this.icon.src = view.iconUrl;
     this.name.textContent = view.name;
     this.description.textContent = view.description;
@@ -117,5 +128,6 @@ export class EvolutionToast {
     this.element.classList.add('hidden');
     this.element.hidden = true;
     this.element.style.setProperty('--evolution-progress', '0');
+    this.currentId = null;
   }
 }

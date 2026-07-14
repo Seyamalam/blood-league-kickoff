@@ -4,14 +4,14 @@
 
 ![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
 
-| Project   | Value                                                      |
-| --------- | ---------------------------------------------------------- |
-| Status    | Complete nine-minute run alpha in active development       |
-| Theme     | Kickoff                                                    |
-| Team      | Huntrix — 2 participants                                   |
-| Platforms | Web, Windows x64, macOS Intel/Apple silicon, and Linux x64 |
-| Stack     | Three.js, TypeScript, Vite, Rapier, Electron               |
-| Input     | Keyboard and mouse                                         |
+| Project   | Value                                                            |
+| --------- | ---------------------------------------------------------------- |
+| Status    | Complete nine-minute run alpha in active development             |
+| Theme     | Kickoff                                                          |
+| Team      | Huntrix — 2 participants                                         |
+| Platforms | Web and macOS during alpha; Windows x64 and Linux x64 final-only |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron                     |
+| Input     | Keyboard and mouse                                               |
 
 ### Current title screen
 
@@ -26,6 +26,14 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 ### Current gameplay
 
 ![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay.jpg)
+
+### Goalkeeper showdown
+
+![The special goalkeeper blocker guarding the regulation-size goal](docs/screenshots/goalkeeper.jpg)
+
+### Secondary weapon spectacle
+
+![All five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons.jpg)
 
 ### Progression
 
@@ -61,17 +69,17 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ## Controls
 
-| Action                | Input                                                                          | Status                                                |
-| --------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Move                  | `WASD`                                                                         | Implemented                                           |
-| Aim / camera          | Mouse                                                                          | Implemented after entering the pitch/pointer lock     |
-| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented                                           |
-| Recall ball           | Right mouse button or `E`                                                      | Implemented                                           |
-| Restart after kickoff | `R`                                                                            | Implemented                                           |
-| Dash                  | `Space`                                                                        | Implemented with cooldown and brief invulnerability   |
-| Focus Kick ultimate   | `F`                                                                            | Implemented with first-person slow-time aiming        |
-| Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus |
-| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                            |
+| Action                | Input                                                                          | Status                                                    |
+| --------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Move                  | `WASD`                                                                         | Implemented                                               |
+| Aim / camera          | Mouse                                                                          | Conventional vertical look by default; inversion optional |
+| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented                                               |
+| Recall ball           | Right mouse button or `E`                                                      | Implemented                                               |
+| Restart after kickoff | `R`                                                                            | Implemented                                               |
+| Dash                  | `Space`                                                                        | Implemented with cooldown and brief invulnerability       |
+| Focus Kick ultimate   | `F`                                                                            | Implemented with first-person slow-time aiming            |
+| Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus     |
+| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                                |
 
 Controls and bindings may change during playtesting.
 
@@ -136,6 +144,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Charged kicks, a capped 36-unit ball speed, recall states, and perfect-return volleys
 - [x] Eight enemy archetypes through Bat Swarm, Leech Striker, Corrupt Referee, and Goalkeeper Brute
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
+- [x] Direct-reference enemy rendering with state-driven attack/defense poses and a five-mesh silhouette budget for every ordinary archetype
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow
@@ -145,11 +154,18 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Defender shields, rear-shot weakness, deliberate knockback, and telegraphed Winger lunges
 - [x] Automated progression, pickup, secondary-weapon, match, and boss tests
 - [x] Full nine-minute match director with two goals, halftime tactics, Blood Moon, boss wave, and victory screen
+- [x] Phase-aware Spawn Director with authored population caps, spawn cadence, roster weights, and rest stages
 - [x] On-pitch animated goal beacon during scoring opportunities
+- [x] Regulation-proportioned 68×105 pitch with shared field definitions, physical goal frames, deep nets, full markings, and instanced crowds at both ends
+- [x] Swept whole-ball goal detection prevents tunneling and requires the complete ball to cross the goal line inside the physical frame
+- [x] Special goalkeeper blocker protects the active scoring goal with dedicated state, elite presentation, and interception behavior
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
-- [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
+- [x] Persistent volume, sensitivity, conventional/inverted vertical look, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
-- [x] Moon Breaker and Crimson Meteor evolutions unlock automatically from their required upgrade pairs
+- [x] Every secondary weapon and evolution can damage Count Goalkeeper through capped boss-only routing without granting ordinary kill rewards
+- [x] Five automatic evolutions: Moon Breaker, Crimson Meteor, Grave-Frost Wake, Storm Halo, and Phantom Singularity
+- [x] Cross-weapon evolution mechanics add freezing garlic trails, chain-lightning orbiters, and ghost-triggered singularities
+- [x] Upgrade cards show evolution partners, unlock toasts use unique icons, and results preserve the evolved final loadout
 - [x] Full match director covers first goal, escalation, halftime, Blood Moon, final goal, boss wave, and outcomes
 - [x] Power, Pace, and Control halftime choices apply distinct second-half combat bonuses
 - [x] Goal celebrations reset the live formation and begin a fresh kickoff without erasing run progress
@@ -161,12 +177,14 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
+- [x] Five fixed secondary-weapon `InstancedMesh` batches replace 45 individual render meshes
+- [x] Full-pool diagnostics track all 45 visible secondary objects and prove a five-draw-call ceiling
 - [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans
 - [x] Procedural match music blends drone, tension, and pulse layers across every phase
 - [x] Automated wall, corner, stall, out-of-bounds, recall, catch, reset, and curved-flight recovery coverage
 - [x] Planar stall detection and immediate catch-velocity cleanup close two ball recovery edge cases
 - [x] Independent persistent master, music, and effects volume controls with safe schema migration
-- [x] Persistent Off/Low/High aim assist that gently steers kicks toward nearby on-reticle enemies
+- [x] Long red world-space aim line replaces the screen crosshair while Off/Low/High aim assist gently steers nearby intended targets
 - [x] Distinct procedural boss entrance, phase escalation, victory, and defeat cues
 - [x] Dedicated procedural evolution cue and version/commit metadata on run results
 - [x] First-person Focus Kick ultimate with combat-built meter, slow-time aim, empowered shot, and cooldown
@@ -178,16 +196,17 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Rebindable persistent keyboard controls with safe validation and conflict prevention
 - [x] Outcome-specific results presentation with deterministic accessible S–D run grades
 - [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
-- [x] Secure macOS Electron window-size, fullscreen/windowed, and Quit controls verified in the real app
-- [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
+- [x] Secure macOS Electron window-size and fullscreen/windowed controls, with desktop Quit available only from the title screen
+- [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage, secondary-boss damage parity, and dense-crowd stress tests
 - [x] Development-only deterministic 72-enemy profiling scene with a read-only automation snapshot
 - [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow
-- [x] Current title, gameplay, upgrade, evolution, settings, pause, and results screenshots stored in the repository
+- [x] Current title, gameplay, goalkeeper, upgrade, evolution, settings, pause, and results screenshots stored in the repository
 - [x] Ball stall/timeout/out-of-bounds recovery fail-safes
 - [x] Playable HUD with kickoff/death overlays, health, time, score, enemy count, ball state, and FPS
 - [x] Electron shell created and booted on macOS
-- [x] Native CI packaging matrix added for Windows x64, macOS Intel/Apple silicon, Linux x64, and web
+- [x] Tag-triggered verified web/macOS prerelease workflow added; Windows/Linux packaging remains explicit manual final-only work
 - [x] `v0.8.0-alpha.4` published with nine CI-built artifacts and a verified combined SHA-256 manifest
+- [ ] Publish and download-test the `v0.8.0-alpha.5` web/macOS prerelease; it is not published yet
 - [x] Type-check and production web build pass locally
 - [x] Browser visual smoke tests pass kickoff, live HUD, spawning, death, and restart flows
 - [x] Production Electron shell boots locally on macOS
@@ -220,12 +239,15 @@ npm run typecheck
 npm run lint
 npm run format:check
 npm run check
+npm run deploy:itch:web
 npm run desktop
 npm run desktop:dev
 npm run package:mac
 ```
 
-The web build is emitted to `dist/`. Version tags run native CI packaging for Windows x64, macOS Intel/Apple silicon, Linux x64, and web, then attach the artifacts and `SHA256SUMS.txt` to the matching GitHub Release. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
+The web build is emitted to `dist/`. Copy `.env.example` to ignored `.env.local`, set `BUTLER_API_KEY`, and run `npm run deploy:itch:web` for a verified local upload. Pushes to `main` run the same full check and automatically update the `seyamalam/blood-league-kickoff:html5` itch.io channel through the encrypted GitHub secret. Manual dispatches are also restricted to `main`; pull requests never deploy. On itch.io, the project is configured as HTML and only the Butler-managed `html5` upload is marked playable in the browser.
+
+Version tags run the verified web/macOS prerelease workflow and attach those artifacts plus `SHA256SUMS.txt` to the matching GitHub Release. Windows and Linux are deliberately excluded from routine alpha tags: their cross-platform workflow is manual, confirmation-gated, and reserved for the finished game. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
 
 ## Versioning and Releases
 
@@ -234,7 +256,7 @@ Development history is part of the jam submission, so changes are committed in s
 1. Updated README progress and game documentation
 2. A verified production build
 3. A milestone commit pushed to GitHub
-4. A version tag and GitHub Release with verified web and native desktop artifacts
+4. A version tag and GitHub prerelease with verified web/macOS artifacts; final-only platforms are added after explicit validation
 
 Planned release line:
 
@@ -251,6 +273,7 @@ Planned release line:
 | `v0.8.0-alpha.2` | Presentation, progression UI, and macOS QA checkpoint    |
 | `v0.8.0-alpha.3` | Cross-platform packaging, pacing, and release hardening  |
 | `v0.8.0-alpha.4` | Native release-pipeline correction                       |
+| `v0.8.0-alpha.5` | Regulation field, scoring, goalkeeper, and aiming pass   |
 | `v0.8.0`         | Content and presentation complete                        |
 | `v0.9.0`         | Release candidate                                        |
 | `v1.0.0`         | Jam submission freeze                                    |

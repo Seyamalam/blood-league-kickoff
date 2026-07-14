@@ -10,19 +10,19 @@
 
 ## Stack
 
-| Layer      | Choice                      | Responsibility                                     |
-| ---------- | --------------------------- | -------------------------------------------------- |
-| Tooling    | Vite + TypeScript           | Development, bundling, type safety                 |
-| Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX               |
-| Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events |
-| UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                |
-| Desktop    | Electron                    | Self-contained GPU-accelerated desktop application |
-| Packaging  | electron-builder            | Desktop artifacts; Windows remains final-only      |
-| Automation | GitHub Actions              | Web verification and manual final Windows builds   |
+| Layer      | Choice                      | Responsibility                                      |
+| ---------- | --------------------------- | --------------------------------------------------- |
+| Tooling    | Vite + TypeScript           | Development, bundling, type safety                  |
+| Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX                |
+| Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events  |
+| UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                 |
+| Desktop    | Electron                    | Self-contained GPU-accelerated desktop application  |
+| Packaging  | electron-builder            | Desktop artifacts; Windows remains final-only       |
+| Automation | GitHub Actions + Butler     | Verification, itch.io web deploys, native packaging |
 
 ## Current Source Baseline
 
-The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, two evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. Enemy spawn positions and elite rolls use `Math.random()`, so live runs are intentionally not replay-synchronized; deterministic unit tests cover the pure simulation boundaries.
+The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, five evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the special goal blocker, the Count Goalkeeper boss, and terminal results. The alpha.5 field layer shares a 68×105 definition across rendering, collision, enemy bounds, and swept whole-ball scoring. It shares one runtime across browser and Electron. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized.
 
 ## Runtime Flow
 
@@ -48,10 +48,12 @@ callback, and changing limits resets the schedule immediately.
 
 - **`main.ts`:** bootstrap, lifecycle/disposal, pointer-lock and menu events, fixed-step accumulator, match/combat orchestration, audio hooks, interpolation, HUD updates, and rendering.
 - **`InputController`:** DOM listeners, persistent rebindable actions, and input snapshots; gameplay never reads raw DOM events.
-- **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawning, crowd queries, damage, death, score, and combo.
+- **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawn-request application, crowd queries, damage, death, score, and combo.
+- **`game/spawn`:** immutable per-stage population/cadence/roster definitions plus allocation-free fixed-step profile resolution and weighted selection.
 - **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
+- **`game/field`:** canonical 68×105 pitch/goal dimensions and swept whole-ball crossing logic shared by simulation and presentation.
 - **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run.
-- **`CameraController` and `RenderBridge`:** third-person/Focus cameras and synchronized pooled/shared-resource presentation.
+- **`CameraController`, `AimGuide`, and `RenderBridge`:** conventional/invertible third-person/Focus camera input, a reusable long red world-space aim line, and synchronized pooled/shared-resource presentation. Enemy visuals retain typed part references from spawn to removal, so per-frame poses never search the scene tree.
 - **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
 - **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings.
 
@@ -59,7 +61,11 @@ callback, and changing limits resets the schedule immediately.
 
 Rapier owns the static arena colliders, a synchronized kinematic player body, and the dynamic ball. Ordinary enemies remain lightweight planar state without individual rigid bodies. Ball/enemy hits and crowd separation use reusable spatial queries and typed-array storage so crowd cost stays bounded.
 
-The ball exposes possessed, free, recalling, volley-window, and recovering states. Rapier provides CCD and material restitution for rebounds; game code owns charge, curve, aim assistance, Focus Kick, damage, recall impulses, speed limits, and recovery. Stalled, overdue, out-of-bounds, or non-finite balls automatically recall or reset. Match code owns goal detection and kickoff transitions, while pickup and secondary-weapon systems use their own lightweight queries and pools.
+The ball exposes possessed, free, recalling, volley-window, and recovering states. Rapier provides CCD and material restitution for rebounds; game code owns charge, curve, aim assistance, Focus Kick, damage, recall impulses, speed limits, and recovery. Stalled, overdue, out-of-bounds, or non-finite balls automatically recall or reset. Goal posts and crossbars are physical colliders. Match scoring sweeps the previous/current ball centers across the goal plane, offsets the crossing by ball radius, and accepts only a complete crossing between the inner post bounds and under the crossbar. Match code owns the resulting kickoff transitions, while pickup and secondary-weapon systems use their own lightweight queries and pools.
+
+The special goalkeeper blocker is explicit enemy state attached to the scoring opportunity rather than an invisible scoring exception. It intercepts the ball in front of the physical goal while the same whole-ball goal predicate remains authoritative.
+
+Count Goalkeeper joins the generic secondary target list through a reserved negative ID only after its entrance. The runtime reuses one target array and one boss target record, separates that ID before ordinary enemy reward accounting, caps accumulated secondary damage at 12 raw points per fixed step, and applies the boss's 0.4 secondary multiplier. Boss kicks queue the normal impact-triggered weapon paths plus Blood Bomb. Primary and secondary damage use independent short cooldowns and primary resolves first, preserving kick impact without starving automatic builds; slow and pull events intentionally ignore the boss target. A secondary defeat is forwarded to the match director in the same fixed step.
 
 ## Rendering Policy
 
@@ -70,6 +76,9 @@ The ball exposes possessed, free, recalling, volley-window, and recovering state
 - Limit shadow casters, transparent layers, dynamic lights, and post-processing.
 - Use distance bands for animation/update rate and simple crowd silhouettes.
 - Pool short-lived effects and hide/reuse instances instead of allocating them.
+- Keep the aim guide to one persistent world-space object updated in place; never recreate its geometry or material per frame.
+
+Secondary weapon presentation uses five fixed `InstancedMesh` batches with capacities 24/3/8/6/4. Active simulation records are packed into reusable instance matrices each frame; the three ball-like families share one sphere geometry. All 45 visible objects therefore contribute at most five draw calls. Black-hole rotation derives from fixed-step zone age rather than render cadence, so 60 and 120 FPS produce the same animation speed.
 
 The renderer requests `powerPreference: "high-performance"`, but diagnostics must report the actual GPU path/fallback. Hardware acceleration is expected, never assumed without testing.
 
@@ -81,7 +90,7 @@ High-frequency interactions should use reusable event queues/ring buffers rather
 
 ## UI Boundary
 
-The Three.js canvas owns the world. HTML/CSS owns menus, HUD, upgrade choices, prompts, and settings. UI receives a minimal view model and sends typed commands. Pausing/upgrade selection must suspend authoritative gameplay time while allowing UI animation.
+The Three.js canvas owns the world, including the red aim guide. HTML/CSS owns menus, HUD, upgrade choices, prompts, and settings; the former DOM crosshair is removed. UI receives a minimal view model and sends typed commands. Pausing/upgrade selection must suspend authoritative gameplay time while allowing UI animation. Vertical inversion is schema-migrated persistent state with `false` as the conventional default. Desktop Quit is bound only from the title screen; Settings retains window size/fullscreen but no Quit action.
 
 ## Electron Security and Packaging
 
@@ -95,7 +104,7 @@ The Three.js canvas owns the world. HTML/CSS owns menus, HUD, upgrade choices, p
 
 The preload exposes only fixed, validated desktop operations: read window state, select one of three safe content sizes, enter or leave fullscreen, subscribe to fullscreen changes, and quit. It never exposes `ipcRenderer` or a generic channel invocation to game code. Main-process handlers reject requests unless they originate from the trusted active game window and its local production or configured development URL.
 
-The Windows GitHub Actions definition is intentionally manual-only during gameplay development. When invoked for the content-complete candidate, it installs from the lockfile, builds Vite output, packages Electron portable/ZIP artifacts, creates checksums, and uploads workflow artifacts. The workflow and actual Windows artifacts still require verification, and release candidates must run on a real Windows machine.
+Routine version tags run the verified web/macOS prerelease workflow. The cross-platform GitHub Actions definition is intentionally manual-only and confirmation-gated during gameplay development. Only after the game is complete may it build Windows portable/ZIP and Linux AppImage/ZIP outputs (plus the companion web/macOS artifacts), create checksums, and upload workflow artifacts. Windows/Linux release candidates still require real target-machine verification.
 
 ## Performance Targets
 
@@ -107,7 +116,7 @@ The Windows GitHub Actions definition is intentionally manual-only during gamepl
 | Enemy cap    | 72 ordinary enemies; change only after production profiling    |
 | Recovery     | No unrecoverable ball or invalid run state                     |
 
-The debug overlay should expose render FPS/frame time, fixed-step time, enemy count, draw calls, triangles, pool usage, physics time, and quality preset. Optimize measured bottlenecks, not guesses.
+The live debug overlay exposes render FPS/frame time, enemy count, draw calls, triangles, fixed-step count, and aggregate shard/secondary-pool occupancy. The development stress snapshot additionally records viewport, pixel ratio, render scale, quality preset, and frame-rate cap. Physics and fixed-step duration require isolated profiling rather than being claimed as live counters. Optimize measured bottlenecks, not guesses.
 
 During local development, open `http://localhost:5173/?stress=72` to boot directly into a frozen,
 deterministic mixed-archetype crowd. Normal and production builds ignore this query. Profiling automation can
@@ -115,10 +124,12 @@ call `window.__bloodLeaguePerfSnapshot()` to receive a fresh frozen copy of the 
 viewport, and quality counters. Use a production build for final acceptance measurements; this development mode
 exists to make comparisons repeatable before capturing the corresponding production trace.
 
+Append `&secondary=full` to activate all 45 persistent secondary-weapon instances while keeping the 72-enemy simulation frozen. Compare it with the empty-pool route under identical viewport/settings to isolate draw calls, triangles, transparency, and GPU presentation cost without changing combat simulation.
+
 ## Test Strategy
 
 - Unit-test pure ball state transitions, upgrade prerequisites, match phases, and fixed-step calculations.
-- Introduce a seeded random source only if reproducible balance tests or replays become a real requirement.
+- Inject deterministic random sources into Spawn Director tests; introduce a run-wide seed only if replayable full-run balance failures become a real requirement.
 - Add simulation checks for out-of-bounds recovery and fixed-step invariants.
 - Smoke-test production web output and packaged Electron output.
 - Test focus loss, resize, pause, low frame rate, high refresh, and clean first launch.

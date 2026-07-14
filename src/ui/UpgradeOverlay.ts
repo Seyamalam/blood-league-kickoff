@@ -1,5 +1,5 @@
 import type { ProgressionState, UpgradeId } from '../game/progression';
-import { UPGRADE_DEFINITIONS } from '../game/progression';
+import { EVOLUTION_DEFINITIONS, EVOLUTION_IDS, UPGRADE_DEFINITIONS } from '../game/progression';
 import { UPGRADE_ICON_URLS } from './progressionIcons';
 
 export type UpgradeSelectionCallback = (upgradeId: UpgradeId) => void;
@@ -153,9 +153,15 @@ export class UpgradeOverlay {
       stack.className = 'upgrade-card__stack';
       stack.textContent = presentation.stackLabel;
 
-      button.append(number, icon, name, description, stack);
+      const evolutionHint = document.createElement('span');
+      evolutionHint.className = 'upgrade-card__evolution';
+      evolutionHint.textContent = presentation.evolutionHint ?? '';
+      evolutionHint.hidden = presentation.evolutionHint === null;
+
+      button.append(number, icon, name, description, evolutionHint, stack);
       return button;
     });
+    this.choicesElement.dataset.choiceCount = String(cards.length);
     this.choicesElement.replaceChildren(...cards);
   }
 
@@ -236,15 +242,27 @@ export function getUpgradeCardPresentation(
   iconUrl: string;
   name: string;
   stackLabel: string;
+  evolutionHint: string | null;
 }> {
   const definition = UPGRADE_DEFINITIONS[upgradeId];
   const currentStack = state.upgradeStacks[upgradeId];
   const nextStack = Math.min(currentStack + 1, definition.maxStacks);
+  const evolution = EVOLUTION_IDS.map((evolutionId) => EVOLUTION_DEFINITIONS[evolutionId]).find((candidate) =>
+    candidate.requirements.some((requirement) => requirement.upgradeId === upgradeId),
+  );
+  const partner = evolution?.requirements.find((requirement) => requirement.upgradeId !== upgradeId);
+  const evolutionHint =
+    evolution && partner
+      ? `EVOLVES WITH ${UPGRADE_DEFINITIONS[partner.upgradeId].name} → ${evolution.name}`
+      : null;
   return {
-    ariaLabel: `${index + 1}. ${definition.name}. ${definition.description} Stack ${currentStack} to ${nextStack} of ${definition.maxStacks}.`,
+    ariaLabel: `${index + 1}. ${definition.name}. ${definition.description} ${
+      evolutionHint ? `${evolutionHint}. ` : ''
+    }Stack ${currentStack} to ${nextStack} of ${definition.maxStacks}.`,
     description: definition.description,
     iconUrl: UPGRADE_ICON_URLS[upgradeId],
     name: definition.name,
     stackLabel: `STACK ${currentStack} → ${nextStack} / ${definition.maxStacks}`,
+    evolutionHint,
   };
 }

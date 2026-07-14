@@ -1,5 +1,8 @@
 import crimsonMeteorIcon from '../assets/progression/evolutions/crimson-meteor.svg';
+import graveFrostWakeIcon from '../assets/progression/evolutions/grave-frost-wake.svg';
 import moonBreakerIcon from '../assets/progression/evolutions/moon-breaker.svg';
+import phantomSingularityIcon from '../assets/progression/evolutions/phantom-singularity.svg';
+import stormHaloIcon from '../assets/progression/evolutions/storm-halo.svg';
 import bloodBombIcon from '../assets/progression/upgrades/blood-bomb.svg';
 import frostCleatsIcon from '../assets/progression/upgrades/frost-cleats.svg';
 import garlicTrailIcon from '../assets/progression/upgrades/garlic-trail.svg';
@@ -34,4 +37,7 @@ export const UPGRADE_ICON_URLS = Object.freeze({
 export const EVOLUTION_ICON_URLS = Object.freeze({
   moonBreaker: moonBreakerIcon,
   crimsonMeteor: crimsonMeteorIcon,
+  graveFrostWake: graveFrostWakeIcon,
+  stormHalo: stormHaloIcon,
+  phantomSingularity: phantomSingularityIcon,
 } satisfies Record<EvolutionId, string>);

@@ -9,6 +9,7 @@ const EMPTY_RESULT: GameResultStats = {
   timeSeconds: 0,
   level: 1,
   upgrades: [],
+  evolutions: [],
 };
 
 describe('calculateRunGrade', () => {

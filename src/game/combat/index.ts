@@ -1,4 +1,5 @@
 export { SecondaryWeaponSystem } from './SecondaryWeaponSystem';
+export { MAX_SECONDARY_BOSS_DAMAGE_PER_STEP, sumSecondaryBossDamage } from './secondaryBossDamage';
 export { selectAimAssistTarget, steerAimDirection } from './aimAssist';
 export type { AimAssistCandidate, AimAssistTarget, AimVector } from './aimAssist';
 export {

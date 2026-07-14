@@ -27,12 +27,16 @@ describe('PerfMeter', () => {
       orbitPoolCapacity: 3,
       ghostPassPoolActive: 1,
       ghostPassPoolCapacity: 8,
+      multiBallPoolActive: 5,
+      multiBallPoolCapacity: 6,
+      blackHolePoolActive: 2,
+      blackHolePoolCapacity: 4,
     };
     meter.update(1 / 60, counters);
     expect(meter.snapshot.rendererTriangles).toBe(42_000);
     expect(meter.snapshot.fixedStepsTotal).toBe(2);
-    expect(meter.snapshot.pooledObjectsActive).toBe(24);
-    expect(meter.snapshot.pooledObjectsCapacity).toBe(195);
+    expect(meter.snapshot.pooledObjectsActive).toBe(31);
+    expect(meter.snapshot.pooledObjectsCapacity).toBe(205);
     meter.recordCounters({ ...counters, fixedSteps: 1 });
     expect(meter.snapshot.fixedStepsTotal).toBe(3);
   });

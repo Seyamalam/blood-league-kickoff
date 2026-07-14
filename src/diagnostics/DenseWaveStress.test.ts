@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGameState } from '../game/simulation/gameState';
 import {
   applyDenseWaveStressFormation,
+  createDenseSecondaryStressState,
   DENSE_WAVE_PERF_HOOK,
   installDenseWavePerformanceHook,
   readDenseWaveStressMode,
@@ -13,9 +14,32 @@ describe('dense-wave development profiling', () => {
     expect(readDenseWaveStressMode('?stress=72', true)).toEqual({
       enemyCount: 72,
       frozenSimulation: true,
+      secondaryPools: 'empty',
     });
+    expect(readDenseWaveStressMode('?stress=72&secondary=full', true)?.secondaryPools).toBe('full');
+    expect(readDenseWaveStressMode('?stress=72&secondary=other', true)).toBeNull();
     expect(readDenseWaveStressMode('?stress=71', true)).toBeNull();
     expect(readDenseWaveStressMode('?stress=72', false)).toBeNull();
+  });
+
+  it('creates a deterministic full secondary-pool comparison state', () => {
+    const first = createDenseSecondaryStressState();
+    const second = createDenseSecondaryStressState();
+    expect(first).toEqual(second);
+    expect(first.garlicZones).toHaveLength(24);
+    expect(first.orbitingBalls).toHaveLength(3);
+    expect(first.ghostPasses).toHaveLength(8);
+    expect(first.multiBallShots).toHaveLength(6);
+    expect(first.blackHoleZones).toHaveLength(4);
+    expect(
+      [
+        ...first.garlicZones,
+        ...first.orbitingBalls,
+        ...first.ghostPasses,
+        ...first.multiBallShots,
+        ...first.blackHoleZones,
+      ].every((item) => item.active),
+    ).toBe(true);
   });
 
   it('builds the same bounded mixed formation every time', () => {
@@ -68,6 +92,7 @@ function snapshot(smoothedFps: number): DenseWavePerformanceSnapshot {
     viewportWidth: 1600,
     viewportHeight: 900,
     pixelRatio: 1,
+    secondaryPools: 'empty',
     rendererCalls: 300,
     rendererTriangles: 15_000,
     enemyCount: 72,
@@ -80,12 +105,16 @@ function snapshot(smoothedFps: number): DenseWavePerformanceSnapshot {
     orbitPoolCapacity: 3,
     ghostPassPoolActive: 0,
     ghostPassPoolCapacity: 8,
+    multiBallPoolActive: 0,
+    multiBallPoolCapacity: 6,
+    blackHolePoolActive: 0,
+    blackHolePoolCapacity: 4,
     currentFrameMs: 8.3,
     smoothedFrameMs: 8.3,
     currentFps: 120,
     smoothedFps,
     fixedStepsTotal: 60,
     pooledObjectsActive: 0,
-    pooledObjectsCapacity: 195,
+    pooledObjectsCapacity: 205,
   };
 }

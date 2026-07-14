@@ -11,6 +11,7 @@ export interface PlayerSettings {
   musicVolume: number;
   effectsVolume: number;
   mouseSensitivity: number;
+  invertVerticalLook: boolean;
   renderQuality: RenderQuality;
   renderScale: number;
   fpsLimit: FpsLimit;
@@ -21,7 +22,7 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 4;
+const SETTINGS_VERSION = 5;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -40,6 +41,7 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   musicVolume: 1,
   effectsVolume: 1,
   mouseSensitivity: 1,
+  invertVerticalLook: false,
   renderQuality: 'balanced',
   renderScale: 1,
   fpsLimit: 120,
@@ -99,7 +101,7 @@ export class SettingsStore {
       if (!isRecord(parsed)) return defaultPlayerSettings();
       const version = parsed.version;
       const wrappedSettings =
-        (version === 1 || version === 2 || version === 3 || version === SETTINGS_VERSION) &&
+        (version === 1 || version === 2 || version === 3 || version === 4 || version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
           : null;
@@ -140,6 +142,10 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       2.5,
       DEFAULT_PLAYER_SETTINGS.mouseSensitivity,
     ),
+    invertVerticalLook:
+      typeof source.invertVerticalLook === 'boolean'
+        ? source.invertVerticalLook
+        : DEFAULT_PLAYER_SETTINGS.invertVerticalLook,
     renderQuality: isRenderQuality(source.renderQuality)
       ? source.renderQuality
       : DEFAULT_PLAYER_SETTINGS.renderQuality,
@@ -230,6 +236,7 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.musicVolume === right.musicVolume &&
     left.effectsVolume === right.effectsVolume &&
     left.mouseSensitivity === right.mouseSensitivity &&
+    left.invertVerticalLook === right.invertVerticalLook &&
     left.renderQuality === right.renderQuality &&
     left.renderScale === right.renderScale &&
     left.fpsLimit === right.fpsLimit &&

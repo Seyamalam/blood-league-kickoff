@@ -13,6 +13,7 @@ describe('arena lighting', () => {
     const moon = scene.getObjectByName('arena-moon-key-light');
     const fill = scene.getObjectByName('arena-gameplay-fill-light');
     const ambient = scene.getObjectByName('arena-ambient-light');
+    const bloodGoal = scene.getObjectByName('arena-blood-goal-light');
 
     expect(lights).toHaveLength(4);
     expect(moon).toBeInstanceOf(THREE.DirectionalLight);
@@ -20,6 +21,8 @@ describe('arena lighting', () => {
     expect(fill).toBeInstanceOf(THREE.DirectionalLight);
     expect(fill?.castShadow).toBe(false);
     expect(ambient).toBeInstanceOf(THREE.HemisphereLight);
+    expect(bloodGoal).toBeInstanceOf(THREE.PointLight);
+    expect(bloodGoal?.castShadow).toBe(false);
     expect(lights.filter((light) => light.castShadow)).toEqual([moon]);
   });
 });

@@ -4,14 +4,25 @@ import { AudioManager } from './audio';
 import { countActivePoolItems, createPerformanceCounters, PerfMeter } from './diagnostics/PerfMeter';
 import {
   applyDenseWaveStressFormation,
+  createDenseSecondaryStressState,
   installDenseWavePerformanceHook,
   readDenseWaveStressMode,
 } from './diagnostics/DenseWaveStress';
 import { PresentationFrameScheduler } from './diagnostics/PresentationFrameScheduler';
-import { createQaTerminalFixture, installQaSnapshotHook, readQaScenario } from './diagnostics/QaScenario';
+import {
+  createQaEvolutionFixture,
+  createQaTerminalFixture,
+  installQaSnapshotHook,
+  readQaEvolutionId,
+  readQaScenario,
+} from './diagnostics/QaScenario';
 import { InputController } from './game/input/InputController';
 import {
+  COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+  DEFAULT_COUNT_GOALKEEPER_CONFIG,
   damageCountGoalkeeper,
+  didDefeatCountGoalkeeper,
+  isCountGoalkeeperDamageable,
   spawnCountGoalkeeper,
   updateCountGoalkeeper,
   type CountGoalkeeperState,
@@ -25,9 +36,11 @@ import {
   resetFocusKick,
   SecondaryWeaponSystem,
   selectAimAssistTarget,
+  sumSecondaryBossDamage,
   steerAimDirection,
   stepFocusKick,
   type FocusKickCombatAction,
+  type CombatTarget,
 } from './game/combat';
 import {
   createMatchDirectorState,
@@ -40,9 +53,9 @@ import { BloodShardSystem } from './game/pickups';
 import {
   BLOOD_XP_PER_KILL,
   chooseUpgrade,
-  calculateModifiers,
   createUpgradeOffer,
   createProgressionState,
+  getUnlockedEvolutionIds,
   grantBloodXp,
   totalXpRequiredForLevel,
   UPGRADE_IDS,
@@ -55,9 +68,11 @@ import {
   resetGameState,
   resetKickoffFormation,
   spawnEliteEnemy,
+  spawnGoalkeeperGuard,
   updateEnemies,
   updatePlayer,
 } from './game/simulation/gameState';
+import { detectOpponentGoalCrossing, OPPONENT_GOAL_LINE_Z } from './game/field';
 import { TutorialTracker, type TutorialSignal } from './game/tutorial';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
@@ -68,6 +83,7 @@ import { GoalBeacon } from './render/objects/GoalBeacon';
 import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
 import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
 import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
+import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
@@ -101,6 +117,8 @@ async function bootstrap(): Promise<void> {
   const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
   const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
+  const qaEvolutionId = readQaEvolutionId(window.location.search, import.meta.env.DEV);
+  const qaEvolutionFixture = qaEvolutionId ? createQaEvolutionFixture(qaEvolutionId) : null;
   const qaTerminalFixture =
     qaScenario === 'victory' || qaScenario === 'defeat' ? createQaTerminalFixture(qaScenario) : null;
   if (qaTerminalFixture) {
@@ -111,13 +129,31 @@ async function bootstrap(): Promise<void> {
     state.player.health = qaScenario === 'victory' ? 42 : 0;
     state.enemies.length = 0;
   }
-  if (qaScenario === 'upgrade' || qaScenario === 'evolution') state.phase = 'playing';
+  if (qaScenario === 'upgrade' || qaScenario === 'evolution' || qaScenario === 'goal') {
+    state.phase = 'playing';
+  }
+  if (qaScenario === 'goal') {
+    state.player.position.z = OPPONENT_GOAL_LINE_Z + 18;
+    state.player.previousPosition = { ...state.player.position };
+    physics.reset(state.player.position);
+  }
   const bridge = new RenderBridge(scene);
+  const aimGuide = new AimGuide(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
   const bloodShards = new BloodShardSystem();
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
+  const secondaryTargets: CombatTarget[] = [];
+  const bossCombatTarget: CombatTarget = {
+    id: COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+    position: { x: 0, y: 0, z: 0 },
+    radius: DEFAULT_COUNT_GOALKEEPER_CONFIG.radius,
+  };
+  const secondaryRenderState =
+    denseWaveStress?.secondaryPools === 'full'
+      ? createDenseSecondaryStressState()
+      : secondaryWeapons.renderState;
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const atmosphere = new PhaseAtmosphere(scene);
   const hud = new Hud(root);
@@ -146,19 +182,16 @@ async function bootstrap(): Promise<void> {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         pixelRatio: renderer.getPixelRatio(),
+        secondaryPools: denseWaveStress.secondaryPools,
       }))
     : () => undefined;
   const clock = new THREE.Clock();
   const frameScheduler = new PresentationFrameScheduler();
   let accumulator = 0;
   let previousBallState = physics.ballState;
-  let progression = createProgressionState();
-  if (qaScenario === 'upgrade' || qaScenario === 'evolution') {
+  let progression = qaEvolutionFixture?.state ?? createProgressionState();
+  if (qaScenario === 'upgrade') {
     progression = grantBloodXp(progression, totalXpRequiredForLevel(2)).state;
-  }
-  if (qaScenario === 'evolution') {
-    progression.upgradeStacks.silverBall = 1;
-    progression.modifiers = calculateModifiers(progression.upgradeStacks, progression.evolutions);
   }
   let focusKick = createFocusKickState();
   let match = qaTerminalFixture
@@ -171,9 +204,16 @@ async function bootstrap(): Promise<void> {
         goalsScored: qaTerminalFixture.goals,
         halftimeChoice: 'power' as const,
       }
-    : createMatchDirectorState();
-  let goalLatched = false;
+    : qaScenario === 'goal'
+      ? {
+          ...createMatchDirectorState(),
+          stage: 'goalOpportunity' as const,
+          stageElapsed: 1,
+          matchElapsed: MATCH_CONFIG.opening.deadlineMatchTime,
+        }
+      : createMatchDirectorState();
   let boss: CountGoalkeeperState | null = null;
+  if (qaScenario === 'goal') spawnGoalkeeperGuard(state);
   let resultsShown = false;
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
@@ -199,6 +239,10 @@ async function bootstrap(): Promise<void> {
               : null,
         upgradeVisible: upgradeOverlay.isVisible,
         evolutionVisible: evolutionToast.isVisible,
+        requestedEvolutionId: qaEvolutionId,
+        unlockedEvolutionIds: getUnlockedEvolutionIds(progression),
+        evolutionToastId: evolutionToast.currentEvolutionId,
+        evolutionToastName: evolutionToast.currentName,
         pointerLocked: input.isLocked,
       }))
     : () => undefined;
@@ -207,6 +251,28 @@ async function bootstrap(): Promise<void> {
     for (let index = 0; index < count; index += 1) {
       focusKick = applyFocusKickCombatAction(focusKick, action);
     }
+  };
+
+  const refreshCombatTargets = (): void => {
+    secondaryTargets.length = 0;
+    for (const enemy of state.enemies) secondaryTargets.push(enemy);
+    if (boss && isCountGoalkeeperDamageable(boss)) {
+      bossCombatTarget.position = boss.position;
+      secondaryTargets.push(bossCombatTarget);
+    }
+  };
+
+  const triggerPrimaryImpactWeapons = (targetId: number, position: CombatTarget['position']): void => {
+    secondaryWeapons.triggerChainLightning(targetId, position, progression.modifiers);
+    secondaryWeapons.triggerFrostBurst(position, progression.modifiers);
+    secondaryWeapons.triggerMultiBall({
+      origin: position,
+      direction: physics.ballVelocity,
+      baseDamage:
+        (physics.ballSpeed > 17 ? 2 : 1) * progression.modifiers.ballDamageMultiplier * ballDamageMultiplier,
+      modifiers: progression.modifiers,
+    });
+    secondaryWeapons.triggerBlackHole(position, progression.modifiers);
   };
 
   const signalTutorial = (signal: TutorialSignal): void => {
@@ -227,7 +293,9 @@ async function bootstrap(): Promise<void> {
       state.phase !== 'playing'
     )
       return;
-    const choices = createUpgradeOffer(progression, qaScenario === 'evolution' ? () => 0.65 : Math.random);
+    const choices = qaEvolutionFixture
+      ? [qaEvolutionFixture.finalUpgradeId]
+      : createUpgradeOffer(progression, Math.random);
     if (choices.length === 0) return;
     if (input.isLocked) void document.exitPointerLock();
     void upgradeOverlay.show(choices, progression).then((upgradeId) => {
@@ -266,6 +334,7 @@ async function bootstrap(): Promise<void> {
     audio.setMusicVolume(settings.musicVolume);
     audio.setEffectsVolume(settings.effectsVolume);
     cameraController.setSensitivity(settings.mouseSensitivity);
+    cameraController.setInvertVerticalLook(settings.invertVerticalLook);
     cameraController.setReducedShake(settings.reducedCameraShake);
     input.setKeyBindings(settings.keyBindings);
     hud.setControlBindings(settings.keyBindings);
@@ -291,6 +360,7 @@ async function bootstrap(): Promise<void> {
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
+    aimGuide.reset();
     goalBeacon.reset();
     bossVisual.reset();
     bloodShards.reset();
@@ -309,7 +379,6 @@ async function bootstrap(): Promise<void> {
     progression = createProgressionState();
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
-    goalLatched = false;
     boss = null;
     resultsShown = false;
     perf.reset();
@@ -342,12 +411,18 @@ async function bootstrap(): Promise<void> {
   };
   const settingsButton = hud.settingsButton;
   const titleSettingsButton = hud.titleSettingsButton;
+  const titleQuitButton = hud.titleQuitButton;
   settingsButton.addEventListener('click', openSettings);
   titleSettingsButton.addEventListener('click', openSettings);
+  const quitGame = (): void => {
+    void window.desktopRuntime?.window.quit();
+  };
+  titleQuitButton.addEventListener('click', quitGame);
   const returnToMenu = (): void => {
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
+    aimGuide.reset();
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
@@ -458,13 +533,11 @@ async function bootstrap(): Promise<void> {
       kick
     ) {
       const rawAim = cameraController.aimDirection();
+      refreshCombatTargets();
       const aimTarget = selectAimAssistTarget(
         state.player.position,
         rawAim,
-        [
-          ...state.enemies,
-          ...(boss && boss.phase !== 'defeated' ? [{ id: -1, position: boss.position }] : []),
-        ],
+        secondaryTargets,
         playerSettings.aimAssistStrength,
       );
       const assistedHorizontal = aimTarget
@@ -532,7 +605,17 @@ async function bootstrap(): Promise<void> {
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
         updatePlayer(state, movement, cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
-        updateEnemies(state, FIXED_STEP);
+        updateEnemies(
+          state,
+          FIXED_STEP,
+          {
+            stage: match.stage,
+            stageElapsed: match.stageElapsed,
+            matchElapsed: match.matchElapsed,
+          },
+          Math.random,
+          physics.ballPosition,
+        );
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
           cameraController.addImpulse(0.24);
@@ -557,23 +640,8 @@ async function bootstrap(): Promise<void> {
         if (hits > 0) {
           chargeFocusKick('enemy-hit', hits);
           if (primaryDamage.firstHitEnemyId !== undefined) {
-            secondaryWeapons.triggerChainLightning(
-              primaryDamage.firstHitEnemyId,
-              physics.ballPosition,
-              progression.modifiers,
-            );
+            triggerPrimaryImpactWeapons(primaryDamage.firstHitEnemyId, physics.ballPosition);
           }
-          secondaryWeapons.triggerFrostBurst(physics.ballPosition, progression.modifiers);
-          secondaryWeapons.triggerMultiBall({
-            origin: physics.ballPosition,
-            direction: physics.ballVelocity,
-            baseDamage:
-              (physics.ballSpeed > 17 ? 2 : 1) *
-              progression.modifiers.ballDamageMultiplier *
-              ballDamageMultiplier,
-            modifiers: progression.modifiers,
-          });
-          secondaryWeapons.triggerBlackHole(physics.ballPosition, progression.modifiers);
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -586,6 +654,16 @@ async function bootstrap(): Promise<void> {
           secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
         }
 
+        const bossUpdateThisStep =
+          boss && boss.phase !== 'defeated'
+            ? updateCountGoalkeeper(boss, {
+                dt: FIXED_STEP,
+                playerPosition: state.player.position,
+              })
+            : null;
+        if (bossUpdateThisStep) boss = bossUpdateThisStep.state;
+
+        refreshCombatTargets();
         const secondaryStep = secondaryWeapons.step({
           dt: FIXED_STEP,
           playerPosition: state.player.position,
@@ -598,13 +676,26 @@ async function bootstrap(): Promise<void> {
             physics.ballState === 'volley-window',
           ballDamage: physics.ballSpeed > 17 ? 2 : 1,
           modifiers: progression.modifiers,
-          targets: state.enemies,
+          targets: secondaryTargets,
         });
-        const secondaryDamage = damageEnemiesWithSecondary(state, secondaryStep.hits);
+        const secondaryBossDamage = sumSecondaryBossDamage(
+          secondaryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+        );
+        const secondaryDamage = damageEnemiesWithSecondary(
+          state,
+          secondaryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+        );
         if (secondaryDamage.hits > 0) {
           chargeFocusKick('enemy-hit', secondaryDamage.hits);
           audio.playHit(0.7);
-          const effectPosition = secondaryStep.hits[0]?.position ?? physics.ballPosition;
+          let effectPosition = physics.ballPosition;
+          for (const hit of secondaryStep.hits) {
+            if (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID) continue;
+            effectPosition = hit.position;
+            break;
+          }
           bridge.hitBurst(effectPosition, 0.8);
         }
         if (secondaryDamage.kills > 0) {
@@ -622,6 +713,10 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'frost-burst-triggered') bridge.frostBurst(event.position, 1.2);
           if (event.type === 'frost-burst-hit') {
             applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
+          }
+          if (event.type === 'garlic-frost-hit') {
+            applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
+            bridge.frostBurst(event.position, 0.55);
           }
           if (event.type === 'black-hole-pulse') bridge.voidBurst(event.position, 0.75);
           if (event.type === 'black-hole-pull') {
@@ -641,12 +736,7 @@ async function bootstrap(): Promise<void> {
 
         let bossDefeatedThisStep = false;
         if (boss && boss.phase !== 'defeated') {
-          const bossUpdate = updateCountGoalkeeper(boss, {
-            dt: FIXED_STEP,
-            playerPosition: state.player.position,
-          });
-          boss = bossUpdate.state;
-          for (const event of bossUpdate.events) {
+          for (const event of bossUpdateThisStep?.events ?? []) {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
               state.player.health = Math.max(0, state.player.health - event.damage);
               state.player.invulnerability = 0.7;
@@ -676,19 +766,41 @@ async function bootstrap(): Promise<void> {
             boss = damage.state;
             if (damage.appliedDamage > 0) {
               chargeFocusKick('boss-hit');
+              // The secondary system already stepped; these bounded triggers
+              // intentionally resolve from the next fixed step onward.
+              triggerPrimaryImpactWeapons(COUNT_GOALKEEPER_COMBAT_TARGET_ID, physics.ballPosition);
+              // Blood Bomb is normally kill-triggered. Boss impacts also queue it
+              // so a dedicated bomb build retains a real final-encounter payoff.
+              secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
               bridge.hitBurst(boss.position, 1.4);
               cameraController.hitImpulse(1.25);
               audio.playHit(1);
             }
-            bossDefeatedThisStep = damage.events.some((event) => event.type === 'defeated');
+            bossDefeatedThisStep = didDefeatCountGoalkeeper(damage.events);
+          }
+
+          // Primary kicks resolve first. Their short invulnerability window keeps
+          // persistent damage zones from swallowing a readable, high-impact shot.
+          if (boss.phase !== 'defeated' && secondaryBossDamage > 0) {
+            const damage = damageCountGoalkeeper(boss, {
+              amount: secondaryBossDamage,
+              source: 'secondary',
+            });
+            boss = damage.state;
+            if (damage.appliedDamage > 0) {
+              chargeFocusKick('boss-hit');
+              bridge.hitBurst(boss.position, 0.72);
+              cameraController.hitImpulse(0.38);
+              audio.playHit(0.68);
+            }
+            bossDefeatedThisStep ||= didDefeatCountGoalkeeper(damage.events);
           }
         }
 
         const ball = physics.ballPosition;
-        const insideGoal = ball.z < -14 && Math.abs(ball.x) < 2.55 && ball.y < 3.2;
+        const goalCrossing = detectOpponentGoalCrossing(physics.previousBallStepPosition, ball);
         const scored =
-          (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && insideGoal && !goalLatched;
-        goalLatched = insideGoal;
+          (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && goalCrossing !== null;
         const matchUpdate = updateMatchDirector(
           match,
           {
@@ -726,6 +838,17 @@ async function bootstrap(): Promise<void> {
           }
           if (event.type === 'goalOpportunityStarted' && event.goal === 'final') {
             announcement.show('finalGoal');
+          }
+          if (event.type === 'goalOpportunityStarted') {
+            resetKickoffFormation(state);
+            physics.reset(state.player.position);
+            spawnGoalkeeperGuard(state, event.goal === 'final');
+            previousBallState = physics.ballState;
+          }
+          if (event.type === 'goalMissed') {
+            resetKickoffFormation(state);
+            physics.reset(state.player.position);
+            previousBallState = physics.ballState;
           }
           if (event.type === 'halftimeChoiceStarted') {
             announcement.show('halftime');
@@ -794,10 +917,19 @@ async function bootstrap(): Promise<void> {
       alpha,
     );
     cameraController.update(renderPlayerPosition, frameTime);
+    aimGuide.sync(
+      renderPlayerPosition,
+      cameraController.aimDirection(),
+      state.phase === 'playing' &&
+        !upgradeOverlay.isVisible &&
+        !settingsOverlay.isVisible &&
+        !pauseOverlay.isVisible &&
+        !halftimeOverlay.isVisible,
+    );
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
     bossVisual.sync(boss, alpha);
     bloodShardRenderer.sync(bloodShards.state, alpha);
-    secondaryRenderer.sync(secondaryWeapons.renderState);
+    secondaryRenderer.sync(secondaryRenderState);
     hud.update(
       state,
       physics.ballState,
@@ -823,6 +955,7 @@ async function bootstrap(): Promise<void> {
             upgradeId,
             stacks: progression.upgradeStacks[upgradeId],
           })),
+          evolutions: getUnlockedEvolutionIds(progression),
         },
         { onRestart: restart, onMainMenu: returnToMenu },
       );
@@ -835,12 +968,16 @@ async function bootstrap(): Promise<void> {
     perfCounters.fixedSteps = fixedStepsThisFrame;
     perfCounters.bloodShardPoolActive = bloodShards.state.activeCount;
     perfCounters.bloodShardPoolCapacity = bloodShards.state.capacity;
-    perfCounters.garlicPoolActive = countActivePoolItems(secondaryWeapons.renderState.garlicZones);
-    perfCounters.garlicPoolCapacity = secondaryWeapons.renderState.garlicZones.length;
-    perfCounters.orbitPoolActive = countActivePoolItems(secondaryWeapons.renderState.orbitingBalls);
-    perfCounters.orbitPoolCapacity = secondaryWeapons.renderState.orbitingBalls.length;
-    perfCounters.ghostPassPoolActive = countActivePoolItems(secondaryWeapons.renderState.ghostPasses);
-    perfCounters.ghostPassPoolCapacity = secondaryWeapons.renderState.ghostPasses.length;
+    perfCounters.garlicPoolActive = countActivePoolItems(secondaryRenderState.garlicZones);
+    perfCounters.garlicPoolCapacity = secondaryRenderState.garlicZones.length;
+    perfCounters.orbitPoolActive = countActivePoolItems(secondaryRenderState.orbitingBalls);
+    perfCounters.orbitPoolCapacity = secondaryRenderState.orbitingBalls.length;
+    perfCounters.ghostPassPoolActive = countActivePoolItems(secondaryRenderState.ghostPasses);
+    perfCounters.ghostPassPoolCapacity = secondaryRenderState.ghostPasses.length;
+    perfCounters.multiBallPoolActive = countActivePoolItems(secondaryRenderState.multiBallShots);
+    perfCounters.multiBallPoolCapacity = secondaryRenderState.multiBallShots.length;
+    perfCounters.blackHolePoolActive = countActivePoolItems(secondaryRenderState.blackHoleZones);
+    perfCounters.blackHolePoolCapacity = secondaryRenderState.blackHoleZones.length;
     perf.update(frameTime, perfCounters);
   });
 
@@ -868,6 +1005,7 @@ async function bootstrap(): Promise<void> {
     victoryRestartButton.removeEventListener('click', restart);
     settingsButton.removeEventListener('click', openSettings);
     titleSettingsButton.removeEventListener('click', openSettings);
+    titleQuitButton.removeEventListener('click', quitGame);
     renderer.domElement.removeEventListener('click', onCanvasClick);
     renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
     renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
@@ -891,6 +1029,7 @@ async function bootstrap(): Promise<void> {
     uninstallQaSnapshotHook();
     atmosphere.dispose();
     bridge.dispose();
+    aimGuide.dispose();
     physics.dispose();
     disposeSceneResources(scene);
     renderer.renderLists.dispose();

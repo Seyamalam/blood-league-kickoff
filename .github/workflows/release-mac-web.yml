@@ -1,0 +1,136 @@
+name: Publish macOS and Web Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mac-web-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Verified Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Verify tag matches package version
+        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
+
+      - name: Verify production game
+        run: npm run check
+
+      - name: Package web build
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p release
+          (cd dist && zip -qr "../release/Blood-League-Kickoff-${VERSION}-Web.zip" .)
+          (cd release && sha256sum ./*.zip > SHA256SUMS-Web.txt)
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Blood-League-Kickoff-Web
+          path: |
+            release/*-Web.zip
+            release/SHA256SUMS-Web.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS x64 and Apple silicon
+    runs-on: macos-15
+    timeout-minutes: 35
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Verify tag matches package version
+        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
+
+      - name: Build production game
+        run: npm run build:web
+
+      - name: Package macOS desktop builds
+        run: npm run package:mac
+
+      - name: Generate macOS checksums
+        working-directory: release/desktop
+        run: shasum -a 256 ./*.dmg ./*.zip | sort -k 2 > SHA256SUMS-macOS.txt
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: Blood-League-Kickoff-macOS
+          path: |
+            release/desktop/*.dmg
+            release/desktop/*.zip
+            release/desktop/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish verified release
+    needs:
+      - web
+      - macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: Blood-League-Kickoff-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create and verify combined checksums
+        working-directory: release-artifacts
+        run: |
+          cat SHA256SUMS-*.txt | sort -k 2 > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+
+      - name: Create GitHub Release and attach artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --verify-tag --prerelease \
+              --title "Blood League: Kickoff $GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" \
+            release-artifacts/*.dmg \
+            release-artifacts/*.zip \
+            release-artifacts/SHA256SUMS.txt \
+            --clobber

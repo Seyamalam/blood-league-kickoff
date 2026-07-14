@@ -23,6 +23,7 @@ describe('player settings sanitization', () => {
     expect(migrated.musicVolume).toBe(1);
     expect(migrated.effectsVolume).toBe(1);
     expect(migrated.mouseSensitivity).toBe(1.25);
+    expect(migrated.invertVerticalLook).toBe(false);
     expect(migrated.aimAssistStrength).toBe('low');
     expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
   });
@@ -48,6 +49,11 @@ describe('player settings sanitization', () => {
     expect(sanitizePlayerSettings({ aimAssistStrength: 'maximum' }).aimAssistStrength).toBe(
       DEFAULT_PLAYER_SETTINGS.aimAssistStrength,
     );
+  });
+
+  it('accepts only boolean vertical-look inversion values', () => {
+    expect(sanitizePlayerSettings({ invertVerticalLook: true }).invertVerticalLook).toBe(true);
+    expect(sanitizePlayerSettings({ invertVerticalLook: 'true' }).invertVerticalLook).toBe(false);
   });
 
   it('accepts keyboard codes while rejecting reserved, mouse, malformed, and duplicate bindings', () => {
@@ -91,7 +97,29 @@ describe('player settings sanitization', () => {
     expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
   });
 
-  it('persists aim assist and keyboard bindings and restores them in a new store', () => {
+  it('loads a version-four save with non-inverted vertical look by default', () => {
+    const values = new Map<string, string>([
+      [
+        'version-four.settings',
+        JSON.stringify({
+          version: 4,
+          settings: { mouseSensitivity: 1.4 },
+        }),
+      ],
+    ]);
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    });
+
+    const migrated = new SettingsStore('version-four.settings').value;
+    expect(migrated.mouseSensitivity).toBe(1.4);
+    expect(migrated.invertVerticalLook).toBe(false);
+  });
+
+  it('persists aim assist, vertical inversion, and keyboard bindings and restores them in a new store', () => {
     const values = new Map<string, string>();
     vi.stubGlobal('window', {
       localStorage: {
@@ -103,13 +131,15 @@ describe('player settings sanitization', () => {
     const first = new SettingsStore('test.settings');
     first.update({
       aimAssistStrength: 'high',
+      invertVerticalLook: true,
       keyBindings: { ...first.value.keyBindings, dash: 'ShiftLeft', focusKick: 'KeyQ' },
     });
 
     const restored = new SettingsStore('test.settings').value;
     expect(restored.aimAssistStrength).toBe('high');
+    expect(restored.invertVerticalLook).toBe(true);
     expect(restored.keyBindings.dash).toBe('ShiftLeft');
     expect(restored.keyBindings.focusKick).toBe('KeyQ');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 4 });
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 5 });
   });
 });

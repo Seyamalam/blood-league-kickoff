@@ -1,4 +1,5 @@
 import type { EnemyState } from './types';
+import { PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_WIDTH } from '../field';
 
 /**
  * Reusable uniform grid specialized for the bounded arena enemy crowd.
@@ -15,10 +16,10 @@ export class EnemySpatialGrid {
   private separationResultZ = 0;
 
   constructor(
-    private readonly minX = -22,
-    private readonly minZ = -14,
-    private readonly maxX = 22,
-    private readonly maxZ = 14,
+    private readonly minX = -PLAYABLE_HALF_WIDTH,
+    private readonly minZ = -PLAYABLE_HALF_LENGTH,
+    private readonly maxX = PLAYABLE_HALF_WIDTH,
+    private readonly maxZ = PLAYABLE_HALF_LENGTH,
     private readonly cellSize = 2.5,
     initialCapacity = 128,
   ) {

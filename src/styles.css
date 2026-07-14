@@ -213,44 +213,6 @@ button {
   background: #f13b60;
   box-shadow: 0 0 8px #f13b60;
 }
-.crosshair {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 28px;
-  height: 28px;
-  transform: translate(-50%, -50%);
-  opacity: 0.72;
-}
-.crosshair span {
-  position: absolute;
-  background: #f4f1e9;
-  box-shadow: 0 0 3px #000;
-}
-.crosshair span:nth-child(1),
-.crosshair span:nth-child(2) {
-  width: 7px;
-  height: 1px;
-  top: 14px;
-}
-.crosshair span:nth-child(1) {
-  left: 0;
-}
-.crosshair span:nth-child(2) {
-  right: 0;
-}
-.crosshair span:nth-child(3),
-.crosshair span:nth-child(4) {
-  width: 1px;
-  height: 7px;
-  left: 14px;
-}
-.crosshair span:nth-child(3) {
-  top: 0;
-}
-.crosshair span:nth-child(4) {
-  bottom: 0;
-}
 .controls-hint {
   position: absolute;
   bottom: 30px;
@@ -503,6 +465,11 @@ button {
     800 10px Arial,
     sans-serif;
 }
+.modal .title-quit {
+  margin-top: 7px;
+  color: #8c858f;
+  border-color: rgba(255, 255, 255, 0.12);
+}
 .modal small {
   margin-top: 14px;
   color: #67636d;
@@ -599,6 +566,14 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+.upgrade-overlay__choices[data-choice-count='1'] {
+  grid-template-columns: minmax(0, 340px);
+  justify-content: center;
+}
+.upgrade-overlay__choices[data-choice-count='2'] {
+  grid-template-columns: repeat(2, minmax(0, 340px));
+  justify-content: center;
 }
 .upgrade-overlay .upgrade-card {
   position: relative;
@@ -708,6 +683,20 @@ button {
   font:
     16px/1.35 Arial,
     sans-serif;
+}
+.upgrade-card__evolution {
+  min-height: 26px;
+  margin: 5px 0 10px;
+  color: #9adbc5;
+  font:
+    800 9px/1.35 Arial,
+    sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.upgrade-card__evolution[hidden] {
+  display: block;
+  visibility: hidden;
 }
 .upgrade-card__stack {
   width: 100%;
@@ -1136,7 +1125,7 @@ button {
 }
 .settings-desktop__actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 9px;
   align-items: end;
 }
@@ -1158,11 +1147,6 @@ button {
 .settings-panel .settings-desktop__actions button:hover {
   border-color: #f13b60;
   background: rgba(216, 42, 80, 0.32);
-}
-.settings-panel .settings-desktop__actions .settings-desktop__danger {
-  color: #aaa3ad;
-  border-color: rgba(255, 255, 255, 0.13);
-  background: rgba(255, 255, 255, 0.025);
 }
 .settings-panel__footer {
   padding: 13px 25px;
@@ -1518,6 +1502,15 @@ button {
 }
 .results-upgrades li strong {
   color: #e9c46f;
+}
+.results-upgrades li.results-upgrades__evolution {
+  color: #dff9ef;
+  border: 1px solid rgba(123, 214, 176, 0.25);
+  background: linear-gradient(90deg, rgba(83, 42, 104, 0.32), rgba(43, 122, 94, 0.18));
+}
+.results-upgrades li.results-upgrades__evolution strong {
+  color: #7bd6b0;
+  letter-spacing: 0.08em;
 }
 .results-upgrades li.results-upgrades__empty {
   grid-column: 1/-1;
