@@ -18,7 +18,11 @@ import {
 } from './diagnostics/QaScenario';
 import { InputController } from './game/input/InputController';
 import {
+  COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+  DEFAULT_COUNT_GOALKEEPER_CONFIG,
   damageCountGoalkeeper,
+  didDefeatCountGoalkeeper,
+  isCountGoalkeeperDamageable,
   spawnCountGoalkeeper,
   updateCountGoalkeeper,
   type CountGoalkeeperState,
@@ -32,9 +36,11 @@ import {
   resetFocusKick,
   SecondaryWeaponSystem,
   selectAimAssistTarget,
+  sumSecondaryBossDamage,
   steerAimDirection,
   stepFocusKick,
   type FocusKickCombatAction,
+  type CombatTarget,
 } from './game/combat';
 import {
   createMatchDirectorState,
@@ -127,6 +133,12 @@ async function bootstrap(): Promise<void> {
   const bloodShards = new BloodShardSystem();
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
+  const secondaryTargets: CombatTarget[] = [];
+  const bossCombatTarget: CombatTarget = {
+    id: COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+    position: { x: 0, y: 0, z: 0 },
+    radius: DEFAULT_COUNT_GOALKEEPER_CONFIG.radius,
+  };
   const secondaryRenderState =
     denseWaveStress?.secondaryPools === 'full'
       ? createDenseSecondaryStressState()
@@ -221,6 +233,28 @@ async function bootstrap(): Promise<void> {
     for (let index = 0; index < count; index += 1) {
       focusKick = applyFocusKickCombatAction(focusKick, action);
     }
+  };
+
+  const refreshCombatTargets = (): void => {
+    secondaryTargets.length = 0;
+    for (const enemy of state.enemies) secondaryTargets.push(enemy);
+    if (boss && isCountGoalkeeperDamageable(boss)) {
+      bossCombatTarget.position = boss.position;
+      secondaryTargets.push(bossCombatTarget);
+    }
+  };
+
+  const triggerPrimaryImpactWeapons = (targetId: number, position: CombatTarget['position']): void => {
+    secondaryWeapons.triggerChainLightning(targetId, position, progression.modifiers);
+    secondaryWeapons.triggerFrostBurst(position, progression.modifiers);
+    secondaryWeapons.triggerMultiBall({
+      origin: position,
+      direction: physics.ballVelocity,
+      baseDamage:
+        (physics.ballSpeed > 17 ? 2 : 1) * progression.modifiers.ballDamageMultiplier * ballDamageMultiplier,
+      modifiers: progression.modifiers,
+    });
+    secondaryWeapons.triggerBlackHole(position, progression.modifiers);
   };
 
   const signalTutorial = (signal: TutorialSignal): void => {
@@ -474,13 +508,11 @@ async function bootstrap(): Promise<void> {
       kick
     ) {
       const rawAim = cameraController.aimDirection();
+      refreshCombatTargets();
       const aimTarget = selectAimAssistTarget(
         state.player.position,
         rawAim,
-        [
-          ...state.enemies,
-          ...(boss && boss.phase !== 'defeated' ? [{ id: -1, position: boss.position }] : []),
-        ],
+        secondaryTargets,
         playerSettings.aimAssistStrength,
       );
       const assistedHorizontal = aimTarget
@@ -577,23 +609,8 @@ async function bootstrap(): Promise<void> {
         if (hits > 0) {
           chargeFocusKick('enemy-hit', hits);
           if (primaryDamage.firstHitEnemyId !== undefined) {
-            secondaryWeapons.triggerChainLightning(
-              primaryDamage.firstHitEnemyId,
-              physics.ballPosition,
-              progression.modifiers,
-            );
+            triggerPrimaryImpactWeapons(primaryDamage.firstHitEnemyId, physics.ballPosition);
           }
-          secondaryWeapons.triggerFrostBurst(physics.ballPosition, progression.modifiers);
-          secondaryWeapons.triggerMultiBall({
-            origin: physics.ballPosition,
-            direction: physics.ballVelocity,
-            baseDamage:
-              (physics.ballSpeed > 17 ? 2 : 1) *
-              progression.modifiers.ballDamageMultiplier *
-              ballDamageMultiplier,
-            modifiers: progression.modifiers,
-          });
-          secondaryWeapons.triggerBlackHole(physics.ballPosition, progression.modifiers);
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
@@ -606,6 +623,16 @@ async function bootstrap(): Promise<void> {
           secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
         }
 
+        const bossUpdateThisStep =
+          boss && boss.phase !== 'defeated'
+            ? updateCountGoalkeeper(boss, {
+                dt: FIXED_STEP,
+                playerPosition: state.player.position,
+              })
+            : null;
+        if (bossUpdateThisStep) boss = bossUpdateThisStep.state;
+
+        refreshCombatTargets();
         const secondaryStep = secondaryWeapons.step({
           dt: FIXED_STEP,
           playerPosition: state.player.position,
@@ -618,13 +645,26 @@ async function bootstrap(): Promise<void> {
             physics.ballState === 'volley-window',
           ballDamage: physics.ballSpeed > 17 ? 2 : 1,
           modifiers: progression.modifiers,
-          targets: state.enemies,
+          targets: secondaryTargets,
         });
-        const secondaryDamage = damageEnemiesWithSecondary(state, secondaryStep.hits);
+        const secondaryBossDamage = sumSecondaryBossDamage(
+          secondaryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+        );
+        const secondaryDamage = damageEnemiesWithSecondary(
+          state,
+          secondaryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+        );
         if (secondaryDamage.hits > 0) {
           chargeFocusKick('enemy-hit', secondaryDamage.hits);
           audio.playHit(0.7);
-          const effectPosition = secondaryStep.hits[0]?.position ?? physics.ballPosition;
+          let effectPosition = physics.ballPosition;
+          for (const hit of secondaryStep.hits) {
+            if (hit.targetId === COUNT_GOALKEEPER_COMBAT_TARGET_ID) continue;
+            effectPosition = hit.position;
+            break;
+          }
           bridge.hitBurst(effectPosition, 0.8);
         }
         if (secondaryDamage.kills > 0) {
@@ -665,12 +705,7 @@ async function bootstrap(): Promise<void> {
 
         let bossDefeatedThisStep = false;
         if (boss && boss.phase !== 'defeated') {
-          const bossUpdate = updateCountGoalkeeper(boss, {
-            dt: FIXED_STEP,
-            playerPosition: state.player.position,
-          });
-          boss = bossUpdate.state;
-          for (const event of bossUpdate.events) {
+          for (const event of bossUpdateThisStep?.events ?? []) {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
               state.player.health = Math.max(0, state.player.health - event.damage);
               state.player.invulnerability = 0.7;
@@ -700,11 +735,34 @@ async function bootstrap(): Promise<void> {
             boss = damage.state;
             if (damage.appliedDamage > 0) {
               chargeFocusKick('boss-hit');
+              // The secondary system already stepped; these bounded triggers
+              // intentionally resolve from the next fixed step onward.
+              triggerPrimaryImpactWeapons(COUNT_GOALKEEPER_COMBAT_TARGET_ID, physics.ballPosition);
+              // Blood Bomb is normally kill-triggered. Boss impacts also queue it
+              // so a dedicated bomb build retains a real final-encounter payoff.
+              secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
               bridge.hitBurst(boss.position, 1.4);
               cameraController.hitImpulse(1.25);
               audio.playHit(1);
             }
-            bossDefeatedThisStep = damage.events.some((event) => event.type === 'defeated');
+            bossDefeatedThisStep = didDefeatCountGoalkeeper(damage.events);
+          }
+
+          // Primary kicks resolve first. Their short invulnerability window keeps
+          // persistent damage zones from swallowing a readable, high-impact shot.
+          if (boss.phase !== 'defeated' && secondaryBossDamage > 0) {
+            const damage = damageCountGoalkeeper(boss, {
+              amount: secondaryBossDamage,
+              source: 'secondary',
+            });
+            boss = damage.state;
+            if (damage.appliedDamage > 0) {
+              chargeFocusKick('boss-hit');
+              bridge.hitBurst(boss.position, 0.72);
+              cameraController.hitImpulse(0.38);
+              audio.playHit(0.68);
+            }
+            bossDefeatedThisStep ||= didDefeatCountGoalkeeper(damage.events);
           }
         }
 

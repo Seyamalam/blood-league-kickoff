@@ -156,6 +156,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
+- [x] Every secondary weapon and evolution can damage Count Goalkeeper through capped boss-only routing without granting ordinary kill rewards
 - [x] Five automatic evolutions: Moon Breaker, Crimson Meteor, Grave-Frost Wake, Storm Halo, and Phantom Singularity
 - [x] Cross-weapon evolution mechanics add freezing garlic trails, chain-lightning orbiters, and ghost-triggered singularities
 - [x] Upgrade cards show evolution partners, unlock toasts use unique icons, and results preserve the evolved final loadout
@@ -190,7 +191,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Outcome-specific results presentation with deterministic accessible S–D run grades
 - [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
 - [x] Secure macOS Electron window-size, fullscreen/windowed, and Quit controls verified in the real app
-- [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage and dense-crowd stress tests
+- [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage, secondary-boss damage parity, and dense-crowd stress tests
 - [x] Development-only deterministic 72-enemy profiling scene with a read-only automation snapshot
 - [x] ESLint, Prettier, pinned Node/npm metadata, clean `npm ci`, and push/PR verification workflow
 - [x] Current title, gameplay, upgrade, evolution, settings, pause, and results screenshots stored in the repository

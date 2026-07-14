@@ -4,6 +4,8 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Made every secondary weapon and evolution damage Count Goalkeeper through a reserved boss target, a 12-raw-damage fixed-step cap, and a 0.4 boss multiplier without awarding ordinary kills, combo, score, or Blood XP.
+- Gave boss kicks the normal impact-weapon triggers plus Blood Bomb, separated primary/secondary hit cooldowns to prevent either path starving the other, kept boss crowd control immune, removed per-kick target-array allocation, and covered secondary defeat-to-victory forwarding in the same fixed step; the suite now contains 171 passing tests.
 - Replaced 45 individual secondary-weapon meshes with five fixed `InstancedMesh` batches sharing three geometries; all full pools now add exactly five draw calls instead of as many as 45.
 - Made black-hole rotation fixed-step-age-driven, added semantic renderer capacity/matrix/resource-lifecycle tests, and added a deterministic full-pool WebGL stress route with a 1600×900 capture.
 - Completed pool diagnostics for multiball and black-hole objects, correcting aggregate visible pool capacity from 195 to 205; the suite now contains 162 passing tests.

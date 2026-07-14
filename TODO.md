@@ -133,6 +133,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Blood Moon phase in the full match director.
 - [x] `P0` Final-wave transition and prototype victory condition.
 - [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
+- [x] `P0` Route every secondary damage source into Count Goalkeeper with capped scaling, independent hit cooldowns, and no ordinary enemy rewards.
 - [x] `P0` Victory and defeat sequences.
 - [x] `P0` Results with time, kills, goals, level, upgrades, and evolutions.
 - [ ] `P0` Balance the full run to 8–10 minutes.
@@ -225,6 +226,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Test 1080p and one lower resolution/aspect ratio.
 - [ ] `P0` Test ball recovery from walls, corners, goals, death, pause, and boss control.
 - [x] `P0` Test secondary simulation/render pool capacity, packing, reset, exhaustion, and disposal behavior.
+- [x] `P0` Test secondary boss targeting, all-source aggregation, damage scaling, independent hit cooldowns, and same-step final-wave victory.
 - [ ] `P0` Test remaining population-cap and UI/VFX pool exhaustion behavior.
 - [ ] `P0` Test every upgrade/evolution alone and in combinations.
 - [ ] `P0` Test every enemy alone and in mixed waves.

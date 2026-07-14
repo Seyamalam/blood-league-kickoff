@@ -27,7 +27,9 @@ export interface CountGoalkeeperConfig {
   readonly contactDamage: number;
   readonly contactCooldown: number;
   readonly hitInvulnerability: number;
+  readonly secondaryHitInvulnerability: number;
   readonly ballDamageMultiplier: number;
+  readonly secondaryDamageMultiplier: number;
   readonly eliteSummonInterval: number;
 }
 
@@ -45,6 +47,7 @@ export interface CountGoalkeeperState {
   readonly actionElapsed: number;
   readonly actionCooldown: number;
   readonly hitInvulnerability: number;
+  readonly secondaryHitInvulnerability: number;
   readonly contactCooldown: number;
   readonly eliteSummonCooldown: number;
   readonly rngState: number;
@@ -72,7 +75,7 @@ export interface CountGoalkeeperUpdate {
 
 export interface BossDamageInput {
   readonly amount: number;
-  readonly source: 'ball' | 'holy' | 'other';
+  readonly source: 'ball' | 'secondary' | 'holy' | 'other';
 }
 
 export interface BossDamageResult extends CountGoalkeeperUpdate {

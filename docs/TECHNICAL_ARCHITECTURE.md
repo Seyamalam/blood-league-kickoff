@@ -62,6 +62,8 @@ Rapier owns the static arena colliders, a synchronized kinematic player body, an
 
 The ball exposes possessed, free, recalling, volley-window, and recovering states. Rapier provides CCD and material restitution for rebounds; game code owns charge, curve, aim assistance, Focus Kick, damage, recall impulses, speed limits, and recovery. Stalled, overdue, out-of-bounds, or non-finite balls automatically recall or reset. Match code owns goal detection and kickoff transitions, while pickup and secondary-weapon systems use their own lightweight queries and pools.
 
+Count Goalkeeper joins the generic secondary target list through a reserved negative ID only after its entrance. The runtime reuses one target array and one boss target record, separates that ID before ordinary enemy reward accounting, caps accumulated secondary damage at 12 raw points per fixed step, and applies the boss's 0.4 secondary multiplier. Boss kicks queue the normal impact-triggered weapon paths plus Blood Bomb. Primary and secondary damage use independent short cooldowns and primary resolves first, preserving kick impact without starving automatic builds; slow and pull events intentionally ignore the boss target. A secondary defeat is forwarded to the match director in the same fixed step.
+
 ## Rendering Policy
 
 - Prefer `InstancedMesh` for large repeated enemy/prop families.

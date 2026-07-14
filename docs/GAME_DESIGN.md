@@ -62,17 +62,17 @@ The aim preview may communicate direction and charge but should not solve every 
 
 ## Enemies
 
-| Enemy            | Behavior                        | Counterplay                                          |
-| ---------------- | ------------------------------- | ---------------------------------------------------- |
-| Blood Fan        | Direct crowd pressure           | Any clean kick; use for satisfying chains            |
-| Vampire Winger   | Fast flank and committed lunge  | Reposition, intercept, or recall through it          |
-| Undead Defender  | Frontal shield                  | Curve, rebound, attack side/back, or special upgrade |
-| Blood Coach      | Buffs nearby enemies            | Prioritize at range and create a lane to it          |
-| Bat Swarm        | Fast airborne weaving pressure  | Track its lateral rhythm; one clean hit destroys it  |
-| Leech Striker    | Latches, drains, and self-heals | Break contact during drain, then punish its recovery |
-| Corrupt Referee  | Ranged telegraphed whistle      | Close distance or dodge beyond its disruption radius |
-| Goalkeeper Brute | Catches ordinary ball shots     | Charge above power-shot speed to break its catch     |
-| Count Goalkeeper | Final ball-control boss         | Read catches/returns and exploit openings            |
+| Enemy            | Behavior                        | Counterplay                                                                                            |
+| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Blood Fan        | Direct crowd pressure           | Any clean kick; use for satisfying chains                                                              |
+| Vampire Winger   | Fast flank and committed lunge  | Reposition, intercept, or recall through it                                                            |
+| Undead Defender  | Frontal shield                  | Curve, rebound, attack side/back, or special upgrade                                                   |
+| Blood Coach      | Buffs nearby enemies            | Prioritize at range and create a lane to it                                                            |
+| Bat Swarm        | Fast airborne weaving pressure  | Track its lateral rhythm; one clean hit destroys it                                                    |
+| Leech Striker    | Latches, drains, and self-heals | Break contact during drain, then punish its recovery                                                   |
+| Corrupt Referee  | Ranged telegraphed whistle      | Close distance or dodge beyond its disruption radius                                                   |
+| Goalkeeper Brute | Catches ordinary ball shots     | Charge above power-shot speed to break its catch                                                       |
+| Count Goalkeeper | Final ball-control boss         | Land primary kicks while the full build adds capped damage; crowd-control effects do not move the boss |
 
 Target enemies add airborne pressure, dashes, area denial, and ball interception only after the guaranteed roster is stable.
 
@@ -120,6 +120,8 @@ Ordinary enemy pressure is also authored by match stage. Opening, First Half, Es
 The current halftime tactics are **Power** (+25% ball damage and +15% kick force), **Pace** (+15% movement and 20% faster dash recovery), and **Control** (+25% recall speed and a wider perfect-volley catch window). If the choice timer expires, the configured default is applied automatically.
 
 Scoring clears the active crowd, recenters the striker and ball, preserves health/XP/score, and presents a new kickoff. Match-stage announcements plus smoothly blended fog, accent lighting, and embers make the transition readable without blocking control.
+
+Every secondary damage source can hit Count Goalkeeper once its entrance ends. Successful boss kicks trigger the same impact weapons as ordinary hits plus Blood Bomb, so specialized builds do not depend on a nearby minion. Secondary damage is reduced to 40% and capped at 12 raw damage per fixed step so automatic and evolved builds remain useful without erasing the kick-focused climax. Primary and secondary hits have independent short cooldowns, with primary contact resolved first for readable impact. Secondary slows and pulls remain boss-immune, and boss damage never awards ordinary enemy score, combo, kills, or Blood XP.
 
 ## Feedback Priorities
 

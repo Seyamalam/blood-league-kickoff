@@ -20,7 +20,9 @@ export const DEFAULT_COUNT_GOALKEEPER_CONFIG: CountGoalkeeperConfig = {
   contactDamage: 24,
   contactCooldown: 0.8,
   hitInvulnerability: 0.1,
+  secondaryHitInvulnerability: 0.08,
   ballDamageMultiplier: 1,
+  secondaryDamageMultiplier: 0.4,
   eliteSummonInterval: 7.5,
 };
 

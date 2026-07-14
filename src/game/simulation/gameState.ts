@@ -390,9 +390,11 @@ export function damageEnemiesWithBall(
 export function damageEnemiesWithSecondary(
   state: GameState,
   damageHits: readonly SecondaryDamageHit[],
+  excludedTargetId?: number,
 ): BallDamageResult {
   let hits = 0;
   for (const damageHit of damageHits) {
+    if (damageHit.targetId === excludedTargetId) continue;
     const enemy = state.enemies.find((candidate) => candidate.id === damageHit.targetId);
     if (!enemy || damageHit.damage <= 0) continue;
     enemy.hitPoints -= damageHit.damage;
