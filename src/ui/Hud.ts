@@ -71,6 +71,7 @@ export class Hud {
         <h1>BLOOD LEAGUE<br><em>KICKOFF</em></h1>
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
         <button type="button" id="kickoff-button">ENTER THE PITCH</button>
+        <button type="button" id="title-career-button" class="title-settings">CAREER & CHARACTERS</button>
         <button type="button" id="title-settings-button" class="title-settings">SETTINGS</button>
         <button type="button" id="title-quit-button" class="title-settings title-quit">QUIT GAME</button>
         <small>Click to lock the cursor · Headphones recommended</small>
@@ -139,6 +140,10 @@ export class Hud {
     return required('title-settings-button');
   }
 
+  get titleCareerButton(): HTMLElement {
+    return required('title-career-button');
+  }
+
   get titleQuitButton(): HTMLElement {
     return required('title-quit-button');
   }
@@ -154,8 +159,8 @@ export class Hud {
     focusKick: Readonly<FocusKickState>,
   ): void {
     const health = state.player.health;
-    this.healthFill.style.width = `${health}%`;
-    this.healthValue.textContent = String(Math.ceil(health));
+    this.healthFill.style.width = `${healthPercent(health, state.player.maxHealth)}%`;
+    this.healthValue.textContent = `${Math.ceil(Math.max(0, health))} / ${Math.ceil(Math.max(1, state.player.maxHealth))}`;
     this.timer.textContent = formatTime(state.elapsed);
     this.score.textContent = state.score.toString().padStart(6, '0');
     this.enemies.textContent = String(state.enemies.length);
@@ -238,6 +243,13 @@ export class Hud {
     if (this.hintFadeTimeout !== null) window.clearTimeout(this.hintFadeTimeout);
     this.hintFadeTimeout = null;
   }
+}
+
+/** Clamped HUD ratio that remains correct when passive or character bonuses change maximum health. */
+export function healthPercent(health: number, maxHealth: number): number {
+  const safeMaximum = Number.isFinite(maxHealth) ? Math.max(1, maxHealth) : 100;
+  const safeHealth = Number.isFinite(health) ? Math.max(0, health) : 0;
+  return Math.max(0, Math.min(100, (safeHealth / safeMaximum) * 100));
 }
 
 function shortKey(code: string): string {

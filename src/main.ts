@@ -1,6 +1,7 @@
 import './styles.css';
 import * as THREE from 'three';
 import { AudioManager } from './audio';
+import { BUILD_METADATA } from './build/buildMetadata';
 import { countActivePoolItems, createPerformanceCounters, PerfMeter } from './diagnostics/PerfMeter';
 import {
   applyDenseWaveStressFormation,
@@ -48,8 +49,10 @@ import {
   getMatchObjective,
   updateMatchDirector,
   type HalftimeChoice,
+  type MatchStage,
 } from './game/match';
 import { BloodShardSystem } from './game/pickups';
+import { CHARACTER_DEFINITIONS, type CharacterId } from './game/characters';
 import {
   BLOOD_XP_PER_KILL,
   chooseUpgrade,
@@ -86,7 +89,9 @@ import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRendere
 import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
+import { ProfileStore, type RunSettlement } from './profile';
 import { Hud } from './ui/Hud';
+import { CareerOverlay } from './ui/CareerOverlay';
 import { EvolutionToast } from './ui/EvolutionToast';
 import { HalftimeOverlay } from './ui/HalftimeOverlay';
 import { MatchAnnouncement } from './ui/MatchAnnouncement';
@@ -100,11 +105,24 @@ const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
 const MATCH_CONFIG = FULL_MATCH_CONFIG;
 const TUTORIAL_STORAGE_KEY = 'blood-league-kickoff:tutorial-complete';
+const spawnDirectorInputScratch: {
+  stage: MatchStage;
+  stageElapsed: number;
+  matchElapsed: number;
+} = { stage: 'opening', stageElapsed: 0, matchElapsed: 0 };
+
+function createRunId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 async function bootstrap(): Promise<void> {
   const root = document.getElementById('app');
   if (!root) throw new Error('Missing application root');
 
   const settingsStore = new SettingsStore();
+  const profileStore = new ProfileStore();
+  let selectedCharacterId: CharacterId = profileStore.value.selectedCharacterId;
   let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
   const scene = createScene();
@@ -157,6 +175,14 @@ async function bootstrap(): Promise<void> {
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const atmosphere = new PhaseAtmosphere(scene);
   const hud = new Hud(root);
+  const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
+    selectedCharacterId = characterId;
+    if (state.phase === 'ready') {
+      progression = createProgressionState(characterId);
+      applyProgressionHealth(state.player.maxHealth);
+    }
+    audio.playUiSelect();
+  });
   const upgradeOverlay = new UpgradeOverlay(root);
   const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
     playerSettings = settings;
@@ -189,7 +215,7 @@ async function bootstrap(): Promise<void> {
   const frameScheduler = new PresentationFrameScheduler();
   let accumulator = 0;
   let previousBallState = physics.ballState;
-  let progression = qaEvolutionFixture?.state ?? createProgressionState();
+  let progression = qaEvolutionFixture?.state ?? createProgressionState(selectedCharacterId);
   if (qaScenario === 'upgrade') {
     progression = grantBloodXp(progression, totalXpRequiredForLevel(2)).state;
   }
@@ -215,6 +241,7 @@ async function bootstrap(): Promise<void> {
   let boss: CountGoalkeeperState | null = null;
   if (qaScenario === 'goal') spawnGoalkeeperGuard(state);
   let resultsShown = false;
+  let runId = createRunId();
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
   let movementSpeedMultiplier = 1;
@@ -225,6 +252,27 @@ async function bootstrap(): Promise<void> {
   let fixedStepsThisFrame = 0;
   let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
+
+  const applyProgressionHealth = (previousMaxHealth = state.player.maxHealth): void => {
+    const nextMaxHealth = Math.max(50, 100 + progression.modifiers.maxHealthBonus);
+    if (nextMaxHealth > previousMaxHealth) {
+      state.player.health = Math.min(nextMaxHealth, state.player.health + nextMaxHealth - previousMaxHealth);
+      audio.playHeal();
+    }
+    state.player.maxHealth = nextMaxHealth;
+    state.player.health = Math.min(state.player.health, nextMaxHealth);
+  };
+  applyProgressionHealth(100);
+
+  const healPlayer = (amount: number, lifeSteal = false): void => {
+    if (amount <= 0 || state.player.health <= 0 || state.player.health >= state.player.maxHealth) return;
+    const before = state.player.health;
+    state.player.health = Math.min(state.player.maxHealth, state.player.health + amount);
+    if (state.player.health > before) {
+      if (lifeSteal) audio.playLifeSteal();
+      else audio.playHeal();
+    }
+  };
   const uninstallQaSnapshotHook = qaScenario
     ? installQaSnapshotHook(window, () => ({
         scenario: qaScenario,
@@ -288,6 +336,7 @@ async function bootstrap(): Promise<void> {
     if (
       upgradeOverlay.isVisible ||
       settingsOverlay.isVisible ||
+      careerOverlay.isVisible ||
       halftimeOverlay.isVisible ||
       progression.pendingLevelUps <= 0 ||
       state.phase !== 'playing'
@@ -302,8 +351,11 @@ async function bootstrap(): Promise<void> {
       if (!upgradeId || state.phase !== 'playing') return;
       const result = chooseUpgrade(progression, upgradeId);
       if (!result.applied) return;
+      const previousMaxHealth = state.player.maxHealth;
       progression = result.state;
+      applyProgressionHealth(previousMaxHealth);
       signalTutorial('upgrade-selected');
+      audio.playUpgradeSelected();
       audio.playPhase(progression.level);
       if (result.evolutionEvents.length > 0) {
         audio.playEvolutionUnlock();
@@ -348,9 +400,13 @@ async function bootstrap(): Promise<void> {
   const begin = (): void => {
     void audio.unlock();
     if (state.phase === 'ready') state.phase = 'playing';
+    audio.playKickoff();
     audio.playPhase(0);
     audio.setMatchIntensity('opening');
-    announcement.show('kickoff');
+    announcement.show(
+      'kickoff',
+      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} ENTERS THE PITCH`,
+    );
     tutorialPrompt.update(tutorialTracker.state);
     hud.start();
     input.requestPointerLock();
@@ -373,14 +429,18 @@ async function bootstrap(): Promise<void> {
     halftimeOverlay.reset();
     upgradeOverlay.reset();
     settingsOverlay.hide();
+    careerOverlay.hide();
     pauseOverlay.hide();
     resultsOverlay.reset();
     hud.reset();
-    progression = createProgressionState();
+    selectedCharacterId = profileStore.value.selectedCharacterId;
+    progression = createProgressionState(selectedCharacterId);
+    applyProgressionHealth(100);
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
     boss = null;
     resultsShown = false;
+    runId = createRunId();
     perf.reset();
     tutorialSignals.clear();
     tutorialTracker.reset(hasCompletedTutorial());
@@ -393,9 +453,13 @@ async function bootstrap(): Promise<void> {
     volleyWindowBonus = 0;
     state.phase = 'playing';
     previousBallState = physics.ballState;
+    audio.playKickoff();
     audio.playPhase(0);
     audio.setMatchIntensity('opening');
-    announcement.show('kickoff');
+    announcement.show(
+      'kickoff',
+      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} ENTERS THE PITCH`,
+    );
     tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
   };
@@ -409,11 +473,18 @@ async function bootstrap(): Promise<void> {
     if (input.isLocked) void document.exitPointerLock();
     settingsOverlay.show();
   };
+  const openCareer = (): void => {
+    if (input.isLocked) void document.exitPointerLock();
+    careerOverlay.show();
+    audio.playUiSelect();
+  };
   const settingsButton = hud.settingsButton;
   const titleSettingsButton = hud.titleSettingsButton;
+  const titleCareerButton = hud.titleCareerButton;
   const titleQuitButton = hud.titleQuitButton;
   settingsButton.addEventListener('click', openSettings);
   titleSettingsButton.addEventListener('click', openSettings);
+  titleCareerButton.addEventListener('click', openCareer);
   const quitGame = (): void => {
     void window.desktopRuntime?.window.quit();
   };
@@ -432,13 +503,17 @@ async function bootstrap(): Promise<void> {
     evolutionToast.reset();
     halftimeOverlay.reset();
     resultsOverlay.reset();
+    careerOverlay.hide();
     pauseOverlay.hide();
     state.phase = 'ready';
-    progression = createProgressionState();
+    selectedCharacterId = profileStore.value.selectedCharacterId;
+    progression = createProgressionState(selectedCharacterId);
+    applyProgressionHealth(100);
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
     boss = null;
     resultsShown = false;
+    runId = createRunId();
     perf.reset();
     tutorialSignals.clear();
     tutorialTracker.reset(hasCompletedTutorial());
@@ -488,6 +563,7 @@ async function bootstrap(): Promise<void> {
       state.phase === 'playing' &&
       !input.isLocked &&
       !settingsOverlay.isVisible &&
+      !careerOverlay.isVisible &&
       !pauseOverlay.isVisible &&
       !halftimeOverlay.isVisible
     )
@@ -507,6 +583,7 @@ async function bootstrap(): Promise<void> {
       state.phase === 'playing' &&
       !upgradeOverlay.isVisible &&
       !settingsOverlay.isVisible &&
+      !careerOverlay.isVisible &&
       !pauseOverlay.isVisible &&
       !halftimeOverlay.isVisible
     ) {
@@ -528,6 +605,7 @@ async function bootstrap(): Promise<void> {
       state.phase === 'playing' &&
       !upgradeOverlay.isVisible &&
       !settingsOverlay.isVisible &&
+      !careerOverlay.isVisible &&
       !pauseOverlay.isVisible &&
       !halftimeOverlay.isVisible &&
       kick
@@ -560,7 +638,7 @@ async function bootstrap(): Promise<void> {
             kickPowerMultiplier *
             (focusShot.empowered ? 1.75 : 1),
         },
-        kick.curve,
+        kick.curve * progression.modifiers.curveStrengthMultiplier,
       );
       if (result) {
         if (focusShot.empowered) {
@@ -581,13 +659,14 @@ async function bootstrap(): Promise<void> {
       state.phase === 'playing' &&
         !upgradeOverlay.isVisible &&
         !settingsOverlay.isVisible &&
+        !careerOverlay.isVisible &&
         !pauseOverlay.isVisible &&
         !halftimeOverlay.isVisible &&
         input.recall,
       {
         recallSpeedMultiplier: progression.modifiers.recallSpeedMultiplier * recallSpeedMultiplier,
       },
-      volleyWindowBonus,
+      volleyWindowBonus + progression.modifiers.volleyWindowBonus,
     );
 
     accumulator += frameTime * getFocusKickTimeScale(focusKick);
@@ -604,17 +683,26 @@ async function bootstrap(): Promise<void> {
         const movement = input.movement(cameraController.yaw);
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
-        updatePlayer(state, movement, cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
+        const dashWasActive = state.player.dashTime > 0;
+        updatePlayer(
+          state,
+          movement,
+          cameraController.yaw,
+          FIXED_STEP,
+          movementSpeedMultiplier * progression.modifiers.movementSpeedMultiplier,
+          progression.modifiers.dashCooldownMultiplier,
+        );
+        if (!dashWasActive && state.player.dashTime > 0) audio.playDash();
+        spawnDirectorInputScratch.stage = match.stage;
+        spawnDirectorInputScratch.stageElapsed = match.stageElapsed;
+        spawnDirectorInputScratch.matchElapsed = match.matchElapsed;
         updateEnemies(
           state,
           FIXED_STEP,
-          {
-            stage: match.stage,
-            stageElapsed: match.stageElapsed,
-            matchElapsed: match.matchElapsed,
-          },
+          spawnDirectorInputScratch,
           Math.random,
           physics.ballPosition,
+          progression.modifiers.damageTakenMultiplier,
         );
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
@@ -629,13 +717,20 @@ async function bootstrap(): Promise<void> {
           state,
           physics.ballPosition,
           physics.ballSpeed,
-          progression.modifiers.ballDamageMultiplier * ballDamageMultiplier,
+          progression.modifiers.ballDamageMultiplier *
+            progression.modifiers.allDamageMultiplier *
+            ballDamageMultiplier,
           physics.ballVelocity,
           progression.modifiers.pierceCount,
+          progression.modifiers.eliteDamageMultiplier,
         );
         const { hits, kills } = primaryDamage;
         if (primaryDamage.rebound) {
           physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
+        }
+        if (primaryDamage.blockedHits > 0) {
+          if (physics.ballSpeed > 17) audio.playGoalkeeperParry();
+          else audio.playGoalkeeperCatch();
         }
         if (hits > 0) {
           chargeFocusKick('enemy-hit', hits);
@@ -652,6 +747,7 @@ async function bootstrap(): Promise<void> {
           chargeFocusKick('enemy-kill', kills);
           bloodShards.spawnOnKill(physics.ballPosition, kills * BLOOD_XP_PER_KILL, Math.min(9, kills * 3));
           secondaryWeapons.triggerBloodBomb(physics.ballPosition, progression.modifiers);
+          healPlayer(kills * progression.modifiers.lifeStealOnPrimaryKill, true);
         }
 
         const bossUpdateThisStep =
@@ -678,14 +774,16 @@ async function bootstrap(): Promise<void> {
           modifiers: progression.modifiers,
           targets: secondaryTargets,
         });
-        const secondaryBossDamage = sumSecondaryBossDamage(
-          secondaryStep.hits,
-          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
-        );
+        const secondaryBossDamage =
+          sumSecondaryBossDamage(secondaryStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) *
+          progression.modifiers.allDamageMultiplier *
+          progression.modifiers.secondaryDamageMultiplier;
         const secondaryDamage = damageEnemiesWithSecondary(
           state,
           secondaryStep.hits,
           COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+          progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
+          progression.modifiers.eliteDamageMultiplier,
         );
         if (secondaryDamage.hits > 0) {
           chargeFocusKick('enemy-hit', secondaryDamage.hits);
@@ -706,6 +804,7 @@ async function bootstrap(): Promise<void> {
             Math.min(9, secondaryDamage.kills * 3),
           );
           audio.playKill(state.combo);
+          healPlayer(secondaryDamage.kills * progression.modifiers.lifeStealOnSecondaryKill, true);
         }
         for (const event of secondaryStep.events) {
           if (event.type === 'blood-bomb-triggered') bridge.volleyBurst(event.position, 1.2);
@@ -728,9 +827,17 @@ async function bootstrap(): Promise<void> {
           }
         }
 
-        const collectedXp = bloodShards.update(state.player.position, FIXED_STEP);
+        const collectedXp = bloodShards.update(
+          state.player.position,
+          FIXED_STEP,
+          undefined,
+          progression.modifiers.pickupRadiusMultiplier,
+        );
         if (collectedXp > 0) {
-          progression = grantBloodXp(progression, collectedXp).state;
+          const xpResult = grantBloodXp(progression, collectedXp);
+          progression = xpResult.state;
+          audio.playPickup();
+          if (xpResult.levelsGained > 0) audio.playLevelUp();
           signalTutorial('xp-collected');
         }
 
@@ -738,7 +845,10 @@ async function bootstrap(): Promise<void> {
         if (boss && boss.phase !== 'defeated') {
           for (const event of bossUpdateThisStep?.events ?? []) {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
-              state.player.health = Math.max(0, state.player.health - event.damage);
+              state.player.health = Math.max(
+                0,
+                state.player.health - event.damage * progression.modifiers.damageTakenMultiplier,
+              );
               state.player.invulnerability = 0.7;
               audio.playPlayerHurt();
               cameraController.addImpulse(0.32);
@@ -760,11 +870,13 @@ async function bootstrap(): Promise<void> {
               amount:
                 (physics.ballSpeed > 20 ? 10 : 6) *
                 progression.modifiers.ballDamageMultiplier *
+                progression.modifiers.allDamageMultiplier *
                 ballDamageMultiplier,
               source: 'ball',
             });
             boss = damage.state;
             if (damage.appliedDamage > 0) {
+              healPlayer(damage.appliedDamage * progression.modifiers.bossLifeStealRatio, true);
               chargeFocusKick('boss-hit');
               // The secondary system already stepped; these bounded triggers
               // intentionally resolve from the next fixed step onward.
@@ -788,6 +900,7 @@ async function bootstrap(): Promise<void> {
             });
             boss = damage.state;
             if (damage.appliedDamage > 0) {
+              healPlayer(damage.appliedDamage * progression.modifiers.bossLifeStealRatio, true);
               chargeFocusKick('boss-hit');
               bridge.hitBurst(boss.position, 0.72);
               cameraController.hitImpulse(0.38);
@@ -822,6 +935,7 @@ async function bootstrap(): Promise<void> {
             atmosphere.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) {
               boss = spawnCountGoalkeeper();
+              audio.playFinalWave();
               audio.playBossEntrance();
             }
           }
@@ -830,6 +944,7 @@ async function bootstrap(): Promise<void> {
             signalTutorial('goal-scored');
             state.score += 1_000;
             audio.playGoal();
+            audio.playNetImpact();
             announcement.show('goal', event.goal === 'final' ? 'THE FINAL KEEPER AWAKENS' : undefined);
             resetKickoffFormation(state);
             physics.reset(state.player.position);
@@ -846,11 +961,13 @@ async function bootstrap(): Promise<void> {
             previousBallState = physics.ballState;
           }
           if (event.type === 'goalMissed') {
+            audio.playGoalMissed();
             resetKickoffFormation(state);
             physics.reset(state.player.position);
             previousBallState = physics.ballState;
           }
           if (event.type === 'halftimeChoiceStarted') {
+            audio.playHalftime();
             announcement.show('halftime');
             halftimeDeadline = performance.now() + event.duration * 1_000;
             if (input.isLocked) void document.exitPointerLock();
@@ -871,6 +988,7 @@ async function bootstrap(): Promise<void> {
             }
           }
           if (event.type === 'bloodMoonStarted') {
+            audio.playBloodMoon();
             announcement.show('bloodMoon');
           }
           if (event.type === 'victory') {
@@ -890,6 +1008,13 @@ async function bootstrap(): Promise<void> {
         previousBallState !== 'recovering';
       if (recallStarted) audio.playRecall();
       if (recallStarted) signalTutorial('recall-demonstrated');
+      if (
+        physics.ballState === 'possessed' &&
+        (previousBallState === 'recalling' ||
+          previousBallState === 'recovering' ||
+          previousBallState === 'volley-window')
+      )
+        audio.playRecallCatch();
       previousBallState = physics.ballState;
       accumulator -= FIXED_STEP;
       fixedStepsThisFrame += 1;
@@ -943,6 +1068,26 @@ async function bootstrap(): Promise<void> {
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
       resultsShown = true;
       if (state.phase === 'dead') audio.playDefeat();
+      let settlement: RunSettlement | null = null;
+      if (!qaScenario) {
+        const previousBestScore = profileStore.value.personalBests.score;
+        settlement = profileStore.recordRun({
+          id: runId,
+          completedAt: new Date().toISOString(),
+          buildVersion: BUILD_METADATA.version,
+          characterId: selectedCharacterId,
+          outcome: state.phase === 'won' ? 'victory' : 'defeat',
+          score: state.score,
+          kills: state.kills,
+          goals: match.goalsScored,
+          timeSeconds: state.elapsed,
+          level: progression.level,
+          upgradeIds: UPGRADE_IDS.filter((upgradeId) => progression.upgradeStacks[upgradeId] > 0),
+          evolutionIds: getUnlockedEvolutionIds(progression),
+        });
+        if (state.score > previousBestScore) audio.playNewRecord();
+        if (settlement.newlyUnlockedCharacterIds.length > 0) audio.playUnlock();
+      }
       resultsOverlay.show(
         {
           outcome: state.phase === 'won' ? 'victory' : 'defeat',
@@ -956,6 +1101,11 @@ async function bootstrap(): Promise<void> {
             stacks: progression.upgradeStacks[upgradeId],
           })),
           evolutions: getUnlockedEvolutionIds(progression),
+          characterId: selectedCharacterId,
+          accountXpEarned: settlement?.accountXpEarned,
+          accountLevel: settlement?.accountLevel,
+          unlockedCharacterIds: settlement?.newlyUnlockedCharacterIds,
+          completedChallengeIds: settlement?.completedChallengeIds,
         },
         { onRestart: restart, onMainMenu: returnToMenu },
       );
@@ -1005,6 +1155,7 @@ async function bootstrap(): Promise<void> {
     victoryRestartButton.removeEventListener('click', restart);
     settingsButton.removeEventListener('click', openSettings);
     titleSettingsButton.removeEventListener('click', openSettings);
+    titleCareerButton.removeEventListener('click', openCareer);
     titleQuitButton.removeEventListener('click', quitGame);
     renderer.domElement.removeEventListener('click', onCanvasClick);
     renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
@@ -1020,6 +1171,7 @@ async function bootstrap(): Promise<void> {
     settingsOverlay.dispose();
     pauseOverlay.dispose();
     resultsOverlay.dispose();
+    careerOverlay.dispose();
     halftimeOverlay.dispose();
     announcement.dispose();
     evolutionToast.dispose();

@@ -70,6 +70,21 @@ The aim preview may communicate direction and charge but should not solve every 
 - Health is finite; recovery is an upgrade/drop balance lever, not guaranteed passive regeneration.
 - Death ends the run and shows useful statistics before restart.
 
+### Original character archetypes
+
+The roster expresses recognizable football play styles without using a real player's name, likeness, club, kit, celebration, biography, or branding.
+
+| Character     | Identity            | Strength                        | Meaningful weakness      |
+| ------------- | ------------------- | ------------------------------- | ------------------------ |
+| The Maestro   | Technical Playmaker | Curve, recall, perfect volleys  | Lower raw kick power     |
+| The Breakaway | Explosive Runner    | Movement and frequent dashes    | Lower maximum health     |
+| The Tower     | Power Striker       | Health, kick force, knockback   | Slower movement          |
+| The Finisher  | Penalty-Box Hunter  | Direct elite-threat damage      | Weaker secondary weapons |
+| The Engine    | Relentless Runner   | Pickup range and pitch coverage | Lower starting damage    |
+| The Guardian  | Defensive Anchor    | Damage resistance               | Lower kick power         |
+
+Definitions, affinities, safe modifiers, selection, unlock presentation, and selected-character run startup are implemented and test covered. Original models/portraits remain visual polish.
+
 ## Enemies
 
 | Enemy              | Behavior                         | Counterplay                                                                                            |
@@ -104,6 +119,17 @@ Guaranteed upgrades:
 | Blood Bomb             | Defeated enemies or ball impacts explode      |
 | Ghost Pass             | Spectral teammate redirects/duplicates a shot |
 
+Passive foundations:
+
+| Passive         | Function                                                           |
+| --------------- | ------------------------------------------------------------------ |
+| Iron Heart      | Raises maximum health; a new stack also restores the gained health |
+| Blood Magnet    | Expands Blood XP attraction range                                  |
+| Killer Instinct | Raises damage from every source within a bounded multiplier        |
+| Blood Drinker   | Adds capped healing from primary/secondary kills and boss damage   |
+
+When both categories are available, a multi-card offer includes at least one weapon and one passive. Definitions, calculations, bounds, icons, live-combat application, healing feedback, and tests are implemented; final UI polish and balance acceptance remain in progress.
+
 Evolutions unlock automatically when both components are owned. Component availability gates provide the level threshold, while every relevant upgrade card names its partner and result.
 
 | Evolution           | Components                           | Evolved behavior                                      |
@@ -113,6 +139,14 @@ Evolutions unlock automatically when both components are owned. Component availa
 | Grave-Frost Wake    | Garlic Trail + Frost Cleats          | Garlic zones damage and slow enemies                  |
 | Storm Halo          | Orbiting Spectral Ball + Storm Studs | Fresh orb collisions launch bounded lightning chains  |
 | Phantom Singularity | Ghost Pass + Void Goal               | Each ghost opens one pooled gravity well on first hit |
+
+## Persistent Progression and Rankings
+
+Run upgrades reset at kickoff; the local profile persists replay goals without turning the standard leaderboard into a permanent-stat advantage contest. The implemented data/store foundation includes account XP and level, character unlock levels, per-character mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs.
+
+Local/offline rankings expose highest score and fastest victory. They are partitioned by exact build version and may be filtered by character so balance changes and archetypes are not mixed unfairly. The Career screen presents profile, challenge, mastery, run history, character selection, and these device-local tables. They are not global, server-verified, or cheat-proof.
+
+Daily/weekly or remote rankings require one run-wide deterministic seed, versioned random streams, and a server-side validation boundary. No private key or organizer/player contact information may be embedded in browser or Electron builds.
 
 ## Match Flow
 
@@ -144,6 +178,8 @@ During scoring opportunities, the special goalkeeper blocker is separate from Co
 4. Volley timing cue and payoff
 5. Goal/kickoff transition
 6. Evolution and boss presentation
+
+The procedural audio foundation includes kick/volley/combat feedback plus distinct wall, post, crossbar, net, recall-catch, dash, heal, life-steal, pickup, level, upgrade, unlock, personal-record, goalkeeper, kickoff, missed-goal, halftime, Blood Moon, final-wave, outcome, and UI cues. Retrigger windows protect the shared graph during dense events. Adaptive music blends drone, tension, pulse, choir, and percussion-style layers by match intensity. The system stays asset-free and offline; connecting every new cue to authoritative gameplay/UI events and final mix validation remain in progress.
 
 Camera shake, hit pause, chromatic effects, and particles must be restrained and scalable. Ball, threats, goal, and upgrade text must remain readable at 1080p and lower quality settings.
 

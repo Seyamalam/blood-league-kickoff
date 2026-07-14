@@ -22,7 +22,7 @@
 
 ## Current Source Baseline
 
-The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, five evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the special goal blocker, the Count Goalkeeper boss, and terminal results. The alpha.5 field layer shares a 68×105 definition across rendering, collision, enemy bounds, and swept whole-ball scoring. It shares one runtime across browser and Electron. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized.
+The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve weapon upgrades, four live passives, five evolutions, six persistent selectable characters, halftime tactics, escalating match phases, Focus Kick, the special goal blocker, the Count Goalkeeper boss, and terminal results. The alpha.5 field layer shares a 68×105 definition across rendering, collision, enemy bounds, and swept whole-ball scoring. Persistent profiles, exact-build offline rankings, terminal settlement, Career UI, and the expanded procedural audio core are connected to the shared browser/Electron runtime. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized and no globally verified leaderboard is claimed.
 
 ## Runtime Flow
 
@@ -52,10 +52,13 @@ callback, and changing limits resets the schedule immediately.
 - **`game/spawn`:** immutable per-stage population/cadence/roster definitions plus allocation-free fixed-step profile resolution and weighted selection.
 - **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
 - **`game/field`:** canonical 68×105 pitch/goal dimensions and swept whole-ball crossing logic shared by simulation and presentation.
-- **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run.
+- **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run; progression distinguishes weapon/passive offers and computes bounded passive/character modifiers.
+- **`game/characters`:** six immutable original football-style archetypes with strengths, weaknesses, starting affinities, modifier deltas, and visual palettes; no real-player identity or likeness data.
+- **`profile`:** schema-validated account XP, unlocks, mastery, ten challenges, lifetime statistics, personal bests, twenty-run history, and duplicate-run settlement guards.
+- **`leaderboard`:** local/offline score and fastest-victory queries over profile history, partitioned by exact build version and optional character.
 - **`CameraController`, `AimGuide`, and `RenderBridge`:** conventional/invertible third-person/Focus camera input, a reusable long red world-space aim line, and synchronized pooled/shared-resource presentation. Enemy visuals retain typed part references from spawn to removal, so per-frame poses never search the scene tree.
 - **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
-- **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings.
+- **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings. Audio retains the 48-source cap, adds per-event retrigger protection, exposes football/goalkeeper/progression/match/UI cues, and blends drone/tension/pulse/choir/percussion-style layers without external samples.
 
 ## Physics Policy
 
@@ -86,11 +89,13 @@ The renderer requests `powerPreference: "high-performance"`, but diagnostics mus
 
 Game definitions are typed immutable objects or JSON validated at load time. Runtime mutable state remains separate. Stable identifiers connect upgrades, enemies, waves, sounds, and assets.
 
+Persistent profile state is separate from transient run progression and ordinary settings. Its versioned document validates stored values, caps recent history at twenty runs, keeps a longer bounded processed-run ID list to prevent double settlement, and falls back safely when browser storage is unavailable or malformed. Local leaderboard queries read this profile rather than maintaining a competing source of truth; exact build-version partitions prevent balance-incompatible runs from mixing.
+
 High-frequency interactions should use reusable event queues/ring buffers rather than general DOM events or per-hit object allocation. Examples: damage, death, pickup, kick, rebound, volley, goal, level-up, and phase changes.
 
 ## UI Boundary
 
-The Three.js canvas owns the world, including the red aim guide. HTML/CSS owns menus, HUD, upgrade choices, prompts, and settings; the former DOM crosshair is removed. UI receives a minimal view model and sends typed commands. Pausing/upgrade selection must suspend authoritative gameplay time while allowing UI animation. Vertical inversion is schema-migrated persistent state with `false` as the conventional default. Desktop Quit is bound only from the title screen; Settings retains window size/fullscreen but no Quit action.
+The Three.js canvas owns the world, including the red aim guide. HTML/CSS owns menus, HUD, upgrade choices, prompts, settings, Career, and results; the former DOM crosshair is removed. UI receives a minimal view model and sends typed commands. Pausing/upgrade selection must suspend authoritative gameplay time while allowing UI animation. Vertical inversion is schema-migrated persistent state with `false` as the conventional default. Desktop Quit is bound only from the title screen; Settings retains window size/fullscreen but no Quit action. Character selection, profile/mastery/challenge/history, run-settlement feedback, and explicitly labeled local leaderboards are exposed through independent store-backed views.
 
 ## Electron Security and Packaging
 
@@ -101,6 +106,8 @@ The Three.js canvas owns the world, including the red aim guide. HTML/CSS owns m
 - Block unexpected navigation/window creation.
 - Do not load remote scripts or depend on a network connection.
 - Keep browser behavior as the portability baseline.
+
+The current leaderboard is intentionally local/offline. A future remote service would treat browser and Electron clients as untrusted, keep all private keys server-side, validate version/category/seed and duplicate run IDs, rate-limit submissions, and add only its exact HTTPS API origin to the content-security policy. Client-side signatures cannot establish trust because their secrets are extractable. Daily/weekly verification also requires run-wide deterministic random streams before submission is enabled.
 
 The preload exposes only fixed, validated desktop operations: read window state, select one of three safe content sizes, enter or leave fullscreen, subscribe to fullscreen changes, and quit. It never exposes `ipcRenderer` or a generic channel invocation to game code. Main-process handlers reject requests unless they originate from the trusted active game window and its local production or configured development URL.
 
@@ -128,7 +135,7 @@ Append `&secondary=full` to activate all 45 persistent secondary-weapon instance
 
 ## Test Strategy
 
-- Unit-test pure ball state transitions, upgrade prerequisites, match phases, and fixed-step calculations.
+- Unit-test pure ball state transitions, upgrade/passive prerequisites, character modifiers, profile settlement/migration, challenge/mastery progression, local leaderboard partitioning/ties, audio cue safety, match phases, and fixed-step calculations.
 - Inject deterministic random sources into Spawn Director tests; introduce a run-wide seed only if replayable full-run balance failures become a real requirement.
 - Add simulation checks for out-of-bounds recovery and fixed-step invariants.
 - Smoke-test production web output and packaged Electron output.

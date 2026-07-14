@@ -42,8 +42,12 @@ type ProceduralMusicGraph = {
   tensionGain: GainNode;
   pulseGain: GainNode;
   pulseDepth: GainNode;
+  choirGain: GainNode;
+  percussionGain: GainNode;
+  percussionDepth: GainNode;
   filter: BiquadFilterNode;
   pulseLfo: OscillatorNode;
+  percussionLfo: OscillatorNode;
   sources: OscillatorNode[];
   nodes: AudioNode[];
 };
@@ -69,6 +73,7 @@ export class AudioManager {
   private noiseBuffer: AudioBuffer | null = null;
   private musicGraph: ProceduralMusicGraph | null = null;
   private readonly activeSources = new Set<AudioScheduledSourceNode>();
+  private readonly lastEventTimes = new Map<string, number>();
   private volume: number;
   private musicVolume: number;
   private effectsVolume: number;
@@ -272,7 +277,7 @@ export class AudioManager {
 
   /** Airy inward sweep used when the ball starts returning to the player. */
   public playRecall(): void {
-    const now = this.now();
+    const now = this.eventNow('recall-start', 0.12);
     if (now === null) return;
     this.noise({
       duration: 0.22,
@@ -289,6 +294,386 @@ export class AudioManager {
       gain: 0.055,
       start: now + 0.02,
       type: 'sine',
+    });
+  }
+
+  /** Fast air displacement used when the striker dashes. */
+  public playDash(): void {
+    const now = this.eventNow('dash', 0.1);
+    if (now === null) return;
+    this.noise({
+      duration: 0.14,
+      gain: 0.11,
+      start: now,
+      filterFrequency: 420,
+      filterEndFrequency: 3_800,
+      filterType: 'bandpass',
+    });
+    this.tone({ frequency: 92, endFrequency: 184, duration: 0.11, gain: 0.07, start: now, type: 'triangle' });
+  }
+
+  /** Warm ascending pulse for ordinary health recovery. */
+  public playHeal(): void {
+    const now = this.eventNow('heal', 0.12);
+    if (now === null) return;
+    this.tone({ frequency: 330, endFrequency: 440, duration: 0.18, gain: 0.08, start: now, type: 'sine' });
+    this.tone({
+      frequency: 495,
+      endFrequency: 660,
+      duration: 0.2,
+      gain: 0.045,
+      start: now + 0.04,
+      type: 'triangle',
+    });
+  }
+
+  /** Dark inward pulse that distinguishes blood-steal healing from pickups. */
+  public playLifeSteal(): void {
+    const now = this.eventNow('life-steal', 0.18);
+    if (now === null) return;
+    this.noise({
+      duration: 0.18,
+      gain: 0.055,
+      start: now,
+      filterFrequency: 2_400,
+      filterEndFrequency: 340,
+      filterType: 'bandpass',
+    });
+    this.tone({ frequency: 180, endFrequency: 360, duration: 0.22, gain: 0.09, start: now, type: 'sine' });
+  }
+
+  /** Small collectible sparkle; deliberately throttled for dense shard clusters. */
+  public playPickup(): void {
+    const now = this.eventNow('pickup', 0.045);
+    if (now === null) return;
+    this.tone({ frequency: 720, endFrequency: 960, duration: 0.06, gain: 0.035, start: now, type: 'sine' });
+  }
+
+  /** Ascending three-note level confirmation. */
+  public playLevelUp(): void {
+    const now = this.eventNow('level-up', 0.35);
+    if (now === null) return;
+    [261.63, 329.63, 523.25].forEach((frequency, index) => {
+      this.tone({ frequency, duration: 0.18, gain: 0.075, start: now + index * 0.075, type: 'triangle' });
+    });
+  }
+
+  /** Firm UI/gameplay confirmation after choosing an upgrade. */
+  public playUpgradeSelected(): void {
+    const now = this.eventNow('upgrade-selected', 0.12);
+    if (now === null) return;
+    this.tone({
+      frequency: 220,
+      endFrequency: 440,
+      duration: 0.14,
+      gain: 0.08,
+      start: now,
+      type: 'triangle',
+    });
+    this.noise({ duration: 0.035, gain: 0.045, start: now, filterFrequency: 2_200, filterType: 'highpass' });
+  }
+
+  /** Content-unlock flourish, longer and brighter than a normal upgrade choice. */
+  public playUnlock(): void {
+    const now = this.eventNow('unlock', 0.5);
+    if (now === null) return;
+    [293.66, 369.99, 440, 587.33].forEach((frequency, index) => {
+      this.tone({ frequency, duration: 0.26, gain: 0.065, start: now + index * 0.08, type: 'sine' });
+    });
+  }
+
+  /** Competitive personal-record flourish with a final high accent. */
+  public playNewRecord(): void {
+    const now = this.eventNow('new-record', 0.6);
+    if (now === null) return;
+    [392, 493.88, 587.33, 783.99].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        duration: index === 3 ? 0.38 : 0.16,
+        gain: 0.07,
+        start: now + index * 0.09,
+        type: 'triangle',
+      });
+    });
+    this.noise({
+      duration: 0.16,
+      gain: 0.05,
+      start: now + 0.25,
+      filterFrequency: 3_000,
+      filterType: 'highpass',
+    });
+  }
+
+  /** Low concrete rebound for the pitch perimeter. */
+  public playWallImpact(intensity = 0.5): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('wall-impact', 0.045);
+    if (now === null) return;
+    this.tone({
+      frequency: 105 + amount * 25,
+      endFrequency: 62,
+      duration: 0.12,
+      gain: 0.07 + amount * 0.08,
+      start: now,
+      type: 'triangle',
+    });
+    this.noise({
+      duration: 0.06,
+      gain: 0.055 + amount * 0.055,
+      start: now,
+      filterFrequency: 520,
+      filterType: 'lowpass',
+    });
+  }
+
+  /** Metallic side-post ring. */
+  public playPostImpact(intensity = 0.7): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('post-impact', 0.06);
+    if (now === null) return;
+    this.tone({
+      frequency: 740,
+      endFrequency: 610,
+      duration: 0.34,
+      gain: 0.07 + amount * 0.07,
+      start: now,
+      type: 'sine',
+    });
+    this.tone({
+      frequency: 1_480,
+      endFrequency: 1_210,
+      duration: 0.22,
+      gain: 0.035 + amount * 0.035,
+      start: now,
+      type: 'triangle',
+    });
+  }
+
+  /** Heavier overhead goal-frame strike. */
+  public playCrossbarImpact(intensity = 0.8): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('crossbar-impact', 0.06);
+    if (now === null) return;
+    this.tone({
+      frequency: 510,
+      endFrequency: 390,
+      duration: 0.42,
+      gain: 0.09 + amount * 0.075,
+      start: now,
+      type: 'triangle',
+    });
+    this.noise({ duration: 0.055, gain: 0.055, start: now, filterFrequency: 1_800, filterType: 'bandpass' });
+  }
+
+  /** Soft net catch that confirms a complete goal-plane crossing. */
+  public playNetImpact(): void {
+    const now = this.eventNow('net-impact', 0.12);
+    if (now === null) return;
+    this.noise({
+      duration: 0.28,
+      gain: 0.08,
+      start: now,
+      filterFrequency: 1_300,
+      filterEndFrequency: 260,
+      filterType: 'lowpass',
+    });
+    this.tone({ frequency: 120, endFrequency: 72, duration: 0.2, gain: 0.05, start: now, type: 'sine' });
+  }
+
+  /** Clean possession snap at the end of recall. */
+  public playRecallCatch(): void {
+    const now = this.eventNow('recall-catch', 0.1);
+    if (now === null) return;
+    this.tone({
+      frequency: 520,
+      endFrequency: 260,
+      duration: 0.08,
+      gain: 0.09,
+      start: now,
+      type: 'triangle',
+    });
+    this.noise({ duration: 0.025, gain: 0.055, start: now, filterFrequency: 1_900, filterType: 'bandpass' });
+  }
+
+  /** Muffled possession sound for a goalkeeper catch. */
+  public playGoalkeeperCatch(): void {
+    const now = this.eventNow('goalkeeper-catch', 0.16);
+    if (now === null) return;
+    this.noise({ duration: 0.11, gain: 0.13, start: now, filterFrequency: 420, filterType: 'lowpass' });
+    this.tone({ frequency: 96, endFrequency: 58, duration: 0.18, gain: 0.11, start: now, type: 'sine' });
+  }
+
+  /** Sharp angled rejection for a goalkeeper parry. */
+  public playGoalkeeperParry(): void {
+    const now = this.eventNow('goalkeeper-parry', 0.11);
+    if (now === null) return;
+    this.noise({ duration: 0.07, gain: 0.14, start: now, filterFrequency: 1_700, filterType: 'bandpass' });
+    this.tone({ frequency: 230, endFrequency: 110, duration: 0.14, gain: 0.1, start: now, type: 'square' });
+  }
+
+  /** Cracking low-to-high cue for breaking the goalkeeper's guard. */
+  public playGoalkeeperGuardBreak(): void {
+    const now = this.eventNow('goalkeeper-guard-break', 0.35);
+    if (now === null) return;
+    this.noise({
+      duration: 0.24,
+      gain: 0.17,
+      start: now,
+      filterFrequency: 460,
+      filterEndFrequency: 3_600,
+      filterType: 'bandpass',
+    });
+    this.tone({ frequency: 82, endFrequency: 246, duration: 0.3, gain: 0.14, start: now, type: 'sawtooth' });
+  }
+
+  /** Downward collapse cue for an ordinary goalkeeper defender. */
+  public playGoalkeeperDefeat(): void {
+    const now = this.eventNow('goalkeeper-defeat', 0.45);
+    if (now === null) return;
+    [196, 146.83, 98].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * 0.72,
+        duration: 0.3,
+        gain: 0.09,
+        start: now + index * 0.1,
+        type: 'sawtooth',
+      });
+    });
+  }
+
+  /** Referee-style opening whistle and low stadium hit. */
+  public playKickoff(): void {
+    const now = this.eventNow('kickoff', 0.5);
+    if (now === null) return;
+    this.tone({
+      frequency: 1_760,
+      endFrequency: 2_050,
+      duration: 0.28,
+      gain: 0.075,
+      start: now,
+      type: 'sine',
+    });
+    this.tone({
+      frequency: 110,
+      endFrequency: 74,
+      duration: 0.22,
+      gain: 0.1,
+      start: now + 0.08,
+      type: 'triangle',
+    });
+  }
+
+  /** Falling whistle used when a timed scoring chance expires. */
+  public playGoalMissed(): void {
+    const now = this.eventNow('goal-missed', 0.5);
+    if (now === null) return;
+    this.tone({ frequency: 660, endFrequency: 220, duration: 0.42, gain: 0.1, start: now, type: 'triangle' });
+    this.noise({
+      duration: 0.22,
+      gain: 0.06,
+      start: now + 0.12,
+      filterFrequency: 520,
+      filterType: 'lowpass',
+    });
+  }
+
+  /** Double-whistle cadence for the halftime break. */
+  public playHalftime(): void {
+    const now = this.eventNow('halftime', 0.7);
+    if (now === null) return;
+    for (const offset of [0, 0.24]) {
+      this.tone({
+        frequency: 1_420,
+        endFrequency: 1_760,
+        duration: 0.18,
+        gain: 0.07,
+        start: now + offset,
+        type: 'sine',
+      });
+    }
+  }
+
+  /** Ominous transformation cue for the Blood Moon escalation. */
+  public playBloodMoon(): void {
+    const now = this.eventNow('blood-moon', 0.8);
+    if (now === null) return;
+    this.tone({
+      frequency: 73.42,
+      endFrequency: 36.71,
+      duration: 0.9,
+      gain: 0.16,
+      start: now,
+      type: 'sawtooth',
+    });
+    this.tone({
+      frequency: 220,
+      endFrequency: 110,
+      duration: 0.75,
+      gain: 0.07,
+      start: now + 0.08,
+      type: 'triangle',
+    });
+    this.noise({
+      duration: 0.65,
+      gain: 0.09,
+      start: now,
+      filterFrequency: 2_400,
+      filterEndFrequency: 180,
+      filterType: 'lowpass',
+    });
+  }
+
+  /** Urgent four-beat warning before the final encounter. */
+  public playFinalWave(): void {
+    const now = this.eventNow('final-wave', 0.8);
+    if (now === null) return;
+    [0, 0.12, 0.24, 0.36].forEach((offset, index) => {
+      this.tone({
+        frequency: 98 * (1 + index * 0.16),
+        endFrequency: 62,
+        duration: 0.16,
+        gain: 0.11,
+        start: now + offset,
+        type: 'sawtooth',
+      });
+    });
+  }
+
+  /** Neutral UI confirmation. */
+  public playUiSelect(): void {
+    const now = this.eventNow('ui-select', 0.035);
+    if (now === null) return;
+    this.tone({ frequency: 440, endFrequency: 620, duration: 0.055, gain: 0.04, start: now, type: 'sine' });
+  }
+
+  /** Descending UI navigation cue. */
+  public playUiBack(): void {
+    const now = this.eventNow('ui-back', 0.06);
+    if (now === null) return;
+    this.tone({
+      frequency: 420,
+      endFrequency: 260,
+      duration: 0.075,
+      gain: 0.045,
+      start: now,
+      type: 'triangle',
+    });
+  }
+
+  /** Dissonant UI rejection without a harsh full-volume alarm. */
+  public playUiError(): void {
+    const now = this.eventNow('ui-error', 0.15);
+    if (now === null) return;
+    this.tone({ frequency: 180, endFrequency: 150, duration: 0.16, gain: 0.065, start: now, type: 'square' });
+    this.tone({
+      frequency: 191,
+      endFrequency: 158,
+      duration: 0.16,
+      gain: 0.04,
+      start: now,
+      type: 'square',
+      detune: -7,
     });
   }
 
@@ -526,6 +911,7 @@ export class AudioManager {
       }
     }
     this.activeSources.clear();
+    this.lastEventTimes.clear();
     this.disposeMusicGraph();
     this.musicBusGain?.disconnect();
     this.effectsBusGain?.disconnect();
@@ -593,6 +979,12 @@ export class AudioManager {
     const pulseGain = context.createGain();
     const pulseLfo = context.createOscillator();
     const pulseDepth = context.createGain();
+    const choir = context.createOscillator();
+    const choirGain = context.createGain();
+    const percussion = context.createOscillator();
+    const percussionGain = context.createGain();
+    const percussionLfo = context.createOscillator();
+    const percussionDepth = context.createGain();
 
     musicOutput.gain.value = 0;
     filter.type = 'lowpass';
@@ -611,6 +1003,16 @@ export class AudioManager {
     pulseLfo.type = 'sine';
     pulseLfo.frequency.value = 1.6;
     pulseDepth.gain.value = 0;
+    choir.type = 'triangle';
+    choir.frequency.value = 164.81;
+    choir.detune.value = -11;
+    choirGain.gain.value = 0;
+    percussion.type = 'square';
+    percussion.frequency.value = 49;
+    percussionGain.gain.value = 0;
+    percussionLfo.type = 'square';
+    percussionLfo.frequency.value = 2;
+    percussionDepth.gain.value = 0;
 
     drone.connect(droneGain);
     droneGain.connect(filter);
@@ -620,10 +1022,16 @@ export class AudioManager {
     pulseGain.connect(filter);
     pulseLfo.connect(pulseDepth);
     pulseDepth.connect(pulseGain.gain);
+    choir.connect(choirGain);
+    choirGain.connect(filter);
+    percussion.connect(percussionGain);
+    percussionGain.connect(filter);
+    percussionLfo.connect(percussionDepth);
+    percussionDepth.connect(percussionGain.gain);
     filter.connect(musicOutput);
     musicOutput.connect(output);
 
-    const sources = [drone, tension, pulse, pulseLfo];
+    const sources = [drone, tension, pulse, pulseLfo, choir, percussion, percussionLfo];
     for (const source of sources) source.start();
     return {
       output: musicOutput,
@@ -631,8 +1039,12 @@ export class AudioManager {
       tensionGain,
       pulseGain,
       pulseDepth,
+      choirGain,
+      percussionGain,
+      percussionDepth,
       filter,
       pulseLfo,
+      percussionLfo,
       sources,
       nodes: [
         drone,
@@ -643,6 +1055,12 @@ export class AudioManager {
         pulseGain,
         pulseLfo,
         pulseDepth,
+        choir,
+        choirGain,
+        percussion,
+        percussionGain,
+        percussionLfo,
+        percussionDepth,
         filter,
         musicOutput,
       ],
@@ -662,8 +1080,14 @@ export class AudioManager {
     const pulseLevel = active * Math.max(0, intensity - 0.34) * 0.022;
     rampTarget(music.pulseGain.gain, pulseLevel, now, 0.26);
     rampTarget(music.pulseDepth.gain, pulseLevel * 0.82, now, 0.26);
+    const choirLevel = active * Math.max(0, intensity - 0.48) * 0.018;
+    rampTarget(music.choirGain.gain, choirLevel, now, 0.55);
+    const percussionLevel = active * Math.max(0, intensity - 0.58) * 0.014;
+    rampTarget(music.percussionGain.gain, percussionLevel, now, 0.18);
+    rampTarget(music.percussionDepth.gain, percussionLevel * 0.92, now, 0.18);
     rampTarget(music.filter.frequency, 260 + intensity * 940, now, 0.42);
     rampTarget(music.pulseLfo.frequency, 1.55 + intensity * 2.45, now, 0.35);
+    rampTarget(music.percussionLfo.frequency, 1.8 + intensity * 3.2, now, 0.24);
   }
 
   private disposeMusicGraph(): void {
@@ -684,6 +1108,20 @@ export class AudioManager {
     if (this.disposed || !this.context || !this.effectsBusGain || this.context.state !== 'running')
       return null;
     return this.context.currentTime;
+  }
+
+  /**
+   * Returns audio time only when this cue is outside its retrigger window.
+   * Fixed-step combat can emit several contacts in one rendered frame; keeping
+   * throttling here protects the shared graph without affecting simulation.
+   */
+  private eventNow(eventId: string, cooldown: number): number | null {
+    const now = this.now();
+    if (now === null) return null;
+    const previous = this.lastEventTimes.get(eventId);
+    if (previous !== undefined && now - previous < cooldown) return null;
+    this.lastEventTimes.set(eventId, now);
+    return now;
   }
 
   private tone(options: ToneOptions): void {

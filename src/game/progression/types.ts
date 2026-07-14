@@ -1,3 +1,5 @@
+import type { CharacterId } from '../characters/types';
+
 export const UPGRADE_IDS = [
   'silverBall',
   'powerKick',
@@ -11,6 +13,10 @@ export const UPGRADE_IDS = [
   'frostCleats',
   'spectralVolley',
   'voidGoal',
+  'ironHeart',
+  'bloodMagnet',
+  'killerInstinct',
+  'bloodDrinker',
 ] as const;
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
@@ -66,6 +72,19 @@ export interface ProgressionModifiers {
   ghostVoidRadius: number;
   ghostVoidPullStrength: number;
   ghostVoidDuration: number;
+  maxHealthBonus: number;
+  pickupRadiusMultiplier: number;
+  allDamageMultiplier: number;
+  lifeStealOnPrimaryKill: number;
+  lifeStealOnSecondaryKill: number;
+  bossLifeStealRatio: number;
+  movementSpeedMultiplier: number;
+  dashCooldownMultiplier: number;
+  damageTakenMultiplier: number;
+  curveStrengthMultiplier: number;
+  volleyWindowBonus: number;
+  eliteDamageMultiplier: number;
+  secondaryDamageMultiplier: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;
@@ -74,6 +93,7 @@ export interface UpgradeDefinition {
   id: UpgradeId;
   name: string;
   description: string;
+  kind: 'weapon' | 'passive';
   maxStacks: number;
   minPlayerLevel: number;
   prerequisites: readonly UpgradePrerequisite[];
@@ -100,6 +120,8 @@ export interface EvolutionUnlockEvent {
 }
 
 export interface ProgressionState {
+  /** Original football archetype selected for this run; null until selection. */
+  characterId: CharacterId | null;
   /** Player level. A new run starts at level 1. */
   level: number;
   /** Lifetime blood XP collected during this run. */

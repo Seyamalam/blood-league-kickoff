@@ -15,6 +15,7 @@ import {
 } from './types';
 import { EVOLUTION_DEFINITIONS } from './evolutionDefinitions';
 import { UPGRADE_DEFINITIONS } from './upgradeDefinitions';
+import { CHARACTER_DEFINITIONS, type CharacterId } from '../characters';
 
 const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   ballDamageMultiplier: 1,
@@ -51,20 +52,36 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   ghostVoidRadius: 0,
   ghostVoidPullStrength: 0,
   ghostVoidDuration: 0,
+  maxHealthBonus: 0,
+  pickupRadiusMultiplier: 1,
+  allDamageMultiplier: 1,
+  lifeStealOnPrimaryKill: 0,
+  lifeStealOnSecondaryKill: 0,
+  bossLifeStealRatio: 0,
+  movementSpeedMultiplier: 1,
+  dashCooldownMultiplier: 1,
+  damageTakenMultiplier: 1,
+  curveStrengthMultiplier: 1,
+  volleyWindowBonus: 0,
+  eliteDamageMultiplier: 1,
+  secondaryDamageMultiplier: 1,
 });
 
 /** Total Blood XP preserved across the shard burst created by one enemy kill. */
 export const BLOOD_XP_PER_KILL = 2;
 
 /** Creates a fresh run progression state. */
-export function createProgressionState(): ProgressionState {
+export function createProgressionState(characterId: CharacterId | null = null): ProgressionState {
+  const upgradeStacks = createEmptyStacks();
+  const evolutions = createEmptyEvolutions();
   return {
+    characterId,
     level: 1,
     totalBloodXp: 0,
     pendingLevelUps: 0,
-    upgradeStacks: createEmptyStacks(),
-    evolutions: createEmptyEvolutions(),
-    modifiers: { ...BASE_MODIFIERS },
+    upgradeStacks,
+    evolutions,
+    modifiers: calculateModifiers(upgradeStacks, evolutions, characterId),
   };
 }
 
@@ -138,15 +155,20 @@ export function createUpgradeOffer(
 ): UpgradeId[] {
   const pool = getAvailableUpgradeIds(state);
   const wanted = Math.min(Math.max(0, Math.floor(count)), pool.length);
-  for (let index = 0; index < wanted; index += 1) {
-    const randomIndex = index + Math.floor(normalizeRandom(rng()) * (pool.length - index));
-    const selected = pool[randomIndex];
-    const current = pool[index];
-    if (selected === undefined || current === undefined) continue;
-    pool[index] = selected;
-    pool[randomIndex] = current;
+  if (wanted === 0) return [];
+
+  const result: UpgradeId[] = [];
+  if (wanted >= 2) {
+    const weapons = pool.filter((upgradeId) => UPGRADE_DEFINITIONS[upgradeId].kind === 'weapon');
+    const passives = pool.filter((upgradeId) => UPGRADE_DEFINITIONS[upgradeId].kind === 'passive');
+    if (weapons.length > 0 && passives.length > 0) {
+      result.push(takeRandom(weapons, rng), takeRandom(passives, rng));
+      removeSelected(pool, result);
+    }
   }
-  return pool.slice(0, wanted);
+
+  while (result.length < wanted && pool.length > 0) result.push(takeRandom(pool, rng));
+  return result;
 }
 
 /**
@@ -180,7 +202,7 @@ export function chooseUpgrade(state: Readonly<ProgressionState>, upgradeId: Upgr
     pendingLevelUps: state.pendingLevelUps - 1,
     upgradeStacks,
     evolutions,
-    modifiers: calculateModifiers(upgradeStacks, evolutions),
+    modifiers: calculateModifiers(upgradeStacks, evolutions, state.characterId),
   };
   return {
     applied: true,
@@ -210,26 +232,37 @@ export function getUnlockedEvolutionIds(state: Pick<ProgressionState, 'evolution
 export function calculateModifiers(
   stacks: Readonly<UpgradeStacks>,
   evolutions?: Readonly<EvolutionUnlocks>,
+  characterId: CharacterId | null = null,
 ): ProgressionModifiers {
   const modifiers: ProgressionModifiers = { ...BASE_MODIFIERS };
+  if (characterId) {
+    applyModifierValues(modifiers, CHARACTER_DEFINITIONS[characterId].modifierBonus);
+  }
   for (const upgradeId of UPGRADE_IDS) {
     const definition = UPGRADE_DEFINITIONS[upgradeId];
     const stackCount = Math.min(definition.maxStacks, Math.max(0, Math.floor(stacks[upgradeId])));
-    for (const [key, value] of Object.entries(definition.modifierPerStack)) {
-      const modifierKey = key as keyof ProgressionModifiers;
-      modifiers[modifierKey] += (value ?? 0) * stackCount;
-    }
+    applyModifierValues(modifiers, definition.modifierPerStack, stackCount);
   }
   const activeEvolutions = evolutions ?? inferEvolutions(stacks);
   for (const evolutionId of EVOLUTION_IDS) {
     if (!activeEvolutions[evolutionId]) continue;
-    for (const [key, value] of Object.entries(EVOLUTION_DEFINITIONS[evolutionId].modifierBonus)) {
-      const modifierKey = key as keyof ProgressionModifiers;
-      modifiers[modifierKey] += value ?? 0;
-    }
+    applyModifierValues(modifiers, EVOLUTION_DEFINITIONS[evolutionId].modifierBonus);
   }
   // Cooldown can shrink but never reaches zero, even if definitions change later.
   modifiers.recallCooldownMultiplier = Math.max(0.25, modifiers.recallCooldownMultiplier);
+  modifiers.pickupRadiusMultiplier = clampMultiplier(modifiers.pickupRadiusMultiplier, 0.5, 3);
+  modifiers.allDamageMultiplier = clampMultiplier(modifiers.allDamageMultiplier, 0.25, 3);
+  modifiers.movementSpeedMultiplier = clampMultiplier(modifiers.movementSpeedMultiplier, 0.5, 2);
+  modifiers.dashCooldownMultiplier = clampMultiplier(modifiers.dashCooldownMultiplier, 0.4, 2);
+  modifiers.damageTakenMultiplier = clampMultiplier(modifiers.damageTakenMultiplier, 0.25, 2);
+  modifiers.curveStrengthMultiplier = clampMultiplier(modifiers.curveStrengthMultiplier, 0.5, 2);
+  modifiers.eliteDamageMultiplier = clampMultiplier(modifiers.eliteDamageMultiplier, 0.5, 3);
+  modifiers.secondaryDamageMultiplier = clampMultiplier(modifiers.secondaryDamageMultiplier, 0.25, 3);
+  modifiers.maxHealthBonus = Math.max(-50, Math.min(200, modifiers.maxHealthBonus));
+  modifiers.lifeStealOnPrimaryKill = Math.max(0, Math.min(10, modifiers.lifeStealOnPrimaryKill));
+  modifiers.lifeStealOnSecondaryKill = Math.max(0, Math.min(5, modifiers.lifeStealOnSecondaryKill));
+  modifiers.bossLifeStealRatio = Math.max(0, Math.min(0.05, modifiers.bossLifeStealRatio));
+  modifiers.volleyWindowBonus = Math.max(0, Math.min(0.8, modifiers.volleyWindowBonus));
   return modifiers;
 }
 
@@ -259,6 +292,10 @@ function createEmptyStacks(): UpgradeStacks {
     frostCleats: 0,
     spectralVolley: 0,
     voidGoal: 0,
+    ironHeart: 0,
+    bloodMagnet: 0,
+    killerInstinct: 0,
+    bloodDrinker: 0,
   };
 }
 
@@ -294,4 +331,32 @@ function cloneState(state: Readonly<ProgressionState>): ProgressionState {
 function normalizeRandom(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.min(1 - Number.EPSILON, Math.max(0, value));
+}
+
+function takeRandom(pool: UpgradeId[], rng: RandomSource): UpgradeId {
+  const index = Math.floor(normalizeRandom(rng()) * pool.length);
+  const [selected] = pool.splice(index, 1);
+  return selected!;
+}
+
+function removeSelected(pool: UpgradeId[], selected: readonly UpgradeId[]): void {
+  for (const upgradeId of selected) {
+    const index = pool.indexOf(upgradeId);
+    if (index >= 0) pool.splice(index, 1);
+  }
+}
+
+function applyModifierValues(
+  target: ProgressionModifiers,
+  values: Readonly<Partial<ProgressionModifiers>>,
+  scale = 1,
+): void {
+  for (const [key, value] of Object.entries(values)) {
+    const modifierKey = key as keyof ProgressionModifiers;
+    target[modifierKey] += (value ?? 0) * scale;
+  }
+}
+
+function clampMultiplier(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
 }

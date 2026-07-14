@@ -120,6 +120,13 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Orbiting Spectral Ball.
 - [x] `P0` Blood Bomb.
 - [x] `P0` Ghost Pass.
+- [x] `P0` Define Iron Heart maximum-health passive and original icon.
+- [x] `P0` Define Blood Magnet pickup-range passive and original icon.
+- [x] `P0` Define Killer Instinct all-damage passive and original icon.
+- [x] `P0` Define Blood Drinker capped life-steal passive and original icon.
+- [x] `P0` Separate weapon/passive upgrade categories and guarantee mixed offers when both are available.
+- [x] `P0` Complete live-runtime application and feedback for every passive.
+- [ ] `P0` Complete full-run balance validation for every passive.
 - [x] `P0` Moon Breaker evolution.
 - [x] `P0` Crimson Meteor evolution.
 - [x] `P1` Grave-Frost Wake evolution.
@@ -161,6 +168,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Add stadium banners, goals, crowd silhouettes, and match-stage atmosphere changes; decals remain polish.
 - [x] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
 - [x] `P0` Add phase-based procedural music intensity.
+- [x] `P0` Expand procedural audio with football-frame, goalkeeper, dash/heal/life-steal, progression, match-transition, outcome, and UI cues protected against rapid retriggering.
+- [x] `P0` Add adaptive choir and percussion-style procedural layers while preserving the no-asset offline fallback.
+- [ ] `P0` Wire every expanded cue to authoritative gameplay/UI events and complete mix acceptance.
 - [x] `P1` Add first-person Focus Kick ultimate.
 - [x] `P1` Add Bat Swarm.
 - [x] `P1` Add Leech Striker.
@@ -180,6 +190,18 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Tag `v0.8.0`, publish artifacts, and test the downloaded release.
 
 ## UI, settings, and accessibility
+
+### Character and persistent progression foundation
+
+- [x] `P0` Define six original football-style characters—Maestro, Breakaway, Tower, Finisher, Engine, and Guardian—without real-player names, likenesses, clubs, or kits.
+- [x] `P0` Add immutable character strengths, weaknesses, starting affinities, modifier bonuses, visual palettes, and safe-bound tests.
+- [x] `P0` Add a schema-validated local profile with account XP, character unlock levels, mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe settlement, and twenty-run history.
+- [x] `P0` Add local/offline score and fastest-victory ranking by exact build version and optional character.
+- [x] `P0` Build character selection, profile, mastery, challenge, recent-history, and local-leaderboard UI.
+- [x] `P0` Start runs with the selected unlocked character and settle each terminal result exactly once.
+- [x] `P0` Show XP, unlocks, completed challenges, personal bests, and local/offline records across results and Career screens.
+- [ ] `P1` Introduce deterministic run-wide seeds before considering daily/weekly or remotely verified leaderboards.
+- [ ] `P2` Add a remote leaderboard only behind a server-side validation boundary; never ship a private key in browser or Electron builds.
 
 - [x] `P0` Main menu and start flow.
 - [x] `P0` Pause menu and focus-loss pause behavior.

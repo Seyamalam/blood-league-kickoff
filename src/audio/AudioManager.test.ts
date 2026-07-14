@@ -47,4 +47,50 @@ describe('AudioManager event cues', () => {
       audio.playDefeat();
     }).not.toThrow();
   });
+
+  it('keeps expanded football, progression, match, and interface cues safe before unlock', () => {
+    const audio = new AudioManager();
+
+    expect(() => {
+      audio.playDash();
+      audio.playHeal();
+      audio.playLifeSteal();
+      audio.playPickup();
+      audio.playLevelUp();
+      audio.playUpgradeSelected();
+      audio.playUnlock();
+      audio.playNewRecord();
+      audio.playWallImpact(0.5);
+      audio.playPostImpact(0.8);
+      audio.playCrossbarImpact(1);
+      audio.playNetImpact();
+      audio.playRecallCatch();
+      audio.playGoalkeeperCatch();
+      audio.playGoalkeeperParry();
+      audio.playGoalkeeperGuardBreak();
+      audio.playGoalkeeperDefeat();
+      audio.playKickoff();
+      audio.playGoalMissed();
+      audio.playHalftime();
+      audio.playBloodMoon();
+      audio.playFinalWave();
+      audio.playUiSelect();
+      audio.playUiBack();
+      audio.playUiError();
+    }).not.toThrow();
+  });
+
+  it('retains distinct adaptive music intensities for newly cued match moments', () => {
+    const audio = new AudioManager();
+    audio.setMatchIntensity('halftimeChoice');
+    expect(audio.currentMatchIntensity).toBeCloseTo(0.18);
+    audio.setMatchIntensity('goalOpportunity');
+    expect(audio.currentMatchIntensity).toBeCloseTo(0.62);
+    audio.setMatchIntensity('bloodMoon');
+    expect(audio.currentMatchIntensity).toBeCloseTo(0.78);
+    audio.setMatchIntensity('finalGoal');
+    expect(audio.currentMatchIntensity).toBeCloseTo(0.9);
+    audio.setMatchIntensity('finalWave');
+    expect(audio.currentMatchIntensity).toBe(1);
+  });
 });

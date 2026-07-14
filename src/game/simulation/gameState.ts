@@ -77,6 +77,7 @@ export function updatePlayer(
   facing: number,
   dt: number,
   movementSpeedMultiplier = 1,
+  dashCooldownMultiplier = 1,
 ): void {
   const player = state.player;
   copyVec3(player.previousPosition, player.position);
@@ -87,13 +88,17 @@ export function updatePlayer(
   const safeMovementMultiplier = Number.isFinite(movementSpeedMultiplier)
     ? clamp(movementSpeedMultiplier, 0.5, 2)
     : 1;
+  const safeDashCooldownMultiplier = Number.isFinite(dashCooldownMultiplier)
+    ? clamp(dashCooldownMultiplier, 0.4, 2)
+    : 1;
 
   if (movement.dash && player.dashCooldown <= 0) {
     const hasMoveDirection = length > 0.001;
     player.dashDirection.x = hasMoveDirection ? movement.x * scale : -Math.sin(facing);
     player.dashDirection.z = hasMoveDirection ? movement.z * scale : -Math.cos(facing);
     player.dashTime = PLAYER_DASH_DURATION;
-    player.dashCooldown = PLAYER_DASH_COOLDOWN * (safeMovementMultiplier > 1 ? 0.8 : 1);
+    player.dashCooldown =
+      PLAYER_DASH_COOLDOWN * (safeMovementMultiplier > 1 ? 0.8 : 1) * safeDashCooldownMultiplier;
     player.invulnerability = Math.max(player.invulnerability, PLAYER_DASH_INVULNERABILITY);
   }
 
@@ -125,9 +130,10 @@ export function updatePlayer(
 export function updateEnemies(
   state: GameState,
   dt: number,
-  spawnInput: Readonly<SpawnDirectorInput> = inferSpawnDirectorInput(state.elapsed),
+  spawnInput?: Readonly<SpawnDirectorInput>,
   rng: SpawnRandomSource = Math.random,
   goalkeeperTarget?: Readonly<Vec3>,
+  damageTakenMultiplier = 1,
 ): void {
   if (state.phase !== 'playing') return;
 
@@ -135,7 +141,10 @@ export function updateEnemies(
   state.comboTimer -= dt;
   if (state.comboTimer <= 0) state.combo = 0;
 
-  const spawnProfile = resolveSpawnProfileInto(spawnInput, spawnProfileScratch);
+  const spawnProfile = resolveSpawnProfileInto(
+    spawnInput ?? inferSpawnDirectorInput(state.elapsed),
+    spawnProfileScratch,
+  );
   if (spawnProfile.enabled) {
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && state.enemies.length < spawnProfile.populationCap) {
@@ -146,6 +155,9 @@ export function updateEnemies(
   }
 
   const player = state.player;
+  const safeDamageTakenMultiplier = Number.isFinite(damageTakenMultiplier)
+    ? clamp(damageTakenMultiplier, 0.25, 2)
+    : 1;
   enemySpatialGrid.rebuild(state.enemies);
   for (let enemyIndex = 0; enemyIndex < state.enemies.length; enemyIndex += 1) {
     const enemy = state.enemies[enemyIndex]!;
@@ -206,7 +218,7 @@ export function updateEnemies(
     if (enemy.archetype === 'corruptReferee') {
       const whistleHit = updateRefereeAttack(enemy, distance, dt);
       if (whistleHit && distance <= 6.5 && player.invulnerability <= 0) {
-        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
         player.invulnerability = 0.45;
         if (player.health <= 0) state.phase = 'dead';
       }
@@ -265,11 +277,11 @@ export function updateEnemies(
         if (enemy.attackState !== 'drain') continue;
         // The short immunity window creates several clear drain pulses during a
         // latch while the striker converts each successful pulse into health.
-        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
         player.invulnerability = 0.18;
         enemy.hitPoints = Math.min(enemy.maxHitPoints, enemy.hitPoints + 1);
       } else {
-        player.health = Math.max(0, player.health - enemy.attackDamage);
+        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
         player.invulnerability = 0.62;
         enemy.position.x -= (contactDx / contactDistance) * 1.4;
         enemy.position.z -= (contactDz / contactDistance) * 1.4;
@@ -311,10 +323,14 @@ export function damageEnemiesWithBall(
   damageMultiplier = 1,
   ballVelocity?: Vec3,
   pierceCount = 0,
+  eliteDamageMultiplier = 1,
 ): BallDamageResult {
   if (speed < 7) return { hits: 0, kills: 0, blockedHits: 0 };
   const safeDamageMultiplier = Number.isFinite(damageMultiplier)
     ? Math.max(0, Math.min(8, damageMultiplier))
+    : 1;
+  const safeEliteDamageMultiplier = Number.isFinite(eliteDamageMultiplier)
+    ? Math.max(0, Math.min(8, eliteDamageMultiplier))
     : 1;
   let hits = 0;
   let blockedHits = 0;
@@ -384,6 +400,7 @@ export function damageEnemiesWithBall(
         }
       }
 
+      if (enemy.elite) damage *= safeEliteDamageMultiplier;
       enemy.hitPoints -= damage;
       if (velocityLength > 0.001) {
         const impulse = Math.min(10, 2.6 + speed * 0.22) * knockbackScale;
@@ -414,13 +431,22 @@ export function damageEnemiesWithSecondary(
   state: GameState,
   damageHits: readonly SecondaryDamageHit[],
   excludedTargetId?: number,
+  damageMultiplier = 1,
+  eliteDamageMultiplier = 1,
 ): BallDamageResult {
+  const safeDamageMultiplier = Number.isFinite(damageMultiplier)
+    ? Math.max(0, Math.min(8, damageMultiplier))
+    : 1;
+  const safeEliteDamageMultiplier = Number.isFinite(eliteDamageMultiplier)
+    ? Math.max(0, Math.min(8, eliteDamageMultiplier))
+    : 1;
   let hits = 0;
   for (const damageHit of damageHits) {
     if (damageHit.targetId === excludedTargetId) continue;
     const enemy = state.enemies.find((candidate) => candidate.id === damageHit.targetId);
     if (!enemy || damageHit.damage <= 0) continue;
-    enemy.hitPoints -= damageHit.damage;
+    enemy.hitPoints -=
+      damageHit.damage * safeDamageMultiplier * (enemy.elite ? safeEliteDamageMultiplier : 1);
     enemy.hitFlash = 0.12;
     hits += 1;
   }
