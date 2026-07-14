@@ -176,7 +176,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `SpawnDirector`: immutable phase-specific population/cadence/roster budgets with allocation-free fixed-step resolution and deterministic weighted-selection tests
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
 - `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
-- `SecondaryWeaponSystem`: pooled garlic zones, orbiting balls, blood bombs, and ghost passes
+- `SecondaryWeaponSystem`: bounded garlic, orbit, bomb, ghost, chain, frost, multiball, and black-hole combat plus generic evolution hooks
+- `SecondaryWeaponRenderer`: five fixed instanced batches sharing three geometries and five semantic materials
 - `UpgradeOverlay`: accessible mouse/keyboard three-choice level-up dialog
 - `HalftimeOverlay`: timed Power/Pace/Control decision with mouse and keyboard support
 - `MatchAnnouncement` / `PhaseAtmosphere`: pooled match-state presentation and stadium color/fog transitions
@@ -344,4 +345,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, five evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Browser automation, 158 deterministic tests, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, five evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Browser automation, 162 deterministic tests, five-batch secondary-weapon instancing, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.

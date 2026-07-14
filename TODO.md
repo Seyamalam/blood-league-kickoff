@@ -197,6 +197,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Keep ordinary crowd enemies out of full rigid-body simulation.
 - [x] `P0` Stagger far ordinary enemy decision/separation updates without reducing movement fidelity.
 - [x] `P0` Use instancing for blood shards and secondary weapons and shared geometry/materials for enemy visuals.
+- [x] `P0` Verify all 45 secondary instances add no more than five WebGL draw calls.
 - [ ] `P0` Add distance/update LOD and simple collision/query shapes.
 - [ ] `P0` Profile CPU and GPU in production web and Electron builds.
 - [ ] `P0` Maintain stable 60 FPS in the densest guaranteed wave.
@@ -223,7 +224,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Test Chrome/Chromium web build and production Electron shell on macOS.
 - [ ] `P0` Test 1080p and one lower resolution/aspect ratio.
 - [ ] `P0` Test ball recovery from walls, corners, goals, death, pause, and boss control.
-- [ ] `P0` Test pool/population-cap exhaustion behavior.
+- [x] `P0` Test secondary simulation/render pool capacity, packing, reset, exhaustion, and disposal behavior.
+- [ ] `P0` Test remaining population-cap and UI/VFX pool exhaustion behavior.
 - [ ] `P0` Test every upgrade/evolution alone and in combinations.
 - [ ] `P0` Test every enemy alone and in mixed waves.
 - [ ] `P0` Test pause/focus loss during combat and upgrade selection.

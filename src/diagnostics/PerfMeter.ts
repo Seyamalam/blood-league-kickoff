@@ -12,6 +12,10 @@ export interface PerformanceCounters {
   readonly orbitPoolCapacity: number;
   readonly ghostPassPoolActive: number;
   readonly ghostPassPoolCapacity: number;
+  readonly multiBallPoolActive: number;
+  readonly multiBallPoolCapacity: number;
+  readonly blackHolePoolActive: number;
+  readonly blackHolePoolCapacity: number;
 }
 
 export interface PerformanceSnapshot extends PerformanceCounters {
@@ -44,6 +48,10 @@ const EMPTY_COUNTERS: PerformanceCounters = {
   orbitPoolCapacity: 0,
   ghostPassPoolActive: 0,
   ghostPassPoolCapacity: 0,
+  multiBallPoolActive: 0,
+  multiBallPoolCapacity: 0,
+  blackHolePoolActive: 0,
+  blackHolePoolCapacity: 0,
 };
 
 /**
@@ -98,13 +106,24 @@ export class PerfMeter {
     value.orbitPoolCapacity = nonNegativeInteger(counters.orbitPoolCapacity);
     value.ghostPassPoolActive = nonNegativeInteger(counters.ghostPassPoolActive);
     value.ghostPassPoolCapacity = nonNegativeInteger(counters.ghostPassPoolCapacity);
+    value.multiBallPoolActive = nonNegativeInteger(counters.multiBallPoolActive);
+    value.multiBallPoolCapacity = nonNegativeInteger(counters.multiBallPoolCapacity);
+    value.blackHolePoolActive = nonNegativeInteger(counters.blackHolePoolActive);
+    value.blackHolePoolCapacity = nonNegativeInteger(counters.blackHolePoolCapacity);
     value.pooledObjectsActive =
-      value.bloodShardPoolActive + value.garlicPoolActive + value.orbitPoolActive + value.ghostPassPoolActive;
+      value.bloodShardPoolActive +
+      value.garlicPoolActive +
+      value.orbitPoolActive +
+      value.ghostPassPoolActive +
+      value.multiBallPoolActive +
+      value.blackHolePoolActive;
     value.pooledObjectsCapacity =
       value.bloodShardPoolCapacity +
       value.garlicPoolCapacity +
       value.orbitPoolCapacity +
-      value.ghostPassPoolCapacity;
+      value.ghostPassPoolCapacity +
+      value.multiBallPoolCapacity +
+      value.blackHolePoolCapacity;
   }
 
   reset(): void {

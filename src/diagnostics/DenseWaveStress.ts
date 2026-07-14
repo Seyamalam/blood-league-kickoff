@@ -1,4 +1,5 @@
 import { spawnEnemyAt } from '../game/simulation/gameState';
+import type { SecondaryWeaponRenderState } from '../game/combat';
 import type { EnemyArchetype, GameState } from '../game/simulation/types';
 import type { PerformanceSnapshot } from './PerfMeter';
 
@@ -19,6 +20,7 @@ const ARCHETYPES: readonly EnemyArchetype[] = [
 export interface DenseWaveStressMode {
   readonly enemyCount: typeof DENSE_WAVE_STRESS_COUNT;
   readonly frozenSimulation: true;
+  readonly secondaryPools: 'empty' | 'full';
 }
 
 export interface DenseWavePerformanceSnapshot extends PerformanceSnapshot {
@@ -30,6 +32,7 @@ export interface DenseWavePerformanceSnapshot extends PerformanceSnapshot {
   readonly viewportWidth: number;
   readonly viewportHeight: number;
   readonly pixelRatio: number;
+  readonly secondaryPools: 'empty' | 'full';
 }
 
 interface HookTarget {
@@ -41,7 +44,65 @@ export function readDenseWaveStressMode(search: string, development: boolean): D
   if (!development) return null;
   const params = new URLSearchParams(search);
   if (params.get('stress') !== String(DENSE_WAVE_STRESS_COUNT)) return null;
-  return { enemyCount: DENSE_WAVE_STRESS_COUNT, frozenSimulation: true };
+  const secondary = params.get('secondary');
+  if (secondary !== null && secondary !== 'full') return null;
+  return {
+    enemyCount: DENSE_WAVE_STRESS_COUNT,
+    frozenSimulation: true,
+    secondaryPools: secondary === 'full' ? 'full' : 'empty',
+  };
+}
+
+/** Stable full-pool state for comparing real WebGL draw cost against the empty control scene. */
+export function createDenseSecondaryStressState(): SecondaryWeaponRenderState {
+  return {
+    garlicZones: Array.from({ length: 24 }, (_, index) => ({
+      active: true,
+      position: {
+        x: -10 + (index % 6) * 4,
+        y: 0.04,
+        z: -6 + Math.floor(index / 6) * 4,
+      },
+      radius: 0.82,
+      age: 0.6,
+      lifetime: 1.35,
+    })),
+    orbitingBalls: Array.from({ length: 3 }, (_, index) => {
+      const angle = (index / 3) * Math.PI * 2;
+      return {
+        active: true,
+        position: { x: Math.cos(angle) * 1.72, y: 1.08, z: Math.sin(angle) * 1.72 },
+        radius: 0.36,
+      };
+    }),
+    ghostPasses: Array.from({ length: 8 }, (_, index) => ({
+      active: true,
+      position: { x: -7 + index * 2, y: 1.1, z: 4.5 + (index % 2) * 0.7 },
+      velocity: { x: 0, y: 0, z: 0 },
+      radius: 0.34,
+      age: 0.4,
+      lifetime: 1.45,
+    })),
+    multiBallShots: Array.from({ length: 6 }, (_, index) => ({
+      active: true,
+      position: { x: -5 + index * 2, y: 1.35, z: -3.8 - (index % 2) * 0.7 },
+      velocity: { x: 0, y: 0, z: 0 },
+      radius: 0.3,
+      age: 0.2,
+      lifetime: 1.2,
+    })),
+    blackHoleZones: Array.from({ length: 4 }, (_, index) => ({
+      active: true,
+      position: {
+        x: index % 2 === 0 ? -8 : 8,
+        y: 0.08,
+        z: index < 2 ? -7 : 7,
+      },
+      radius: 2,
+      age: 0.4 + index * 0.12,
+      lifetime: 1.6,
+    })),
+  };
 }
 
 /** Replaces the live formation with a stable, evenly mixed 72-enemy profiling scene. */

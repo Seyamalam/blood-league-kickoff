@@ -4,6 +4,7 @@ import { AudioManager } from './audio';
 import { countActivePoolItems, createPerformanceCounters, PerfMeter } from './diagnostics/PerfMeter';
 import {
   applyDenseWaveStressFormation,
+  createDenseSecondaryStressState,
   installDenseWavePerformanceHook,
   readDenseWaveStressMode,
 } from './diagnostics/DenseWaveStress';
@@ -126,6 +127,10 @@ async function bootstrap(): Promise<void> {
   const bloodShards = new BloodShardSystem();
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
+  const secondaryRenderState =
+    denseWaveStress?.secondaryPools === 'full'
+      ? createDenseSecondaryStressState()
+      : secondaryWeapons.renderState;
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const atmosphere = new PhaseAtmosphere(scene);
   const hud = new Hud(root);
@@ -154,6 +159,7 @@ async function bootstrap(): Promise<void> {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         pixelRatio: renderer.getPixelRatio(),
+        secondaryPools: denseWaveStress.secondaryPools,
       }))
     : () => undefined;
   const clock = new THREE.Clock();
@@ -815,7 +821,7 @@ async function bootstrap(): Promise<void> {
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
     bossVisual.sync(boss, alpha);
     bloodShardRenderer.sync(bloodShards.state, alpha);
-    secondaryRenderer.sync(secondaryWeapons.renderState);
+    secondaryRenderer.sync(secondaryRenderState);
     hud.update(
       state,
       physics.ballState,
@@ -854,12 +860,16 @@ async function bootstrap(): Promise<void> {
     perfCounters.fixedSteps = fixedStepsThisFrame;
     perfCounters.bloodShardPoolActive = bloodShards.state.activeCount;
     perfCounters.bloodShardPoolCapacity = bloodShards.state.capacity;
-    perfCounters.garlicPoolActive = countActivePoolItems(secondaryWeapons.renderState.garlicZones);
-    perfCounters.garlicPoolCapacity = secondaryWeapons.renderState.garlicZones.length;
-    perfCounters.orbitPoolActive = countActivePoolItems(secondaryWeapons.renderState.orbitingBalls);
-    perfCounters.orbitPoolCapacity = secondaryWeapons.renderState.orbitingBalls.length;
-    perfCounters.ghostPassPoolActive = countActivePoolItems(secondaryWeapons.renderState.ghostPasses);
-    perfCounters.ghostPassPoolCapacity = secondaryWeapons.renderState.ghostPasses.length;
+    perfCounters.garlicPoolActive = countActivePoolItems(secondaryRenderState.garlicZones);
+    perfCounters.garlicPoolCapacity = secondaryRenderState.garlicZones.length;
+    perfCounters.orbitPoolActive = countActivePoolItems(secondaryRenderState.orbitingBalls);
+    perfCounters.orbitPoolCapacity = secondaryRenderState.orbitingBalls.length;
+    perfCounters.ghostPassPoolActive = countActivePoolItems(secondaryRenderState.ghostPasses);
+    perfCounters.ghostPassPoolCapacity = secondaryRenderState.ghostPasses.length;
+    perfCounters.multiBallPoolActive = countActivePoolItems(secondaryRenderState.multiBallShots);
+    perfCounters.multiBallPoolCapacity = secondaryRenderState.multiBallShots.length;
+    perfCounters.blackHolePoolActive = countActivePoolItems(secondaryRenderState.blackHoleZones);
+    perfCounters.blackHolePoolCapacity = secondaryRenderState.blackHoleZones.length;
     perf.update(frameTime, perfCounters);
   });
 

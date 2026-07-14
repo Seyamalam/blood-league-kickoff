@@ -72,6 +72,8 @@ The ball exposes possessed, free, recalling, volley-window, and recovering state
 - Use distance bands for animation/update rate and simple crowd silhouettes.
 - Pool short-lived effects and hide/reuse instances instead of allocating them.
 
+Secondary weapon presentation uses five fixed `InstancedMesh` batches with capacities 24/3/8/6/4. Active simulation records are packed into reusable instance matrices each frame; the three ball-like families share one sphere geometry. All 45 visible objects therefore contribute at most five draw calls. Black-hole rotation derives from fixed-step zone age rather than render cadence, so 60 and 120 FPS produce the same animation speed.
+
 The renderer requests `powerPreference: "high-performance"`, but diagnostics must report the actual GPU path/fallback. Hardware acceleration is expected, never assumed without testing.
 
 ## Data and Events
@@ -108,13 +110,15 @@ The Windows GitHub Actions definition is intentionally manual-only during gamepl
 | Enemy cap    | 72 ordinary enemies; change only after production profiling    |
 | Recovery     | No unrecoverable ball or invalid run state                     |
 
-The debug overlay should expose render FPS/frame time, fixed-step time, enemy count, draw calls, triangles, pool usage, physics time, and quality preset. Optimize measured bottlenecks, not guesses.
+The live debug overlay exposes render FPS/frame time, enemy count, draw calls, triangles, fixed-step count, and aggregate shard/secondary-pool occupancy. The development stress snapshot additionally records viewport, pixel ratio, render scale, quality preset, and frame-rate cap. Physics and fixed-step duration require isolated profiling rather than being claimed as live counters. Optimize measured bottlenecks, not guesses.
 
 During local development, open `http://localhost:5173/?stress=72` to boot directly into a frozen,
 deterministic mixed-archetype crowd. Normal and production builds ignore this query. Profiling automation can
 call `window.__bloodLeaguePerfSnapshot()` to receive a fresh frozen copy of the current frame, renderer, pool,
 viewport, and quality counters. Use a production build for final acceptance measurements; this development mode
 exists to make comparisons repeatable before capturing the corresponding production trace.
+
+Append `&secondary=full` to activate all 45 persistent secondary-weapon instances while keeping the 72-enemy simulation frozen. Compare it with the empty-pool route under identical viewport/settings to isolate draw calls, triangles, transparency, and GPU presentation cost without changing combat simulation.
 
 ## Test Strategy
 

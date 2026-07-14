@@ -4,6 +4,9 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Replaced 45 individual secondary-weapon meshes with five fixed `InstancedMesh` batches sharing three geometries; all full pools now add exactly five draw calls instead of as many as 45.
+- Made black-hole rotation fixed-step-age-driven, added semantic renderer capacity/matrix/resource-lifecycle tests, and added a deterministic full-pool WebGL stress route with a 1600×900 capture.
+- Completed pool diagnostics for multiball and black-hole objects, correcting aggregate visible pool capacity from 195 to 205; the suite now contains 162 passing tests.
 - Completed the five-evolution roster with Grave-Frost Wake, Storm Halo, and Phantom Singularity, adding freezing garlic trails, chain-lightning orbiters, and ghost-triggered gravity wells through existing bounded combat pools.
 - Added three original evolution icons, visible and accessible evolution-partner hints on upgrade cards, evolution entries in final results, and deterministic development fixtures for every evolution.
 - Added data-contract, exact-boundary, idempotency, all-build, progression-to-combat, and UI coverage for the complete evolution graph.

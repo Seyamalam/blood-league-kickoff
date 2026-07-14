@@ -27,6 +27,10 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay.jpg)
 
+### Secondary weapon spectacle
+
+![All five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons.jpg)
+
 ### Progression
 
 ![Three-choice upgrade selection with authored icons](docs/screenshots/upgrade.jpg)
@@ -166,6 +170,8 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
+- [x] Five fixed secondary-weapon `InstancedMesh` batches replace 45 individual render meshes
+- [x] Full-pool diagnostics track all 45 visible secondary objects and prove a five-draw-call ceiling
 - [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans
 - [x] Procedural match music blends drone, tension, and pulse layers across every phase
 - [x] Automated wall, corner, stall, out-of-bounds, recall, catch, reset, and curved-flight recovery coverage
