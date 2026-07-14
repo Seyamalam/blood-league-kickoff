@@ -22,7 +22,7 @@
 
 ## Current Source Baseline
 
-The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, two evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. Enemy spawn positions and elite rolls use `Math.random()`, so live runs are intentionally not replay-synchronized; deterministic unit tests cover the pure simulation boundaries.
+The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, two evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized.
 
 ## Runtime Flow
 
@@ -48,7 +48,8 @@ callback, and changing limits resets the schedule immediately.
 
 - **`main.ts`:** bootstrap, lifecycle/disposal, pointer-lock and menu events, fixed-step accumulator, match/combat orchestration, audio hooks, interpolation, HUD updates, and rendering.
 - **`InputController`:** DOM listeners, persistent rebindable actions, and input snapshots; gameplay never reads raw DOM events.
-- **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawning, crowd queries, damage, death, score, and combo.
+- **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawn-request application, crowd queries, damage, death, score, and combo.
+- **`game/spawn`:** immutable per-stage population/cadence/roster definitions plus allocation-free fixed-step profile resolution and weighted selection.
 - **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
 - **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run.
 - **`CameraController` and `RenderBridge`:** third-person/Focus cameras and synchronized pooled/shared-resource presentation.
@@ -118,7 +119,7 @@ exists to make comparisons repeatable before capturing the corresponding product
 ## Test Strategy
 
 - Unit-test pure ball state transitions, upgrade prerequisites, match phases, and fixed-step calculations.
-- Introduce a seeded random source only if reproducible balance tests or replays become a real requirement.
+- Inject deterministic random sources into Spawn Director tests; introduce a run-wide seed only if replayable full-run balance failures become a real requirement.
 - Add simulation checks for out-of-bounds recovery and fixed-step invariants.
 - Smoke-test production web output and packaged Electron output.
 - Test focus loss, resize, pause, low frame rate, high refresh, and clean first launch.

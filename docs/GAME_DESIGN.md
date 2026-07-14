@@ -107,6 +107,8 @@ Evolutions require both components plus a defined level threshold. Guaranteed ex
 
 Match timings live in data. If a section contains downtime, shorten it rather than filling it with weak content.
 
+Ordinary enemy pressure is also authored by match stage. Opening, First Half, Escalation, Blood Moon, and Final Wave each define a ramping population cap, spawn cadence, and weighted roster. Goal opportunities, halftime, and terminal stages stop ordinary spawning so their objective or decision remains readable. Archetypes still unlock by absolute match time, preventing a fast stage transition from introducing late threats before the player has learned the early roster.
+
 The current halftime tactics are **Power** (+25% ball damage and +15% kick force), **Pace** (+15% movement and 20% faster dash recovery), and **Control** (+25% recall speed and a wider perfect-volley catch window). If the choice timer expires, the configured default is applied automatically.
 
 Scoring clears the active crowd, recenters the striker and ball, preserves health/XP/score, and presents a new kickoff. Match-stage announcements plus smoothly blended fog, accent lighting, and embers make the transition readable without blocking control.

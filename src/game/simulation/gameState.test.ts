@@ -74,6 +74,26 @@ describe('game state match helpers', () => {
     expect(state.enemies).toHaveLength(72);
   });
 
+  it('rests the ordinary spawn director during goal and halftime stages', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 0;
+
+    updateEnemies(state, 1, {
+      stage: 'goalOpportunity',
+      stageElapsed: 2,
+      matchElapsed: 100,
+    });
+    updateEnemies(state, 1, {
+      stage: 'halftimeChoice',
+      stageElapsed: 2,
+      matchElapsed: 200,
+    });
+
+    expect(state.enemies).toHaveLength(0);
+    expect(state.spawnTimer).toBe(0);
+  });
+
   it('keeps ordinary enemies at full decision fidelity through the near-distance boundary', () => {
     const state = createGameState();
     state.phase = 'playing';

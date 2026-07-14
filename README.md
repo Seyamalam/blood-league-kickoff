@@ -145,6 +145,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Defender shields, rear-shot weakness, deliberate knockback, and telegraphed Winger lunges
 - [x] Automated progression, pickup, secondary-weapon, match, and boss tests
 - [x] Full nine-minute match director with two goals, halftime tactics, Blood Moon, boss wave, and victory screen
+- [x] Phase-aware Spawn Director with authored population caps, spawn cadence, roster weights, and rest stages
 - [x] On-pitch animated goal beacon during scoring opportunities
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings

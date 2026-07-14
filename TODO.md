@@ -77,7 +77,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [ ] `P0` Implement reusable pools for effects, shards, projectiles, and UI feedback.
 - [ ] `P0` Implement instanced/pool-friendly enemy rendering separated from simulation.
 - [x] `P0` Implement crowd separation with reusable typed-array spatial queries.
-- [ ] `P0` Implement Spawn Director with configurable phases and population budgets.
+- [x] `P0` Implement Spawn Director with configurable phases and population budgets.
 - [x] `P0` Implement pooled physical blood shard collection and XP levels.
 - [x] `P0` Calibrate kill XP for a bounded full-match upgrade cadence and cover phase checkpoints.
 - [x] `P0` Implement three-choice upgrade selection.

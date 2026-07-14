@@ -1,6 +1,14 @@
 import type { EliteEnemyArchetype, EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
 import { EnemySpatialGrid } from './EnemySpatialGrid';
 import type { SecondaryDamageHit } from '../combat';
+import {
+  inferSpawnDirectorInput,
+  resolveSpawnProfileInto,
+  selectSpawnArchetype,
+  type MutableSpawnProfile,
+  type SpawnDirectorInput,
+  type SpawnRandomSource,
+} from '../spawn';
 
 const ARENA_HALF_WIDTH = 22;
 const ARENA_HALF_DEPTH = 14;
@@ -12,6 +20,13 @@ const PLAYER_DASH_INVULNERABILITY = 0.18;
 const FAR_ENEMY_DECISION_DISTANCE = 10;
 const FAR_ENEMY_DECISION_SLICES = 4;
 const enemySpatialGrid = new EnemySpatialGrid();
+const spawnProfileScratch: MutableSpawnProfile = {
+  enabled: false,
+  matchElapsed: 0,
+  populationCap: 0,
+  spawnInterval: Number.POSITIVE_INFINITY,
+  roster: [],
+};
 
 export function createGameState(): GameState {
   return {
@@ -100,18 +115,26 @@ export function updatePlayer(
   player.invulnerability = Math.max(0, player.invulnerability - dt);
 }
 
-export function updateEnemies(state: GameState, dt: number): void {
+export function updateEnemies(
+  state: GameState,
+  dt: number,
+  spawnInput: Readonly<SpawnDirectorInput> = inferSpawnDirectorInput(state.elapsed),
+  rng: SpawnRandomSource = Math.random,
+): void {
   if (state.phase !== 'playing') return;
 
   state.elapsed += dt;
-  state.spawnTimer -= dt;
   state.comboTimer -= dt;
   if (state.comboTimer <= 0) state.combo = 0;
 
-  const cap = Math.min(72, 14 + Math.floor(state.elapsed / 8) * 3);
-  if (state.spawnTimer <= 0 && state.enemies.length < cap) {
-    state.enemies.push(spawnEnemy(state));
-    state.spawnTimer = Math.max(0.2, 0.95 - state.elapsed * 0.008);
+  const spawnProfile = resolveSpawnProfileInto(spawnInput, spawnProfileScratch);
+  if (spawnProfile.enabled) {
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0 && state.enemies.length < spawnProfile.populationCap) {
+      const archetype = selectSpawnArchetype(spawnProfile, rng);
+      if (archetype) state.enemies.push(spawnEnemy(state, archetype, rng));
+      state.spawnTimer = spawnProfile.spawnInterval;
+    }
   }
 
   const player = state.player;
@@ -410,17 +433,16 @@ function awardKills(state: GameState, kills: number): void {
   state.score += kills * 100 * Math.max(1, state.combo);
 }
 
-function spawnEnemy(state: GameState): EnemyState {
-  const side = Math.floor(Math.random() * 4);
+function spawnEnemy(state: GameState, archetype: EnemyArchetype, rng: SpawnRandomSource): EnemyState {
+  const side = Math.floor(normalizeRandom(rng()) * 4);
   const edgeX = 20.5;
   const edgeZ = 12.5;
-  let x = (Math.random() * 2 - 1) * edgeX;
-  let z = (Math.random() * 2 - 1) * edgeZ;
+  let x = (normalizeRandom(rng()) * 2 - 1) * edgeX;
+  let z = (normalizeRandom(rng()) * 2 - 1) * edgeZ;
   if (side === 0) x = -edgeX;
   if (side === 1) x = edgeX;
   if (side === 2) z = -edgeZ;
   if (side === 3) z = edgeZ;
-  const archetype = pickArchetype(state.elapsed);
   const stats = enemyStats(archetype, state.elapsed);
   return createEnemyState(state, archetype, { x, y: stats.y, z }, false);
 }
@@ -556,42 +578,6 @@ function updateRefereeAttack(enemy: EnemyState, distance: number, dt: number): b
   return false;
 }
 
-function pickArchetype(elapsed: number): EnemyArchetype {
-  // Availability and weights ramp with match time, keeping the opening readable.
-  const fanWeight = Math.max(38, 72 - elapsed * 0.16);
-  const wingerWeight = elapsed < 10 ? 0 : Math.min(30, 10 + (elapsed - 10) * 0.18);
-  const defenderWeight = elapsed < 24 ? 0 : Math.min(24, 5 + (elapsed - 24) * 0.15);
-  const coachWeight = elapsed < 40 ? 0 : Math.min(14, 3 + (elapsed - 40) * 0.08);
-  const batSwarmWeight = elapsed < 55 ? 0 : Math.min(20, 4 + (elapsed - 55) * 0.12);
-  const leechStrikerWeight = elapsed < 95 ? 0 : Math.min(18, 3 + (elapsed - 95) * 0.1);
-  const corruptRefereeWeight = elapsed < 145 ? 0 : Math.min(12, 2 + (elapsed - 145) * 0.065);
-  const goalkeeperBruteWeight = elapsed < 210 ? 0 : Math.min(10, 2 + (elapsed - 210) * 0.045);
-  let roll =
-    Math.random() *
-    (fanWeight +
-      wingerWeight +
-      defenderWeight +
-      coachWeight +
-      batSwarmWeight +
-      leechStrikerWeight +
-      corruptRefereeWeight +
-      goalkeeperBruteWeight);
-  if (roll < fanWeight) return 'bloodFan';
-  roll -= fanWeight;
-  if (roll < wingerWeight) return 'winger';
-  roll -= wingerWeight;
-  if (roll < defenderWeight) return 'defender';
-  roll -= defenderWeight;
-  if (roll < coachWeight) return 'coach';
-  roll -= coachWeight;
-  if (roll < batSwarmWeight) return 'batSwarm';
-  roll -= batSwarmWeight;
-  if (roll < leechStrikerWeight) return 'leechStriker';
-  roll -= leechStrikerWeight;
-  if (roll < corruptRefereeWeight) return 'corruptReferee';
-  return 'goalkeeperBrute';
-}
-
 function enemyStats(
   archetype: EnemyArchetype,
   elapsed: number,
@@ -625,6 +611,11 @@ function enemyStats(
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function normalizeRandom(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1 - Number.EPSILON, Math.max(0, value));
 }
 
 function copyVec3(target: Vec3, source: Vec3): void {

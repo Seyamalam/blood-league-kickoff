@@ -117,6 +117,10 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   │   └── upgradeDefinitions.ts
 │   │   ├── pickups/BloodShardSystem.ts
 │   │   ├── combat/SecondaryWeaponSystem.ts
+│   │   ├── spawn/
+│   │   │   ├── config.ts
+│   │   │   ├── spawnDirector.ts
+│   │   │   └── types.ts
 │   │   ├── simulation/
 │   │       ├── EnemySpatialGrid.ts
 │   │       ├── gameState.ts
@@ -166,6 +170,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, combat-audio hooks, restart, and frame rendering
 - `AudioManager`: asset-free effects, smoothly blended phase music, gesture unlock, volume/mute, polyphony limits, and cleanup
 - `MatchDirector`: pure, data-configurable stage transitions, objectives, goal opportunity, and run outcomes
+- `SpawnDirector`: immutable phase-specific population/cadence/roster budgets with allocation-free fixed-step resolution and deterministic weighted-selection tests
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
 - `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
 - `SecondaryWeaponSystem`: pooled garlic zones, orbiting balls, blood bombs, and ghost passes
@@ -180,7 +185,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `desktopRuntime`: fixed-channel Electron IPC for window state, safe size presets, fullscreen, and explicit quit
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
-- `gameState.ts`: player simulation, four weighted archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
+- `gameState.ts`: player simulation, eight director-selected archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
 - `EnemySpatialGrid`: reusable typed-array neighborhood queries for crowd separation and Coach auras
 - `PhysicsWorld`: Rapier arena/player/ball bodies, charged/curved kicks, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, elite/shield/telegraph cues, and primitive visual lifecycles
@@ -336,4 +341,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, two evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, and persistent settings are active. Browser automation, 119 deterministic tests, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, two evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Browser automation, 128 deterministic tests, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.

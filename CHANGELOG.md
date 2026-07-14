@@ -4,6 +4,9 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Replaced the continuous time-only enemy formula with a data-driven Spawn Director: every combat stage now owns its ramping population cap, cadence, and weighted roster, while goals, halftime, victory, and death stop ordinary spawns.
+- Added deterministic Spawn Director and non-combat rest-stage coverage; the complete suite now contains 128 passing tests.
+
 ## v0.8.0-alpha.4 — 2026-07-14
 
 - Disabled electron-builder's implicit tag publishing so native runner jobs hand completed artifacts to the explicit, least-privilege release publisher.

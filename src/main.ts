@@ -532,7 +532,11 @@ async function bootstrap(): Promise<void> {
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
         updatePlayer(state, movement, cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
-        updateEnemies(state, FIXED_STEP);
+        updateEnemies(state, FIXED_STEP, {
+          stage: match.stage,
+          stageElapsed: match.stageElapsed,
+          matchElapsed: match.matchElapsed,
+        });
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
           cameraController.addImpulse(0.24);
