@@ -11,6 +11,7 @@ describe('stadium variants', () => {
     expect(STADIUM_VARIANT_IDS).toHaveLength(5);
     expect(new Set(STADIUM_VARIANT_IDS.map((id) => STADIUM_VARIANTS[id].pitch)).size).toBe(5);
     expect(new Set(STADIUM_VARIANT_IDS.map((id) => STADIUM_VARIANTS[id].architecture)).size).toBe(5);
+    expect(new Set(STADIUM_VARIANT_IDS.map((id) => STADIUM_VARIANTS[id].ambience.weather)).size).toBe(5);
   });
 
   it('resolves random selection deterministically from an injected sample', () => {

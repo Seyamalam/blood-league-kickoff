@@ -28,7 +28,7 @@ export function createStadium(scene: THREE.Scene, selection: StadiumSelection = 
 
   const field = new THREE.Mesh(
     new THREE.PlaneGeometry(PITCH_WIDTH, PITCH_LENGTH),
-    new THREE.MeshStandardMaterial({ color: variant.pitch, roughness: 0.92, metalness: 0.02 }),
+    createPitchMaterial(variant),
   );
   field.name = 'stadium-pitch';
   field.rotation.x = -Math.PI / 2;
@@ -102,7 +102,32 @@ export function createStadium(scene: THREE.Scene, selection: StadiumSelection = 
   addStands(stadium, variant);
   addArchitecture(stadium, variant);
   addCrowdSilhouettes(stadium, variant);
+  addPresentationDressing(stadium, variant);
+  addReactiveProps(stadium, variant);
   return stadium;
+}
+
+function createPitchMaterial(variant: StadiumVariant): THREE.MeshStandardMaterial {
+  const material = new THREE.MeshStandardMaterial({
+    color: variant.pitch,
+    roughness: 0.92,
+    metalness: 0.02,
+    normalScale: new THREE.Vector2(0.22, 0.22),
+  });
+  if (typeof document === 'undefined') return material;
+  const loader = new THREE.TextureLoader();
+  const configure = (texture: THREE.Texture): THREE.Texture => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(14, 20);
+    texture.anisotropy = 4;
+    return texture;
+  };
+  material.map = configure(loader.load('/assets/vendor/ambientcg/grass007/color.jpg'));
+  material.map.colorSpace = THREE.SRGBColorSpace;
+  material.normalMap = configure(loader.load('/assets/vendor/ambientcg/grass007/normal-gl.jpg'));
+  material.roughnessMap = configure(loader.load('/assets/vendor/ambientcg/grass007/roughness.jpg'));
+  return material;
 }
 
 function addPitchGuides(scene: THREE.Object3D, material: THREE.LineBasicMaterial): void {
@@ -305,8 +330,128 @@ function addStands(scene: THREE.Object3D, variant: StadiumVariant): void {
   const bannerMaterial = new THREE.MeshBasicMaterial({ color: variant.accent });
   for (let x = -PITCH_HALF_WIDTH + 5; x <= PITCH_HALF_WIDTH - 5; x += 8) {
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 1.1), bannerMaterial);
+    banner.name = 'stadium-reactive-banner';
     banner.position.set(x, 0.72, -ARENA_WALL_HALF_LENGTH + 0.24);
     scene.add(banner);
+  }
+}
+
+function addPresentationDressing(scene: THREE.Object3D, variant: StadiumVariant): void {
+  const mastMaterial = new THREE.MeshStandardMaterial({
+    color: variant.wall,
+    metalness: 0.72,
+    roughness: 0.32,
+  });
+  const lampMaterial = new THREE.MeshBasicMaterial({ color: variant.keyLight });
+  const mastGeometry = new THREE.CylinderGeometry(0.14, 0.2, 11, 7);
+  const lampGeometry = new THREE.BoxGeometry(3.4, 1.05, 0.28);
+  for (const x of [-PITCH_HALF_WIDTH - 6, PITCH_HALF_WIDTH + 6]) {
+    for (const z of [-PITCH_HALF_LENGTH * 0.58, PITCH_HALF_LENGTH * 0.58]) {
+      const rig = new THREE.Group();
+      rig.name = 'stadium-floodlight-rig';
+      const mast = new THREE.Mesh(mastGeometry, mastMaterial);
+      mast.position.y = 5.5;
+      const lamps = new THREE.Mesh(lampGeometry, lampMaterial);
+      lamps.position.y = 10.7;
+      lamps.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+      rig.position.set(x, 0, z);
+      rig.add(mast, lamps);
+      scene.add(rig);
+    }
+  }
+
+  const flagMaterial = new THREE.MeshBasicMaterial({
+    color: variant.accent,
+    side: THREE.DoubleSide,
+  });
+  const poleGeometry = new THREE.CylinderGeometry(0.035, 0.045, 2.2, 6);
+  for (const x of [-PITCH_HALF_WIDTH, PITCH_HALF_WIDTH]) {
+    for (const z of [-PITCH_HALF_LENGTH, PITCH_HALF_LENGTH]) {
+      const pole = new THREE.Mesh(poleGeometry, mastMaterial);
+      pole.position.set(x, 1.1, z);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.48), flagMaterial);
+      flag.name = 'stadium-corner-flag';
+      flag.position.set(x + (x < 0 ? 0.38 : -0.38), 1.86, z);
+      flag.rotation.y = x < 0 ? 0 : Math.PI;
+      scene.add(pole, flag);
+    }
+  }
+}
+
+function addReactiveProps(scene: THREE.Object3D, variant: StadiumVariant): void {
+  const structure = new THREE.MeshStandardMaterial({
+    color: variant.stand[1],
+    roughness: 0.58,
+    metalness: 0.24,
+  });
+  const accent = new THREE.MeshStandardMaterial({
+    color: variant.accent,
+    emissive: variant.accent,
+    emissiveIntensity: 0.34,
+    transparent: true,
+    opacity: 0.92,
+    roughness: 0.34,
+  });
+  const placements: readonly (readonly [number, number])[] = [
+    [-PITCH_HALF_WIDTH - 2.4, -PITCH_HALF_LENGTH * 0.38],
+    [-PITCH_HALF_WIDTH - 2.4, PITCH_HALF_LENGTH * 0.38],
+    [PITCH_HALF_WIDTH + 2.4, -PITCH_HALF_LENGTH * 0.38],
+    [PITCH_HALF_WIDTH + 2.4, PITCH_HALF_LENGTH * 0.38],
+  ];
+  for (let index = 0; index < placements.length; index += 1) {
+    const [x, z] = placements[index]!;
+    const prop = new THREE.Group();
+    prop.name = 'stadium-reactive-prop';
+    prop.userData.propKind = variant.architecture;
+    prop.userData.propIndex = index;
+    prop.position.set(x, 0, z);
+    prop.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+
+    if (variant.architecture === 'gothic') {
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.1, 1.2), structure);
+      base.position.y = 0.55;
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.72, 2.5, 5), accent);
+      crown.position.y = 2.15;
+      prop.add(base, crown);
+    } else if (variant.architecture === 'bowl') {
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.15, 12), accent);
+      drum.rotation.z = Math.PI / 2;
+      drum.position.y = 1.25;
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.8, 0.22), structure);
+      stand.position.y = 0.9;
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.22, 0.7), structure);
+      foot.position.y = 0.11;
+      prop.add(drum, stand, foot);
+    } else if (variant.architecture === 'cathedral') {
+      const left = new THREE.Mesh(new THREE.BoxGeometry(0.22, 3.2, 0.34), structure);
+      const right = left.clone();
+      left.position.set(-0.82, 1.6, 0);
+      right.position.set(0.82, 1.6, 0);
+      const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 2.35), accent);
+      pane.position.set(0, 1.75, -0.2);
+      const arch = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.24, 0.34), structure);
+      arch.position.y = 3.1;
+      prop.add(left, right, pane, arch);
+    } else if (variant.architecture === 'colosseum') {
+      const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.55, 1.45), structure);
+      plinth.position.y = 0.28;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.5, 1.5, 9), structure);
+      stem.position.y = 1.25;
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.38, 1.15, 10), accent);
+      cup.position.y = 2.45;
+      prop.add(plinth, stem, cup);
+    } else {
+      for (let shard = 0; shard < 3; shard += 1) {
+        const crystal = new THREE.Mesh(
+          new THREE.ConeGeometry(0.55 - shard * 0.08, 2.5 - shard * 0.35, 5),
+          shard === 1 ? structure : accent,
+        );
+        crystal.position.set((shard - 1) * 0.58, 1.05 + (2 - shard) * 0.2, (shard % 2) * 0.24);
+        crystal.rotation.z = (shard - 1) * 0.2;
+        prop.add(crystal);
+      }
+    }
+    scene.add(prop);
   }
 }
 

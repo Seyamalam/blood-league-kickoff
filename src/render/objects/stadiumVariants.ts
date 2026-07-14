@@ -9,6 +9,16 @@ export const STADIUM_VARIANT_IDS = [
 export type StadiumVariantId = (typeof STADIUM_VARIANT_IDS)[number];
 export type StadiumSelection = StadiumVariantId | 'random';
 export type StadiumArchitecture = 'gothic' | 'bowl' | 'cathedral' | 'colosseum' | 'fortress';
+export type StadiumWeather = 'embers' | 'drizzle' | 'fireflies' | 'arcane-sparks' | 'snow';
+
+export interface StadiumAmbiencePreset {
+  readonly weather: StadiumWeather;
+  readonly particleColor: number;
+  readonly particleAccent: number;
+  readonly particleSize: number;
+  readonly fallSpeed: number;
+  readonly wind: number;
+}
 
 export interface StadiumVariant {
   readonly id: StadiumVariantId;
@@ -27,6 +37,7 @@ export interface StadiumVariant {
   readonly ambientGround: number;
   readonly keyLight: number;
   readonly fillLight: number;
+  readonly ambience: StadiumAmbiencePreset;
 }
 
 export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>> = Object.freeze({
@@ -47,6 +58,14 @@ export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>
     ambientGround: 0x310d1d,
     keyLight: 0xaabfff,
     fillLight: 0xff91ad,
+    ambience: {
+      weather: 'embers',
+      particleColor: 0xff755f,
+      particleAccent: 0x8f1638,
+      particleSize: 0.24,
+      fallSpeed: -0.65,
+      wind: 0.5,
+    },
   }),
   'moonlit-classic': variant({
     id: 'moonlit-classic',
@@ -65,6 +84,14 @@ export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>
     ambientGround: 0x102a28,
     keyLight: 0xd8eaff,
     fillLight: 0x62b8ff,
+    ambience: {
+      weather: 'drizzle',
+      particleColor: 0xb9e4ff,
+      particleAccent: 0x4f91c9,
+      particleSize: 0.14,
+      fallSpeed: 10.5,
+      wind: 1.25,
+    },
   }),
   'emerald-cathedral': variant({
     id: 'emerald-cathedral',
@@ -83,6 +110,14 @@ export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>
     ambientGround: 0x221b0c,
     keyLight: 0xffe7a4,
     fillLight: 0x52d69b,
+    ambience: {
+      weather: 'fireflies',
+      particleColor: 0xffdc70,
+      particleAccent: 0x74e6a7,
+      particleSize: 0.28,
+      fallSpeed: -0.18,
+      wind: 0.35,
+    },
   }),
   'royal-amethyst': variant({
     id: 'royal-amethyst',
@@ -101,6 +136,14 @@ export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>
     ambientGround: 0x2b0d31,
     keyLight: 0xead6ff,
     fillLight: 0xff69df,
+    ambience: {
+      weather: 'arcane-sparks',
+      particleColor: 0xff8cff,
+      particleAccent: 0x804dff,
+      particleSize: 0.25,
+      fallSpeed: -1.2,
+      wind: 0.85,
+    },
   }),
   'frostbound-arena': variant({
     id: 'frostbound-arena',
@@ -119,6 +162,14 @@ export const STADIUM_VARIANTS: Readonly<Record<StadiumVariantId, StadiumVariant>
     ambientGround: 0x17313a,
     keyLight: 0xe3f9ff,
     fillLight: 0x76dfff,
+    ambience: {
+      weather: 'snow',
+      particleColor: 0xf0fdff,
+      particleAccent: 0xa4e9ff,
+      particleSize: 0.34,
+      fallSpeed: 2.4,
+      wind: 1.5,
+    },
   }),
 });
 

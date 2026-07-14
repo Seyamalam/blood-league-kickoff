@@ -1,5 +1,7 @@
 export { FULL_MATCH_CONFIG, PROTOTYPE_MATCH_CONFIG } from './config';
 export { createMatchDirectorState, getMatchObjective, updateMatchDirector } from './matchDirector';
+export { createMatchModifierState, getMatchModifierEffects, updateMatchModifiers } from './matchModifiers';
+export { RIVAL_TEAM_DEFINITIONS, RIVAL_TEAM_IDS, selectRivalTeam } from './rivalTeams';
 export type {
   ActiveCombatStage,
   CombatStageRule,
@@ -14,3 +16,11 @@ export type {
   MatchStage,
   ObjectiveStatus,
 } from './types';
+export type {
+  MatchModifierEffects,
+  MatchModifierEvent,
+  MatchModifierInput,
+  MatchModifierState,
+  MatchModifierUpdate,
+} from './matchModifiers';
+export type { RivalTeamDefinition, RivalTeamId } from './rivalTeams';

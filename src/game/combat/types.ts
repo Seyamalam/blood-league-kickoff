@@ -72,6 +72,8 @@ export type SecondaryDamageSource =
   | 'spectral-teammate'
   | 'penalty-mine'
   | 'boot-cyclone'
+  | 'slide-tackle'
+  | 'bicycle-kick'
   | CharacterUltimateId;
 
 export interface SecondaryDamageHit {

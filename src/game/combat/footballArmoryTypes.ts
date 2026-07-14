@@ -46,7 +46,20 @@ export type FootballArmoryEvent =
   | { type: 'teammate-volley'; targetId: number; position: Readonly<Vec3>; teammateIndex: number }
   | { type: 'penalty-mine-planted'; mineIndex: number; position: Readonly<Vec3>; radius: number }
   | { type: 'penalty-mine-detonated'; mineIndex: number; position: Readonly<Vec3>; radius: number }
-  | { type: 'boot-cyclone'; position: Readonly<Vec3>; radius: number };
+  | { type: 'boot-cyclone'; position: Readonly<Vec3>; radius: number }
+  | {
+      type: 'slide-tackle';
+      position: Readonly<Vec3>;
+      direction: Readonly<Vec3>;
+      targetsHit: number;
+    }
+  | {
+      type: 'bicycle-kick';
+      position: Readonly<Vec3>;
+      direction: Readonly<Vec3>;
+      targetsHit: number;
+    }
+  | { type: 'technique-knockback'; targetId: number; force: Readonly<Vec3> };
 
 export interface PenaltyMineRenderState {
   active: boolean;

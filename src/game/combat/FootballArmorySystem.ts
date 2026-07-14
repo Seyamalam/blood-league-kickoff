@@ -30,6 +30,16 @@ interface HeaderInternal {
   knockback: number;
 }
 
+interface TechniqueInternal {
+  active: boolean;
+  position: Vec3;
+  direction: Vec3;
+  damage: number;
+  range: number;
+  halfWidth: number;
+  knockback: number;
+}
+
 /** Fixed-pool simulation for six football-themed automatic and triggered weapon paths. */
 export class FootballArmorySystem {
   private readonly mines: MineInternal[] = Array.from({ length: MINE_POOL_SIZE }, () => ({
@@ -50,6 +60,8 @@ export class FootballArmorySystem {
   }));
   private readonly hits: SecondaryDamageHit[] = [];
   private readonly events: FootballArmoryEvent[] = [];
+  private readonly slideTackle: TechniqueInternal = createTechnique();
+  private readonly bicycleKick: TechniqueInternal = createTechnique();
   private readonly result: FootballArmoryStepResult = {
     hits: this.hits,
     events: this.events,
@@ -77,6 +89,29 @@ export class FootballArmorySystem {
     this.placementSequence = 0;
     for (const mine of this.mines) mine.active = false;
     for (const header of this.headers) header.active = false;
+    this.slideTackle.active = false;
+    this.bicycleKick.active = false;
+  }
+
+  /** Queue a close, forward dash tackle. Repeated requests before a step coalesce. */
+  triggerSlideTackle(position: Readonly<Vec3>, direction: Readonly<Vec3>): boolean {
+    return queueTechnique(this.slideTackle, position, direction, {
+      damage: 10,
+      range: 4.25,
+      halfWidth: 1.25,
+      knockback: 8,
+    });
+  }
+
+  /** Queue the acrobatic impact released by a successful volley. */
+  triggerBicycleKick(position: Readonly<Vec3>, direction: Readonly<Vec3>, charge: number): boolean {
+    const power = bounded(charge, 0, 1);
+    return queueTechnique(this.bicycleKick, position, direction, {
+      damage: 16 + power * 14,
+      range: 5.5 + power * 2.5,
+      halfWidth: 1.8 + power * 0.7,
+      knockback: 10 + power * 6,
+    });
   }
 
   /** Queue a straight spectral header, normally from a charged-kick release. */
@@ -105,6 +140,8 @@ export class FootballArmorySystem {
     this.hits.length = 0;
     this.events.length = 0;
     const dt = bounded(input.dt, 0, 0.1);
+    this.stepTechnique(this.slideTackle, 'slide-tackle', input.targets);
+    this.stepTechnique(this.bicycleKick, 'bicycle-kick', input.targets);
     this.stepHeaders(input.targets);
     this.stepCornerStorm(dt, input);
     this.stepRedCard(dt, input);
@@ -112,6 +149,41 @@ export class FootballArmorySystem {
     this.stepMines(dt, input);
     this.stepCyclone(dt, input);
     return this.result;
+  }
+
+  private stepTechnique(
+    technique: TechniqueInternal,
+    type: 'slide-tackle' | 'bicycle-kick',
+    targets: readonly FootballArmoryTarget[],
+  ): void {
+    if (!technique.active) return;
+    technique.active = false;
+    let targetsHit = 0;
+    for (const target of targets) {
+      const dx = target.position.x - technique.position.x;
+      const dz = target.position.z - technique.position.z;
+      const forward = dx * technique.direction.x + dz * technique.direction.z;
+      if (forward < -target.radius || forward > technique.range + target.radius) continue;
+      const lateral = Math.abs(dx * technique.direction.z - dz * technique.direction.x);
+      if (lateral > technique.halfWidth + target.radius) continue;
+      targetsHit += 1;
+      this.hit(target, technique.damage, type, target.position);
+      push(this.events, {
+        type: 'technique-knockback',
+        targetId: target.id,
+        force: {
+          x: technique.direction.x * technique.knockback,
+          y: 0,
+          z: technique.direction.z * technique.knockback,
+        },
+      });
+    }
+    push(this.events, {
+      type,
+      position: technique.position,
+      direction: technique.direction,
+      targetsHit,
+    });
   }
 
   private stepHeaders(targets: readonly FootballArmoryTarget[]): void {
@@ -313,6 +385,38 @@ function copy(target: Vec3, source: Readonly<Vec3>): void {
   target.x = source.x;
   target.y = source.y;
   target.z = source.z;
+}
+
+function createTechnique(): TechniqueInternal {
+  return {
+    active: false,
+    position: { x: 0, y: 0, z: 0 },
+    direction: { x: 0, y: 0, z: 1 },
+    damage: 0,
+    range: 0,
+    halfWidth: 0,
+    knockback: 0,
+  };
+}
+
+function queueTechnique(
+  technique: TechniqueInternal,
+  position: Readonly<Vec3>,
+  direction: Readonly<Vec3>,
+  values: Pick<TechniqueInternal, 'damage' | 'range' | 'halfWidth' | 'knockback'>,
+): boolean {
+  const directionLength = Math.hypot(direction.x, direction.z);
+  if (directionLength < 0.001) return false;
+  technique.active = true;
+  copy(technique.position, position);
+  technique.direction.x = direction.x / directionLength;
+  technique.direction.y = 0;
+  technique.direction.z = direction.z / directionLength;
+  technique.damage = values.damage;
+  technique.range = values.range;
+  technique.halfWidth = values.halfWidth;
+  technique.knockback = values.knockback;
+  return true;
 }
 
 function bounded(value: number, minimum: number, maximum: number): number {

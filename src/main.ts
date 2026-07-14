@@ -59,9 +59,13 @@ import {
 } from './game/combat';
 import {
   createMatchDirectorState,
+  createMatchModifierState,
   FULL_MATCH_CONFIG,
+  getMatchModifierEffects,
   getMatchObjective,
+  selectRivalTeam,
   updateMatchDirector,
+  updateMatchModifiers,
   type HalftimeChoice,
   type MatchStage,
 } from './game/match';
@@ -134,6 +138,7 @@ import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { EncounterRenderer } from './render/objects/EncounterRenderer';
 import { StadiumPhaseVisual } from './render/objects/StadiumPhaseVisual';
+import { StadiumAmbience } from './render/objects/StadiumAmbience';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import {
   accountLevelForXp,
@@ -141,6 +146,7 @@ import {
   masteryLevelForXp,
   masteryModifierBonusFor,
   ProfileStore,
+  type ProfileStadiumId,
   type RunSettlement,
 } from './profile';
 import { Hud } from './ui/Hud';
@@ -229,16 +235,21 @@ async function bootstrap(): Promise<void> {
   let selectedCurses: CurseId[] = [];
   let runDescriptor = createRunDescriptor({ mode: selectedRunMode, rulesetVersion: BUILD_METADATA.version });
   let runRandomStreams = createRunRandomStreams(runDescriptor);
+  let activeRivalTeam = selectRivalTeam(runDescriptor.seed);
+  let matchModifierState = createMatchModifierState(activeRivalTeam);
   const prepareRun = (mode: RunMode = selectedRunMode, seed?: string): void => {
     selectedRunMode = mode;
     runDescriptor = createRunDescriptor({ mode, seed, rulesetVersion: BUILD_METADATA.version });
     runRandomStreams = createRunRandomStreams(runDescriptor);
+    activeRivalTeam = selectRivalTeam(runDescriptor.seed);
+    matchModifierState = createMatchModifierState(activeRivalTeam);
     upgradeDraft = createUpgradeDraft();
   };
   let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
   const scene = createScene(playerSettings.stadiumSelection);
   let appliedStadiumSelection = playerSettings.stadiumSelection;
+  let activeStadiumId = scene.getObjectByName('stadium-environment')?.userData.variantId as ProfileStadiumId;
   const cameraController = new CameraController();
   const combatFeedback = new CombatFeedbackSystem();
   const input = new InputController(renderer.domElement);
@@ -320,6 +331,7 @@ async function bootstrap(): Promise<void> {
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const atmosphere = new PhaseAtmosphere(scene);
   const stadiumPhaseVisual = new StadiumPhaseVisual(scene);
+  const stadiumAmbience = new StadiumAmbience(scene);
   const hud = new Hud(root);
   const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
     selectedCharacterId = characterId;
@@ -755,7 +767,7 @@ async function bootstrap(): Promise<void> {
   };
   const applyPlayerSettings = (settings: Readonly<PlayerSettings>): void => {
     if (settings.stadiumSelection !== appliedStadiumSelection) {
-      applyStadiumSelection(scene, settings.stadiumSelection);
+      activeStadiumId = applyStadiumSelection(scene, settings.stadiumSelection);
       appliedStadiumSelection = settings.stadiumSelection;
     }
     audio.setVolume(settings.masterVolume);
@@ -787,7 +799,7 @@ async function bootstrap(): Promise<void> {
     audio.setMatchIntensity('opening');
     announcement.show(
       'kickoff',
-      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} ENTERS THE PITCH`,
+      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
     );
     tutorialPrompt.update(tutorialTracker.state);
     hud.start();
@@ -836,6 +848,7 @@ async function bootstrap(): Promise<void> {
     secondaryRenderer.reset();
     atmosphere.reset();
     stadiumPhaseVisual.reset();
+    stadiumAmbience.reset();
     announcement.reset();
     evolutionToast.reset();
     halftimeOverlay.reset();
@@ -876,7 +889,7 @@ async function bootstrap(): Promise<void> {
     audio.setMatchIntensity('opening');
     announcement.show(
       'kickoff',
-      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} ENTERS THE PITCH`,
+      `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
     );
     tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
@@ -1154,6 +1167,26 @@ async function bootstrap(): Promise<void> {
         kick.curve * progression.modifiers.curveStrengthMultiplier,
       );
       if (result) {
+        const matchModifierEffects = getMatchModifierEffects(matchModifierState, activeRivalTeam);
+        if (matchModifierEffects.multiballActive) {
+          secondaryWeapons.triggerMultiBall({
+            origin: state.player.position,
+            direction: rawAim,
+            baseDamage: 1 + result.charge,
+            modifiers: {
+              ...progression.modifiers,
+              multiBallCount: Math.max(
+                progression.modifiers.multiBallCount,
+                matchModifierEffects.multiballCount,
+              ),
+              multiBallDamageMultiplier: Math.max(
+                progression.modifiers.multiBallDamageMultiplier,
+                matchModifierEffects.multiballDamageMultiplier,
+              ),
+            },
+          });
+        }
+        bridge.playPlayerTechnique(result.perfectVolley ? 'bicycle' : 'kick');
         lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
         lastKickWasVolley = result.perfectVolley;
         reboundsSinceKick = 0;
@@ -1178,6 +1211,7 @@ async function bootstrap(): Promise<void> {
         audio.playKick(result.charge);
         input.rumble(0.25 + result.charge * 0.45, 85);
         if (result.perfectVolley) {
+          footballArmory.triggerBicycleKick(state.player.position, rawAim, result.charge);
           runTelemetry.recordPerfectVolley();
           audio.playVolley();
           bridge.volleyBurst(physics.ballPosition, 1 + result.charge * 0.4);
@@ -1302,6 +1336,7 @@ async function bootstrap(): Promise<void> {
         );
         const dashStarted = !dashWasActive && state.player.dashTime > 0;
         if (dashStarted) {
+          footballArmory.triggerSlideTackle(state.player.position, state.player.dashDirection);
           runTelemetry.recordDash();
           audio.playDash();
           input.rumble(0.32, 70);
@@ -1309,7 +1344,9 @@ async function bootstrap(): Promise<void> {
         }
         spawnDirectorInputScratch.stage = match.stage;
         spawnDirectorInputScratch.stageElapsed =
-          match.stageElapsed * activeDifficultyRuleset.spawnRateMultiplier;
+          match.stageElapsed *
+          activeDifficultyRuleset.spawnRateMultiplier *
+          activeRivalTeam.pressureMultiplier;
         spawnDirectorInputScratch.matchElapsed =
           match.matchElapsed * activeDifficultyRuleset.spawnRateMultiplier;
         updateEnemies(
@@ -1319,6 +1356,7 @@ async function bootstrap(): Promise<void> {
           runRandomStreams.spawn.next,
           physics.ballPosition,
           activeDifficultyRuleset.enemyDamageMultiplier *
+            activeRivalTeam.enemyDamageMultiplier *
             progression.modifiers.damageTakenMultiplier *
             activeUltimateEffects.damageTakenMultiplier,
           absorbIncomingDamage,
@@ -1329,10 +1367,14 @@ async function bootstrap(): Promise<void> {
           const previousMaxHealth = enemy.maxHitPoints;
           enemy.maxHitPoints = Math.max(
             1,
-            Math.ceil(enemy.maxHitPoints * activeDifficultyRuleset.enemyHealthMultiplier),
+            Math.ceil(
+              enemy.maxHitPoints *
+                activeDifficultyRuleset.enemyHealthMultiplier *
+                activeRivalTeam.enemyHealthMultiplier,
+            ),
           );
           enemy.hitPoints += enemy.maxHitPoints - previousMaxHealth;
-          enemy.speed *= activeDifficultyRuleset.enemySpeedMultiplier;
+          enemy.speed *= activeDifficultyRuleset.enemySpeedMultiplier * activeRivalTeam.enemySpeedMultiplier;
         }
         for (const event of state.enemyEvents) {
           if (event.type === 'projectileSpawned') audio.playWallImpact(0.25);
@@ -1387,6 +1429,22 @@ async function bootstrap(): Promise<void> {
       physics.syncPlayer(state.player.position);
       if (simulationActive) physics.step(state.player.position, state.player.facing, FIXED_STEP);
       if (simulationActive) {
+        const matchModifierUpdate = updateMatchModifiers(
+          matchModifierState,
+          { dt: FIXED_STEP, stage: match.stage, ballPossessed: physics.ballPossessed },
+          activeRivalTeam,
+        );
+        matchModifierState = matchModifierUpdate.state;
+        for (const event of matchModifierUpdate.events) {
+          if (event.type === 'multiballStarted') {
+            announcement.show('kickoff', `BLOOD MULTIBALL · ${event.count} SHADOW BALLS`, 1.8);
+          }
+          if (event.type === 'possessionCompleted') {
+            state.score += event.scoreReward;
+            characterUltimate.gainCharge(event.ultimateCharge);
+            announcement.show('kickoff', `POSSESSION WON · +${event.scoreReward}`, 1.55);
+          }
+        }
         const comboBeforeHit = state.combo;
         const primaryDamage = damageEnemiesWithBall(
           state,
@@ -1614,7 +1672,15 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'penalty-mine-planted') bridge.frostBurst(event.position, 0.55);
           if (event.type === 'penalty-mine-detonated') bridge.volleyBurst(event.position, 1.35);
           if (event.type === 'boot-cyclone') bridge.voidBurst(event.position, 0.9);
-          if (event.type === 'header-knockback') {
+          if (event.type === 'slide-tackle') {
+            bridge.hitBurst(event.position, event.targetsHit > 0 ? 1.15 : 0.7);
+            cameraController.hitImpulse(event.targetsHit > 0 ? 0.65 : 0.25);
+          }
+          if (event.type === 'bicycle-kick') {
+            bridge.volleyBurst(event.position, event.targetsHit > 0 ? 1.75 : 1.25);
+            cameraController.volleyImpulse(event.targetsHit > 0 ? 1.45 : 0.9);
+          }
+          if (event.type === 'header-knockback' || event.type === 'technique-knockback') {
             const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
             if (enemy) {
               enemy.knockbackVelocity.x += event.force.x;
@@ -1930,6 +1996,7 @@ async function bootstrap(): Promise<void> {
             audio.setMatchIntensity(event.to);
             atmosphere.setPhase(event.to);
             stadiumPhaseVisual.setPhase(event.to);
+            stadiumAmbience.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) {
               boss = spawnCountGoalkeeper();
               audio.playFinalWave();
@@ -1946,6 +2013,8 @@ async function bootstrap(): Promise<void> {
             audio.playGoal();
             audio.playNetImpact();
             audio.playCrowdRise(0.7);
+            stadiumAmbience.celebrate(event.goal === 'final' ? 1.5 : 1.15);
+            stadiumAmbience.burstProps(event.goal === 'final' ? 1.45 : 1);
             announcement.show(
               'goal',
               event.goal === 'final'
@@ -2001,15 +2070,20 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'bloodMoonStarted') {
             audio.playBloodMoon();
             announcement.show('bloodMoon');
+            stadiumAmbience.celebrate(0.72);
+            stadiumAmbience.burstProps(0.5);
           }
           if (event.type === 'victory') {
             state.phase = 'won';
             audio.playVictory();
             announcement.show('finalWhistle', 'COUNT GOALKEEPER HAS FALLEN');
+            stadiumAmbience.celebrate(1.5);
+            stadiumAmbience.burstProps(1.5);
           }
           if (event.type === 'timeExpired') {
             state.phase = 'dead';
             announcement.show('finalWhistle', 'THE COUNT HOLDS THE PITCH');
+            stadiumAmbience.celebrate(0.28);
           }
         }
       }
@@ -2038,6 +2112,7 @@ async function bootstrap(): Promise<void> {
     evolutionToast.update(frameTime);
     atmosphere.update(frameTime);
     stadiumPhaseVisual.update(frameTime);
+    stadiumAmbience.update(frameTime);
     if (halftimeOverlay.isVisible) {
       const remaining = Math.max(0, (halftimeDeadline - performance.now()) / 1_000);
       halftimeOverlay.updateCountdown(remaining);
@@ -2116,6 +2191,7 @@ async function bootstrap(): Promise<void> {
           rulesetVersion: runDescriptor.rulesetVersion,
           difficultyId: activeDifficultyRuleset.difficultyId,
           challengeModifierIds: activeDifficultyRuleset.modifierIds,
+          stadiumId: activeStadiumId,
           rewardMultiplier:
             activeDifficultyRuleset.rewardMultiplier *
             calculateCurseDirectorModifiers(selectedCurses).rewardMultiplier,
@@ -2222,6 +2298,7 @@ async function bootstrap(): Promise<void> {
     uninstallDenseWavePerformanceHook();
     uninstallQaSnapshotHook();
     stadiumPhaseVisual.dispose();
+    stadiumAmbience.dispose();
     atmosphere.dispose();
     bridge.dispose();
     aimGuide.dispose();

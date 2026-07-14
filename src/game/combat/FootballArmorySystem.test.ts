@@ -121,6 +121,47 @@ describe('FootballArmorySystem', () => {
     expect(result.events).toContainEqual(expect.objectContaining({ type: 'boot-cyclone', radius: 2.3 }));
   });
 
+  it('turns a dash into a forward slide tackle with deterministic knockback', () => {
+    const system = new FootballArmorySystem();
+    expect(system.triggerSlideTackle({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 })).toBe(true);
+
+    const result = system.step(stepInput(ZERO_MODIFIERS));
+
+    expect(result.hits.filter(({ source }) => source === 'slide-tackle')).toEqual([
+      expect.objectContaining({ targetId: 1, damage: 10 }),
+      expect.objectContaining({ targetId: 2, damage: 10 }),
+    ]);
+    expect(result.events).toContainEqual(expect.objectContaining({ type: 'slide-tackle', targetsHit: 2 }));
+    expect(result.events).toContainEqual({
+      type: 'technique-knockback',
+      targetId: 1,
+      force: { x: 0, y: 0, z: 8 },
+    });
+  });
+
+  it('rewards a charged bicycle kick with a longer, stronger impact lane', () => {
+    const system = new FootballArmorySystem();
+    const distantTargets: FootballArmoryTarget[] = [
+      { id: 7, position: { x: 1.5, y: 0, z: 7.5 }, radius: 0.3 },
+      { id: 8, position: { x: 4, y: 0, z: 3 }, radius: 0.3 },
+    ];
+    expect(system.triggerBicycleKick({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 2 }, 1)).toBe(true);
+
+    const result = system.step({ ...stepInput(ZERO_MODIFIERS), targets: distantTargets });
+
+    expect(result.hits.filter(({ source }) => source === 'bicycle-kick')).toEqual([
+      expect.objectContaining({ targetId: 7, damage: 30 }),
+    ]);
+    expect(result.events).toContainEqual(expect.objectContaining({ type: 'bicycle-kick', targetsHit: 1 }));
+  });
+
+  it('rejects technique requests without a horizontal direction', () => {
+    const system = new FootballArmorySystem();
+    expect(system.triggerSlideTackle({ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 })).toBe(false);
+    expect(system.triggerBicycleKick({ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, 1)).toBe(false);
+    expect(system.step(stepInput(ZERO_MODIFIERS)).hits).toEqual([]);
+  });
+
   it('does nothing for locked weapon paths and rejects invalid header directions', () => {
     const system = new FootballArmorySystem();
     expect(system.triggerHeader({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 }, ZERO_MODIFIERS)).toBe(false);

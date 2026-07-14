@@ -61,6 +61,17 @@ describe('stadium readability geometry', () => {
     expect(rails).toHaveLength(4);
     expect(rails.every((rail) => !rail.castShadow)).toBe(true);
     expect(scene.getObjectByName('arena-upper-fence')).toBeInstanceOf(THREE.LineSegments);
+    expect(
+      scene.getObjectByName('stadium-environment')?.getObjectByName('stadium-floodlight-rig'),
+    ).toBeInstanceOf(THREE.Group);
+    expect(
+      scene.getObjectByName('stadium-environment')?.getObjectByName('stadium-corner-flag'),
+    ).toBeInstanceOf(THREE.Mesh);
+    const props = scene
+      .getObjectByName('stadium-environment')!
+      .children.filter((object) => object.name === 'stadium-reactive-prop');
+    expect(props).toHaveLength(4);
+    expect(props.every((prop) => prop.children.length >= 2)).toBe(true);
   });
 
   it('builds distinct architecture and replaces the previous stadium cleanly', () => {
@@ -73,5 +84,6 @@ describe('stadium readability geometry', () => {
     expect(scene.children.filter((child) => child.name === 'stadium-environment')).toEqual([second]);
     expect(first.parent).toBeNull();
     expect(second.getObjectByName('stadium-architecture-fortress')).toBeInstanceOf(THREE.Group);
+    expect(second.getObjectByName('stadium-reactive-prop')?.userData.propKind).toBe('fortress');
   });
 });

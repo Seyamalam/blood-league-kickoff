@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import { OPPONENT_GOAL_LINE_Z, PITCH_HALF_LENGTH, PITCH_HALF_WIDTH } from '../../game/field';
 import { createStadium } from '../objects/createStadium';
-import { resolveStadiumVariant, type StadiumSelection } from '../objects/stadiumVariants';
+import {
+  resolveStadiumVariant,
+  type StadiumSelection,
+  type StadiumVariantId,
+} from '../objects/stadiumVariants';
 
 export function createScene(stadiumSelection: StadiumSelection = 'blood-court'): THREE.Scene {
   const scene = new THREE.Scene();
@@ -43,7 +47,7 @@ export function createScene(stadiumSelection: StadiumSelection = 'blood-court'):
 }
 
 /** Rebuilds presentation geometry and palette without touching simulation or physics state. */
-export function applyStadiumSelection(scene: THREE.Scene, selection: StadiumSelection): string {
+export function applyStadiumSelection(scene: THREE.Scene, selection: StadiumSelection): StadiumVariantId {
   const variant = resolveStadiumVariant(selection);
   createStadium(scene, variant.id);
   scene.background = new THREE.Color(variant.sky);
