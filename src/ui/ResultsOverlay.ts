@@ -1,6 +1,8 @@
 import type { EvolutionId, UpgradeId } from '../game/progression';
 import { EVOLUTION_DEFINITIONS, UPGRADE_DEFINITIONS } from '../game/progression';
 import { BUILD_METADATA } from '../build/buildMetadata';
+import { CHARACTER_DEFINITIONS, type CharacterId } from '../game/characters';
+import type { ChallengeId } from '../profile';
 
 export type GameResultOutcome = 'victory' | 'defeat';
 
@@ -18,6 +20,11 @@ export interface GameResultStats {
   level: number;
   upgrades: readonly ResultUpgrade[];
   evolutions: readonly EvolutionId[];
+  characterId?: CharacterId;
+  accountXpEarned?: number;
+  accountLevel?: number;
+  unlockedCharacterIds?: readonly CharacterId[];
+  completedChallengeIds?: readonly ChallengeId[];
 }
 
 export interface ResultsOverlayCallbacks {
@@ -166,6 +173,7 @@ export class ResultsOverlay {
     this.grade.setAttribute('aria-label', `Run grade ${grade.letter}: ${grade.label}`);
 
     const statEntries: ReadonlyArray<readonly [string, string]> = [
+      ...(stats.characterId ? ([['Character', CHARACTER_DEFINITIONS[stats.characterId].name]] as const) : []),
       ['Score', integer(stats.score).toLocaleString()],
       ['Kills', integer(stats.kills).toLocaleString()],
       ['Goals', integer(stats.goals).toLocaleString()],
@@ -176,6 +184,12 @@ export class ResultsOverlay {
         String(stats.upgrades.reduce((total, upgrade) => total + Math.max(0, integer(upgrade.stacks)), 0)),
       ],
       ['Evolutions', String(stats.evolutions.length)],
+      ...(stats.accountXpEarned !== undefined
+        ? ([['Career XP', `+${integer(stats.accountXpEarned)}`]] as const)
+        : []),
+      ...(stats.accountLevel !== undefined
+        ? ([['Career Level', String(Math.max(1, integer(stats.accountLevel)))]] as const)
+        : []),
     ];
     const statNodes: HTMLElement[] = [];
     for (const [label, value] of statEntries) {
@@ -208,6 +222,18 @@ export class ResultsOverlay {
       name.textContent = `✦ ${EVOLUTION_DEFINITIONS[evolutionId].name}`;
       status.textContent = 'EVOLVED';
       item.append(name, status);
+      upgradeNodes.push(item);
+    }
+    for (const characterId of stats.unlockedCharacterIds ?? []) {
+      const item = document.createElement('li');
+      item.className = 'results-upgrades__evolution';
+      item.textContent = `NEW CHARACTER · ${CHARACTER_DEFINITIONS[characterId].name}`;
+      upgradeNodes.push(item);
+    }
+    for (const challengeId of stats.completedChallengeIds ?? []) {
+      const item = document.createElement('li');
+      item.className = 'results-upgrades__evolution';
+      item.textContent = `CHALLENGE COMPLETE · ${challengeId.replace(/([A-Z])/g, ' $1').toUpperCase()}`;
       upgradeNodes.push(item);
     }
     if (upgradeNodes.length === 0) {

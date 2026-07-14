@@ -9,6 +9,7 @@ import {
   getUpgradeAvailability,
   grantBloodXp,
   totalXpRequiredForLevel,
+  UPGRADE_DEFINITIONS,
 } from './index';
 
 describe('progression', () => {
@@ -59,6 +60,35 @@ describe('progression', () => {
     const offerB = createUpgradeOffer(levelTwo, createSeededRandom(42));
     expect(offerA).toEqual(offerB);
     expect(new Set(offerA).size).toBe(offerA.length);
+  });
+
+  it('offers a weapon and passive together whenever both categories are available', () => {
+    const state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(2)).state;
+    const offer = createUpgradeOffer(state, createSeededRandom(77));
+    const kinds = offer.map((upgradeId) => UPGRADE_DEFINITIONS[upgradeId].kind);
+
+    expect(offer).toHaveLength(3);
+    expect(new Set(offer).size).toBe(3);
+    expect(kinds).toContain('weapon');
+    expect(kinds).toContain('passive');
+  });
+
+  it('stacks the four passive upgrade families with bounded run modifiers', () => {
+    let state = grantBloodXp(createProgressionState('engine'), totalXpRequiredForLevel(6)).state;
+    for (const upgradeId of ['ironHeart', 'bloodMagnet', 'killerInstinct', 'bloodDrinker'] as const) {
+      const result = chooseUpgrade(state, upgradeId);
+      expect(result.applied).toBe(true);
+      if (!result.applied) return;
+      state = result.state;
+    }
+
+    expect(state.characterId).toBe('engine');
+    expect(state.modifiers.maxHealthBonus).toBe(12);
+    expect(state.modifiers.pickupRadiusMultiplier).toBeCloseTo(1.55);
+    expect(state.modifiers.allDamageMultiplier).toBeCloseTo(1);
+    expect(state.modifiers.lifeStealOnPrimaryKill).toBeCloseTo(0.8);
+    expect(state.modifiers.lifeStealOnSecondaryKill).toBeCloseTo(0.25);
+    expect(state.modifiers.bossLifeStealRatio).toBeCloseTo(0.003);
   });
 
   it('unlocks Storm Studs after Silver Ball and stacks bounded lightning modifiers', () => {

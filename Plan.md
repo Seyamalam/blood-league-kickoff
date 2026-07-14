@@ -77,6 +77,28 @@ Complete evolution roster:
 - Orbiting Spectral Ball + Storm Studs → **Storm Halo**
 - Ghost Pass + Void Goal → **Phantom Singularity**
 
+Passive foundations:
+
+- **Iron Heart:** maximum-health growth with same-stack recovery
+- **Blood Magnet:** wider Blood XP attraction
+- **Killer Instinct:** bounded all-source damage growth
+- **Blood Drinker:** capped primary/secondary kill healing and boss-damage life steal
+
+The passive definitions, modifier calculations, mixed offers, four original icons, main-loop application, healing feedback, and tests are implemented. Full-run balance remains in progress.
+
+### Original character roster
+
+| Character     | Role                | Strength                       | Weakness                 |
+| ------------- | ------------------- | ------------------------------ | ------------------------ |
+| The Maestro   | Technical Playmaker | Curve, recall, perfect volleys | Lower kick power         |
+| The Breakaway | Explosive Runner    | Movement and dash frequency    | Lower maximum health     |
+| The Tower     | Power Striker       | Health, power, and knockback   | Slower movement          |
+| The Finisher  | Penalty-Box Hunter  | Direct damage to elite threats | Weaker secondary weapons |
+| The Engine    | Relentless Runner   | Pickup range and movement      | Lower starting damage    |
+| The Guardian  | Defensive Anchor    | Damage resistance              | Lower kick power         |
+
+These are original gameplay archetypes, not representations of real footballers. Typed immutable definitions, safe modifier bounds, persistent selection, unlock/profile presentation, and live-run startup are implemented; original models/portraits remain future polish.
+
 Target paths include lightning, frost, black hole, multiball, holy zones, dash shockwaves, and goalkeeper shields.
 
 ## 6. Enemy Roster
@@ -107,6 +129,9 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │   ├── AudioManager.ts
 │   │   └── index.ts
 │   ├── game/
+│   │   ├── characters/
+│   │   │   ├── characterDefinitions.ts
+│   │   │   └── types.ts
 │   │   ├── boss/
 │   │   │   ├── countGoalkeeper.ts
 │   │   │   ├── finalElite.ts
@@ -147,6 +172,14 @@ Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brut
 │   │       ├── GoalBeacon.ts
 │   │       └── PhaseAtmosphere.ts
 │   ├── settings/SettingsStore.ts
+│   ├── profile/
+│   │   ├── ProfileStore.ts
+│   │   ├── challenges.ts
+│   │   ├── profileProgression.ts
+│   │   └── types.ts
+│   ├── leaderboard/
+│   │   ├── LocalLeaderboardRepository.ts
+│   │   └── types.ts
 │   ├── ui/
 │   │   ├── Hud.ts
 │   │   ├── HalftimeOverlay.ts
@@ -173,10 +206,13 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 ### Current runtime boundaries
 
 - `main.ts`: bootstrap, events, fixed-step accumulator, interpolation, combat-audio hooks, restart, and frame rendering
-- `AudioManager`: asset-free effects, smoothly blended phase music, gesture unlock, volume/mute, polyphony limits, and cleanup
+- `AudioManager`: asset-free effects, event cooldown protection, football/goalkeeper/progression/match/UI cues, smoothly blended drone/tension/pulse/choir/percussion layers, gesture unlock, volume/mute, polyphony limits, and cleanup
 - `MatchDirector`: pure, data-configurable stage transitions, objectives, goal opportunity, and run outcomes
 - `SpawnDirector`: immutable phase-specific population/cadence/roster budgets with allocation-free fixed-step resolution and deterministic weighted-selection tests
 - `progression`: immutable blood XP, level thresholds, upgrade offers/stacks, and recomputed combat modifiers
+- `characters`: six immutable original football-style archetypes with safe strengths, weaknesses, affinities, modifier bonuses, and visual palettes
+- `profile`: schema-validated local account XP, unlocks, mastery, ten challenges, statistics, personal bests, duplicate-safe run settlement, and twenty-run history
+- `leaderboard`: local/offline score and fastest-victory ranking over profile history, isolated by exact build version and optional character
 - `BloodShardSystem`: fixed-cap deterministic shard bursts, magnet movement, collection, and XP preservation
 - `SecondaryWeaponSystem`: bounded garlic, orbit, bomb, ghost, chain, frost, multiball, and black-hole combat plus generic evolution hooks
 - `SecondaryWeaponRenderer`: five fixed instanced batches sharing three geometries and five semantic materials
@@ -215,6 +251,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `EnemyRenderer`: instanced or pooled visuals with distance/update LOD
 - `SpawnDirector`: phase-driven population and pacing
 - `UpgradeSystem`: offers, stacks, prerequisites, and evolutions
+- `ProfileUI`: character selection, progression, mastery, challenges, personal bests, and recent-run history
+- `LeaderboardUI`: explicitly local/offline build-specific rankings; remote competition is out of scope until deterministic runs and a server-side trust boundary exist
 - `MatchDirector`: clock, goals, kickoffs, halftime, boss, win, and loss
 - `PoolManager`: VFX, pickups, projectiles, UI numbers, and non-instanced enemies
 - `AudioManager`: Web Audio buses, spatial effects, music layers, and persistence
@@ -260,7 +298,7 @@ Image generation may provide original key art, menus, upgrade icons, portraits, 
 
 Every external or generated asset must immediately receive a source, author/tool, license, and modification record in the credits documentation.
 
-Audio priority is kick impact, ball flight/recall, enemy hit/death, goal/kickoff stingers, upgrade/evolution cues, then phase-layered music. Strong sound and restrained camera/impact feedback outrank decorative content.
+Audio priority is kick impact, ball flight/recall, player danger, goalkeeper responses, enemy hit/death, goal/kickoff stingers, upgrade/evolution/profile cues, then phase-layered music. The implemented procedural core includes football-frame impacts, dash/heal/life-steal, progression, match-transition, goalkeeper, outcome, and UI cues with retrigger protection, plus drone, tension, pulse, choir, and percussion-style layers. Runtime/UI event wiring and mix acceptance remain in progress. Strong sound and restrained camera/impact feedback outrank decorative content.
 
 ## 10. UI and Accessibility
 
@@ -349,4 +387,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. The current alpha.5 work adds the shared 68×105 field, physical goal frames, swept whole-ball scoring, a special goalkeeper blocker, a long red world-space aim line, conventional/invertible vertical look, and title-only desktop Quit. Twelve upgrades, five evolutions, eight ordinary enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Web/macOS prerelease automation covers active development; Windows/Linux remain manual final-only. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. The current work includes the shared 68×105 field, physical goal frames, swept whole-ball scoring, a special goalkeeper blocker, a long red aim line, conventional/invertible vertical look, and title-only desktop Quit. Twelve weapon paths, four live passives, five evolutions, six persistent selectable characters, mastery/challenges/history, local exact-build rankings, expanded procedural music/SFX, eight ordinary enemy archetypes plus elites, Focus Kick, physical XP shards, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Web/macOS prerelease automation covers active development; Windows/Linux remain manual final-only. Pointer-lock combat feel, full-run balance, final audio mix, and downloaded Windows/Linux smoke tests still require human validation.

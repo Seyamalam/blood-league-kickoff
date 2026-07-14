@@ -18,4 +18,18 @@ describe('BloodShardSystem', () => {
     expect(system.state.activeCount).toBe(1);
     expect(system.state.pickups[0]?.xpValue).toBe(20);
   });
+
+  it('expands the magnet radius for Blood Magnet without changing the base configuration', () => {
+    const normal = new BloodShardSystem({ capacity: 1, seed: 12 });
+    const expanded = new BloodShardSystem({ capacity: 1, seed: 12 });
+    normal.spawnOnKill({ x: 0, y: 0.9, z: 0 }, 2, 1);
+    expanded.spawnOnKill({ x: 0, y: 0.9, z: 0 }, 2, 1);
+
+    for (let step = 0; step < 6; step += 1) {
+      normal.update({ x: 8, y: 0.9, z: 0 }, 0.05);
+      expanded.update({ x: 8, y: 0.9, z: 0 }, 0.05, undefined, 2);
+    }
+
+    expect(expanded.state.pickups[0]!.velocity.x).toBeGreaterThan(normal.state.pickups[0]!.velocity.x);
+  });
 });

@@ -4,9 +4,13 @@ import moonBreakerIcon from '../assets/progression/evolutions/moon-breaker.svg';
 import phantomSingularityIcon from '../assets/progression/evolutions/phantom-singularity.svg';
 import stormHaloIcon from '../assets/progression/evolutions/storm-halo.svg';
 import bloodBombIcon from '../assets/progression/upgrades/blood-bomb.svg';
+import bloodDrinkerIcon from '../assets/progression/upgrades/blood-drinker.svg';
+import bloodMagnetIcon from '../assets/progression/upgrades/blood-magnet.svg';
 import frostCleatsIcon from '../assets/progression/upgrades/frost-cleats.svg';
 import garlicTrailIcon from '../assets/progression/upgrades/garlic-trail.svg';
 import ghostPassIcon from '../assets/progression/upgrades/ghost-pass.svg';
+import ironHeartIcon from '../assets/progression/upgrades/iron-heart.svg';
+import killerInstinctIcon from '../assets/progression/upgrades/killer-instinct.svg';
 import orbitingSpectralBallIcon from '../assets/progression/upgrades/orbiting-spectral-ball.svg';
 import piercingStudsIcon from '../assets/progression/upgrades/piercing-studs.svg';
 import powerKickIcon from '../assets/progression/upgrades/power-kick.svg';
@@ -31,6 +35,10 @@ export const UPGRADE_ICON_URLS = Object.freeze({
   frostCleats: frostCleatsIcon,
   spectralVolley: spectralVolleyIcon,
   voidGoal: voidGoalIcon,
+  ironHeart: ironHeartIcon,
+  bloodMagnet: bloodMagnetIcon,
+  killerInstinct: killerInstinctIcon,
+  bloodDrinker: bloodDrinkerIcon,
 } satisfies Record<UpgradeId, string>);
 
 /** Build-verified presentation assets for every automatic evolution. */

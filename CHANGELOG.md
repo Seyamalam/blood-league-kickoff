@@ -2,7 +2,14 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
-## Unreleased
+## v0.8.0-alpha.6 — 2026-07-14
+
+- Added four live passive upgrades—Iron Heart, Blood Magnet, Killer Instinct, and Blood Drinker—with mixed offers, bounded modifiers, health/life-steal feedback, tests, and four original SVG icons.
+- Added six immutable original football-style characters—The Maestro, The Breakaway, The Tower, The Finisher, The Engine, and The Guardian—with persistent selection, unlock presentation, distinct live-run traits, and safe modifier tests. No real-player names, likenesses, clubs, or kits are used.
+- Added a schema-validated persistent local profile foundation for account XP, character unlocks/mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe settlement, and bounded recent-run history.
+- Added local/offline score and fastest-victory ranking over profile history, isolated by exact build version and optional character. No remote or verified-online leaderboard is claimed.
+- Added the production Career overlay and README capture for character selection, mastery, challenges, run history, personal bests, and local records.
+- Expanded the asset-free procedural audio core with protected football-frame, goalkeeper, movement/healing, progression, match-transition, outcome, and UI cues plus adaptive choir and percussion-style layers; authoritative runtime/UI wiring and final mix validation remain in progress.
 
 ## v0.8.0-alpha.5 — 2026-07-14
 

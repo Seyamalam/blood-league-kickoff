@@ -101,6 +101,7 @@ export class BloodShardSystem {
     playerPosition: Readonly<PickupVector3>,
     deltaSeconds: number,
     onCollect?: PickupCollectionListener,
+    magnetRadiusMultiplier = 1,
   ): number {
     const delta = Math.min(0.05, Math.max(0, Number.isFinite(deltaSeconds) ? deltaSeconds : 0));
     this.state.collectedXpThisStep = 0;
@@ -108,6 +109,10 @@ export class BloodShardSystem {
     if (delta === 0 || this.state.activeCount === 0) return 0;
 
     const drag = Math.max(0, 1 - delta * 2.8);
+    const safeMagnetMultiplier = Number.isFinite(magnetRadiusMultiplier)
+      ? Math.min(3, Math.max(0.5, magnetRadiusMultiplier))
+      : 1;
+    const activeMagnetRadiusSquared = this.magnetRadiusSquared * safeMagnetMultiplier * safeMagnetMultiplier;
     for (let index = 0; index < this.pickups.length; index += 1) {
       const pickup = this.pickups[index];
       if (!pickup?.active) continue;
@@ -125,10 +130,10 @@ export class BloodShardSystem {
         continue;
       }
 
-      if (pickup.age >= this.magnetDelay && distanceSquared <= this.magnetRadiusSquared) {
+      if (pickup.age >= this.magnetDelay && distanceSquared <= activeMagnetRadiusSquared) {
         const inverseDistance = 1 / Math.sqrt(Math.max(0.0001, distanceSquared));
         // Attraction strengthens near the player so a shard cannot orbit forever.
-        const proximity = 1 - Math.sqrt(distanceSquared / this.magnetRadiusSquared);
+        const proximity = 1 - Math.sqrt(distanceSquared / activeMagnetRadiusSquared);
         const acceleration = this.magnetAcceleration * (0.45 + proximity * 0.9) * delta;
         pickup.velocity.x += dx * inverseDistance * acceleration;
         pickup.velocity.y += dy * inverseDistance * acceleration;

@@ -45,6 +45,10 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![Persistent graphics, frame-rate, audio, sensitivity, and camera settings](docs/screenshots/settings.jpg)
 
+### Career
+
+![Career progression and original character roster](docs/screenshots/career.jpg)
+
 ### Results
 
 ![Victory results with run grade and build metadata](docs/screenshots/results-victory.jpg)
@@ -66,6 +70,25 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 5. Score when the enemy goal opens.
 6. Survive the more dangerous kickoff phase.
 7. Defeat Count Goalkeeper or fall and begin a new run.
+
+## Characters and Long-Term Progression
+
+The next replayability layer uses six original football-style archetypes. They do not use real-player names, faces, clubs, kits, celebrations, or other protected likenesses.
+
+| Character     | Football identity       | Strength                            | Tradeoff                 |
+| ------------- | ----------------------- | ----------------------------------- | ------------------------ |
+| The Maestro   | Technical playmaker     | Curve, recall, and perfect volleys  | Lower raw kick power     |
+| The Breakaway | Explosive runner        | Movement speed and frequent dashes  | Lower maximum health     |
+| The Tower     | Powerful target striker | Health, kick force, and knockback   | Slower movement          |
+| The Finisher  | Penalty-box hunter      | Direct damage against elite threats | Weaker secondary weapons |
+| The Engine    | Relentless runner       | Pickup range and pitch coverage     | Lower starting damage    |
+| The Guardian  | Defensive anchor        | Damage resistance                   | Lower kick power         |
+
+Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. Original portraits/models remain future visual polish.
+
+Four passive upgrades now join the twelve active/weapon paths: **Iron Heart** raises maximum health, **Blood Magnet** expands Blood XP attraction, **Killer Instinct** raises all damage, and **Blood Drinker** restores health from primary/secondary kills and boss damage. They are active in live runs with authored SVG icons and audio feedback; full-run balance validation remains in progress.
+
+A versioned local profile records account XP, six character unlock levels, mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. The Career screen exposes all of it plus local/offline score and fastest-victory tables for the exact build. These rankings never claim to be global or cheat-proof, and no remote service or secret is shipped in the game.
 
 ## Controls
 
@@ -109,7 +132,9 @@ For participant privacy, contact details and student identity numbers are not pu
 ### Target build
 
 - Eight enemy behaviors with visual variants
-- Twelve or more weapons/upgrades and five evolutions
+- Twelve weapons, four passive upgrades, and five evolutions
+- Six original football-style character foundations
+- Persistent local profile, mastery, challenges, history, and offline rankings
 - Three match phases and a halftime choice
 - Brief first-person Focus Kick ultimate
 - Performance, balanced, and quality presets
@@ -123,7 +148,7 @@ Target features remain gated until the guaranteed vertical slice is fun, stable,
 - **TypeScript + Vite:** code-first development and browser builds
 - **Rapier:** fixed-step WASM physics for the player, ball, arena, and important collisions
 - **HTML/CSS:** menus, HUD, upgrade cards, and settings
-- **Web Audio:** music, effects, and phase transitions
+- **Web Audio:** layered procedural music, protected effects, football impacts, progression cues, and phase transitions
 - **Electron:** self-contained GPU-accelerated desktop builds sharing the web gameplay code
 - **electron-builder:** portable Windows, macOS, and Linux packaging
 - **GitHub Actions:** native-runner web/desktop builds attached automatically to tagged releases
@@ -148,6 +173,11 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow
+- [x] Four typed passive foundations—Iron Heart, Blood Magnet, Killer Instinct, and Blood Drinker—with bounded modifiers, weapon/passive offer balance, tests, and original icons
+- [x] Apply every passive modifier and its health/life-steal feedback through the live runtime and upgrade UI
+- [x] Six immutable original football-style character definitions with distinct strengths, weaknesses, affinities, modifier sets, and visual palettes
+- [x] Add character selection/profile UI, live selected-character startup, and unlock presentation
+- [ ] Add original character portraits/models
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection
 - [x] Piercing Studs, Garlic Trail, Orbiting Spectral Ball, Blood Bomb, and Ghost Pass work in live combat
@@ -180,7 +210,9 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Five fixed secondary-weapon `InstancedMesh` batches replace 45 individual render meshes
 - [x] Full-pool diagnostics track all 45 visible secondary objects and prove a five-draw-call ceiling
 - [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans
-- [x] Procedural match music blends drone, tension, and pulse layers across every phase
+- [x] Procedural match music blends drone, tension, pulse, choir, and percussion-style layers across every phase
+- [x] Expanded procedural cue vocabulary covers football-frame impacts, goalkeeper actions, dash/healing, progression, match transitions, and UI feedback with retrigger protection
+- [ ] Connect every expanded audio cue to its authoritative runtime/UI event and complete the final mix
 - [x] Automated wall, corner, stall, out-of-bounds, recall, catch, reset, and curved-flight recovery coverage
 - [x] Planar stall detection and immediate catch-velocity cleanup close two ball recovery edge cases
 - [x] Independent persistent master, music, and effects volume controls with safe schema migration
@@ -195,6 +227,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Color-independent ball-state patterns and animated geometric special-attack markers
 - [x] Rebindable persistent keyboard controls with safe validation and conflict prevention
 - [x] Outcome-specific results presentation with deterministic accessible S–D run grades
+- [x] Versioned local profile foundation for account XP, character unlocks/mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe settlement, and bounded run history
+- [x] Local/offline score and fastest-victory leaderboard repository partitioned by exact build version and optional character
+- [x] Integrate profile settlement, progression/history screens, personal-best feedback, character selection, and clearly labeled local leaderboards into the runtime UI
+- [ ] Add deterministic run-wide seeds before considering daily/weekly or remotely verified rankings; no online leaderboard is currently claimed
 - [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
 - [x] Secure macOS Electron window-size and fullscreen/windowed controls, with desktop Quit available only from the title screen
 - [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage, secondary-boss damage parity, and dense-crowd stress tests

@@ -1923,3 +1923,251 @@ button {
     transition: none;
   }
 }
+
+.career-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #eee8e8;
+  background: rgba(4, 3, 7, 0.9);
+  backdrop-filter: blur(10px);
+}
+.career-overlay.hidden {
+  display: none;
+}
+.career-panel {
+  width: min(1180px, 100%);
+  max-height: min(900px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid rgba(214, 166, 50, 0.42);
+  background: linear-gradient(145deg, rgba(28, 17, 29, 0.98), rgba(8, 7, 12, 0.99));
+  box-shadow: 0 30px 100px #000;
+}
+.career-panel__header,
+.career-panel__footer,
+.career-section > header,
+.career-account__summary,
+.career-character header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.career-panel__header {
+  padding: 22px 26px;
+  border-bottom: 1px solid #32232f;
+}
+.career-panel__header h2 {
+  margin: 2px 0 0;
+  font:
+    italic 38px Impact,
+    sans-serif;
+  letter-spacing: 0.08em;
+}
+.career-panel__eyebrow,
+.career-section header p {
+  margin: 0;
+  color: #a89ba8;
+  font:
+    700 9px Arial,
+    sans-serif;
+  letter-spacing: 0.16em;
+}
+.career-panel__close {
+  min-width: 48px;
+  padding: 8px;
+  font-size: 24px;
+}
+.career-panel__body {
+  max-height: calc(100vh - 190px);
+  overflow: auto;
+  padding: 24px 26px 34px;
+}
+.career-account,
+.career-section {
+  margin-bottom: 28px;
+}
+.career-account h3,
+.career-section h3,
+.career-section h4 {
+  margin: 0 0 12px;
+  font:
+    800 13px Arial,
+    sans-serif;
+  letter-spacing: 0.14em;
+}
+.career-account__summary {
+  padding: 14px;
+  border: 1px solid #4b3347;
+  background: #160f18;
+}
+.career-account__summary progress {
+  width: min(440px, 45vw);
+}
+.career-account__stats,
+.career-account__bests,
+.career-character dl {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  margin-top: 1px;
+}
+.career-account__stats > dl,
+.career-account__bests > dl {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  margin: 0;
+}
+.career-account__stats div,
+.career-account__bests div,
+.career-character dl div {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.career-account dt,
+.career-character dt {
+  color: #958a96;
+  font:
+    700 8px Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.career-account dd,
+.career-character dd {
+  margin: 4px 0 0;
+  font:
+    800 14px Arial,
+    sans-serif;
+}
+.career-characters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.career-character {
+  padding: 16px;
+  border: 1px solid #493343;
+  background: rgba(34, 21, 34, 0.82);
+}
+.career-character--selected {
+  border-color: #d6a632;
+  box-shadow: inset 0 0 24px rgba(214, 166, 50, 0.12);
+}
+.career-character--locked {
+  opacity: 0.58;
+}
+.career-character h4 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+.career-character p {
+  min-height: 34px;
+  color: #c5bac5;
+  font:
+    11px/1.45 Arial,
+    sans-serif;
+}
+.career-character p strong {
+  color: #d6a632;
+}
+.career-character dl {
+  grid-template-columns: repeat(2, 1fr);
+}
+.career-character button {
+  width: 100%;
+  margin-top: 12px;
+}
+.career-character button:disabled {
+  color: #aaa0aa;
+  background: #282128;
+  opacity: 1;
+}
+.career-character--selected button:disabled {
+  color: #eadbaf;
+  background: #3a3025;
+}
+.career-challenges,
+.career-runs,
+.career-leaderboards ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.career-challenge,
+.career-runs li,
+.career-leaderboards li {
+  display: flex;
+  gap: 12px;
+  padding: 11px 12px;
+  border-bottom: 1px solid #2e222d;
+  background: rgba(255, 255, 255, 0.025);
+}
+.career-challenge > div {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 12px;
+}
+.career-challenge progress {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.career-challenge--complete {
+  color: #e9c46f;
+}
+.career-leaderboards__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.career-leaderboards__grid section {
+  padding: 14px;
+  border: 1px solid #3c2b39;
+  background: rgba(0, 0, 0, 0.2);
+}
+.career-panel__footer {
+  justify-content: center;
+  padding: 12px;
+  color: #756c77;
+  border-top: 1px solid #30222e;
+  font:
+    700 9px Arial,
+    sans-serif;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 1100px) {
+  .career-characters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .career-overlay {
+    padding: 8px;
+  }
+  .career-panel {
+    max-height: calc(100vh - 16px);
+  }
+  .career-panel__body {
+    max-height: calc(100vh - 150px);
+    padding: 16px;
+  }
+  .career-characters,
+  .career-leaderboards__grid {
+    grid-template-columns: 1fr;
+  }
+  .career-account__stats,
+  .career-account__bests {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .career-account__stats > dl,
+  .career-account__bests > dl {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

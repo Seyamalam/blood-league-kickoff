@@ -3,6 +3,7 @@ import {
   applyEnemySlow,
   createGameState,
   damageEnemiesWithBall,
+  damageEnemiesWithSecondary,
   resetKickoffFormation,
   spawnEliteEnemy,
   spawnGoalkeeperGuard,
@@ -71,6 +72,62 @@ describe('game state match helpers', () => {
     updatePlayer(boosted, { x: 1, z: 0 }, 0, 1, 1.15);
 
     expect(boosted.player.position.x).toBeGreaterThan(baseline.player.position.x);
+  });
+
+  it('applies a bounded dash cooldown multiplier independently of movement speed', () => {
+    const baseline = createGameState();
+    const quickRecovery = createGameState();
+
+    updatePlayer(baseline, { x: 1, z: 0, dash: true }, 0, 0, 1, 1);
+    updatePlayer(quickRecovery, { x: 1, z: 0, dash: true }, 0, 0, 1, 0.8);
+
+    expect(baseline.player.dashCooldown).toBeCloseTo(1.35);
+    expect(quickRecovery.player.dashCooldown).toBeCloseTo(1.08);
+  });
+
+  it('reduces enemy contact damage with the player damage-taken multiplier', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const enemy = spawnGoalkeeperGuard(state);
+    enemy.position = { ...state.player.position };
+    enemy.previousPosition = { ...enemy.position };
+    enemy.attackDamage = 20;
+
+    updateEnemies(
+      state,
+      0,
+      { stage: 'goalOpportunity', stageElapsed: 1, matchElapsed: 90 },
+      () => 0.5,
+      undefined,
+      0.5,
+    );
+
+    expect(state.player.health).toBe(90);
+  });
+
+  it('applies a bounded secondary damage multiplier before enemy defeat resolution', () => {
+    const state = createGameState();
+    const enemy = spawnEliteEnemy(state, 'winger', 1);
+    enemy.hitPoints = 10;
+    enemy.maxHitPoints = 10;
+
+    const result = damageEnemiesWithSecondary(
+      state,
+      [
+        {
+          targetId: enemy.id,
+          damage: 4,
+          source: 'garlic-trail',
+          position: enemy.position,
+        },
+      ],
+      undefined,
+      1.5,
+    );
+
+    expect(result).toMatchObject({ hits: 1, kills: 0 });
+    expect(enemy.hitPoints).toBe(4);
   });
 
   it('holds the ordinary population cap under a dense mixed final-wave crowd', () => {
