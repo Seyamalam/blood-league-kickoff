@@ -74,6 +74,35 @@ export const EVOLUTION_DEFINITIONS = Object.freeze({
       ghostVoidDuration: 1.2,
     },
   }),
+  thunderclapRush: define({
+    id: 'thunderclapRush',
+    name: 'Thunderclap Rush',
+    description: 'Storm-charged dashes erupt across a wider area with brutal knockback.',
+    requirements: [
+      { upgradeId: 'dashShockwave', minStacks: 1 },
+      { upgradeId: 'stormStuds', minStacks: 1 },
+    ],
+    modifierBonus: {
+      dashShockwaveDamage: 12,
+      dashShockwaveRadius: 0.8,
+      dashShockwaveKnockback: 4,
+    },
+  }),
+  sacredAegis: define({
+    id: 'sacredAegis',
+    name: 'Sacred Aegis',
+    description: 'Your ward recharges faster while consecrated zones burn brighter and longer.',
+    requirements: [
+      { upgradeId: 'consecratedPitch', minStacks: 1 },
+      { upgradeId: 'bloodBarrier', minStacks: 1 },
+    ],
+    modifierBonus: {
+      holyZoneDamage: 4,
+      holyZoneRadius: 0.4,
+      holyZoneDuration: 1.4,
+      bloodBarrierRechargeMultiplier: -0.2,
+    },
+  }),
 } satisfies Record<EvolutionId, EvolutionDefinition>);
 
 function define(definition: EvolutionDefinition): Readonly<EvolutionDefinition> {

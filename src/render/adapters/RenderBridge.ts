@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
+import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -32,6 +33,8 @@ interface EnemyVisual {
   leftGlove?: THREE.Mesh;
   rightGlove?: THREE.Mesh;
   catchRing?: THREE.Mesh;
+  weapon?: THREE.Mesh;
+  specialRing?: THREE.Mesh;
 }
 
 export class RenderBridge {
@@ -44,10 +47,13 @@ export class RenderBridge {
   private readonly bursts: HitBurst[];
   private readonly enemies = new Map<number, EnemyVisual>();
   private readonly liveEnemyIds = new Set<number>();
+  private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
+  private readonly liveEnemyProjectileIds = new Set<number>();
   private ballSpin = 0;
   private trailInitialized = false;
   private nextBurst = 0;
   private firstPerson = false;
+  private reducedFlashes = false;
   private disposed = false;
 
   constructor(private readonly scene: THREE.Scene) {
@@ -64,6 +70,13 @@ export class RenderBridge {
     for (const burst of this.bursts) scene.add(burst.points);
   }
 
+  public setCharacter(characterId: CharacterId): void {
+    const style = CHARACTER_DEFINITIONS[characterId].visualStyle;
+    playerMaterial.jersey.color.setHex(style.primaryColor);
+    playerMaterial.crimson.color.setHex(style.accentColor);
+    playerMaterial.sole.color.setHex(style.bootColor);
+  }
+
   sync(state: GameState, ballPosition: Vec3, ballSpeed: number, dt: number, alpha: number): void {
     const p = state.player.position;
     const previousPlayer = state.player.previousPosition;
@@ -75,7 +88,8 @@ export class RenderBridge {
     this.player.rotation.y = state.player.facing;
     this.player.visible =
       !this.firstPerson &&
-      !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0);
+      (this.reducedFlashes ||
+        !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0));
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
@@ -120,6 +134,30 @@ export class RenderBridge {
       this.scene.remove(visual.group);
       this.enemies.delete(id);
     }
+    this.liveEnemyProjectileIds.clear();
+    for (const projectile of state.enemyProjectiles) {
+      this.liveEnemyProjectileIds.add(projectile.id);
+      let visual = this.enemyProjectiles.get(projectile.id);
+      if (!visual) {
+        visual = new THREE.Mesh(enemyGeometry.projectile, enemyMaterial.projectile);
+        visual.name = `enemy-projectile-${projectile.id}`;
+        visual.castShadow = false;
+        this.enemyProjectiles.set(projectile.id, visual);
+        this.scene.add(visual);
+      }
+      visual.position.set(
+        THREE.MathUtils.lerp(projectile.previousPosition.x, projectile.position.x, alpha),
+        projectile.position.y,
+        THREE.MathUtils.lerp(projectile.previousPosition.z, projectile.position.z, alpha),
+      );
+      visual.rotation.x += dt * 8;
+      visual.rotation.z += dt * 11;
+    }
+    for (const [id, visual] of this.enemyProjectiles) {
+      if (this.liveEnemyProjectileIds.has(id)) continue;
+      this.scene.remove(visual);
+      this.enemyProjectiles.delete(id);
+    }
   }
 
   reset(): void {
@@ -127,6 +165,8 @@ export class RenderBridge {
       this.scene.remove(visual.group);
     }
     this.enemies.clear();
+    for (const visual of this.enemyProjectiles.values()) this.scene.remove(visual);
+    this.enemyProjectiles.clear();
     this.trailInitialized = false;
     this.trail.visible = false;
     for (const burst of this.bursts) {
@@ -137,6 +177,10 @@ export class RenderBridge {
 
   setFirstPerson(active: boolean): void {
     this.firstPerson = active;
+  }
+
+  setReducedFlashes(active: boolean): void {
+    this.reducedFlashes = active;
   }
 
   /** Reuses a small particle pool; safe to call for every registered ball hit. */
@@ -211,10 +255,10 @@ export class RenderBridge {
     this.nextBurst = (this.nextBurst + 1) % this.bursts.length;
     const strength = Number.isFinite(intensity) ? THREE.MathUtils.clamp(intensity, 0.2, 2) : 1;
     burst.age = 0;
-    burst.duration = 0.22 + strength * 0.07;
+    burst.duration = this.reducedFlashes ? 0.14 : 0.22 + strength * 0.07;
     burst.points.position.set(position.x, position.y, position.z);
     burst.points.material.color.setHex(color);
-    burst.points.material.opacity = 0.9;
+    burst.points.material.opacity = this.reducedFlashes ? 0.45 : 0.9;
     burst.points.material.size = 0.13 + strength * 0.045;
     burst.points.visible = true;
     for (let index = 0; index < BURST_PARTICLES; index += 1) {
@@ -419,11 +463,14 @@ function createEnemy(enemy: EnemyState): EnemyVisual {
   else if (enemy.archetype === 'batSwarm') addBatSwarm(bodyRoot, parts);
   else if (enemy.archetype === 'leechStriker') addLeechStriker(bodyRoot, parts);
   else if (enemy.archetype === 'corruptReferee') addCorruptReferee(bodyRoot, parts);
+  else if (enemy.archetype === 'bloodArcher') addBloodArcher(bodyRoot, parts);
+  else if (enemy.archetype === 'shadowRunner') addShadowRunner(bodyRoot, parts);
+  else if (enemy.archetype === 'corpseBomber') addCorpseBomber(bodyRoot, parts);
   else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(bodyRoot, parts);
   else addBloodFan(bodyRoot, parts);
 
   // Ground-space cues must not inherit body lean or hit recoil.
-  for (const groundCue of [parts.aura, parts.drainRing, parts.whistleRing]) {
+  for (const groundCue of [parts.aura, parts.drainRing, parts.whistleRing, parts.specialRing]) {
     if (!groundCue) continue;
     bodyRoot.remove(groundCue);
     group.add(groundCue);
@@ -452,6 +499,9 @@ function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: numb
   if (enemy.attackState === 'telegraph') lean = -0.12;
   else if (enemy.attackState === 'lunge' || enemy.attackState === 'drain') lean = 0.28;
   else if (enemy.attackState === 'whistle') lean = 0.14;
+  else if (enemy.attackState === 'volley') lean = 0.2;
+  else if (enemy.attackState === 'vanish') lean = -0.28;
+  else if (enemy.attackState === 'fuse') lean = 0.08;
   else if (enemy.attackState === 'recover') lean = -0.08;
   if (enemy.hitFlash > 0) {
     lean = -0.2;
@@ -463,7 +513,11 @@ function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: numb
 
   const marker = visual.threatMarker;
   marker.visible =
-    enemy.attackState === 'telegraph' || enemy.attackState === 'drain' || enemy.attackState === 'whistle';
+    enemy.attackState === 'telegraph' ||
+    enemy.attackState === 'drain' ||
+    enemy.attackState === 'whistle' ||
+    enemy.attackState === 'vanish' ||
+    enemy.attackState === 'fuse';
   marker.position.y = 2.3 + Math.sin(elapsed * 13 + enemy.id) * 0.12;
   marker.rotation.y = elapsed * 7 + enemy.id;
   marker.rotation.z = -elapsed * 4 - enemy.id * 0.5;
@@ -527,6 +581,21 @@ function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: numb
     visual.leftGlove.position.set(-0.92 + gloveInset, 1.02, 0.28 + gloveForward);
     visual.rightGlove.position.set(0.92 - gloveInset, 1.02, 0.28 + gloveForward);
   }
+  if (visual.weapon && enemy.archetype === 'bloodArcher') {
+    visual.weapon.rotation.z = enemy.attackState === 'telegraph' ? -0.5 : -0.15;
+    visual.weapon.scale.setScalar(enemy.attackState === 'volley' ? 1.25 : 1);
+  }
+  if (visual.specialRing) {
+    const active = enemy.attackState === 'vanish' || enemy.attackState === 'fuse';
+    visual.specialRing.visible = active;
+    visual.specialRing.rotation.z = elapsed * (enemy.archetype === 'corpseBomber' ? 3.8 : -2.5);
+    visual.specialRing.scale.setScalar(
+      enemy.archetype === 'corpseBomber'
+        ? 1 + Math.max(0, Math.sin(elapsed * 18)) * 0.35
+        : 1 + Math.sin(elapsed * 12) * 0.12,
+    );
+    if (enemy.archetype === 'shadowRunner') visual.bodyRoot.scale.setScalar(active ? 0.72 : 1);
+  }
 }
 
 function mergeEnemyParts(
@@ -573,6 +642,15 @@ const enemyGeometry = {
   bruteBody: new THREE.BoxGeometry(1.45, 1.65, 0.82),
   bruteGlove: new THREE.SphereGeometry(0.34, 8, 6),
   bruteCatchRing: new THREE.TorusGeometry(1.02, 0.07, 6, 24),
+  archerBody: new THREE.CylinderGeometry(0.32, 0.46, 1.42, 7),
+  archerBow: new THREE.TorusGeometry(0.52, 0.055, 5, 14, Math.PI * 1.35),
+  shadowBody: new THREE.CapsuleGeometry(0.28, 0.9, 4, 7),
+  shadowVeil: new THREE.ConeGeometry(0.52, 1.2, 5, 1, true),
+  shadowRing: new THREE.RingGeometry(0.7, 0.85, 20),
+  bomberBody: new THREE.DodecahedronGeometry(0.7, 0),
+  bomberFuse: new THREE.CylinderGeometry(0.045, 0.045, 0.5, 5),
+  bomberRing: new THREE.RingGeometry(1.35, 1.5, 24),
+  projectile: new THREE.OctahedronGeometry(0.22, 0),
   threatMarker: new THREE.OctahedronGeometry(0.16, 0),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
@@ -613,6 +691,25 @@ const enemyMaterial = {
     opacity: 0.9,
     depthWrite: false,
   }),
+  archer: new THREE.MeshStandardMaterial({ color: 0x6e173a, roughness: 0.62 }),
+  archerBow: new THREE.MeshStandardMaterial({ color: 0xd6a632, roughness: 0.35, metalness: 0.4 }),
+  shadow: new THREE.MeshStandardMaterial({ color: 0x171328, roughness: 0.78 }),
+  shadowVeil: new THREE.MeshBasicMaterial({
+    color: 0x7b58bc,
+    transparent: true,
+    opacity: 0.45,
+    depthWrite: false,
+  }),
+  bomber: new THREE.MeshStandardMaterial({ color: 0x6d3428, roughness: 0.7 }),
+  bomberFuse: new THREE.MeshBasicMaterial({ color: 0xffcf40 }),
+  dangerRing: new THREE.MeshBasicMaterial({
+    color: 0xff6a3d,
+    transparent: true,
+    opacity: 0.72,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  }),
+  projectile: new THREE.MeshBasicMaterial({ color: 0xff315d }),
   threatMarker: new THREE.MeshBasicMaterial({ color: 0xffffff }),
   aura: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
@@ -778,6 +875,46 @@ function addCorruptReferee(group: THREE.Group, parts: Partial<EnemyVisual>): voi
   parts.whistle = whistle;
   parts.whistleRing = ring;
   group.add(whistle, ring);
+}
+
+function addBloodArcher(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.archerBody, enemyMaterial.archer, 0.78, 'archer-body');
+  const bow = mesh(enemyGeometry.archerBow, enemyMaterial.archerBow, 1.02, 'archer-bow');
+  bow.position.set(0.48, 1.02, 0.24);
+  bow.rotation.set(Math.PI / 2, 0, -0.15);
+  parts.body = body;
+  parts.weapon = bow;
+  group.add(body, bow);
+  addFace(group, 1.64, 'archer');
+}
+
+function addShadowRunner(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.shadowBody, enemyMaterial.shadow, 0.84, 'shadow-body');
+  const veil = mesh(enemyGeometry.shadowVeil, enemyMaterial.shadowVeil, 0.82, 'shadow-veil');
+  const ring = mesh(enemyGeometry.shadowRing, enemyMaterial.shadowVeil, 0.06, 'shadow-teleport-ring');
+  ring.rotation.x = -Math.PI / 2;
+  ring.visible = false;
+  ring.castShadow = false;
+  parts.body = body;
+  parts.specialRing = ring;
+  group.add(body, veil, ring);
+  addFace(group, 1.68, 'shadow');
+}
+
+function addCorpseBomber(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.bomberBody, enemyMaterial.bomber, 0.75, 'bomber-body');
+  body.scale.set(0.88, 1.2, 0.88);
+  const fuse = mesh(enemyGeometry.bomberFuse, enemyMaterial.bomberFuse, 1.55, 'bomber-fuse');
+  fuse.rotation.z = 0.3;
+  const ring = mesh(enemyGeometry.bomberRing, enemyMaterial.dangerRing, 0.055, 'bomber-blast-ring');
+  ring.rotation.x = -Math.PI / 2;
+  ring.visible = false;
+  ring.castShadow = false;
+  parts.body = body;
+  parts.weapon = fuse;
+  parts.specialRing = ring;
+  group.add(body, fuse, ring);
+  addFace(group, 1.38, 'bomber');
 }
 
 function addGoalkeeperBrute(group: THREE.Group, parts: Partial<EnemyVisual>): void {

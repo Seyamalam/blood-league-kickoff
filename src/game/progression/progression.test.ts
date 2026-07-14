@@ -50,6 +50,24 @@ describe('progression', () => {
     expect(second.state.modifiers.kickPowerMultiplier).toBeCloseTo(1.32);
   });
 
+  it('preserves permanent mastery bonuses through level-ups and upgrade recalculation', () => {
+    let state = grantBloodXp(
+      createProgressionState('maestro', { curveStrengthMultiplier: 0.08, volleyWindowBonus: 0.08 }),
+      totalXpRequiredForLevel(2),
+    ).state;
+    const result = chooseUpgrade(state, 'rapidRecall');
+    expect(result.applied).toBe(true);
+    if (!result.applied) return;
+    state = result.state;
+
+    expect(state.masteryModifierBonus).toEqual({
+      curveStrengthMultiplier: 0.08,
+      volleyWindowBonus: 0.08,
+    });
+    expect(state.modifiers.curveStrengthMultiplier).toBeCloseTo(1.28);
+    expect(state.modifiers.volleyWindowBonus).toBeCloseTo(0.28);
+  });
+
   it('enforces prerequisites and produces deterministic offers', () => {
     const levelTwo = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(2)).state;
     expect(getUpgradeAvailability(levelTwo, 'piercingStuds')).toEqual({
@@ -156,5 +174,34 @@ describe('progression', () => {
     expect(voidGoal.state.modifiers.blackHoleDamage).toBeCloseTo(1.25);
     expect(voidGoal.state.modifiers.blackHolePullStrength).toBe(3);
     expect(voidGoal.state.modifiers.blackHoleDuration).toBeCloseTo(0.8);
+  });
+
+  it('builds four distinct expansion weapon paths with bounded modifiers', () => {
+    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(12)).state;
+    for (const upgradeId of [
+      'dashShockwave',
+      'consecratedPitch',
+      'bloodBarrier',
+      'silverBall',
+      'piercingStuds',
+      'ricochetBall',
+    ] as const) {
+      const result = chooseUpgrade(state, upgradeId);
+      expect(result.applied).toBe(true);
+      if (!result.applied) return;
+      state = result.state;
+    }
+
+    expect(state.modifiers).toMatchObject({
+      dashShockwaveDamage: 6,
+      dashShockwaveRadius: 0.32,
+      holyZoneDamage: 6.5,
+      ricochetDamage: 5,
+      ricochetTargets: 1,
+      bloodBarrierCharges: 1,
+    });
+    expect(state.modifiers.holyZoneDuration).toBeCloseTo(2.1);
+    expect(state.modifiers.bloodBarrierRechargeMultiplier).toBeCloseTo(0.68);
+    expect(state.evolutions.sacredAegis).toBe(true);
   });
 });

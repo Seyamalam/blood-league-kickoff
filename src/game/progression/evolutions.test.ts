@@ -87,7 +87,7 @@ describe('evolution unlocks', () => {
     },
   );
 
-  it('unlocks all five in one reachable build without duplicate events or modifier drift', () => {
+  it('unlocks every evolution in one reachable build without duplicate events or modifier drift', () => {
     let state = createHighLevelState();
     const events: EvolutionUnlockEvent[] = [];
     const buildOrder: readonly UpgradeId[] = [
@@ -102,6 +102,9 @@ describe('evolution unlocks', () => {
       'stormStuds',
       'ghostPass',
       'voidGoal',
+      'dashShockwave',
+      'consecratedPitch',
+      'bloodBarrier',
     ];
     for (const upgradeId of buildOrder) ({ state } = ensureUpgrade(state, upgradeId, 1, events));
 

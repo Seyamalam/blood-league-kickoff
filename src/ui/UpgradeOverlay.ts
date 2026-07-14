@@ -247,14 +247,15 @@ export function getUpgradeCardPresentation(
   const definition = UPGRADE_DEFINITIONS[upgradeId];
   const currentStack = state.upgradeStacks[upgradeId];
   const nextStack = Math.min(currentStack + 1, definition.maxStacks);
-  const evolution = EVOLUTION_IDS.map((evolutionId) => EVOLUTION_DEFINITIONS[evolutionId]).find((candidate) =>
-    candidate.requirements.some((requirement) => requirement.upgradeId === upgradeId),
-  );
-  const partner = evolution?.requirements.find((requirement) => requirement.upgradeId !== upgradeId);
-  const evolutionHint =
-    evolution && partner
-      ? `EVOLVES WITH ${UPGRADE_DEFINITIONS[partner.upgradeId].name} → ${evolution.name}`
-      : null;
+  const evolutionPaths = EVOLUTION_IDS.map((evolutionId) => EVOLUTION_DEFINITIONS[evolutionId])
+    .filter((candidate) => candidate.requirements.some((requirement) => requirement.upgradeId === upgradeId))
+    .flatMap((evolution) => {
+      const partner = evolution.requirements.find((requirement) => requirement.upgradeId !== upgradeId);
+      return partner
+        ? [`EVOLVES WITH ${UPGRADE_DEFINITIONS[partner.upgradeId].name} → ${evolution.name}`]
+        : [];
+    });
+  const evolutionHint = evolutionPaths.length > 0 ? evolutionPaths.join(' · ') : null;
   return {
     ariaLabel: `${index + 1}. ${definition.name}. ${definition.description} ${
       evolutionHint ? `${evolutionHint}. ` : ''

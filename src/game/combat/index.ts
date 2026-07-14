@@ -1,4 +1,5 @@
 export { SecondaryWeaponSystem } from './SecondaryWeaponSystem';
+export { WeaponExpansionSystem } from './WeaponExpansionSystem';
 export { MAX_SECONDARY_BOSS_DAMAGE_PER_STEP, sumSecondaryBossDamage } from './secondaryBossDamage';
 export { selectAimAssistTarget, steerAimDirection } from './aimAssist';
 export type { AimAssistCandidate, AimAssistTarget, AimVector } from './aimAssist';
@@ -37,3 +38,10 @@ export type {
   SecondaryWeaponStepInput,
   SecondaryWeaponStepResult,
 } from './types';
+export type {
+  BloodBarrierResult,
+  WeaponExpansionEvent,
+  WeaponExpansionModifiers,
+  WeaponExpansionStepInput,
+  WeaponExpansionStepResult,
+} from './weaponExpansionTypes';

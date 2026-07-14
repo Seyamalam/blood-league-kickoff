@@ -13,6 +13,9 @@ const ARCHETYPES: readonly EnemyArchetype[] = [
   'leechStriker',
   'corruptReferee',
   'goalkeeperBrute',
+  'bloodArcher',
+  'shadowRunner',
+  'corpseBomber',
 ];
 
 const REQUIRED_PARTS: Readonly<Record<EnemyArchetype, readonly string[]>> = {
@@ -24,6 +27,9 @@ const REQUIRED_PARTS: Readonly<Record<EnemyArchetype, readonly string[]>> = {
   leechStriker: ['leech-body', 'leech-mouth', 'leech-drain-ring'],
   corruptReferee: ['referee-body', 'referee-stripes', 'referee-whistle', 'referee-whistle-ring'],
   goalkeeperBrute: ['brute-body', 'brute-glove-left', 'brute-glove-right', 'brute-catch-ring'],
+  bloodArcher: ['archer-body', 'archer-bow', 'archer-head'],
+  shadowRunner: ['shadow-body', 'shadow-veil', 'shadow-teleport-ring'],
+  corpseBomber: ['bomber-body', 'bomber-fuse', 'bomber-blast-ring'],
 };
 
 function addRoster(state: GameState, xOffset = 0): EnemyState[] {

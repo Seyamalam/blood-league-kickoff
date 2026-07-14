@@ -6,6 +6,7 @@ import {
   damageEnemiesWithSecondary,
   resetKickoffFormation,
   spawnEliteEnemy,
+  spawnEnemyAt,
   spawnGoalkeeperGuard,
   updateEnemies,
   updatePlayer,
@@ -104,6 +105,78 @@ describe('game state match helpers', () => {
     );
 
     expect(state.player.health).toBe(90);
+  });
+
+  it('fires a simulated Blood Archer projectile after a readable telegraph', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const archer = spawnEnemyAt(state, 'bloodArcher', { x: 8, y: 0.96, z: 0 });
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+
+    updateEnemies(state, 0.01);
+    expect(archer.attackState).toBe('telegraph');
+
+    let spawned = false;
+    for (let index = 0; index < 8; index += 1) {
+      updateEnemies(state, 0.1);
+      spawned ||= state.enemyEvents.some((event) => event.type === 'projectileSpawned');
+    }
+    expect(spawned).toBe(true);
+    expect(state.enemyProjectiles).toHaveLength(1);
+
+    for (let index = 0; index < 12 && state.player.health === 100; index += 1) updateEnemies(state, 0.1);
+    expect(state.player.health).toBe(91);
+  });
+
+  it('telegraphs and performs a deterministic Shadow Runner flank teleport', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const runner = spawnEnemyAt(state, 'shadowRunner', { x: 5, y: 0.9, z: 0 });
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+
+    updateEnemies(state, 0.01);
+    expect(state.enemyEvents).toContainEqual({
+      type: 'teleportTelegraphed',
+      enemyId: runner.id,
+      duration: 0.55,
+    });
+
+    let teleported = false;
+    for (let index = 0; index < 6; index += 1) {
+      updateEnemies(state, 0.1);
+      teleported ||= state.enemyEvents.some((event) => event.type === 'teleported');
+    }
+    expect(teleported).toBe(true);
+    expect(Math.hypot(runner.position.x, runner.position.z)).toBeCloseTo(1.7, 1);
+    expect(runner.attackState).toBe('recover');
+  });
+
+  it('warns before a Corpse Bomber blast and consumes the bomber without awarding a kill', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const bomber = spawnEnemyAt(state, 'corpseBomber', { x: 2, y: 1.02, z: 0 });
+    state.player.position = { x: 0, y: 0.9, z: 0 };
+
+    updateEnemies(state, 0.01);
+    expect(state.enemyEvents).toContainEqual({
+      type: 'explosionTelegraphed',
+      enemyId: bomber.id,
+      duration: 0.9,
+      radius: 3.2,
+    });
+
+    let exploded = false;
+    for (let index = 0; index < 10; index += 1) {
+      updateEnemies(state, 0.1);
+      exploded ||= state.enemyEvents.some((event) => event.type === 'exploded');
+    }
+    expect(exploded).toBe(true);
+    expect(state.enemies).not.toContain(bomber);
+    expect(state.player.health).toBe(76);
+    expect(state.kills).toBe(0);
   });
 
   it('applies a bounded secondary damage multiplier before enemy defeat resolution', () => {
