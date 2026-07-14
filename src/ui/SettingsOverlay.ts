@@ -153,7 +153,7 @@ export class SettingsOverlay {
             <input id="setting-gamepad-vibration" type="checkbox">
           </label>
           <div class="settings-controller-map" aria-label="Standard gamepad controls">
-            <strong>GAMEPAD</strong><span>Left stick move · Right stick aim · RT kick · LT recall · A dash · Y Focus Kick</span>
+            <strong>GAMEPAD</strong><span>Left stick move · Right stick aim · RT kick · LT recall · A dash · X ultimate · Y Focus Kick · Menu pause · View restart</span>
           </div>
           <fieldset class="settings-controls" aria-describedby="settings-binding-help settings-binding-status">
             <legend>KEYBOARD CONTROLS</legend>

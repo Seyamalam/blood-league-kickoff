@@ -913,6 +913,10 @@ async function bootstrap(): Promise<void> {
     fixedStepsThisFrame = 0;
     const frameTime = Math.min(MAX_FRAME_TIME, clock.getDelta());
     const mouse = input.consumeMouseDelta();
+    if (input.consumePause()) {
+      if (pauseOverlay.isVisible) pauseOverlay.toggle();
+      else showPause();
+    }
     cameraController.applyMouseDelta(mouse.x, mouse.y);
     focusKick = stepFocusKick(focusKick, frameTime);
     if (

@@ -98,19 +98,19 @@ A versioned local profile records account XP, six character unlock levels, 20-le
 
 ## Controls
 
-| Action                | Input                                                                          | Status                                                    |
-| --------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| Move                  | `WASD`                                                                         | Implemented                                               |
-| Aim / camera          | Mouse                                                                          | Conventional vertical look by default; inversion optional |
-| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend | Implemented                                               |
-| Recall ball           | Right mouse button or `E`                                                      | Implemented                                               |
-| Restart after kickoff | `R`                                                                            | Implemented                                               |
-| Dash                  | `Space`                                                                        | Implemented with cooldown and brief invulnerability       |
-| Focus Kick ultimate   | `F`                                                                            | Implemented with first-person slow-time aiming            |
-| Character ultimate    | `Q`                                                                            | Unique signature ability for each of six characters       |
-| Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus     |
-| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                                |
-| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus, `X` ultimate     | Implemented with sensitivity and vibration settings       |
+| Action                | Input                                                                                  | Status                                                    |
+| --------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Move                  | `WASD`                                                                                 | Implemented                                               |
+| Aim / camera          | Mouse                                                                                  | Conventional vertical look by default; inversion optional |
+| Kick / charge / curve | Hold and release left mouse button; move mouse sideways while charging to bend         | Implemented                                               |
+| Recall ball           | Right mouse button or `E`                                                              | Implemented                                               |
+| Restart after kickoff | `R`                                                                                    | Implemented                                               |
+| Dash                  | `Space`                                                                                | Implemented with cooldown and brief invulnerability       |
+| Focus Kick ultimate   | `F`                                                                                    | Implemented with first-person slow-time aiming            |
+| Character ultimate    | `Q`                                                                                    | Unique signature ability for each of six characters       |
+| Pause                 | `Esc`                                                                                  | Implemented; also activates when the game loses focus     |
+| Settings              | Title-screen or in-game `⚙ SETTINGS` button                                            | Implemented and persistent                                |
+| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus, `X` ultimate, Menu pause | Implemented with sensitivity and vibration settings       |
 
 Controls and bindings may change during playtesting.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyStickDeadzone, normalizeKickCurveIntent } from './InputController';
+import { GAMEPAD_BUTTONS, applyStickDeadzone, normalizeKickCurveIntent } from './InputController';
 
 describe('alternate input normalization', () => {
   it('removes stick drift and rescales useful travel', () => {
@@ -8,6 +8,12 @@ describe('alternate input normalization', () => {
     expect(applyStickDeadzone(1)).toBe(1);
     expect(applyStickDeadzone(-1)).toBe(-1);
     expect(applyStickDeadzone(0.58)).toBeCloseTo(0.5, 5);
+  });
+
+  it('keeps Start/Menu dedicated to pause and Back/View dedicated to restart', () => {
+    expect(GAMEPAD_BUTTONS.pause).toBe(9);
+    expect(GAMEPAD_BUTTONS.restart).toBe(8);
+    expect(GAMEPAD_BUTTONS.pause).not.toBe(GAMEPAD_BUTTONS.restart);
   });
 
   it('keeps mouse curve intent bounded and deadzoned', () => {

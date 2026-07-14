@@ -7,6 +7,18 @@ export interface KickInput {
 const FULL_CURVE_MOUSE_PIXELS = 140;
 const CURVE_DEADZONE = 0.12;
 
+export const GAMEPAD_BUTTONS = Object.freeze({
+  dash: 0,
+  characterUltimate: 2,
+  focusKick: 3,
+  curveLeft: 4,
+  curveRight: 5,
+  recall: 6,
+  kick: 7,
+  restart: 8,
+  pause: 9,
+});
+
 export class InputController {
   static readonly maxKickChargeSeconds = 1.1;
 
@@ -21,6 +33,7 @@ export class InputController {
   private dashQueued = false;
   private focusKickQueued = false;
   private characterUltimateQueued = false;
+  private pauseQueued = false;
   private gamepadMoveX = 0;
   private gamepadMoveZ = 0;
   private gamepadRecallHeld = false;
@@ -126,6 +139,12 @@ export class InputController {
     return queued;
   }
 
+  consumePause(): boolean {
+    const queued = this.pauseQueued;
+    this.pauseQueued = false;
+    return queued;
+  }
+
   rumble(strength = 0.5, durationMs = 90): void {
     if (!this.gamepadVibration) return;
     const actuator = this.activeGamepad?.vibrationActuator;
@@ -212,10 +231,10 @@ export class InputController {
     this.dashQueued = false;
     this.focusKickQueued = false;
     this.characterUltimateQueued = false;
+    this.pauseQueued = false;
     this.gamepadMoveX = 0;
     this.gamepadMoveZ = 0;
     this.gamepadRecallHeld = false;
-    this.previousGamepadButtons.fill(false);
     this.mouseDx = 0;
     this.mouseDy = 0;
   };
@@ -248,23 +267,31 @@ export class InputController {
     this.mouseDx += applyStickDeadzone(gamepad.axes[2] ?? 0) * 13 * this.gamepadLookSensitivity;
     this.mouseDy += applyStickDeadzone(gamepad.axes[3] ?? 0) * 13 * this.gamepadLookSensitivity;
 
-    const dashPressed = buttonPressed(gamepad, 0);
-    const focusPressed = buttonPressed(gamepad, 3);
-    const ultimatePressed = buttonPressed(gamepad, 2);
-    const restartPressed = buttonPressed(gamepad, 9);
-    if (dashPressed && !this.previousGamepadButtons[0]) this.dashQueued = true;
-    if (focusPressed && !this.previousGamepadButtons[3]) this.focusKickQueued = true;
-    if (ultimatePressed && !this.previousGamepadButtons[2]) this.characterUltimateQueued = true;
-    if (restartPressed && !this.previousGamepadButtons[9]) this.restartQueued = true;
-    this.gamepadRecallHeld = buttonValue(gamepad, 6) > 0.28;
+    const dashPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.dash);
+    const focusPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.focusKick);
+    const ultimatePressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.characterUltimate);
+    const restartPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.restart);
+    const pausePressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.pause);
+    if (dashPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.dash]) this.dashQueued = true;
+    if (focusPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.focusKick]) this.focusKickQueued = true;
+    if (ultimatePressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.characterUltimate])
+      this.characterUltimateQueued = true;
+    if (restartPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.restart]) this.restartQueued = true;
+    if (pausePressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.pause]) this.pauseQueued = true;
+    this.gamepadRecallHeld = buttonValue(gamepad, GAMEPAD_BUTTONS.recall) > 0.28;
 
-    const kickPressed = buttonValue(gamepad, 7) > 0.22;
-    if (kickPressed && !this.previousGamepadButtons[7] && this.kickStartedAt === null) {
+    const kickPressed = buttonValue(gamepad, GAMEPAD_BUTTONS.kick) > 0.22;
+    if (kickPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.kick] && this.kickStartedAt === null) {
       this.kickStartedAt = performance.now();
       this.kickCurvePixels = 0;
-    } else if (!kickPressed && this.previousGamepadButtons[7] && this.kickStartedAt !== null) {
+    } else if (
+      !kickPressed &&
+      this.previousGamepadButtons[GAMEPAD_BUTTONS.kick] &&
+      this.kickStartedAt !== null
+    ) {
       const heldSeconds = (performance.now() - this.kickStartedAt) / 1000;
-      const curve = buttonValue(gamepad, 5) - buttonValue(gamepad, 4);
+      const curve =
+        buttonValue(gamepad, GAMEPAD_BUTTONS.curveRight) - buttonValue(gamepad, GAMEPAD_BUTTONS.curveLeft);
       this.kickReleaseQueued = {
         charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
         curve: Math.abs(curve) < 0.12 ? 0 : Math.max(-1, Math.min(1, curve)),
