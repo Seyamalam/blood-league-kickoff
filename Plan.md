@@ -277,7 +277,7 @@ Modal surfaces: upgrade selection, halftime choice, pause/settings, and results.
 
 Development and gameplay validation run locally on macOS and in the browser. Version tags trigger native Windows, macOS, and Linux packaging plus a static web archive, combine checksums, and attach all outputs to the matching GitHub Release. Release metadata must state controls, included content, known issues, test status, and commit SHA.
 
-Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. Desktop packaging runs only for version tags or an explicit manual dispatch.
+Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. A separate least-privilege workflow repeats the full verification on `main`, installs and validates the official itch.io Butler binary, and pushes `dist/` to the `html5` channel using the encrypted `BUTLER_API_KEY` repository secret. Manual dispatch is restricted to the canonical repository's `main` branch, and the secret is exposed only to the final Butler upload step; pull requests cannot deploy. Desktop packaging runs only for version tags or an explicit manual dispatch.
 
 ### Commit and documentation policy
 

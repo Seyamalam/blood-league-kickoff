@@ -4,6 +4,7 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Added one-command local and automatic `main`-branch itch.io HTML5 deployment through the official Butler CLI, with the API key kept in ignored local configuration and GitHub's encrypted secret store.
 - Made every secondary weapon and evolution damage Count Goalkeeper through a reserved boss target, a 12-raw-damage fixed-step cap, and a 0.4 boss multiplier without awarding ordinary kills, combo, score, or Blood XP.
 - Gave boss kicks the normal impact-weapon triggers plus Blood Bomb, separated primary/secondary hit cooldowns to prevent either path starving the other, kept boss crowd control immune, removed per-kick target-array allocation, and covered secondary defeat-to-victory forwarding in the same fixed step; the suite now contains 171 passing tests.
 - Replaced 45 individual secondary-weapon meshes with five fixed `InstancedMesh` batches sharing three geometries; all full pools now add exactly five draw calls instead of as many as 45.

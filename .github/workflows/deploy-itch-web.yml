@@ -1,0 +1,54 @@
+name: Deploy Web Game to itch.io
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-itch-web
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Verify and deploy HTML5 build
+    if: github.ref == 'refs/heads/main' && github.repository == 'Seyamalam/blood-league-kickoff'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Install official itch.io butler
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --connect-timeout 15 \
+            https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default \
+            -o "$RUNNER_TEMP/butler.zip"
+          unzip -tq "$RUNNER_TEMP/butler.zip"
+          mkdir -p "$RUNNER_TEMP/butler"
+          unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          "$RUNNER_TEMP/butler/butler" version
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+
+      - name: Verify web game
+        run: npm run check
+
+      - name: Deploy verified web game
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: bash scripts/publish-itch-web.sh --skip-check

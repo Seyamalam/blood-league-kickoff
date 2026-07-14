@@ -232,12 +232,15 @@ npm run typecheck
 npm run lint
 npm run format:check
 npm run check
+npm run deploy:itch:web
 npm run desktop
 npm run desktop:dev
 npm run package:mac
 ```
 
-The web build is emitted to `dist/`. Version tags run native CI packaging for Windows x64, macOS Intel/Apple silicon, Linux x64, and web, then attach the artifacts and `SHA256SUMS.txt` to the matching GitHub Release. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
+The web build is emitted to `dist/`. Copy `.env.example` to ignored `.env.local`, set `BUTLER_API_KEY`, and run `npm run deploy:itch:web` for a verified local upload. Pushes to `main` run the same full check and automatically update the `seyamalam/blood-league-kickoff:html5` itch.io channel through the encrypted GitHub secret. Manual dispatches are also restricted to `main`; pull requests never deploy. On itch.io, the project is configured as HTML and only the Butler-managed `html5` upload is marked playable in the browser.
+
+Version tags run native CI packaging for Windows x64, macOS Intel/Apple silicon, Linux x64, and web, then attach the artifacts and `SHA256SUMS.txt` to the matching GitHub Release. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
 
 ## Versioning and Releases
 

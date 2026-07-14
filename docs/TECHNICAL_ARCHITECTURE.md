@@ -10,15 +10,15 @@
 
 ## Stack
 
-| Layer      | Choice                      | Responsibility                                     |
-| ---------- | --------------------------- | -------------------------------------------------- |
-| Tooling    | Vite + TypeScript           | Development, bundling, type safety                 |
-| Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX               |
-| Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events |
-| UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                |
-| Desktop    | Electron                    | Self-contained GPU-accelerated desktop application |
-| Packaging  | electron-builder            | Desktop artifacts; Windows remains final-only      |
-| Automation | GitHub Actions              | Web verification and manual final Windows builds   |
+| Layer      | Choice                      | Responsibility                                      |
+| ---------- | --------------------------- | --------------------------------------------------- |
+| Tooling    | Vite + TypeScript           | Development, bundling, type safety                  |
+| Rendering  | Three.js / WebGL 2          | Scene, camera, models, lighting, VFX                |
+| Physics    | `@dimforge/rapier3d-compat` | Fixed-step world, important bodies, queries/events  |
+| UI         | HTML/CSS                    | Menus, HUD, upgrade cards, settings                 |
+| Desktop    | Electron                    | Self-contained GPU-accelerated desktop application  |
+| Packaging  | electron-builder            | Desktop artifacts; Windows remains final-only       |
+| Automation | GitHub Actions + Butler     | Verification, itch.io web deploys, native packaging |
 
 ## Current Source Baseline
 

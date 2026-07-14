@@ -12,6 +12,7 @@
     "dev": "vite --host 0.0.0.0 --port 5173 --strictPort",
     "build": "tsc -b && vite build",
     "build:web": "npm run build",
+    "deploy:itch:web": "bash scripts/publish-itch-web.sh",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",

@@ -211,6 +211,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Pin the Node/package-manager version used by local and CI builds.
 - [x] `P0` Make clean installs reproducible from the lockfile.
 - [x] `P0` Run format/lint/tests/type-check/web build on pushes to main and pull requests.
+- [x] `P0` Auto-deploy verified `main` web builds to the itch.io `html5` channel with official Butler and an encrypted GitHub secret.
 - [x] `P0` Produce the portable `.exe` on a Windows GitHub Actions runner.
 - [x] `P0` Add tag-triggered native Windows, macOS, Linux, and web release packaging with checksums.
 - [x] `P0` Keep Electron renderer isolated from Node and remote network content.
