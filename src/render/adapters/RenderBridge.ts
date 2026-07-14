@@ -351,17 +351,27 @@ function createHitBurst(index: number): HitBurst {
 }
 
 const playerGeometry = {
-  torso: new THREE.CylinderGeometry(0.5, 0.34, 0.92, 6),
-  sash: new THREE.BoxGeometry(0.12, 0.72, 0.035),
-  shorts: new THREE.BoxGeometry(0.68, 0.34, 0.48),
-  head: new THREE.DodecahedronGeometry(0.3, 0),
-  eyes: new THREE.BoxGeometry(0.22, 0.038, 0.028),
-  arm: new THREE.CapsuleGeometry(0.12, 0.48, 2, 5),
-  leg: new THREE.CapsuleGeometry(0.13, 0.4, 2, 5),
-  supportBoot: new THREE.BoxGeometry(0.34, 0.2, 0.52),
-  bootUpper: new THREE.BoxGeometry(0.62, 0.3, 0.82),
-  bootToe: new THREE.DodecahedronGeometry(0.35, 0),
-  bootSole: new THREE.BoxGeometry(0.68, 0.1, 1.22),
+  torso: new THREE.CapsuleGeometry(0.38, 0.46, 4, 12),
+  sash: new THREE.BoxGeometry(0.115, 0.76, 0.032, 1, 3, 1),
+  collar: new THREE.TorusGeometry(0.2, 0.035, 6, 18, Math.PI * 1.55),
+  shorts: new THREE.CapsuleGeometry(0.34, 0.12, 3, 10),
+  head: new THREE.SphereGeometry(0.29, 16, 12),
+  hair: new THREE.SphereGeometry(0.298, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.46),
+  ear: new THREE.SphereGeometry(0.06, 8, 6),
+  nose: new THREE.ConeGeometry(0.045, 0.11, 8),
+  eye: new THREE.SphereGeometry(0.034, 8, 6),
+  brow: new THREE.BoxGeometry(0.095, 0.025, 0.022),
+  arm: new THREE.CapsuleGeometry(0.105, 0.47, 4, 8),
+  cuff: new THREE.CylinderGeometry(0.12, 0.11, 0.12, 10),
+  hand: new THREE.SphereGeometry(0.12, 10, 8),
+  leg: new THREE.CapsuleGeometry(0.125, 0.43, 4, 8),
+  sock: new THREE.CapsuleGeometry(0.135, 0.26, 3, 8),
+  supportBoot: new THREE.CapsuleGeometry(0.16, 0.22, 3, 8),
+  bootUpper: new THREE.CapsuleGeometry(0.25, 0.4, 4, 10),
+  bootToe: new THREE.SphereGeometry(0.3, 12, 8),
+  bootSole: new THREE.BoxGeometry(0.54, 0.085, 1.06, 2, 1, 4),
+  stud: new THREE.CylinderGeometry(0.035, 0.045, 0.055, 7),
+  badge: new THREE.CircleGeometry(0.085, 12),
   maestroScarf: new THREE.BoxGeometry(0.17, 0.85, 0.06),
   breakawayFin: new THREE.ConeGeometry(0.12, 0.58, 4),
   towerPad: new THREE.BoxGeometry(0.42, 0.2, 0.54),
@@ -377,6 +387,8 @@ const playerMaterial = {
   crimson: new THREE.MeshStandardMaterial({ color: 0xb5123f, roughness: 0.4, metalness: 0.12 }),
   sole: new THREE.MeshStandardMaterial({ color: 0x4b1029, roughness: 0.7 }),
   eyes: new THREE.MeshBasicMaterial({ color: 0xffd66b }),
+  hair: new THREE.MeshStandardMaterial({ color: 0x170d1d, roughness: 0.9 }),
+  white: new THREE.MeshStandardMaterial({ color: 0xf2ead8, roughness: 0.66 }),
 };
 
 function playerMesh(geometry: THREE.BufferGeometry, material: THREE.Material, name: string): THREE.Mesh {
@@ -394,60 +406,133 @@ function createPlayer(): THREE.Group {
   torso.position.y = 1.2;
 
   const sash = playerMesh(playerGeometry.sash, playerMaterial.crimson, 'player-sash');
-  sash.position.set(0.12, 1.22, -0.405);
+  sash.position.set(0.12, 1.22, -0.37);
   sash.rotation.z = -0.25;
   sash.castShadow = false;
+
+  const collar = playerMesh(playerGeometry.collar, playerMaterial.crimson, 'player-collar');
+  collar.position.set(0, 1.61, -0.04);
+  collar.rotation.x = Math.PI / 2;
+
+  const badge = playerMesh(playerGeometry.badge, playerMaterial.crimson, 'player-club-badge');
+  badge.position.set(-0.19, 1.37, -0.355);
+  badge.rotation.y = Math.PI;
+  badge.castShadow = false;
 
   const shorts = playerMesh(playerGeometry.shorts, playerMaterial.shorts, 'player-shorts');
   shorts.position.y = 0.72;
 
   const head = playerMesh(playerGeometry.head, playerMaterial.skin, 'player-head');
   head.position.y = 1.9;
-  const eyes = playerMesh(playerGeometry.eyes, playerMaterial.eyes, 'player-eyes');
-  eyes.position.set(0, 1.94, -0.282);
-  eyes.castShadow = false;
+  const hair = playerMesh(playerGeometry.hair, playerMaterial.hair, 'player-hair');
+  hair.position.set(0, 1.925, 0.005);
+  for (const side of [-1, 1]) {
+    const ear = playerMesh(
+      playerGeometry.ear,
+      playerMaterial.skin,
+      `player-ear-${side < 0 ? 'left' : 'right'}`,
+    );
+    ear.position.set(side * 0.285, 1.9, 0);
+    group.add(ear);
+    const eye = playerMesh(
+      playerGeometry.eye,
+      playerMaterial.eyes,
+      `player-eye-${side < 0 ? 'left' : 'right'}`,
+    );
+    eye.position.set(side * 0.105, 1.96, -0.267);
+    eye.castShadow = false;
+    group.add(eye);
+    const brow = playerMesh(
+      playerGeometry.brow,
+      playerMaterial.hair,
+      `player-brow-${side < 0 ? 'left' : 'right'}`,
+    );
+    brow.position.set(side * 0.105, 2.04, -0.273);
+    brow.rotation.z = side * -0.08;
+    group.add(brow);
+  }
+  const nose = playerMesh(playerGeometry.nose, playerMaterial.skin, 'player-nose');
+  nose.position.set(0, 1.91, -0.31);
+  nose.rotation.x = -Math.PI / 2;
 
   const leftArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-left');
   leftArm.position.set(-0.53, 1.18, 0);
   leftArm.rotation.z = -0.18;
+  const leftCuff = playerMesh(playerGeometry.cuff, playerMaterial.crimson, 'player-cuff-left');
+  leftCuff.position.set(-0.58, 0.91, 0);
+  const leftHand = playerMesh(playerGeometry.hand, playerMaterial.skin, 'player-hand-left');
+  leftHand.position.set(-0.61, 0.76, -0.015);
   const rightArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-right');
   rightArm.position.set(0.53, 1.18, 0);
   rightArm.rotation.z = 0.18;
+  const rightCuff = playerMesh(playerGeometry.cuff, playerMaterial.crimson, 'player-cuff-right');
+  rightCuff.position.set(0.58, 0.91, 0);
+  const rightHand = playerMesh(playerGeometry.hand, playerMaterial.skin, 'player-hand-right');
+  rightHand.position.set(0.61, 0.76, -0.015);
 
   const supportLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-support-leg');
   supportLeg.position.set(-0.2, 0.39, 0.05);
+  const supportSock = playerMesh(playerGeometry.sock, playerMaterial.white, 'player-support-sock');
+  supportSock.position.set(-0.2, 0.32, 0.03);
   const supportBoot = playerMesh(playerGeometry.supportBoot, playerMaterial.sole, 'player-support-boot');
-  supportBoot.position.set(-0.2, 0.13, -0.08);
+  supportBoot.position.set(-0.2, 0.11, -0.18);
+  supportBoot.rotation.x = Math.PI / 2;
 
   const kickingLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-kicking-leg');
   kickingLeg.position.set(0.2, 0.46, -0.23);
   kickingLeg.rotation.x = -0.5;
+  const kickingSock = playerMesh(playerGeometry.sock, playerMaterial.white, 'player-kicking-sock');
+  kickingSock.position.set(0.2, 0.36, -0.39);
+  kickingSock.rotation.x = -0.35;
 
   // Local -Z is gameplay-forward. The layered upper, toe and sole keep the
   // signature boot readable from both the chase camera and lateral angles.
   const bootUpper = playerMesh(playerGeometry.bootUpper, playerMaterial.crimson, 'player-crimson-boot');
   bootUpper.position.set(0.2, 0.25, -0.75);
-  bootUpper.rotation.x = -0.09;
+  bootUpper.rotation.x = Math.PI / 2 - 0.09;
   const bootToe = playerMesh(playerGeometry.bootToe, playerMaterial.crimson, 'player-crimson-boot-toe');
   bootToe.position.set(0.2, 0.23, -1.15);
   bootToe.scale.set(1.05, 0.58, 1.08);
   const bootSole = playerMesh(playerGeometry.bootSole, playerMaterial.sole, 'player-crimson-boot-sole');
   bootSole.position.set(0.2, 0.085, -0.83);
 
+  const studs: THREE.Mesh[] = [];
+  for (const x of [-0.17, 0.17]) {
+    for (const z of [-1.12, -0.63]) {
+      const stud = playerMesh(
+        playerGeometry.stud,
+        playerMaterial.sole,
+        `player-boot-stud-${studs.length + 1}`,
+      );
+      stud.position.set(0.2 + x, 0.01, z);
+      studs.push(stud);
+    }
+  }
+
   group.add(
     torso,
     sash,
+    collar,
+    badge,
     shorts,
     head,
-    eyes,
+    hair,
+    nose,
     leftArm,
+    leftCuff,
+    leftHand,
     rightArm,
+    rightCuff,
+    rightHand,
     supportLeg,
+    supportSock,
     supportBoot,
     kickingLeg,
+    kickingSock,
     bootUpper,
     bootToe,
     bootSole,
+    ...studs,
   );
   addCharacterAccessories(group);
   return group;
@@ -504,11 +589,18 @@ function animatePlayer(group: THREE.Group, elapsed: number, previous: Vec3, curr
   const leftArm = group.getObjectByName('player-arm-left');
   const rightArm = group.getObjectByName('player-arm-right');
   const supportLeg = group.getObjectByName('player-support-leg');
+  const kickingLeg = group.getObjectByName('player-kicking-leg');
   const torso = group.getObjectByName('player-torso');
+  const head = group.getObjectByName('player-head');
   if (leftArm) leftArm.rotation.x = stride * 0.42;
   if (rightArm) rightArm.rotation.x = -stride * 0.42;
   if (supportLeg) supportLeg.rotation.x = -stride * 0.28;
-  if (torso) torso.rotation.z = moving ? stride * 0.025 : 0;
+  if (kickingLeg) kickingLeg.rotation.x = -0.5 + stride * 0.22;
+  if (torso) {
+    torso.rotation.z = moving ? stride * 0.025 : 0;
+    torso.scale.y = 1 + Math.sin(elapsed * 2.4) * 0.012;
+  }
+  if (head) head.rotation.y = Math.sin(elapsed * 1.25) * (moving ? 0.025 : 0.06);
   const engine = group.getObjectByName('player-accessory-engine');
   if (engine) engine.rotation.z = elapsed * 1.8;
   const scarf = group.getObjectByName('player-accessory-maestro');

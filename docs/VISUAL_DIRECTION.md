@@ -50,27 +50,28 @@ Use these exact sRGB hex values as source tokens. Close variants already in the 
 
 All characters should read at gameplay camera distance before surface detail is visible. Prefer five or fewer primary masses per ordinary enemy and strong asymmetry only when it communicates behavior.
 
-| Subject            | Locked silhouette                                             | Gameplay read                                                             |
-| ------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Player             | Upright pale capsule plus oversized crimson boot              | Mobile striker; boot establishes facing and kick intent                   |
-| Ball               | Bright faceted icosahedron                                    | Smallest critical target; never visually merged with bone-colored scenery |
-| Blood Fan          | Narrow seven-sided cone and pale head                         | Basic pursuer; simple vertical arrow shape                                |
-| Winger             | Slim capsule with two wide triangular wings                   | Fast lateral attacker; width reads speed class                            |
-| Defender           | Broad rectangular torso and forward shield slab               | Heavy blocker; shield must break the front contour                        |
-| Coach              | Tapered cylinder with a wide ground aura                      | Support unit; aura shows influence radius independently of body color     |
-| Bat Swarm          | Low compact body, triangular wings, pointed ears              | Small aerial rush; wingbeat and height distinguish it from ground units   |
-| Leech Striker      | Forward-leaning capsule, circular mouth, ground drain ring    | Close-range drain threat; circular mouth faces the player                 |
-| Corrupt Referee    | Striped box torso, raised whistle, expanding ground ring      | Ranged disruption; ring communicates the attack without color             |
-| Goalkeeper Brute   | Oversized square torso, wide gloves, forward catch ring       | Slow interceptor; glove span and catch ring dominate its contour          |
-| Goalkeeper blocker | Wide goal-line stance, oversized gloves, clear lateral motion | Dedicated scoring defender; must remain distinct from crowd enemies       |
-| Elite              | Base silhouette at `1.18x` scale plus gold overhead ring      | Stronger variant; never rely on a recolor alone                           |
-| Count Goalkeeper   | Tall capsule, wide armored shoulders, five-point crown        | Boss; crown and shoulder bar remain visible in every phase                |
+| Subject            | Locked silhouette                                                 | Gameplay read                                                                                           |
+| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Player             | Stylized humanoid, pale jersey, dark hair, oversized crimson boot | Mobile striker; face/kit create character appeal while the hero boot establishes facing and kick intent |
+| Ball               | Bright faceted icosahedron                                        | Smallest critical target; never visually merged with bone-colored scenery                               |
+| Blood Fan          | Narrow seven-sided cone and pale head                             | Basic pursuer; simple vertical arrow shape                                                              |
+| Winger             | Slim capsule with two wide triangular wings                       | Fast lateral attacker; width reads speed class                                                          |
+| Defender           | Broad rectangular torso and forward shield slab                   | Heavy blocker; shield must break the front contour                                                      |
+| Coach              | Tapered cylinder with a wide ground aura                          | Support unit; aura shows influence radius independently of body color                                   |
+| Bat Swarm          | Low compact body, triangular wings, pointed ears                  | Small aerial rush; wingbeat and height distinguish it from ground units                                 |
+| Leech Striker      | Forward-leaning capsule, circular mouth, ground drain ring        | Close-range drain threat; circular mouth faces the player                                               |
+| Corrupt Referee    | Striped box torso, raised whistle, expanding ground ring          | Ranged disruption; ring communicates the attack without color                                           |
+| Goalkeeper Brute   | Oversized square torso, wide gloves, forward catch ring           | Slow interceptor; glove span and catch ring dominate its contour                                        |
+| Goalkeeper blocker | Wide goal-line stance, oversized gloves, clear lateral motion     | Dedicated scoring defender; must remain distinct from crowd enemies                                     |
+| Elite              | Base silhouette at `1.18x` scale plus gold overhead ring          | Stronger variant; never rely on a recolor alone                                                         |
+| Count Goalkeeper   | Tall capsule, wide armored shoulders, five-point crown            | Boss; crown and shoulder bar remain visible in every phase                                              |
 
 New enemy concepts must pass a black-fill silhouette test at 96 px tall. If two archetypes look alike in black fill, revise their proportions before adding materials.
 
 ## Geometry and Materials
 
-- Use visibly faceted primitives and low-poly authored meshes. Avoid smooth, realistic anatomy.
+- Use low-poly authored meshes with selective smoothing on faces and limbs. Avoid photorealistic anatomy or surface noise.
+- The player may spend more geometry than ordinary enemies: target 8,000–18,000 triangles, four materials, one compact shared atlas, and named rig bones. Preserve the procedural humanoid as the load-safe fallback for any future GLB.
 - Ordinary enemies: no more than 1,500 visible triangles and five rendered mesh parts at highest gameplay LOD.
 - Bosses: no more than 8,000 visible triangles and eight rendered mesh parts.
 - Props: 50–2,000 triangles according to screen size; stadium dressing should reuse a small modular kit.

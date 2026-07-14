@@ -9,7 +9,7 @@ function playerMeshes(scene: THREE.Scene): THREE.Mesh[] {
 }
 
 describe('RenderBridge player visual', () => {
-  it('keeps a low-poly forward-readable striker silhouette with bounded shared resources', () => {
+  it('builds a detailed forward-readable stylized striker with bounded shared resources', () => {
     const firstScene = new THREE.Scene();
     const secondScene = new THREE.Scene();
     const firstBridge = new RenderBridge(firstScene);
@@ -17,9 +17,14 @@ describe('RenderBridge player visual', () => {
     const firstMeshes = playerMeshes(firstScene);
     const secondMeshes = playerMeshes(secondScene);
 
-    expect(firstMeshes).toHaveLength(17);
-    expect(new Set(firstMeshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(15);
-    expect(new Set(firstMeshes.map((mesh) => mesh.material)).size).toBeLessThanOrEqual(6);
+    expect(firstMeshes).toHaveLength(36);
+    expect(new Set(firstMeshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(25);
+    expect(new Set(firstMeshes.map((mesh) => mesh.material)).size).toBeLessThanOrEqual(8);
+    expect(firstScene.getObjectByName('player-hair')).toBeInstanceOf(THREE.Mesh);
+    expect(firstScene.getObjectByName('player-club-badge')).toBeInstanceOf(THREE.Mesh);
+    expect(firstScene.getObjectByName('player-hand-left')).toBeInstanceOf(THREE.Mesh);
+    expect(firstScene.getObjectByName('player-support-sock')).toBeInstanceOf(THREE.Mesh);
+    expect(firstScene.getObjectByName('player-boot-stud-4')).toBeInstanceOf(THREE.Mesh);
 
     const torso = firstScene.getObjectByName('player-torso')!;
     const boot = firstScene.getObjectByName('player-crimson-boot') as THREE.Mesh;
