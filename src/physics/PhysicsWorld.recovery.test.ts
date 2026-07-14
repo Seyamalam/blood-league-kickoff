@@ -1,4 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import {
+  ARENA_WALL_HALF_LENGTH,
+  ARENA_WALL_HALF_WIDTH,
+  GOAL_HALF_WIDTH,
+  OPPONENT_GOAL_LINE_Z,
+} from '../game/field';
+import { detectOpponentGoalCrossing } from '../game/field/GoalSystem';
 import type { Vec3 } from '../game/simulation/types';
 import { PhysicsWorld } from './PhysicsWorld';
 
@@ -14,14 +21,16 @@ describe('PhysicsWorld recovery', () => {
     stepWorld(physics, cornerPlayer, 2.5);
     const ball = physics.ballPosition;
     expect(Number.isFinite(ball.x) && Number.isFinite(ball.y) && Number.isFinite(ball.z)).toBe(true);
-    expect(Math.abs(ball.x)).toBeLessThan(23.2);
-    expect(Math.abs(ball.z)).toBeLessThan(15.2);
+    expect(Math.abs(ball.x)).toBeLessThan(ARENA_WALL_HALF_WIDTH);
+    expect(Math.abs(ball.z)).toBeLessThan(ARENA_WALL_HALF_LENGTH);
     expect(physics.ballSpeed).toBeLessThanOrEqual(physics.maxBallSpeed + 0.001);
   });
 
   it('resets an out-of-bounds launch to safe possession', async () => {
     const physics = await PhysicsWorld.create();
-    expect(physics.kick({ x: 40, y: 0.9, z: 0 }, { x: 1, y: 0, z: 0 }, 1)).not.toBeNull();
+    expect(
+      physics.kick({ x: ARENA_WALL_HALF_WIDTH + 8, y: 0.9, z: 0 }, { x: 1, y: 0, z: 0 }, 1),
+    ).not.toBeNull();
     physics.step(PLAYER, Math.PI, STEP);
 
     expect(physics.ballState).toBe('possessed');
@@ -56,6 +65,35 @@ describe('PhysicsWorld recovery', () => {
     }
     expect(physics.ballState).toBe('possessed');
     expect(physics.ballSpeed).toBe(0);
+  });
+
+  it('physically rebounds a shot from an opponent goalpost', async () => {
+    const physics = await PhysicsWorld.create();
+    const shooter = { x: GOAL_HALF_WIDTH, y: 0.9, z: OPPONENT_GOAL_LINE_Z + 6 };
+    expect(physics.kick(shooter, { x: 0, y: 0, z: -1 }, 1)).not.toBeNull();
+
+    let rebounded = false;
+    for (let index = 0; index < 45; index += 1) {
+      physics.step(shooter, 0, STEP);
+      if (physics.ballVelocity.z > 0.5) rebounded = true;
+    }
+
+    expect(rebounded).toBe(true);
+    expect(physics.ballPosition.z).toBeGreaterThan(OPPONENT_GOAL_LINE_Z - 1);
+  });
+
+  it('allows a centered shot through the physical frame and across the scoring plane', async () => {
+    const physics = await PhysicsWorld.create();
+    const shooter = { x: 0, y: 0.9, z: OPPONENT_GOAL_LINE_Z + 6 };
+    expect(physics.kick(shooter, { x: 0, y: 0, z: -1 }, 1)).not.toBeNull();
+
+    let scored = false;
+    for (let index = 0; index < 45; index += 1) {
+      physics.step(shooter, 0, STEP);
+      scored ||= detectOpponentGoalCrossing(physics.previousBallStepPosition, physics.ballPosition) !== null;
+    }
+
+    expect(scored).toBe(true);
   });
 
   it('reset clears motion, recovery, and curved-flight state', async () => {

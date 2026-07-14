@@ -4,6 +4,14 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 
 ## Unreleased
 
+- Rebuilt play around a shared 68×105 regulation-proportioned pitch, physical goal posts/crossbar, and swept whole-ball scoring that rejects partial crossings and high/wide shots while preventing fast-ball tunneling.
+- Added a special goalkeeper blocker to the active scoring end, with dedicated state, presentation, and interception coverage.
+- Replaced the fixed HUD crosshair with a long red world-space aim line that follows the live camera direction.
+- Corrected vertical mouse look to the conventional default and added a persisted inversion setting with safe schema migration.
+- Moved desktop Quit out of Settings and onto the title screen only; browser builds do not show the control.
+- Added a tag-triggered verified web/macOS prerelease workflow. Windows and Linux builds are now explicit, confirmation-gated, manual final-only outputs after the game is complete.
+- Refreshed gameplay and settings captures and added the goalkeeper screenshot to the public documentation and hashed asset inventory.
+- Prepared the `v0.8.0-alpha.5` documentation and release notes; the tag and release have not been published yet.
 - Added one-command local and automatic `main`-branch itch.io HTML5 deployment through the official Butler CLI, with the API key kept in ignored local configuration and GitHub's encrypted secret store.
 - Made every secondary weapon and evolution damage Count Goalkeeper through a reserved boss target, a 12-raw-damage fixed-step cap, and a 0.4 boss multiplier without awarding ordinary kills, combo, score, or Blood XP.
 - Gave boss kicks the normal impact-weapon triggers plus Blood Bomb, separated primary/secondary hit cooldowns to prevent either path starving the other, kept boss crowd control immune, removed per-kick target-array allocation, and covered secondary defeat-to-victory forwarding in the same fixed step; the suite now contains 171 passing tests.

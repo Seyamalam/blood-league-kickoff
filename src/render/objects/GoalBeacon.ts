@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-
-const OPPONENT_GOAL_Z = -14.15;
+import { OPPONENT_GOAL_LINE_Z } from '../../game/field';
 
 /** Lightweight world-space marker for the limited goal-scoring window. */
 export class GoalBeacon {
@@ -35,7 +34,7 @@ export class GoalBeacon {
 
   constructor(scene: THREE.Scene) {
     this.group.name = 'GoalOpportunityBeacon';
-    this.group.position.set(0, 0, OPPONENT_GOAL_Z);
+    this.group.position.set(0, 0, OPPONENT_GOAL_LINE_Z);
 
     const haloGeometry = this.track(new THREE.TorusGeometry(1.3, 0.12, 8, 28));
     const arrowGeometry = this.track(new THREE.ConeGeometry(0.4, 0.9, 5));

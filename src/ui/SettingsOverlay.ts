@@ -22,6 +22,7 @@ export class SettingsOverlay {
   private readonly effectsVolumeValue: HTMLOutputElement;
   private readonly mouseSensitivity: HTMLInputElement;
   private readonly mouseSensitivityValue: HTMLOutputElement;
+  private readonly invertVerticalLook: HTMLInputElement;
   private readonly renderQuality: HTMLSelectElement;
   private readonly renderScale: HTMLInputElement;
   private readonly renderScaleValue: HTMLOutputElement;
@@ -34,7 +35,6 @@ export class SettingsOverlay {
   private readonly desktopSettings: HTMLElement;
   private readonly windowSize: HTMLSelectElement;
   private readonly fullscreenButton: HTMLButtonElement;
-  private readonly quitButton: HTMLButtonElement;
   private readonly unsubscribeFullscreen: (() => void) | null;
   private readonly unsubscribe: () => void;
   private onChange: SettingsChangeCallback | null;
@@ -77,6 +77,10 @@ export class SettingsOverlay {
             <div class="settings-field__label"><label for="setting-mouse-sensitivity">Mouse sensitivity</label><output for="setting-mouse-sensitivity"></output></div>
             <input id="setting-mouse-sensitivity" type="range" min="0.25" max="2.5" step="0.05">
           </div>
+          <label class="settings-toggle" for="setting-invert-vertical-look">
+            <span><strong>Invert vertical look</strong><small>Move the mouse down to aim upward.</small></span>
+            <input id="setting-invert-vertical-look" type="checkbox">
+          </label>
           <div class="settings-field">
             <label for="setting-render-quality">Render quality</label>
             <select id="setting-render-quality">
@@ -135,7 +139,6 @@ export class SettingsOverlay {
             </div>
             <div class="settings-desktop__actions">
               <button type="button" id="setting-fullscreen">ENTER FULLSCREEN</button>
-              <button type="button" id="setting-quit" class="settings-desktop__danger">QUIT GAME</button>
             </div>
           </div>
         </div>
@@ -151,6 +154,7 @@ export class SettingsOverlay {
     this.effectsVolumeValue = requiredOutput(this.element, '[for="setting-effects-volume"]');
     this.mouseSensitivity = requiredInput(this.element, '#setting-mouse-sensitivity');
     this.mouseSensitivityValue = requiredOutput(this.element, '[for="setting-mouse-sensitivity"]');
+    this.invertVerticalLook = requiredInput(this.element, '#setting-invert-vertical-look');
     this.renderQuality = requiredSelect(this.element, '#setting-render-quality');
     this.renderScale = requiredInput(this.element, '#setting-render-scale');
     this.renderScaleValue = requiredOutput(this.element, '[for="setting-render-scale"]');
@@ -163,7 +167,6 @@ export class SettingsOverlay {
     this.desktopSettings = requiredElement(this.element, '#settings-desktop');
     this.windowSize = requiredSelect(this.element, '#setting-window-size');
     this.fullscreenButton = requiredButton(this.element, '#setting-fullscreen');
-    this.quitButton = requiredButton(this.element, '#setting-quit');
 
     this.element.addEventListener('input', this.handleInput);
     this.element.addEventListener('change', this.handleInput);
@@ -171,7 +174,6 @@ export class SettingsOverlay {
     this.closeButton.addEventListener('click', this.hide);
     this.windowSize.addEventListener('change', this.handleWindowSize);
     this.fullscreenButton.addEventListener('click', this.handleFullscreen);
-    this.quitButton.addEventListener('click', this.handleQuit);
     this.unsubscribe = this.store.subscribe((settings) => this.render(settings), true);
     const desktopWindow = window.desktopRuntime?.window;
     this.desktopSettings.classList.toggle('hidden', !desktopWindow);
@@ -229,7 +231,6 @@ export class SettingsOverlay {
     this.closeButton.removeEventListener('click', this.hide);
     this.windowSize.removeEventListener('change', this.handleWindowSize);
     this.fullscreenButton.removeEventListener('click', this.handleFullscreen);
-    this.quitButton.removeEventListener('click', this.handleQuit);
     this.unsubscribeFullscreen?.();
     this.element.remove();
   }
@@ -243,6 +244,7 @@ export class SettingsOverlay {
     this.effectsVolumeValue.value = `${Math.round(settings.effectsVolume * 100)}%`;
     this.mouseSensitivity.value = String(settings.mouseSensitivity);
     this.mouseSensitivityValue.value = `${settings.mouseSensitivity.toFixed(2)}×`;
+    this.invertVerticalLook.checked = settings.invertVerticalLook;
     this.renderQuality.value = settings.renderQuality;
     this.renderScale.value = String(settings.renderScale);
     this.renderScaleValue.value = `${Math.round(settings.renderScale * 100)}%`;
@@ -281,6 +283,8 @@ export class SettingsOverlay {
     else if (target === this.effectsVolume) patch = { effectsVolume: this.effectsVolume.valueAsNumber };
     else if (target === this.mouseSensitivity)
       patch = { mouseSensitivity: this.mouseSensitivity.valueAsNumber };
+    else if (target === this.invertVerticalLook)
+      patch = { invertVerticalLook: this.invertVerticalLook.checked };
     else if (target === this.renderQuality)
       patch = { renderQuality: this.renderQuality.value as RenderQuality };
     else if (target === this.renderScale) patch = { renderScale: this.renderScale.valueAsNumber };
@@ -314,10 +318,6 @@ export class SettingsOverlay {
         this.renderFullscreenState(enabled);
       })
       .catch(() => undefined);
-  };
-
-  private readonly handleQuit = (): void => {
-    void window.desktopRuntime?.window.quit();
   };
 
   private readonly handleWindowSize = (): void => {

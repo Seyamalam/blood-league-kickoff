@@ -68,9 +68,11 @@ import {
   resetGameState,
   resetKickoffFormation,
   spawnEliteEnemy,
+  spawnGoalkeeperGuard,
   updateEnemies,
   updatePlayer,
 } from './game/simulation/gameState';
+import { detectOpponentGoalCrossing, OPPONENT_GOAL_LINE_Z } from './game/field';
 import { TutorialTracker, type TutorialSignal } from './game/tutorial';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
@@ -81,6 +83,7 @@ import { GoalBeacon } from './render/objects/GoalBeacon';
 import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
 import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
 import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRenderer';
+import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import { Hud } from './ui/Hud';
@@ -126,8 +129,16 @@ async function bootstrap(): Promise<void> {
     state.player.health = qaScenario === 'victory' ? 42 : 0;
     state.enemies.length = 0;
   }
-  if (qaScenario === 'upgrade' || qaScenario === 'evolution') state.phase = 'playing';
+  if (qaScenario === 'upgrade' || qaScenario === 'evolution' || qaScenario === 'goal') {
+    state.phase = 'playing';
+  }
+  if (qaScenario === 'goal') {
+    state.player.position.z = OPPONENT_GOAL_LINE_Z + 18;
+    state.player.previousPosition = { ...state.player.position };
+    physics.reset(state.player.position);
+  }
   const bridge = new RenderBridge(scene);
+  const aimGuide = new AimGuide(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
   const bloodShards = new BloodShardSystem();
@@ -193,9 +204,16 @@ async function bootstrap(): Promise<void> {
         goalsScored: qaTerminalFixture.goals,
         halftimeChoice: 'power' as const,
       }
-    : createMatchDirectorState();
-  let goalLatched = false;
+    : qaScenario === 'goal'
+      ? {
+          ...createMatchDirectorState(),
+          stage: 'goalOpportunity' as const,
+          stageElapsed: 1,
+          matchElapsed: MATCH_CONFIG.opening.deadlineMatchTime,
+        }
+      : createMatchDirectorState();
   let boss: CountGoalkeeperState | null = null;
+  if (qaScenario === 'goal') spawnGoalkeeperGuard(state);
   let resultsShown = false;
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
@@ -316,6 +334,7 @@ async function bootstrap(): Promise<void> {
     audio.setMusicVolume(settings.musicVolume);
     audio.setEffectsVolume(settings.effectsVolume);
     cameraController.setSensitivity(settings.mouseSensitivity);
+    cameraController.setInvertVerticalLook(settings.invertVerticalLook);
     cameraController.setReducedShake(settings.reducedCameraShake);
     input.setKeyBindings(settings.keyBindings);
     hud.setControlBindings(settings.keyBindings);
@@ -341,6 +360,7 @@ async function bootstrap(): Promise<void> {
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
+    aimGuide.reset();
     goalBeacon.reset();
     bossVisual.reset();
     bloodShards.reset();
@@ -359,7 +379,6 @@ async function bootstrap(): Promise<void> {
     progression = createProgressionState();
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
-    goalLatched = false;
     boss = null;
     resultsShown = false;
     perf.reset();
@@ -392,12 +411,18 @@ async function bootstrap(): Promise<void> {
   };
   const settingsButton = hud.settingsButton;
   const titleSettingsButton = hud.titleSettingsButton;
+  const titleQuitButton = hud.titleQuitButton;
   settingsButton.addEventListener('click', openSettings);
   titleSettingsButton.addEventListener('click', openSettings);
+  const quitGame = (): void => {
+    void window.desktopRuntime?.window.quit();
+  };
+  titleQuitButton.addEventListener('click', quitGame);
   const returnToMenu = (): void => {
     resetGameState(state);
     physics.reset(state.player.position);
     bridge.reset();
+    aimGuide.reset();
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
@@ -580,11 +605,17 @@ async function bootstrap(): Promise<void> {
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
         updatePlayer(state, movement, cameraController.yaw, FIXED_STEP, movementSpeedMultiplier);
-        updateEnemies(state, FIXED_STEP, {
-          stage: match.stage,
-          stageElapsed: match.stageElapsed,
-          matchElapsed: match.matchElapsed,
-        });
+        updateEnemies(
+          state,
+          FIXED_STEP,
+          {
+            stage: match.stage,
+            stageElapsed: match.stageElapsed,
+            matchElapsed: match.matchElapsed,
+          },
+          Math.random,
+          physics.ballPosition,
+        );
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
           cameraController.addImpulse(0.24);
@@ -767,10 +798,9 @@ async function bootstrap(): Promise<void> {
         }
 
         const ball = physics.ballPosition;
-        const insideGoal = ball.z < -14 && Math.abs(ball.x) < 2.55 && ball.y < 3.2;
+        const goalCrossing = detectOpponentGoalCrossing(physics.previousBallStepPosition, ball);
         const scored =
-          (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && insideGoal && !goalLatched;
-        goalLatched = insideGoal;
+          (match.stage === 'goalOpportunity' || match.stage === 'finalGoal') && goalCrossing !== null;
         const matchUpdate = updateMatchDirector(
           match,
           {
@@ -808,6 +838,17 @@ async function bootstrap(): Promise<void> {
           }
           if (event.type === 'goalOpportunityStarted' && event.goal === 'final') {
             announcement.show('finalGoal');
+          }
+          if (event.type === 'goalOpportunityStarted') {
+            resetKickoffFormation(state);
+            physics.reset(state.player.position);
+            spawnGoalkeeperGuard(state, event.goal === 'final');
+            previousBallState = physics.ballState;
+          }
+          if (event.type === 'goalMissed') {
+            resetKickoffFormation(state);
+            physics.reset(state.player.position);
+            previousBallState = physics.ballState;
           }
           if (event.type === 'halftimeChoiceStarted') {
             announcement.show('halftime');
@@ -876,6 +917,15 @@ async function bootstrap(): Promise<void> {
       alpha,
     );
     cameraController.update(renderPlayerPosition, frameTime);
+    aimGuide.sync(
+      renderPlayerPosition,
+      cameraController.aimDirection(),
+      state.phase === 'playing' &&
+        !upgradeOverlay.isVisible &&
+        !settingsOverlay.isVisible &&
+        !pauseOverlay.isVisible &&
+        !halftimeOverlay.isVisible,
+    );
     bridge.sync(state, physics.ballRenderPosition(alpha), physics.ballSpeed, frameTime, alpha);
     bossVisual.sync(boss, alpha);
     bloodShardRenderer.sync(bloodShards.state, alpha);
@@ -955,6 +1005,7 @@ async function bootstrap(): Promise<void> {
     victoryRestartButton.removeEventListener('click', restart);
     settingsButton.removeEventListener('click', openSettings);
     titleSettingsButton.removeEventListener('click', openSettings);
+    titleQuitButton.removeEventListener('click', quitGame);
     renderer.domElement.removeEventListener('click', onCanvasClick);
     renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
     renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
@@ -978,6 +1029,7 @@ async function bootstrap(): Promise<void> {
     uninstallQaSnapshotHook();
     atmosphere.dispose();
     bridge.dispose();
+    aimGuide.dispose();
     physics.dispose();
     disposeSceneResources(scene);
     renderer.renderLists.dispose();

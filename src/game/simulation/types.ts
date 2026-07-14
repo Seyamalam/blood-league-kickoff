@@ -53,6 +53,8 @@ export interface EnemyState {
   /** Boss-requested elites are visually distinguishable and use boosted stats. */
   elite: boolean;
   eliteModifier: number;
+  /** Dedicated goal-line blocker spawned for scoring opportunities. */
+  goalkeeper: boolean;
 }
 
 export type MatchPhase = 'ready' | 'playing' | 'dead' | 'won';

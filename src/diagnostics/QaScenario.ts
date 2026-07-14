@@ -14,7 +14,7 @@ import type { MatchPhase } from '../game/simulation/types';
 
 export const QA_SNAPSHOT_HOOK = '__bloodLeagueQaSnapshot';
 
-export type QaScenario = 'victory' | 'defeat' | 'upgrade' | 'evolution';
+export type QaScenario = 'victory' | 'defeat' | 'upgrade' | 'evolution' | 'goal';
 export type QaTerminalScenario = Extract<QaScenario, 'victory' | 'defeat'>;
 
 export interface QaTerminalFixture {
@@ -55,7 +55,11 @@ interface QaHookTarget {
 export function readQaScenario(search: string, development: boolean): QaScenario | null {
   if (!development) return null;
   const scenario = new URLSearchParams(search).get('qa');
-  return scenario === 'victory' || scenario === 'defeat' || scenario === 'upgrade' || scenario === 'evolution'
+  return scenario === 'victory' ||
+    scenario === 'defeat' ||
+    scenario === 'upgrade' ||
+    scenario === 'evolution' ||
+    scenario === 'goal'
     ? scenario
     : null;
 }

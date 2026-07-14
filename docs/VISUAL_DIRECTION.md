@@ -50,20 +50,21 @@ Use these exact sRGB hex values as source tokens. Close variants already in the 
 
 All characters should read at gameplay camera distance before surface detail is visible. Prefer five or fewer primary masses per ordinary enemy and strong asymmetry only when it communicates behavior.
 
-| Subject          | Locked silhouette                                          | Gameplay read                                                             |
-| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Player           | Upright pale capsule plus oversized crimson boot           | Mobile striker; boot establishes facing and kick intent                   |
-| Ball             | Bright faceted icosahedron                                 | Smallest critical target; never visually merged with bone-colored scenery |
-| Blood Fan        | Narrow seven-sided cone and pale head                      | Basic pursuer; simple vertical arrow shape                                |
-| Winger           | Slim capsule with two wide triangular wings                | Fast lateral attacker; width reads speed class                            |
-| Defender         | Broad rectangular torso and forward shield slab            | Heavy blocker; shield must break the front contour                        |
-| Coach            | Tapered cylinder with a wide ground aura                   | Support unit; aura shows influence radius independently of body color     |
-| Bat Swarm        | Low compact body, triangular wings, pointed ears           | Small aerial rush; wingbeat and height distinguish it from ground units   |
-| Leech Striker    | Forward-leaning capsule, circular mouth, ground drain ring | Close-range drain threat; circular mouth faces the player                 |
-| Corrupt Referee  | Striped box torso, raised whistle, expanding ground ring   | Ranged disruption; ring communicates the attack without color             |
-| Goalkeeper Brute | Oversized square torso, wide gloves, forward catch ring    | Slow interceptor; glove span and catch ring dominate its contour          |
-| Elite            | Base silhouette at `1.18x` scale plus gold overhead ring   | Stronger variant; never rely on a recolor alone                           |
-| Count Goalkeeper | Tall capsule, wide armored shoulders, five-point crown     | Boss; crown and shoulder bar remain visible in every phase                |
+| Subject            | Locked silhouette                                             | Gameplay read                                                             |
+| ------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Player             | Upright pale capsule plus oversized crimson boot              | Mobile striker; boot establishes facing and kick intent                   |
+| Ball               | Bright faceted icosahedron                                    | Smallest critical target; never visually merged with bone-colored scenery |
+| Blood Fan          | Narrow seven-sided cone and pale head                         | Basic pursuer; simple vertical arrow shape                                |
+| Winger             | Slim capsule with two wide triangular wings                   | Fast lateral attacker; width reads speed class                            |
+| Defender           | Broad rectangular torso and forward shield slab               | Heavy blocker; shield must break the front contour                        |
+| Coach              | Tapered cylinder with a wide ground aura                      | Support unit; aura shows influence radius independently of body color     |
+| Bat Swarm          | Low compact body, triangular wings, pointed ears              | Small aerial rush; wingbeat and height distinguish it from ground units   |
+| Leech Striker      | Forward-leaning capsule, circular mouth, ground drain ring    | Close-range drain threat; circular mouth faces the player                 |
+| Corrupt Referee    | Striped box torso, raised whistle, expanding ground ring      | Ranged disruption; ring communicates the attack without color             |
+| Goalkeeper Brute   | Oversized square torso, wide gloves, forward catch ring       | Slow interceptor; glove span and catch ring dominate its contour          |
+| Goalkeeper blocker | Wide goal-line stance, oversized gloves, clear lateral motion | Dedicated scoring defender; must remain distinct from crowd enemies       |
+| Elite              | Base silhouette at `1.18x` scale plus gold overhead ring      | Stronger variant; never rely on a recolor alone                           |
+| Count Goalkeeper   | Tall capsule, wide armored shoulders, five-point crown        | Boss; crown and shoulder bar remain visible in every phase                |
 
 New enemy concepts must pass a black-fill silhouette test at 96 px tall. If two archetypes look alike in black fill, revise their proportions before adding materials.
 
@@ -76,6 +77,7 @@ New enemy concepts must pass a black-fill silhouette test at 96 px tall. If two 
 - Reuse geometries and materials across instances. Never create a unique material per enemy instance.
 - Default characters to `MeshStandardMaterial`, roughness `0.5–0.85`, metalness `0–0.2`.
 - Reserve metalness up to `0.75` for armor, shields, goal hardware, and the Count's crown/shoulders.
+- The 68×105 pitch markings and physical posts/crossbar must remain readable as regulation football landmarks; nets may be visually light but never disguise the true opening.
 - Reserve emissive or unlit materials for eyes, critical telegraphs, pickups, and short VFX. Large emissive body surfaces dilute the hierarchy.
 - Use flat base colors with no photorealistic dirt. If textures are introduced, use one compact shared atlas and broad painted value blocks; no micro-detail or text.
 - Keep transparent surfaces sparse, `depthWrite: false`, and visually soft. Avoid layered alpha planes.
@@ -107,6 +109,7 @@ Constraints:
 - Secondary weapon: `frost-300`, thin trail or halo.
 - Recovery: `heal-400`, slow outward motion; never reuse the damage burst shape.
 - Ball trail: maximum 16 points. It must indicate direction without obscuring the ball.
+- Aim guide: one long world-space `blood-400`/red line, thin and allocation-free. It replaces the screen crosshair and must remain readable without covering the ball, goalkeeper, or goal mouth.
 - Atmosphere: maximum 56 shared ember points; use opacity and phase color rather than spawning new systems.
 - Telegraphs must begin with a shape/scale change at least 180 ms before impact. Flash alone is insufficient.
 - Additive effects should occupy less than 15% of the screen during normal combat and clear within 600 ms unless they mark a persistent zone.
@@ -119,7 +122,9 @@ Constraints:
 - Use crimson for focus/selection only with a border, underline, scale, or icon. Keyboard focus keeps the gold outline (`#F8D777`).
 - Minimum body copy is 16 CSS px at 1280×720; critical HUD numbers are at least 20 CSS px.
 - Critical warnings persist long enough to be read and must not depend on rapid flashing. No element may flash more than three times per second.
-- Keep the center reticle-to-ball corridor and the lower forward pitch clear of decorative UI.
+- Keep the world-space aim-line-to-ball corridor and the lower forward pitch clear of decorative UI.
+- Conventional vertical look is the default; the persisted inversion toggle changes input direction only, never the aim-line color or meaning.
+- Desktop Quit appears only on the title screen and must be absent from browser and in-game Settings surfaces.
 - Color-blind-safe redundancy is mandatory: elite = ring and scale; shielded = visible slab; drain = mouth and ground ring; boss phase = pose/animation and intensity.
 - Provide settings for screen shake and high-contrast telegraphs before adding strong camera or post-processing effects.
 

@@ -1,10 +1,13 @@
 import { DEFAULT_FINAL_ELITE_CONFIG } from './config';
 import type { BossVec3, FinalEliteConfig, FinalEliteEvent, FinalEliteState, FinalEliteUpdate } from './types';
+import { OPPONENT_GOAL_LINE_Z } from '../field';
+
+const FINAL_ELITE_START_Z = OPPONENT_GOAL_LINE_Z + 2.7;
 
 /** Stable, intentionally simple final-wave fallback if the boss is not integrated. */
 export function spawnFinalElite(
   id = 1,
-  position: BossVec3 = { x: 0, y: 1, z: -11.8 },
+  position: BossVec3 = { x: 0, y: 1, z: FINAL_ELITE_START_Z },
   config: FinalEliteConfig = DEFAULT_FINAL_ELITE_CONFIG,
 ): FinalEliteState {
   return {
@@ -23,7 +26,7 @@ export function resetFinalElite(
   state: FinalEliteState,
   config: FinalEliteConfig = DEFAULT_FINAL_ELITE_CONFIG,
 ): FinalEliteState {
-  return spawnFinalElite(state.id, { x: 0, y: 1, z: -11.8 }, config);
+  return spawnFinalElite(state.id, { x: 0, y: 1, z: FINAL_ELITE_START_Z }, config);
 }
 
 export function updateFinalElite(

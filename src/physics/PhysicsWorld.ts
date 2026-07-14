@@ -1,8 +1,16 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { ProgressionModifiers } from '../game/progression';
 import type { Vec3 } from '../game/simulation/types';
+import {
+  ARENA_WALL_HALF_LENGTH,
+  ARENA_WALL_HALF_WIDTH,
+  FOOTBALL_RADIUS,
+  GOAL_HALF_WIDTH,
+  GOAL_HEIGHT,
+  HOME_GOAL_LINE_Z,
+  OPPONENT_GOAL_LINE_Z,
+} from '../game/field';
 
-const BALL_RADIUS = 0.42;
 const MAX_BALL_SPEED = 36;
 const MAX_UPGRADED_BALL_SPEED = 54;
 const VOLLEY_WINDOW_DISTANCE = 2.35;
@@ -37,7 +45,7 @@ export class PhysicsWorld {
   private volleyWindowBonus = 0;
   private curve = 0;
   private curveAge = 0;
-  private previousBallPosition: Vec3 = { x: 0, y: BALL_RADIUS, z: 3.8 };
+  private previousBallPosition: Vec3 = { x: 0, y: FOOTBALL_RADIUS, z: 3.8 };
   private unpossessedTime = 0;
   private stalledTime = 0;
   private disposed = false;
@@ -48,16 +56,18 @@ export class PhysicsWorld {
 
     const floor = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(23, 0.1, 15)
+      RAPIER.ColliderDesc.cuboid(ARENA_WALL_HALF_WIDTH, 0.1, ARENA_WALL_HALF_LENGTH)
         .setTranslation(0, -0.1, 0)
         .setFriction(0.65)
         .setRestitution(0.38),
       floor,
     );
-    this.addWall(0, 1.5, -15.2, 23.5, 1.5, 0.2);
-    this.addWall(0, 1.5, 15.2, 23.5, 1.5, 0.2);
-    this.addWall(-23.2, 1.5, 0, 0.2, 1.5, 15);
-    this.addWall(23.2, 1.5, 0, 0.2, 1.5, 15);
+    this.addWall(0, 1.5, -ARENA_WALL_HALF_LENGTH, ARENA_WALL_HALF_WIDTH, 1.5, 0.2);
+    this.addWall(0, 1.5, ARENA_WALL_HALF_LENGTH, ARENA_WALL_HALF_WIDTH, 1.5, 0.2);
+    this.addWall(-ARENA_WALL_HALF_WIDTH, 1.5, 0, 0.2, 1.5, ARENA_WALL_HALF_LENGTH);
+    this.addWall(ARENA_WALL_HALF_WIDTH, 1.5, 0, 0.2, 1.5, ARENA_WALL_HALF_LENGTH);
+    this.addGoalFrame(OPPONENT_GOAL_LINE_Z);
+    this.addGoalFrame(HOME_GOAL_LINE_Z);
 
     this.playerBody = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0.9, 5),
@@ -66,14 +76,14 @@ export class PhysicsWorld {
 
     this.ballBody = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(0, BALL_RADIUS, 3.8)
+        .setTranslation(0, FOOTBALL_RADIUS, 3.8)
         .setLinearDamping(0.24)
         .setAngularDamping(0.18)
         .setCcdEnabled(true)
         .setCanSleep(false),
     );
     this.world.createCollider(
-      RAPIER.ColliderDesc.ball(BALL_RADIUS).setDensity(0.7).setFriction(0.62).setRestitution(0.82),
+      RAPIER.ColliderDesc.ball(FOOTBALL_RADIUS).setDensity(0.7).setFriction(0.62).setRestitution(0.82),
       this.ballBody,
     );
   }
@@ -107,6 +117,10 @@ export class PhysicsWorld {
   get ballPosition(): Vec3 {
     const p = this.ballBody.translation();
     return { x: p.x, y: p.y, z: p.z };
+  }
+
+  get previousBallStepPosition(): Vec3 {
+    return { ...this.previousBallPosition };
   }
 
   get ballVelocity(): Vec3 {
@@ -214,7 +228,11 @@ export class PhysicsWorld {
       this.curve = 0;
       this.curveAge = 0;
       this.ballBody.setTranslation(
-        { x: playerPosition.x + forward.x * 1.08, y: BALL_RADIUS, z: playerPosition.z + forward.z * 1.08 },
+        {
+          x: playerPosition.x + forward.x * 1.08,
+          y: FOOTBALL_RADIUS,
+          z: playerPosition.z + forward.z * 1.08,
+        },
         true,
       );
       this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -276,8 +294,8 @@ export class PhysicsWorld {
       !Number.isFinite(ball.y) ||
       !Number.isFinite(ball.z) ||
       ball.y < -4 ||
-      Math.abs(ball.x) > 30 ||
-      Math.abs(ball.z) > 22
+      Math.abs(ball.x) > ARENA_WALL_HALF_WIDTH + 7 ||
+      Math.abs(ball.z) > ARENA_WALL_HALF_LENGTH + 7
     ) {
       this.reset(playerPosition);
     }
@@ -295,8 +313,11 @@ export class PhysicsWorld {
     this.curveAge = 0;
     this.unpossessedTime = 0;
     this.stalledTime = 0;
-    this.previousBallPosition = { x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 };
-    this.ballBody.setTranslation({ x: playerPosition.x, y: BALL_RADIUS, z: playerPosition.z - 1.1 }, true);
+    this.previousBallPosition = { x: playerPosition.x, y: FOOTBALL_RADIUS, z: playerPosition.z - 1.1 };
+    this.ballBody.setTranslation(
+      { x: playerPosition.x, y: FOOTBALL_RADIUS, z: playerPosition.z - 1.1 },
+      true,
+    );
     this.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }
@@ -314,6 +335,14 @@ export class PhysicsWorld {
       RAPIER.ColliderDesc.cuboid(hx, hy, hz).setTranslation(x, y, z).setFriction(0.3).setRestitution(0.88),
       body,
     );
+  }
+
+  private addGoalFrame(z: number): void {
+    const postHalfHeight = GOAL_HEIGHT / 2;
+    for (const x of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
+      this.addWall(x, postHalfHeight, z, 0.16, postHalfHeight, 0.16);
+    }
+    this.addWall(0, GOAL_HEIGHT, z, GOAL_HALF_WIDTH + 0.16, 0.16, 0.16);
   }
 
   private limitBallSpeed(): void {

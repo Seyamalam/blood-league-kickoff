@@ -38,6 +38,8 @@ The game is not a football simulation. No passing rules, fouls, offside, or team
 
 Normal play uses a third-person orbit camera with camera-relative movement. Aim direction should be readable on the pitch. The optional Focus Kick briefly enters first person/time dilation, fires one precise shot, then restores third person automatically.
 
+Vertical mouse movement follows the conventional default: moving down aims down. Players may persistently invert vertical look in Settings. A long red world-space line replaces the fixed screen crosshair so direction is anchored to the player and pitch rather than the display center.
+
 While charging, deliberate sideways mouse movement adds a restrained curve to the kick. The bend fades quickly, respects the normal speed cap, and ends immediately when recall begins.
 
 ## Ball Rules
@@ -52,6 +54,14 @@ While charging, deliberate sideways mouse movement adds a restrained curve to th
 
 The aim preview may communicate direction and charge but should not solve every rebound. Aim assistance must favor intended nearby targets without visibly hijacking shots.
 
+### Field and scoring rules
+
+- The playable pitch uses shared 68×105 regulation proportions across simulation, rendering, collision, and tests.
+- Goal posts and crossbar are physical collision geometry, not decorative scoring markers.
+- A goal requires the whole ball to cross the goal line between the inner post planes and below the crossbar.
+- Scoring sweeps the previous-to-current ball path so a fast shot cannot tunnel through the scoring plane.
+- Partial crossings, post/crossbar contacts, and shots outside the opening do not score.
+
 ## Player Rules
 
 - Movement remains responsive while aiming.
@@ -62,17 +72,18 @@ The aim preview may communicate direction and charge but should not solve every 
 
 ## Enemies
 
-| Enemy            | Behavior                        | Counterplay                                                                                            |
-| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Blood Fan        | Direct crowd pressure           | Any clean kick; use for satisfying chains                                                              |
-| Vampire Winger   | Fast flank and committed lunge  | Reposition, intercept, or recall through it                                                            |
-| Undead Defender  | Frontal shield                  | Curve, rebound, attack side/back, or special upgrade                                                   |
-| Blood Coach      | Buffs nearby enemies            | Prioritize at range and create a lane to it                                                            |
-| Bat Swarm        | Fast airborne weaving pressure  | Track its lateral rhythm; one clean hit destroys it                                                    |
-| Leech Striker    | Latches, drains, and self-heals | Break contact during drain, then punish its recovery                                                   |
-| Corrupt Referee  | Ranged telegraphed whistle      | Close distance or dodge beyond its disruption radius                                                   |
-| Goalkeeper Brute | Catches ordinary ball shots     | Charge above power-shot speed to break its catch                                                       |
-| Count Goalkeeper | Final ball-control boss         | Land primary kicks while the full build adds capped damage; crowd-control effects do not move the boss |
+| Enemy              | Behavior                         | Counterplay                                                                                            |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Blood Fan          | Direct crowd pressure            | Any clean kick; use for satisfying chains                                                              |
+| Vampire Winger     | Fast flank and committed lunge   | Reposition, intercept, or recall through it                                                            |
+| Undead Defender    | Frontal shield                   | Curve, rebound, attack side/back, or special upgrade                                                   |
+| Blood Coach        | Buffs nearby enemies             | Prioritize at range and create a lane to it                                                            |
+| Bat Swarm          | Fast airborne weaving pressure   | Track its lateral rhythm; one clean hit destroys it                                                    |
+| Leech Striker      | Latches, drains, and self-heals  | Break contact during drain, then punish its recovery                                                   |
+| Corrupt Referee    | Ranged telegraphed whistle       | Close distance or dodge beyond its disruption radius                                                   |
+| Goalkeeper Brute   | Catches ordinary ball shots      | Charge above power-shot speed to break its catch                                                       |
+| Goalkeeper blocker | Protects the active scoring goal | Move or overpower the dedicated blocker before completing the whole-ball crossing                      |
+| Count Goalkeeper   | Final ball-control boss          | Land primary kicks while the full build adds capped damage; crowd-control effects do not move the boss |
 
 Target enemies add airborne pressure, dashes, area denial, and ball interception only after the guaranteed roster is stable.
 
@@ -122,6 +133,8 @@ The current halftime tactics are **Power** (+25% ball damage and +15% kick force
 Scoring clears the active crowd, recenters the striker and ball, preserves health/XP/score, and presents a new kickoff. Match-stage announcements plus smoothly blended fog, accent lighting, and embers make the transition readable without blocking control.
 
 Every secondary damage source can hit Count Goalkeeper once its entrance ends. Successful boss kicks trigger the same impact weapons as ordinary hits plus Blood Bomb, so specialized builds do not depend on a nearby minion. Secondary damage is reduced to 40% and capped at 12 raw damage per fixed step so automatic and evolved builds remain useful without erasing the kick-focused climax. Primary and secondary hits have independent short cooldowns, with primary contact resolved first for readable impact. Secondary slows and pulls remain boss-immune, and boss damage never awards ordinary enemy score, combo, kills, or Blood XP.
+
+During scoring opportunities, the special goalkeeper blocker is separate from Count Goalkeeper and ordinary crowd roles. It protects the physical goal opening without changing the match director's whole-ball scoring requirement.
 
 ## Feedback Priorities
 

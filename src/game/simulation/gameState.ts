@@ -9,9 +9,8 @@ import {
   type SpawnDirectorInput,
   type SpawnRandomSource,
 } from '../spawn';
+import { GOALKEEPER_GUARD_Z, GOAL_HALF_WIDTH, PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_WIDTH } from '../field';
 
-const ARENA_HALF_WIDTH = 22;
-const ARENA_HALF_DEPTH = 14;
 const PLAYER_SPEED = 8.2;
 const PLAYER_DASH_SPEED = 22;
 const PLAYER_DASH_DURATION = 0.16;
@@ -42,7 +41,7 @@ export function createGameState(): GameState {
       position: { x: 0, y: 0.9, z: 5 },
       previousPosition: { x: 0, y: 0.9, z: 5 },
       velocity: { x: 0, y: 0, z: 0 },
-      facing: Math.PI,
+      facing: 0,
       health: 100,
       maxHealth: 100,
       invulnerability: 0,
@@ -109,8 +108,16 @@ export function updatePlayer(
     player.velocity.x += (targetX - player.velocity.x) * acceleration;
     player.velocity.z += (targetZ - player.velocity.z) * acceleration;
   }
-  player.position.x = clamp(player.position.x + player.velocity.x * dt, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
-  player.position.z = clamp(player.position.z + player.velocity.z * dt, -ARENA_HALF_DEPTH, ARENA_HALF_DEPTH);
+  player.position.x = clamp(
+    player.position.x + player.velocity.x * dt,
+    -PLAYABLE_HALF_WIDTH,
+    PLAYABLE_HALF_WIDTH,
+  );
+  player.position.z = clamp(
+    player.position.z + player.velocity.z * dt,
+    -PLAYABLE_HALF_LENGTH,
+    PLAYABLE_HALF_LENGTH,
+  );
   player.facing = facing;
   player.invulnerability = Math.max(0, player.invulnerability - dt);
 }
@@ -120,6 +127,7 @@ export function updateEnemies(
   dt: number,
   spawnInput: Readonly<SpawnDirectorInput> = inferSpawnDirectorInput(state.elapsed),
   rng: SpawnRandomSource = Math.random,
+  goalkeeperTarget?: Readonly<Vec3>,
 ): void {
   if (state.phase !== 'playing') return;
 
@@ -222,6 +230,21 @@ export function updateEnemies(
       }
     }
 
+    if (enemy.goalkeeper) {
+      const targetX = clamp(
+        goalkeeperTarget?.x ?? player.position.x,
+        -GOAL_HALF_WIDTH + enemy.radius,
+        GOAL_HALF_WIDTH - enemy.radius,
+      );
+      if (dt > 0) {
+        movementX = clamp(targetX - enemy.position.x, -enemy.speed * dt, enemy.speed * dt) / dt;
+        movementZ = clamp(GOALKEEPER_GUARD_Z - enemy.position.z, -enemy.speed * dt, enemy.speed * dt) / dt;
+      } else {
+        movementX = 0;
+        movementZ = 0;
+      }
+    }
+
     const slowMultiplier = enemy.slowTimer > 0 ? enemy.slowSpeedMultiplier : 1;
     movementX *= slowMultiplier;
     movementZ *= slowMultiplier;
@@ -229,8 +252,8 @@ export function updateEnemies(
     const knockbackDamping = Math.exp(-7.5 * dt);
     movementX += enemy.knockbackVelocity.x;
     movementZ += enemy.knockbackVelocity.z;
-    enemy.position.x = clamp(enemy.position.x + movementX * dt, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
-    enemy.position.z = clamp(enemy.position.z + movementZ * dt, -ARENA_HALF_DEPTH, ARENA_HALF_DEPTH);
+    enemy.position.x = clamp(enemy.position.x + movementX * dt, -PLAYABLE_HALF_WIDTH, PLAYABLE_HALF_WIDTH);
+    enemy.position.z = clamp(enemy.position.z + movementZ * dt, -PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_LENGTH);
     enemy.knockbackVelocity.x *= knockbackDamping;
     enemy.knockbackVelocity.z *= knockbackDamping;
 
@@ -437,14 +460,16 @@ function awardKills(state: GameState, kills: number): void {
 
 function spawnEnemy(state: GameState, archetype: EnemyArchetype, rng: SpawnRandomSource): EnemyState {
   const side = Math.floor(normalizeRandom(rng()) * 4);
-  const edgeX = 20.5;
-  const edgeZ = 12.5;
-  let x = (normalizeRandom(rng()) * 2 - 1) * edgeX;
-  let z = (normalizeRandom(rng()) * 2 - 1) * edgeZ;
-  if (side === 0) x = -edgeX;
-  if (side === 1) x = edgeX;
-  if (side === 2) z = -edgeZ;
-  if (side === 3) z = edgeZ;
+  const edgeX = 18;
+  const edgeZ = 16;
+  let x = state.player.position.x + (normalizeRandom(rng()) * 2 - 1) * edgeX;
+  let z = state.player.position.z + (normalizeRandom(rng()) * 2 - 1) * edgeZ;
+  if (side === 0) x = state.player.position.x - edgeX;
+  if (side === 1) x = state.player.position.x + edgeX;
+  if (side === 2) z = state.player.position.z - edgeZ;
+  if (side === 3) z = state.player.position.z + edgeZ;
+  x = clamp(x, -PLAYABLE_HALF_WIDTH, PLAYABLE_HALF_WIDTH);
+  z = clamp(z, -PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_LENGTH);
   const stats = enemyStats(archetype, state.elapsed);
   return createEnemyState(state, archetype, { x, y: stats.y, z }, false);
 }
@@ -462,9 +487,21 @@ export function spawnEliteEnemy(state: GameState, archetype: EliteEnemyArchetype
   const position = {
     x: side * (4.8 + Math.random() * 1.8),
     y: stats.y * 1.08,
-    z: -11.5 + (Math.random() * 0.8 - 0.4),
+    z: GOALKEEPER_GUARD_Z + 3.4 + (Math.random() * 0.8 - 0.4),
   };
   const enemy = createEnemyState(state, archetype, position, true);
+  state.enemies.push(enemy);
+  return enemy;
+}
+
+/** Spawns a dedicated, track-the-ball goalkeeper for a timed scoring opportunity. */
+export function spawnGoalkeeperGuard(state: GameState, finalGoal = false): EnemyState {
+  const enemy = createEnemyState(state, 'goalkeeperBrute', { x: 0, y: 1.18, z: GOALKEEPER_GUARD_Z }, true);
+  enemy.goalkeeper = true;
+  enemy.speed = finalGoal ? 6.2 : 5.3;
+  enemy.hitPoints = finalGoal ? 16 : 12;
+  enemy.maxHitPoints = enemy.hitPoints;
+  enemy.attackDamage = finalGoal ? 34 : 30;
   state.enemies.push(enemy);
   return enemy;
 }
@@ -503,6 +540,7 @@ function createEnemyState(
     slowTimer: 0,
     elite,
     eliteModifier,
+    goalkeeper: false,
   };
 }
 

@@ -1,12 +1,13 @@
 import type { CountGoalkeeperConfig, FinalEliteConfig } from './types';
+import { GOAL_HALF_WIDTH, OPPONENT_GOAL_LINE_Z, PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_WIDTH } from '../field';
 
 export const DEFAULT_COUNT_GOALKEEPER_CONFIG: CountGoalkeeperConfig = {
   maxHealth: 120,
   radius: 1.15,
-  goalLineZ: -11.8,
-  goalHalfWidth: 4.6,
-  arenaHalfWidth: 21.5,
-  arenaHalfDepth: 13.5,
+  goalLineZ: OPPONENT_GOAL_LINE_Z + 2.7,
+  goalHalfWidth: GOAL_HALF_WIDTH - 1.15,
+  arenaHalfWidth: PLAYABLE_HALF_WIDTH,
+  arenaHalfDepth: PLAYABLE_HALF_LENGTH,
   entranceDuration: 2.4,
   guardingSpeed: 5.2,
   bloodRushHealthRatio: 0.66,
@@ -33,6 +34,6 @@ export const DEFAULT_FINAL_ELITE_CONFIG: FinalEliteConfig = {
   contactDamage: 20,
   contactCooldown: 0.85,
   hitInvulnerability: 0.08,
-  arenaHalfWidth: 21.5,
-  arenaHalfDepth: 13.5,
+  arenaHalfWidth: PLAYABLE_HALF_WIDTH,
+  arenaHalfDepth: PLAYABLE_HALF_LENGTH,
 };

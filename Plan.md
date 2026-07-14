@@ -11,7 +11,7 @@ Create a polished third-person 3D horde-survival roguelite in which football is 
 - **Physics:** Rapier WASM for the player, ball, arena, and important dynamic interactions
 - **View:** Third-person, over-the-shoulder camera
 - **Special camera:** Brief first-person Focus Kick ultimate only
-- **Platforms:** Web, Windows x64, macOS Intel/Apple silicon, and Linux x64
+- **Platforms:** Web and macOS throughout alpha development; Windows x64 and Linux x64 only after the game is finished
 - **Session:** 8–10 minutes guaranteed; up to 12 minutes only after the scope gates pass
 - **Art direction:** Stylized low-poly gothic stadium, moonlit blue environment, crimson vampire effects, and gold holy weapons
 
@@ -48,6 +48,8 @@ Timings and balance values live in data files and remain easy to shorten during 
 6. **Disabled:** temporarily caught, blocked, or controlled by a boss mechanic.
 
 Rapier provides collision queries and important rigid-body interactions. Game code owns ball state, aim assistance, recall steering, damage, recovery, and velocity limits so combat remains predictable. A fail-safe returns an inaccessible ball after a short timeout.
+
+The playable field uses a shared 68×105 regulation-proportioned definition across simulation, collision, scoring, and rendering. Each goal has physical posts and a crossbar. Scoring uses a swept previous-to-current ball path and the whole ball must pass beyond the goal line between the inside post planes and below the crossbar; touching or only partially crossing does not score.
 
 ### Guaranteed upgrades
 
@@ -86,7 +88,7 @@ Target paths include lightning, frost, black hole, multiball, holy zones, dash s
 | Undead Defender  | Blocks frontal shots and rewards curves/rebounds   |
 | Blood Coach      | Buffs nearby enemies and becomes a priority target |
 
-Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brutes, and the multi-phase Count Goalkeeper. Visual variants reuse behavior, geometry, materials, and animation wherever possible.
+Target enemies are Bat Swarms, Leech Strikers, Corrupt Referees, Goalkeeper Brutes, the special scoring-goal goalkeeper blocker, and the multi-phase Count Goalkeeper. Visual variants reuse behavior, geometry, materials, and animation wherever possible.
 
 ## 7. Technical Architecture
 
@@ -184,6 +186,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `TutorialTracker` / `TutorialPrompt`: persistent first-run lessons driven by demonstrated gameplay signals
 - `PerfMeter`: stable live snapshots for cadence, renderer work, fixed steps, enemies, and pool occupancy
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
+- `field`: shared 68×105 pitch, physical-goal, and whole-ball scoring constants/queries
+- `AimGuide`: reusable long red world-space line driven by the current camera aim
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
@@ -193,7 +197,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `EnemySpatialGrid`: reusable typed-array neighborhood queries for crowd separation and Coach auras
 - `PhysicsWorld`: Rapier arena/player/ball bodies, charged/curved kicks, perfect volley, halftime-modified recall, speed limiting, stepping, and ball recovery
 - `RenderBridge`: interpolated player/enemy/ball presentation, shared archetype visuals, elite/shield/telegraph cues, and primitive visual lifecycles
-- `CameraController`: third-person orbit aim, arena-boundary collision, camera smoothing, sensitivity, and restrained impact feedback
+- `CameraController`: third-person orbit aim, arena-boundary collision, camera smoothing, sensitivity, conventional/inverted vertical look, and restrained impact feedback
 - `Hud`: kickoff/death overlays and live combat/performance readouts
 - `PauseOverlay` / `ResultsOverlay`: focus-safe interruption controls and terminal run summaries
 - `electron/main.cjs` and `preload.cjs`: secured desktop shell
@@ -222,7 +226,7 @@ Data definitions must be plain typed objects/JSON where practical. Rendering, si
 
 Electron loads only the local production build. The desktop shell uses a restricted preload boundary, context isolation, no Node integration in renderer code, fullscreen/window settings, and hardware acceleration. The game must also remain playable as a normal static web build.
 
-`electron-builder` produces native desktop packages. GitHub Actions builds Windows x64, macOS Intel/Apple silicon, and Linux x64 on their native runners; each release candidate must still be smoke-tested on its target operating systems before submission.
+`electron-builder` produces native desktop packages. Routine alpha tags build and publish only verified web and macOS artifacts. Windows x64 and Linux x64 use a separate confirmation-gated manual workflow only after macOS/web gameplay is complete; each final candidate must still be smoke-tested on its target operating system before submission.
 
 ## 8. Performance Plan
 
@@ -262,7 +266,7 @@ Audio priority is kick impact, ball flight/recall, enemy hit/death, goal/kickoff
 
 Persistent HUD: health, blood XP/level, clock/phase, ball state, ultimate charge, current objective, and boss health when relevant.
 
-Modal surfaces: upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
+Modal surfaces: upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, persisted vertical-look inversion, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Desktop Quit belongs only on the title screen. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
 
 ## 11. Build and Release Strategy
 
@@ -275,9 +279,9 @@ Modal surfaces: upgrade selection, halftime choice, pause/settings, and results.
 
 ### Continuous integration
 
-Development and gameplay validation run locally on macOS and in the browser. Version tags trigger native Windows, macOS, and Linux packaging plus a static web archive, combine checksums, and attach all outputs to the matching GitHub Release. Release metadata must state controls, included content, known issues, test status, and commit SHA.
+Development and gameplay validation run locally on macOS and in the browser. Version tags trigger verified macOS packaging plus a static web archive, combine checksums, and attach those outputs to the matching GitHub prerelease. Windows and Linux packaging is final-only and runs through an explicit manual confirmation after the game is complete. Release metadata must state controls, included content, known issues, test status, and commit SHA.
 
-Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. A separate least-privilege workflow repeats the full verification on `main`, installs and validates the official itch.io Butler binary, and pushes `dist/` to the `html5` channel using the encrypted `BUTLER_API_KEY` repository secret. Manual dispatch is restricted to the canonical repository's `main` branch, and the secret is exposed only to the final Butler upload step; pull requests cannot deploy. Desktop packaging runs only for version tags or an explicit manual dispatch.
+Normal pushes and pull requests run a pinned Linux verification job using `npm ci`, Prettier, ESLint, Vitest, strict TypeScript, and the production Vite build. A separate least-privilege workflow repeats the full verification on `main`, installs and validates the official itch.io Butler binary, and pushes `dist/` to the `html5` channel using the encrypted `BUTLER_API_KEY` repository secret. Manual dispatch is restricted to the canonical repository's `main` branch, and the secret is exposed only to the final Butler upload step; pull requests cannot deploy. macOS packaging runs for version tags; Windows/Linux packaging runs only through the explicit final-platform manual dispatch.
 
 ### Commit and documentation policy
 
@@ -345,4 +349,4 @@ Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical 
 
 ## 14. Current State
 
-As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. Twelve upgrades, five evolutions, eight enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Every secondary damage source now contributes to the boss through capped, reward-safe routing. Browser automation, 171 deterministic tests, five-batch secondary-weapon instancing, release artifact verification, real macOS Electron checks, and a native cross-platform release matrix cover the main systems and delivery path. Pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.
+As of July 14, 2026, the complete nine-minute run is implemented through goals, halftime tactics, Blood Moon escalation, the Count Goalkeeper boss, and terminal results. The current alpha.5 work adds the shared 68×105 field, physical goal frames, swept whole-ball scoring, a special goalkeeper blocker, a long red world-space aim line, conventional/invertible vertical look, and title-only desktop Quit. Twelve upgrades, five evolutions, eight ordinary enemy archetypes plus elites, Focus Kick, physical XP shards, four target weapon paths, procedural music and match cues, onboarding, diagnostics, aim assistance, rebinding, persistent settings, and a phase-aware Spawn Director are active. Web/macOS prerelease automation covers active development; Windows/Linux remain manual final-only. The alpha.5 tag is not published yet, and pointer-lock combat feel, full-run balance, and downloaded Windows/Linux smoke tests still require human validation.

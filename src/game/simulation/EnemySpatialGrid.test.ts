@@ -77,5 +77,6 @@ function enemy(id: number, archetype: EnemyArchetype, x: number, z: number): Ene
     slowTimer: 0,
     elite: false,
     eliteModifier: 1,
+    goalkeeper: false,
   };
 }

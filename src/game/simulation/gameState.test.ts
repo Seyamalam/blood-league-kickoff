@@ -5,9 +5,11 @@ import {
   damageEnemiesWithBall,
   resetKickoffFormation,
   spawnEliteEnemy,
+  spawnGoalkeeperGuard,
   updateEnemies,
   updatePlayer,
 } from './gameState';
+import { GOALKEEPER_GUARD_Z, GOAL_HALF_WIDTH } from '../field';
 
 describe('game state match helpers', () => {
   afterEach(() => {
@@ -40,6 +42,26 @@ describe('game state match helpers', () => {
     expect(normal.hitPoints).toBeGreaterThan(normal.archetype === 'winger' ? 1 : 4);
     expect(normal.position.x).toBeLessThan(0);
     expect(state.enemies).toContain(normal);
+  });
+
+  it('spawns a special goalkeeper that tracks the ball across the real goal mouth', () => {
+    const state = createGameState();
+    state.phase = 'playing';
+    state.spawnTimer = 100;
+    const goalkeeper = spawnGoalkeeperGuard(state, true);
+
+    updateEnemies(state, 0.1, { stage: 'finalGoal', stageElapsed: 1, matchElapsed: 500 }, () => 0.5, {
+      x: GOAL_HALF_WIDTH,
+      y: 0.7,
+      z: GOALKEEPER_GUARD_Z,
+    });
+
+    expect(goalkeeper.goalkeeper).toBe(true);
+    expect(goalkeeper.archetype).toBe('goalkeeperBrute');
+    expect(goalkeeper.position.x).toBeGreaterThan(0);
+    expect(goalkeeper.position.x).toBeLessThanOrEqual(GOAL_HALF_WIDTH - goalkeeper.radius);
+    expect(goalkeeper.position.z).toBeCloseTo(GOALKEEPER_GUARD_Z);
+    expect(goalkeeper.hitPoints).toBe(16);
   });
 
   it('applies the halftime Pace multiplier to ordinary movement', () => {
