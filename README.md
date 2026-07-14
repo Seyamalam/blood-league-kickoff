@@ -4,14 +4,14 @@
 
 ![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
 
-| Project   | Value                                                            |
-| --------- | ---------------------------------------------------------------- |
-| Status    | Feature-complete v0.9 release candidate                          |
-| Theme     | Kickoff                                                          |
-| Team      | Huntrix — 2 participants                                         |
-| Platforms | Web, macOS, Windows x64, and Linux x64                          |
-| Stack     | Three.js, TypeScript, Vite, Rapier, Electron                     |
-| Input     | Keyboard/mouse and standard gamepad                              |
+| Project   | Value                                        |
+| --------- | -------------------------------------------- |
+| Status    | Feature-complete v0.9 release candidate      |
+| Theme     | Kickoff                                      |
+| Team      | Huntrix — 2 participants                     |
+| Platforms | Web, macOS, Windows x64, and Linux x64       |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron |
+| Input     | Keyboard/mouse and standard gamepad          |
 
 ### Release-candidate title screen
 
