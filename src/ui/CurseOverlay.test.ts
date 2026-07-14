@@ -29,4 +29,11 @@ describe('curse card presentation', () => {
       disabled: true,
     });
   });
+
+  it('disables account-locked curse contracts', () => {
+    expect(getCurseCardPresentation('bloodMoonPact', [], false)).toMatchObject({
+      selected: false,
+      disabled: true,
+    });
+  });
 });

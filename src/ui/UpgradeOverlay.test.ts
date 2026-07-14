@@ -23,6 +23,7 @@ describe('upgrade card presentation', () => {
       expect(card.ariaLabel).toContain(`${index + 1}. ${definition.name}.`);
       expect(card.ariaLabel).toContain(definition.description);
       expect(card.ariaLabel).toContain(`Stack 0 to 1 of ${definition.maxStacks}.`);
+      expect(['common', 'rare', 'epic', 'legendary']).toContain(card.rarity);
     }
   });
 

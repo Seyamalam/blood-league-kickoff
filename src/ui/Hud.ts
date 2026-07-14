@@ -84,6 +84,7 @@ export class Hud {
           <button type="button" id="weekly-run-button" class="title-settings">${uiIcon('trophy')}<span>WEEKLY RUN</span></button>
         </div>
         <button type="button" id="cursed-run-button" class="title-settings title-cursed">${uiIcon('loadout')}<span>CURSED CONTRACT RUN</span></button>
+        <button type="button" id="difficulty-run-button" class="title-settings">${uiIcon('trophy')}<span>LEAGUE DIFFICULTY</span></button>
         <div class="title-seed-run">
           <label for="custom-seed-input">SHARED SEED</label>
           <div><input id="custom-seed-input" maxlength="32" autocomplete="off" placeholder="ENTER SEED"><button type="button" id="custom-seed-button" class="title-settings">${uiIcon('seed')}<span>PLAY</span></button></div>
@@ -164,6 +165,10 @@ export class Hud {
 
   get cursedRunButton(): HTMLElement {
     return required('cursed-run-button');
+  }
+
+  get difficultyRunButton(): HTMLElement {
+    return required('difficulty-run-button');
   }
 
   get customSeedInput(): HTMLInputElement {

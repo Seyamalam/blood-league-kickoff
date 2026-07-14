@@ -77,6 +77,9 @@ describe('ProfileStore', () => {
         runMode: 'daily',
         challengeKey: 'daily:2026-07-14',
         rulesetVersion: 'alpha.7',
+        difficultyId: 'champion',
+        challengeModifierIds: ['noHealing', 'eliteLeague'],
+        rewardMultiplier: 1.75,
       }),
     );
     const document = JSON.parse(values.get('profile') ?? '{}');
@@ -86,6 +89,9 @@ describe('ProfileStore', () => {
       runMode: 'daily',
       challengeKey: 'daily:2026-07-14',
       rulesetVersion: 'alpha.7',
+      difficultyId: 'champion',
+      challengeModifierIds: ['noHealing', 'eliteLeague'],
+      rewardMultiplier: 1.75,
     });
   });
 

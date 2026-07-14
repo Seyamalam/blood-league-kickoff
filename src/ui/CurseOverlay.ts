@@ -1,6 +1,7 @@
 import { CURSE_DEFINITIONS, CURSE_IDS, type CurseId } from '../game/progression';
 import { CURSE_ICON_URLS } from './progressionIcons';
 import { uiIcon } from './icons';
+import { CURSE_UNLOCK_LEVELS } from '../profile';
 
 export type CurseSelectionCallback = (curseIds: readonly CurseId[]) => void;
 
@@ -12,6 +13,7 @@ export class CurseOverlay {
   private readonly startButton: HTMLButtonElement;
   private readonly closeButton: HTMLButtonElement;
   private readonly selected = new Set<CurseId>();
+  private available = new Set<CurseId>(CURSE_IDS);
   private callback: CurseSelectionCallback | null = null;
   private open = false;
 
@@ -43,8 +45,12 @@ export class CurseOverlay {
     return this.open;
   }
 
-  show(callback: CurseSelectionCallback): void {
+  show(callback: CurseSelectionCallback, availableCurseIds: readonly CurseId[] = CURSE_IDS): void {
     this.callback = callback;
+    this.available = new Set(availableCurseIds);
+    for (const curseId of this.selected) if (!this.available.has(curseId)) this.selected.delete(curseId);
+    this.render();
+    this.refreshSelection();
     this.open = true;
     this.element.hidden = false;
     this.element.classList.remove('hidden');
@@ -75,7 +81,8 @@ export class CurseOverlay {
   private render(): void {
     this.list.replaceChildren(
       ...CURSE_IDS.map((curseId) => {
-        const presentation = getCurseCardPresentation(curseId, this.selected);
+        const unlocked = this.available.has(curseId);
+        const presentation = getCurseCardPresentation(curseId, this.selected, unlocked);
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'curse-card';
@@ -83,7 +90,8 @@ export class CurseOverlay {
         button.setAttribute('aria-pressed', String(presentation.selected));
         button.setAttribute('aria-label', presentation.ariaLabel);
         button.disabled = presentation.disabled;
-        button.innerHTML = `<img src="${presentation.iconUrl}" alt=""><span><small>CURSE CONTRACT</small><strong>${presentation.name}</strong></span><p>${presentation.description}</p><dl><div><dt>BENEFIT</dt><dd>${presentation.benefit}</dd></div><div><dt>DRAWBACK</dt><dd>${presentation.drawback}</dd></div></dl><small class="curse-card__reward">${presentation.rewardLabel}</small>`;
+        button.classList.toggle('curse-card--locked', !unlocked);
+        button.innerHTML = `<img src="${presentation.iconUrl}" alt=""><span><small>${unlocked ? 'CURSE CONTRACT' : `UNLOCKS AT ACCOUNT LEVEL ${CURSE_UNLOCK_LEVELS[curseId]}`}</small><strong>${presentation.name}</strong></span><p>${presentation.description}</p><dl><div><dt>BENEFIT</dt><dd>${presentation.benefit}</dd></div><div><dt>DRAWBACK</dt><dd>${presentation.drawback}</dd></div></dl><small class="curse-card__reward">${unlocked ? presentation.rewardLabel : 'LOCKED CONTRACT'}</small>`;
         return button;
       }),
     );
@@ -94,7 +102,8 @@ export class CurseOverlay {
       const selected = this.selected.has(button.dataset.curseId as CurseId);
       button.classList.toggle('curse-card--selected', selected);
       button.setAttribute('aria-pressed', String(selected));
-      button.disabled = !selected && this.selected.size >= 3;
+      const curseId = button.dataset.curseId as CurseId;
+      button.disabled = !this.available.has(curseId) || (!selected && this.selected.size >= 3);
     }
     this.count.textContent = `${this.selected.size} / 3 SELECTED`;
     this.startButton.disabled = this.selected.size === 0;
@@ -132,6 +141,7 @@ export class CurseOverlay {
 export function getCurseCardPresentation(
   curseId: CurseId,
   selectedIds: ReadonlySet<CurseId> | readonly CurseId[] = [],
+  unlocked = true,
 ): Readonly<{
   iconUrl: string;
   name: string;
@@ -146,7 +156,7 @@ export function getCurseCardPresentation(
   const curse = CURSE_DEFINITIONS[curseId];
   const selectedSet = new Set(selectedIds);
   const selected = selectedSet.has(curseId);
-  const disabled = !selected && selectedSet.size >= 3;
+  const disabled = !unlocked || (!selected && selectedSet.size >= 3);
   const rewardPercent = Math.round(((curse.directorModifiers.rewardMultiplier ?? 1) - 1) * 100);
   const rewardLabel = `+${rewardPercent}% CAREER REWARDS`;
   return Object.freeze({

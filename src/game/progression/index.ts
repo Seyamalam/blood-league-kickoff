@@ -18,6 +18,14 @@ export {
 export { UPGRADE_DEFINITIONS } from './upgradeDefinitions';
 export { EVOLUTION_DEFINITIONS } from './evolutionDefinitions';
 export { CURSE_DEFINITIONS } from './curseDefinitions';
+export {
+  DEFAULT_UPGRADE_DRAFT_RULES,
+  UPGRADE_RARITIES,
+  UpgradeDraftSession,
+  createDraftOffer,
+  rarityForUpgrade,
+} from './upgradeDraft';
+export type { UpgradeDraftResources, UpgradeDraftRules, UpgradeRarity } from './upgradeDraft';
 export { CURSE_IDS, EVOLUTION_IDS, UPGRADE_IDS } from './types';
 export type {
   BloodXpResult,

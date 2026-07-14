@@ -41,4 +41,9 @@ describe('run rewards', () => {
     ).toBe(25 + 200 + 20 * 60);
     expect(calculateRunAccountXp({ ...RUN, score: -1, kills: Number.NaN, goals: -5 })).toBe(25);
   });
+
+  it('applies bounded difficulty and contract reward multipliers', () => {
+    expect(calculateRunAccountXp({ ...RUN, rewardMultiplier: 1.5 })).toBe(38);
+    expect(calculateRunAccountXp({ ...RUN, rewardMultiplier: 99 })).toBe(125);
+  });
 });

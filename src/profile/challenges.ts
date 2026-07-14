@@ -38,6 +38,14 @@ export const CHALLENGE_DEFINITIONS: Readonly<Record<ChallengeId, ChallengeDefini
   killOneThousand: define('killOneThousand', 'Night Exterminator', 'kills', 1_000),
   reachRunLevelTen: define('reachRunLevelTen', 'Fully Awakened', 'runLevel', 10),
   unlockThreeEvolutions: define('unlockThreeEvolutions', 'Unholy Trinity', 'runEvolutions', 3),
+  playTwentyFiveMatches: define('playTwentyFiveMatches', 'Club Veteran', 'matches', 25),
+  winTenMatches: define('winTenMatches', 'Double Figures', 'wins', 10),
+  scoreTwentyFiveGoals: define('scoreTwentyFiveGoals', 'Golden Boot', 'goals', 25),
+  scoreQuarterMillion: define('scoreQuarterMillion', 'Terrace Legend', 'score', 250_000),
+  killTwentyFiveHundred: define('killTwentyFiveHundred', 'Final Whistle', 'kills', 2_500),
+  surviveTenMinutes: define('surviveTenMinutes', 'Beyond Regulation', 'survival', 600),
+  reachRunLevelFifteen: define('reachRunLevelFifteen', 'Peak Form', 'runLevel', 15),
+  unlockFourEvolutions: define('unlockFourEvolutions', 'Impossible Formation', 'runEvolutions', 4),
 });
 
 export function evaluateChallenges(

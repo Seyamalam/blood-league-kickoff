@@ -108,7 +108,12 @@ export class ProfileStore {
     return {
       applied: true,
       profile: this.value,
-      run: { ...record, upgradeIds: [...record.upgradeIds], evolutionIds: [...record.evolutionIds] },
+      run: {
+        ...record,
+        upgradeIds: [...record.upgradeIds],
+        evolutionIds: [...record.evolutionIds],
+        challengeModifierIds: record.challengeModifierIds ? [...record.challengeModifierIds] : undefined,
+      },
       accountXpEarned,
       previousAccountLevel,
       accountLevel,
@@ -247,9 +252,28 @@ function sanitizeCompletedRun(value: unknown): CompletedRun | null {
 
 function sanitizeReplayMetadata(
   value: Record<string, unknown>,
-): Pick<CompletedRun, 'seed' | 'seedCode' | 'runMode' | 'challengeKey' | 'rulesetVersion'> {
-  const metadata: Pick<CompletedRun, 'seed' | 'seedCode' | 'runMode' | 'challengeKey' | 'rulesetVersion'> =
-    {};
+): Pick<
+  CompletedRun,
+  | 'seed'
+  | 'seedCode'
+  | 'runMode'
+  | 'challengeKey'
+  | 'rulesetVersion'
+  | 'difficultyId'
+  | 'challengeModifierIds'
+  | 'rewardMultiplier'
+> {
+  const metadata: Pick<
+    CompletedRun,
+    | 'seed'
+    | 'seedCode'
+    | 'runMode'
+    | 'challengeKey'
+    | 'rulesetVersion'
+    | 'difficultyId'
+    | 'challengeModifierIds'
+    | 'rewardMultiplier'
+  > = {};
   if (typeof value.seed === 'number' && Number.isFinite(value.seed))
     metadata.seed = Math.floor(value.seed) >>> 0;
   if (nonEmptyString(value.seedCode)) metadata.seedCode = value.seedCode.slice(0, 32);
@@ -257,6 +281,11 @@ function sanitizeReplayMetadata(
   if (value.challengeKey === null) metadata.challengeKey = null;
   else if (nonEmptyString(value.challengeKey)) metadata.challengeKey = value.challengeKey.slice(0, 80);
   if (nonEmptyString(value.rulesetVersion)) metadata.rulesetVersion = value.rulesetVersion.slice(0, 64);
+  if (nonEmptyString(value.difficultyId)) metadata.difficultyId = value.difficultyId.slice(0, 32);
+  metadata.challengeModifierIds = uniqueStrings(array(value.challengeModifierIds)).slice(0, 8);
+  if (typeof value.rewardMultiplier === 'number' && Number.isFinite(value.rewardMultiplier)) {
+    metadata.rewardMultiplier = Math.max(0.1, Math.min(5, value.rewardMultiplier));
+  }
   return metadata;
 }
 
@@ -384,6 +413,7 @@ function cloneProfile(profile: Readonly<PlayerProfile>): PlayerProfile {
       ...run,
       upgradeIds: [...run.upgradeIds],
       evolutionIds: [...run.evolutionIds],
+      challengeModifierIds: run.challengeModifierIds ? [...run.challengeModifierIds] : undefined,
     })),
     processedRunIds: [...profile.processedRunIds],
   };

@@ -1,6 +1,15 @@
 import { CHARACTER_DEFINITIONS, startingLoadoutFor } from '../game/characters';
 import { CHARACTER_ULTIMATE_DEFINITIONS } from '../game/combat';
-import { UPGRADE_DEFINITIONS } from '../game/progression';
+import {
+  CURSE_DEFINITIONS,
+  CURSE_IDS,
+  EVOLUTION_DEFINITIONS,
+  EVOLUTION_IDS,
+  UPGRADE_DEFINITIONS,
+  UPGRADE_IDS,
+} from '../game/progression';
+import { ELITE_MODIFIER_DEFINITIONS } from '../game/encounters';
+import { MINIBOSS_CONFIGS } from '../game/boss';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { LocalLeaderboardRepository } from '../leaderboard';
@@ -9,6 +18,8 @@ import {
   CHALLENGE_DEFINITIONS,
   CHARACTER_IDS,
   CHARACTER_UNLOCK_LEVELS,
+  CURSE_UNLOCK_LEVELS,
+  UPGRADE_UNLOCK_LEVELS,
   masteryLevelForXp,
   masteryRewardsFor,
   ProfileStore,
@@ -19,6 +30,7 @@ import {
   type RunRecord,
 } from '../profile';
 import { uiIcon } from './icons';
+import { CURSE_ICON_URLS, EVOLUTION_ICON_URLS, UPGRADE_ICON_URLS } from './progressionIcons';
 
 export type CareerCharacterSelectedCallback = (characterId: CharacterId) => void;
 
@@ -67,6 +79,17 @@ export interface CareerViewModel {
   weeklyBoard: readonly RunRecord[];
 }
 
+export interface CodexEntryView {
+  id: string;
+  name: string;
+  description: string;
+  category: 'character' | 'weapon' | 'evolution' | 'enemy' | 'curse';
+  unlocked: boolean;
+  discovered: boolean;
+  iconUrl: string | null;
+  unlockHint: string;
+}
+
 /** Persistent career, mastery, challenge, history, and offline-record dialog. */
 export class CareerOverlay {
   private readonly element: HTMLElement;
@@ -77,6 +100,7 @@ export class CareerOverlay {
   private readonly personalBests: HTMLElement;
   private readonly characterGrid: HTMLElement;
   private readonly challengeList: HTMLElement;
+  private readonly codex: HTMLElement;
   private readonly recentRuns: HTMLElement;
   private readonly scoreBoard: HTMLElement;
   private readonly fastestVictoryBoard: HTMLElement;
@@ -124,6 +148,10 @@ export class CareerOverlay {
             <header><h3 id="career-challenges-title">CHALLENGES</h3><p>Career objectives update after each completed run.</p></header>
             <ol class="career-challenges"></ol>
           </section>
+          <section class="career-section career-codex" aria-labelledby="career-codex-title">
+            <header><h3 id="career-codex-title">NIGHT LEAGUE CODEX</h3><p>Discover characters, armory, evolutions, opposition, and curse contracts.</p></header>
+            <div class="career-codex__groups"></div>
+          </section>
           <section class="career-section" aria-labelledby="career-history-title">
             <header><h3 id="career-history-title">RECENT RUNS</h3><p>Latest locally saved matches.</p></header>
             <ol class="career-runs"></ol>
@@ -151,6 +179,7 @@ export class CareerOverlay {
     this.personalBests = requiredElement(this.element, '.career-account__bests');
     this.characterGrid = requiredElement(this.element, '.career-characters');
     this.challengeList = requiredElement(this.element, '.career-challenges');
+    this.codex = requiredElement(this.element, '.career-codex__groups');
     this.recentRuns = requiredElement(this.element, '.career-runs');
     this.scoreBoard = requiredElement(this.element, '.career-score-board');
     this.fastestVictoryBoard = requiredElement(this.element, '.career-speed-board');
@@ -199,6 +228,7 @@ export class CareerOverlay {
     this.renderAccount(profile, view);
     this.renderCharacters(view.characters);
     this.renderChallenges(view.challenges);
+    this.renderCodex(createCodexViewModel(profile));
     renderRuns(this.recentRuns, view.recentRuns, 'No completed runs saved yet.');
     renderBoard(this.scoreBoard, view.scoreBoard, 'score');
     renderBoard(this.fastestVictoryBoard, view.fastestVictoryBoard, 'fastestVictory');
@@ -279,6 +309,39 @@ export class CareerOverlay {
     );
   }
 
+  private renderCodex(entries: readonly CodexEntryView[]): void {
+    const categories: readonly CodexEntryView['category'][] = [
+      'character',
+      'weapon',
+      'evolution',
+      'enemy',
+      'curse',
+    ];
+    this.codex.replaceChildren(
+      ...categories.map((category, index) => {
+        const categoryEntries = entries.filter((entry) => entry.category === category);
+        const discovered = categoryEntries.filter((entry) => entry.discovered).length;
+        const details = document.createElement('details');
+        details.className = 'codex-group';
+        details.open = index === 0;
+        details.innerHTML = `<summary><span>${category.toUpperCase()}S</span><small>${discovered} / ${categoryEntries.length} DISCOVERED</small></summary><div class="codex-grid"></div>`;
+        const grid = requiredElement(details, '.codex-grid');
+        grid.replaceChildren(
+          ...categoryEntries.map((entry) => {
+            const article = document.createElement('article');
+            article.className = `codex-entry${entry.discovered ? '' : ' codex-entry--unknown'}${entry.unlocked ? '' : ' codex-entry--locked'}`;
+            const icon = entry.iconUrl
+              ? `<img src="${entry.iconUrl}" alt="">`
+              : `<span class="codex-entry__sigil" aria-hidden="true">${entry.discovered ? entry.name.slice(0, 1) : '?'}</span>`;
+            article.innerHTML = `${icon}<div><strong>${entry.discovered ? entry.name : 'UNDISCOVERED'}</strong><p>${entry.discovered ? entry.description : entry.unlockHint}</p><small>${entry.unlocked ? (entry.discovered ? 'CODEX ENTRY' : entry.unlockHint) : entry.unlockHint}</small></div>`;
+            return article;
+          }),
+        );
+        return details;
+      }),
+    );
+  }
+
   private readonly handleClick = (event: MouseEvent): void => {
     const target =
       event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-character-id]') : null;
@@ -309,6 +372,107 @@ export class CareerOverlay {
       first.focus();
     }
   };
+}
+
+const ENEMY_CODEX = Object.freeze([
+  ['bloodFan', 'Blood Fan', 'A relentless terrace thrall that swarms the ball carrier.'],
+  ['winger', 'Night Winger', 'A fast flanker that attacks open lanes.'],
+  ['defender', 'Crypt Defender', 'A durable marker built to absorb driven shots.'],
+  ['coach', 'Blood Coach', 'Directs nearby attackers from behind the press.'],
+  ['batSwarm', 'Bat Swarm', 'A small airborne pack with an erratic approach.'],
+  ['bloodArcher', 'Blood Archer', 'A ranged threat that punishes stationary strikers.'],
+  ['shadowRunner', 'Shadow Runner', 'A sudden sprinter that slips through formations.'],
+  ['leechStriker', 'Leech Striker', 'A predatory forward that thrives at close range.'],
+  ['corpseBomber', 'Corpse Bomber', 'An unstable attacker that threatens an area burst.'],
+  ['corruptReferee', 'Corrupt Referee', 'Twists the rules and disrupts clean possession.'],
+  ['goalkeeperBrute', 'Goalkeeper Brute', 'A massive last defender from the cursed box.'],
+] as const);
+
+export function createCodexViewModel(profile: Readonly<PlayerProfile>): readonly CodexEntryView[] {
+  const accountLevel = accountLevelForXp(profile.accountXp);
+  const seenUpgrades = new Set(profile.recentRuns.flatMap((run) => run.upgradeIds));
+  const seenEvolutions = new Set(profile.recentRuns.flatMap((run) => run.evolutionIds));
+  const hasPlayed = profile.lifetime.matchesPlayed > 0;
+  const entries: CodexEntryView[] = CHARACTER_IDS.map((id) => ({
+    id,
+    name: CHARACTER_DEFINITIONS[id].name,
+    description: `${CHARACTER_DEFINITIONS[id].role} · ${CHARACTER_DEFINITIONS[id].strength}`,
+    category: 'character',
+    unlocked: profile.unlockedCharacterIds.includes(id),
+    discovered: profile.unlockedCharacterIds.includes(id),
+    iconUrl: CHARACTER_ULTIMATE_ICON_URLS[CHARACTER_ULTIMATE_DEFINITIONS[id].id],
+    unlockHint: `Unlock at account level ${CHARACTER_UNLOCK_LEVELS[id]}`,
+  }));
+  entries.push(
+    ...UPGRADE_IDS.map((id) => {
+      const unlocked = UPGRADE_UNLOCK_LEVELS[id] <= accountLevel;
+      return {
+        id,
+        name: UPGRADE_DEFINITIONS[id].name,
+        description: UPGRADE_DEFINITIONS[id].description,
+        category: 'weapon' as const,
+        unlocked,
+        discovered: seenUpgrades.has(id),
+        iconUrl: unlocked ? UPGRADE_ICON_URLS[id] : null,
+        unlockHint: `Unlock at account level ${UPGRADE_UNLOCK_LEVELS[id]}`,
+      };
+    }),
+    ...EVOLUTION_IDS.map((id) => ({
+      id,
+      name: EVOLUTION_DEFINITIONS[id].name,
+      description: EVOLUTION_DEFINITIONS[id].description,
+      category: 'evolution' as const,
+      unlocked: true,
+      discovered: seenEvolutions.has(id),
+      iconUrl: seenEvolutions.has(id) ? EVOLUTION_ICON_URLS[id] : null,
+      unlockHint: 'Combine its two component upgrades in one run',
+    })),
+    ...ENEMY_CODEX.map(([id, name, description]) => ({
+      id,
+      name,
+      description,
+      category: 'enemy' as const,
+      unlocked: true,
+      discovered: hasPlayed,
+      iconUrl: null,
+      unlockHint: 'Encounter this opponent during a match',
+    })),
+    ...Object.values(MINIBOSS_CONFIGS).map((definition) => ({
+      id: definition.kind,
+      name: definition.name,
+      description: 'A named Blood League miniboss with a signature attack pattern.',
+      category: 'enemy' as const,
+      unlocked: true,
+      discovered:
+        profile.personalBests.longestSurvivalSeconds >= (definition.kind === 'crimsonCaptain' ? 205 : 345),
+      iconUrl: null,
+      unlockHint: `Survive to meet ${definition.name}`,
+    })),
+    ...Object.values(ELITE_MODIFIER_DEFINITIONS).map((definition) => ({
+      id: definition.id,
+      name: `${definition.name} Elite`,
+      description: definition.description,
+      category: 'enemy' as const,
+      unlocked: true,
+      discovered: hasPlayed,
+      iconUrl: null,
+      unlockHint: 'Encounter an elite during a match',
+    })),
+    ...CURSE_IDS.map((id) => {
+      const unlocked = CURSE_UNLOCK_LEVELS[id] <= accountLevel;
+      return {
+        id,
+        name: CURSE_DEFINITIONS[id].name,
+        description: `${CURSE_DEFINITIONS[id].benefit} / ${CURSE_DEFINITIONS[id].drawback}`,
+        category: 'curse' as const,
+        unlocked,
+        discovered: unlocked,
+        iconUrl: unlocked ? CURSE_ICON_URLS[id] : null,
+        unlockHint: `Unlock at account level ${CURSE_UNLOCK_LEVELS[id]}`,
+      };
+    }),
+  );
+  return Object.freeze(entries);
 }
 
 export function createCareerViewModel(
@@ -434,7 +598,12 @@ function statGrid(entries: ReadonlyArray<readonly [string, string | number]>): s
 }
 
 function cloneRun(run: Readonly<RunRecord>): RunRecord {
-  return { ...run, upgradeIds: [...run.upgradeIds], evolutionIds: [...run.evolutionIds] };
+  return {
+    ...run,
+    upgradeIds: [...run.upgradeIds],
+    evolutionIds: [...run.evolutionIds],
+    challengeModifierIds: run.challengeModifierIds ? [...run.challengeModifierIds] : undefined,
+  };
 }
 
 function formatMetric(value: number): string {

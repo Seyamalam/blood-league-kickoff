@@ -67,19 +67,29 @@ import {
 } from './game/match';
 import { BloodShardSystem } from './game/pickups';
 import { applyStartingLoadout, CHARACTER_DEFINITIONS, type CharacterId } from './game/characters';
-import { createRunDescriptor, createRunRandomStreams, type RunMode } from './game/runs';
+import {
+  createDifficultyRuleset,
+  createRunDescriptor,
+  createRunRandomStreams,
+  scaleMatchConfigForDifficulty,
+  type DifficultyRuleset,
+  type RunMode,
+} from './game/runs';
 import {
   BLOOD_XP_PER_KILL,
+  calculateCurseDirectorModifiers,
   calculateModifiers,
   chooseUpgrade,
-  createUpgradeOffer,
   createProgressionState,
   getUnlockedEvolutionIds,
   grantBloodXp,
   totalXpRequiredForLevel,
+  UPGRADE_DEFINITIONS,
   UPGRADE_IDS,
   setActiveCurses,
   type CurseId,
+  DEFAULT_UPGRADE_DRAFT_RULES,
+  UpgradeDraftSession,
 } from './game/progression';
 import {
   createGameState,
@@ -123,8 +133,16 @@ import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRendere
 import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { EncounterRenderer } from './render/objects/EncounterRenderer';
+import { StadiumPhaseVisual } from './render/objects/StadiumPhaseVisual';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
-import { masteryLevelForXp, masteryModifierBonusFor, ProfileStore, type RunSettlement } from './profile';
+import {
+  accountLevelForXp,
+  contentUnlockSummary,
+  masteryLevelForXp,
+  masteryModifierBonusFor,
+  ProfileStore,
+  type RunSettlement,
+} from './profile';
 import { Hud } from './ui/Hud';
 import { CareerOverlay } from './ui/CareerOverlay';
 import { CurseOverlay } from './ui/CurseOverlay';
@@ -136,6 +154,7 @@ import { ResultsOverlay } from './ui/ResultsOverlay';
 import { SettingsOverlay } from './ui/SettingsOverlay';
 import { TutorialPrompt } from './ui/TutorialPrompt';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
+import { DifficultyOverlay } from './ui/DifficultyOverlay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
@@ -173,6 +192,14 @@ async function bootstrap(): Promise<void> {
 
   const settingsStore = new SettingsStore();
   const profileStore = new ProfileStore();
+  const createUpgradeDraft = () =>
+    new UpgradeDraftSession({
+      ...DEFAULT_UPGRADE_DRAFT_RULES,
+      allowedUpgradeIds: contentUnlockSummary(profileStore.value).upgradeIds,
+    });
+  let upgradeDraft = createUpgradeDraft();
+  let activeDifficultyRuleset: DifficultyRuleset = createDifficultyRuleset('professional');
+  let activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
   let selectedCharacterId: CharacterId = profileStore.value.selectedCharacterId;
   const createSelectedProgression = (characterId: CharacterId) => {
     const masteryLevel = masteryLevelForXp(profileStore.value.characterMastery[characterId].xp);
@@ -181,6 +208,15 @@ async function bootstrap(): Promise<void> {
       masteryModifierBonusFor(characterId, masteryLevel),
     );
     progressionState.upgradeStacks = applyStartingLoadout(progressionState.upgradeStacks, characterId);
+    const masteryStartingBonus = contentUnlockSummary(profileStore.value).startingBonusUpgradeIds[
+      characterId
+    ];
+    if (masteryStartingBonus) {
+      progressionState.upgradeStacks[masteryStartingBonus] = Math.min(
+        UPGRADE_DEFINITIONS[masteryStartingBonus].maxStacks,
+        progressionState.upgradeStacks[masteryStartingBonus] + 1,
+      );
+    }
     progressionState.modifiers = calculateModifiers(
       progressionState.upgradeStacks,
       progressionState.evolutions,
@@ -197,6 +233,7 @@ async function bootstrap(): Promise<void> {
     selectedRunMode = mode;
     runDescriptor = createRunDescriptor({ mode, seed, rulesetVersion: BUILD_METADATA.version });
     runRandomStreams = createRunRandomStreams(runDescriptor);
+    upgradeDraft = createUpgradeDraft();
   };
   let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
@@ -270,6 +307,7 @@ async function bootstrap(): Promise<void> {
       : secondaryWeapons.renderState;
   const secondaryRenderer = new SecondaryWeaponRenderer(scene);
   const atmosphere = new PhaseAtmosphere(scene);
+  const stadiumPhaseVisual = new StadiumPhaseVisual(scene);
   const hud = new Hud(root);
   const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
     selectedCharacterId = characterId;
@@ -283,6 +321,7 @@ async function bootstrap(): Promise<void> {
     audio.playUiSelect();
   });
   const curseOverlay = new CurseOverlay(root);
+  const difficultyOverlay = new DifficultyOverlay(root);
   const upgradeOverlay = new UpgradeOverlay(root);
   const settingsOverlay = new SettingsOverlay(root, settingsStore, (settings) => {
     playerSettings = settings;
@@ -360,6 +399,7 @@ async function bootstrap(): Promise<void> {
   let activeUltimateEffects: Readonly<CharacterUltimateEffects> = NEUTRAL_ULTIMATE_EFFECTS;
   let disposed = false;
   const tutorialSignals = new Set<TutorialSignal>();
+  const difficultyAdjustedEnemyIds = new Set<number>();
 
   const applyProgressionHealth = (previousMaxHealth = state.player.maxHealth): void => {
     const nextMaxHealth = Math.max(50, 100 + progression.modifiers.maxHealthBonus);
@@ -373,6 +413,7 @@ async function bootstrap(): Promise<void> {
   applyProgressionHealth(100);
 
   const healPlayer = (amount: number, lifeSteal = false): void => {
+    amount *= activeDifficultyRuleset.healingMultiplier;
     if (amount <= 0 || state.player.health <= 0 || state.player.health >= state.player.maxHealth) return;
     const before = state.player.health;
     state.player.health = Math.min(state.player.maxHealth, state.player.health + amount);
@@ -396,7 +437,10 @@ async function bootstrap(): Promise<void> {
   const damagePlayerFromEncounter = (rawDamage: number): void => {
     if (rawDamage <= 0 || state.player.invulnerability > 0) return;
     const damage = absorbIncomingDamage(
-      rawDamage * progression.modifiers.damageTakenMultiplier * activeUltimateEffects.damageTakenMultiplier,
+      rawDamage *
+        activeDifficultyRuleset.enemyDamageMultiplier *
+        progression.modifiers.damageTakenMultiplier *
+        activeUltimateEffects.damageTakenMultiplier,
     );
     if (damage <= 0) return;
     state.player.health = Math.max(0, state.player.health - damage);
@@ -578,7 +622,10 @@ async function bootstrap(): Promise<void> {
       origin: position,
       direction: physics.ballVelocity,
       baseDamage:
-        (physics.ballSpeed > 17 ? 2 : 1) * progression.modifiers.ballDamageMultiplier * ballDamageMultiplier,
+        (physics.ballSpeed > 17 ? 2 : 1) *
+        progression.modifiers.ballDamageMultiplier *
+        ballDamageMultiplier *
+        activeDifficultyRuleset.playerDamageMultiplier,
       modifiers: progression.modifiers,
     });
     secondaryWeapons.triggerBlackHole(position, progression.modifiers);
@@ -605,11 +652,27 @@ async function bootstrap(): Promise<void> {
       return;
     const choices = qaEvolutionFixture
       ? [qaEvolutionFixture.finalUpgradeId]
-      : createUpgradeOffer(progression, runRandomStreams.upgrades.next);
+      : upgradeDraft.roll(progression, runRandomStreams.upgrades.next);
     if (choices.length === 0) return;
     if (input.isLocked) void document.exitPointerLock();
-    void upgradeOverlay.show(choices, progression).then((upgradeId) => {
+    const draftControls = qaEvolutionFixture
+      ? undefined
+      : {
+          resources: () => upgradeDraft.state.resources,
+          onReroll: () => upgradeDraft.reroll(progression, runRandomStreams.upgrades.next),
+          onBanish: (upgradeId: (typeof choices)[number]) =>
+            upgradeDraft.banish(upgradeId, progression, runRandomStreams.upgrades.next),
+          onSkip: () => {
+            if (!upgradeDraft.skip()) return false;
+            progression = { ...progression, pendingLevelUps: Math.max(0, progression.pendingLevelUps - 1) };
+            if (progression.pendingLevelUps > 0) window.setTimeout(offerUpgrade, 0);
+            else input.requestPointerLock();
+            return true;
+          },
+        };
+    void upgradeOverlay.show(choices, progression, undefined, draftControls).then((upgradeId) => {
       if (!upgradeId || state.phase !== 'playing') return;
+      if (!qaEvolutionFixture && !upgradeDraft.accept(upgradeId)) return;
       const result = chooseUpgrade(progression, upgradeId);
       if (!result.applied) return;
       const previousMaxHealth = state.player.maxHealth;
@@ -620,6 +683,7 @@ async function bootstrap(): Promise<void> {
       audio.playPhase(progression.level);
       if (result.evolutionEvents.length > 0) {
         audio.playEvolutionUnlock();
+        audio.playEvolutionImpact();
         bridge.volleyBurst(state.player.position, 1.8);
         cameraController.volleyImpulse(1.2);
         evolutionToast.enqueue(result.evolutionEvents);
@@ -684,6 +748,8 @@ async function bootstrap(): Promise<void> {
   };
   const beginChallengeRun = (mode: 'daily' | 'weekly'): void => {
     selectedCurses = [];
+    activeDifficultyRuleset = createDifficultyRuleset('professional');
+    activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
     prepareRun(mode);
     prepareProgressionForRun();
     begin();
@@ -697,6 +763,7 @@ async function bootstrap(): Promise<void> {
     environmentInteractions = createPitchInteractions();
     lastEnvironmentHitId = null;
     encounterRenderer.reset();
+    difficultyAdjustedEnemyIds.clear();
   };
   const restart = (): void => {
     void audio.unlock();
@@ -717,6 +784,7 @@ async function bootstrap(): Promise<void> {
     goalCombo.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
+    stadiumPhaseVisual.reset();
     announcement.reset();
     evolutionToast.reset();
     halftimeOverlay.reset();
@@ -766,10 +834,13 @@ async function bootstrap(): Promise<void> {
   const customSeedButton = hud.customSeedButton;
   const customSeedInput = hud.customSeedInput;
   const cursedRunButton = hud.cursedRunButton;
+  const difficultyRunButton = hud.difficultyRunButton;
   const restartButton = hud.restartButton;
   const victoryRestartButton = hud.victoryRestartButton;
   kickoffButton.addEventListener('click', () => {
     selectedCurses = [];
+    activeDifficultyRuleset = createDifficultyRuleset('professional');
+    activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
     prepareRun('standard');
     prepareProgressionForRun();
     begin();
@@ -783,6 +854,8 @@ async function bootstrap(): Promise<void> {
       return;
     }
     selectedCurses = [];
+    activeDifficultyRuleset = createDifficultyRuleset('professional');
+    activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
     prepareRun('custom', seed);
     prepareProgressionForRun();
     begin();
@@ -795,11 +868,27 @@ async function bootstrap(): Promise<void> {
   cursedRunButton.addEventListener('click', () => {
     curseOverlay.show((curseIds) => {
       selectedCurses = [...curseIds];
+      activeDifficultyRuleset = createDifficultyRuleset('professional');
+      activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
       audio.playCurseAccepted();
       prepareRun('standard');
       prepareProgressionForRun();
       begin();
       announcement.show('kickoff', `${selectedCurses.length} CURSES ACCEPTED`);
+    }, contentUnlockSummary(profileStore.value).curseIds);
+  });
+  difficultyRunButton.addEventListener('click', () => {
+    difficultyOverlay.show(accountLevelForXp(profileStore.value.accountXp), (ruleset) => {
+      selectedCurses = [];
+      prepareRun('standard');
+      activeDifficultyRuleset = { ...ruleset, modifierIds: [...ruleset.modifierIds] };
+      activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
+      prepareProgressionForRun();
+      begin();
+      announcement.show(
+        'kickoff',
+        `${activeDifficultyRuleset.difficultyId.toUpperCase()} LEAGUE · ${Math.round(activeDifficultyRuleset.rewardMultiplier * 100)}% REWARDS`,
+      );
     });
   });
   restartButton.addEventListener('click', restart);
@@ -841,12 +930,14 @@ async function bootstrap(): Promise<void> {
     goalCombo.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
+    stadiumPhaseVisual.reset();
     announcement.reset();
     evolutionToast.reset();
     halftimeOverlay.reset();
     resultsOverlay.reset();
     careerOverlay.hide();
     curseOverlay.reset();
+    difficultyOverlay.reset();
     pauseOverlay.hide();
     state.phase = 'ready';
     selectedCharacterId = profileStore.value.selectedCharacterId;
@@ -855,6 +946,8 @@ async function bootstrap(): Promise<void> {
     activeUltimateEffects = NEUTRAL_ULTIMATE_EFFECTS;
     prepareRun('standard');
     selectedCurses = [];
+    activeDifficultyRuleset = createDifficultyRuleset('professional');
+    activeMatchConfig = scaleMatchConfigForDifficulty(MATCH_CONFIG, activeDifficultyRuleset);
     progression = createSelectedProgression(selectedCharacterId);
     applyProgressionHealth(100);
     focusKick = resetFocusKick();
@@ -1157,17 +1250,32 @@ async function bootstrap(): Promise<void> {
           weaponExpansion.triggerDashShockwave(state.player.position, progression.modifiers);
         }
         spawnDirectorInputScratch.stage = match.stage;
-        spawnDirectorInputScratch.stageElapsed = match.stageElapsed;
-        spawnDirectorInputScratch.matchElapsed = match.matchElapsed;
+        spawnDirectorInputScratch.stageElapsed =
+          match.stageElapsed * activeDifficultyRuleset.spawnRateMultiplier;
+        spawnDirectorInputScratch.matchElapsed =
+          match.matchElapsed * activeDifficultyRuleset.spawnRateMultiplier;
         updateEnemies(
           state,
           FIXED_STEP,
           spawnDirectorInputScratch,
           runRandomStreams.spawn.next,
           physics.ballPosition,
-          progression.modifiers.damageTakenMultiplier * activeUltimateEffects.damageTakenMultiplier,
+          activeDifficultyRuleset.enemyDamageMultiplier *
+            progression.modifiers.damageTakenMultiplier *
+            activeUltimateEffects.damageTakenMultiplier,
           absorbIncomingDamage,
         );
+        for (const enemy of state.enemies) {
+          if (difficultyAdjustedEnemyIds.has(enemy.id)) continue;
+          difficultyAdjustedEnemyIds.add(enemy.id);
+          const previousMaxHealth = enemy.maxHitPoints;
+          enemy.maxHitPoints = Math.max(
+            1,
+            Math.ceil(enemy.maxHitPoints * activeDifficultyRuleset.enemyHealthMultiplier),
+          );
+          enemy.hitPoints += enemy.maxHitPoints - previousMaxHealth;
+          enemy.speed *= activeDifficultyRuleset.enemySpeedMultiplier;
+        }
         for (const event of state.enemyEvents) {
           if (event.type === 'projectileSpawned') audio.playWallImpact(0.25);
           if (event.type === 'projectileHit') bridge.hitBurst(state.player.position, 0.75);
@@ -1228,7 +1336,8 @@ async function bootstrap(): Promise<void> {
           physics.ballSpeed,
           progression.modifiers.ballDamageMultiplier *
             progression.modifiers.allDamageMultiplier *
-            ballDamageMultiplier,
+            ballDamageMultiplier *
+            activeDifficultyRuleset.playerDamageMultiplier,
           physics.ballVelocity,
           progression.modifiers.pierceCount,
           progression.modifiers.eliteDamageMultiplier,
@@ -1242,6 +1351,7 @@ async function bootstrap(): Promise<void> {
             progression.modifiers.ballDamageMultiplier *
             progression.modifiers.allDamageMultiplier *
             ballDamageMultiplier *
+            activeDifficultyRuleset.playerDamageMultiplier *
             activeUltimateEffects.ballDamageMultiplier,
         );
         if (primaryDamage.rebound) {
@@ -1529,7 +1639,8 @@ async function bootstrap(): Promise<void> {
               (physics.ballSpeed > 20 ? 9 : 5) *
                 progression.modifiers.ballDamageMultiplier *
                 progression.modifiers.allDamageMultiplier *
-                ballDamageMultiplier,
+                ballDamageMultiplier *
+                activeDifficultyRuleset.playerDamageMultiplier,
               'ball',
             );
           }
@@ -1604,6 +1715,7 @@ async function bootstrap(): Promise<void> {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
               const incomingDamage = absorbIncomingDamage(
                 event.damage *
+                  activeDifficultyRuleset.enemyDamageMultiplier *
                   progression.modifiers.damageTakenMultiplier *
                   activeUltimateEffects.damageTakenMultiplier,
               );
@@ -1618,6 +1730,11 @@ async function bootstrap(): Promise<void> {
             if (event.type === 'phaseChanged') {
               if (event.to === 'bloodRush' || event.to === 'desperation') audio.playBossPhase(event.to);
               else audio.playPhase(2);
+              if (event.to === 'desperation') {
+                audio.playBossTransformation();
+                audio.playCrowdRise(0.9);
+                announcement.show('boss');
+              }
             }
             if (event.type === 'summonElite') spawnEliteEnemy(state, event.archetype, event.side);
             if (event.type === 'diveTelegraphed') audio.playGoalkeeperParry();
@@ -1626,6 +1743,7 @@ async function bootstrap(): Promise<void> {
             if (event.type === 'counterattackReleased' && state.player.invulnerability <= 0) {
               const incomingDamage = absorbIncomingDamage(
                 event.damage *
+                  activeDifficultyRuleset.enemyDamageMultiplier *
                   progression.modifiers.damageTakenMultiplier *
                   activeUltimateEffects.damageTakenMultiplier,
               );
@@ -1655,7 +1773,8 @@ async function bootstrap(): Promise<void> {
                 (physics.ballSpeed > 20 ? 10 : 6) *
                 progression.modifiers.ballDamageMultiplier *
                 progression.modifiers.allDamageMultiplier *
-                ballDamageMultiplier,
+                ballDamageMultiplier *
+                activeDifficultyRuleset.playerDamageMultiplier,
               source: 'ball',
             });
             boss = damage.state;
@@ -1741,7 +1860,7 @@ async function bootstrap(): Promise<void> {
             bossDefeated: bossDefeatedThisStep,
             halftimeChoice: pendingHalftimeChoice,
           },
-          MATCH_CONFIG,
+          activeMatchConfig,
         );
         pendingHalftimeChoice = undefined;
         match = matchUpdate.state;
@@ -1750,6 +1869,7 @@ async function bootstrap(): Promise<void> {
             audio.playPhase(matchUpdate.state.matchElapsed);
             audio.setMatchIntensity(event.to);
             atmosphere.setPhase(event.to);
+            stadiumPhaseVisual.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) {
               boss = spawnCountGoalkeeper();
               audio.playFinalWave();
@@ -1765,6 +1885,7 @@ async function bootstrap(): Promise<void> {
             combatFeedback.addImpact({ kind: 'goal', damage: physics.ballSpeed, perfect: lastKickWasVolley });
             audio.playGoal();
             audio.playNetImpact();
+            audio.playCrowdRise(0.7);
             announcement.show(
               'goal',
               event.goal === 'final'
@@ -1856,11 +1977,12 @@ async function bootstrap(): Promise<void> {
     announcement.update(frameTime);
     evolutionToast.update(frameTime);
     atmosphere.update(frameTime);
+    stadiumPhaseVisual.update(frameTime);
     if (halftimeOverlay.isVisible) {
       const remaining = Math.max(0, (halftimeDeadline - performance.now()) / 1_000);
       halftimeOverlay.updateCountdown(remaining);
       if (remaining <= 0) {
-        pendingHalftimeChoice = MATCH_CONFIG.defaultHalftimeChoice;
+        pendingHalftimeChoice = activeMatchConfig.defaultHalftimeChoice;
         halftimeOverlay.hide();
       }
     }
@@ -1903,7 +2025,7 @@ async function bootstrap(): Promise<void> {
       perf.snapshot,
       input.kickCharge,
       progression,
-      getMatchObjective(match, MATCH_CONFIG),
+      getMatchObjective(match, activeMatchConfig),
       boss,
       focusKick,
       characterUltimate.state,
@@ -1932,6 +2054,11 @@ async function bootstrap(): Promise<void> {
           runMode: runDescriptor.mode,
           challengeKey: runDescriptor.challengeKey,
           rulesetVersion: runDescriptor.rulesetVersion,
+          difficultyId: activeDifficultyRuleset.difficultyId,
+          challengeModifierIds: activeDifficultyRuleset.modifierIds,
+          rewardMultiplier:
+            activeDifficultyRuleset.rewardMultiplier *
+            calculateCurseDirectorModifiers(selectedCurses).rewardMultiplier,
         });
         if (state.score > previousBestScore) audio.playNewRecord();
         if (settlement.newlyUnlockedCharacterIds.length > 0) audio.playUnlock();
@@ -2026,6 +2153,7 @@ async function bootstrap(): Promise<void> {
     resultsOverlay.dispose();
     careerOverlay.dispose();
     curseOverlay.dispose();
+    difficultyOverlay.dispose();
     halftimeOverlay.dispose();
     announcement.dispose();
     evolutionToast.dispose();
@@ -2033,6 +2161,7 @@ async function bootstrap(): Promise<void> {
     hud.dispose();
     uninstallDenseWavePerformanceHook();
     uninstallQaSnapshotHook();
+    stadiumPhaseVisual.dispose();
     atmosphere.dispose();
     bridge.dispose();
     aimGuide.dispose();

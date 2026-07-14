@@ -23,6 +23,14 @@ export const CHALLENGE_IDS = [
   'killOneThousand',
   'reachRunLevelTen',
   'unlockThreeEvolutions',
+  'playTwentyFiveMatches',
+  'winTenMatches',
+  'scoreTwentyFiveGoals',
+  'scoreQuarterMillion',
+  'killTwentyFiveHundred',
+  'surviveTenMinutes',
+  'reachRunLevelFifteen',
+  'unlockFourEvolutions',
 ] as const;
 
 export type ChallengeId = (typeof CHALLENGE_IDS)[number];
@@ -46,6 +54,9 @@ export interface CompletedRun {
   runMode?: RecordedRunMode;
   challengeKey?: string | null;
   rulesetVersion?: string;
+  difficultyId?: string;
+  challengeModifierIds?: readonly string[];
+  rewardMultiplier?: number;
 }
 
 export interface RunRecord extends CompletedRun {
