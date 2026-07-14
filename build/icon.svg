@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#21101f"/>
+      <stop offset="0.58" stop-color="#08070d"/>
+      <stop offset="1" stop-color="#370817"/>
+    </linearGradient>
+    <linearGradient id="blood" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ff315d"/>
+      <stop offset="1" stop-color="#9b1238"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <path d="M512 108 826 226v260c0 208-124 356-314 430C322 842 198 694 198 486V226z" fill="#100a12" stroke="#e12b55" stroke-width="24"/>
+  <path d="M512 150 779 251v226c0 167-94 291-267 366-173-75-267-199-267-366V251z" fill="none" stroke="#6d1a37" stroke-width="8"/>
+  <circle cx="512" cy="532" r="238" fill="none" stroke="#402032" stroke-width="18"/>
+  <path d="M512 294v476M274 532h476" stroke="#3a1a2d" stroke-width="10"/>
+  <path d="M512 128c-12 74-80 121-62 185 13 47 63 66 62 126 0-60 49-79 62-126 18-64-50-111-62-185z" fill="url(#blood)" filter="url(#glow)"/>
+  <text x="512" y="640" text-anchor="middle" fill="#f4f1e9" font-family="Impact,Arial Black,sans-serif" font-size="330" font-style="italic" font-weight="900" letter-spacing="-28">BL</text>
+  <path d="M360 727h304" stroke="#ff315d" stroke-width="22"/>
+  <circle cx="512" cy="818" r="34" fill="#f4f1e9"/>
+  <path d="m512 789 28 20-11 33h-34l-11-33z" fill="#1a1018"/>
+</svg>

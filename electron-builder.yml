@@ -16,6 +16,7 @@ extraMetadata:
 asar: true
 compression: normal
 win:
+  icon: build/icon.ico
   executableName: BloodLeagueKickoff
   artifactName: 'Blood-League-Kickoff-${version}-Windows-${arch}.${ext}'
   target:
@@ -32,6 +33,7 @@ portable:
   requestExecutionLevel: user
 
 mac:
+  icon: build/icon.icns
   category: public.app-category.games
   artifactName: 'Blood-League-Kickoff-${version}-macOS-${arch}.${ext}'
   target:
@@ -45,6 +47,7 @@ mac:
         - arm64
 
 linux:
+  icon: build/icon.png
   executableName: blood-league-kickoff
   category: Game
   artifactName: 'Blood-League-Kickoff-${version}-Linux-${arch}.${ext}'

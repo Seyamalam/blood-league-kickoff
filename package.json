@@ -1,5 +1,7 @@
 {
   "name": "blood-league-kickoff",
+  "description": "A third-person football-combat horde-survival roguelite.",
+  "author": "Huntrix",
   "private": true,
   "version": "0.8.0-alpha.8",
   "type": "module",
