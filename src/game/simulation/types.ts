@@ -25,9 +25,44 @@ export type EnemyArchetype =
   | 'batSwarm'
   | 'leechStriker'
   | 'corruptReferee'
+  | 'bloodArcher'
+  | 'shadowRunner'
+  | 'corpseBomber'
   | 'goalkeeperBrute';
 export type EliteEnemyArchetype = Extract<EnemyArchetype, 'winger' | 'defender'>;
-export type EnemyAttackState = 'chase' | 'telegraph' | 'lunge' | 'drain' | 'whistle' | 'recover';
+export type EnemyAttackState =
+  'chase' | 'telegraph' | 'lunge' | 'drain' | 'whistle' | 'volley' | 'vanish' | 'fuse' | 'recover';
+
+export interface EnemyProjectileState {
+  id: number;
+  ownerId: number;
+  position: Vec3;
+  previousPosition: Vec3;
+  velocity: Vec3;
+  radius: number;
+  damage: number;
+  lifetime: number;
+}
+
+/** Transient one-step hooks for readable effects, SFX, and combat messaging. */
+export type EnemyCombatEvent =
+  | { readonly type: 'projectileSpawned'; readonly projectileId: number; readonly ownerId: number }
+  | { readonly type: 'projectileHit'; readonly projectileId: number; readonly damage: number }
+  | { readonly type: 'teleportTelegraphed'; readonly enemyId: number; readonly duration: number }
+  | { readonly type: 'teleported'; readonly enemyId: number; readonly from: Vec3; readonly to: Vec3 }
+  | {
+      readonly type: 'explosionTelegraphed';
+      readonly enemyId: number;
+      readonly duration: number;
+      readonly radius: number;
+    }
+  | {
+      readonly type: 'exploded';
+      readonly enemyId: number;
+      readonly position: Vec3;
+      readonly radius: number;
+      readonly damage: number;
+    };
 
 export interface EnemyState {
   id: number;
@@ -67,7 +102,11 @@ export interface GameState {
   combo: number;
   comboTimer: number;
   nextEnemyId: number;
+  nextEnemyProjectileId: number;
   spawnTimer: number;
   player: PlayerState;
   enemies: EnemyState[];
+  enemyProjectiles: EnemyProjectileState[];
+  /** Cleared and repopulated by every updateEnemies call. */
+  enemyEvents: EnemyCombatEvent[];
 }

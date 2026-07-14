@@ -198,6 +198,61 @@ export const UPGRADE_DEFINITIONS = Object.freeze({
       bossLifeStealRatio: 0.003,
     },
   }),
+  dashShockwave: define({
+    id: 'dashShockwave',
+    name: 'Breakaway Shockwave',
+    description: 'Every dash erupts in a damaging, knockback shockwave.',
+    kind: 'weapon',
+    maxStacks: 5,
+    minPlayerLevel: 2,
+    prerequisites: [],
+    modifierPerStack: {
+      dashShockwaveDamage: 6,
+      dashShockwaveRadius: 0.32,
+      dashShockwaveKnockback: 1.8,
+    },
+  }),
+  consecratedPitch: define({
+    id: 'consecratedPitch',
+    name: 'Consecrated Pitch',
+    description: 'Plant a pulsing penalty zone that burns vampires who enter it.',
+    kind: 'weapon',
+    maxStacks: 5,
+    minPlayerLevel: 3,
+    prerequisites: [],
+    modifierPerStack: {
+      holyZoneDamage: 2.5,
+      holyZoneRadius: 0.25,
+      holyZoneDuration: 0.7,
+    },
+  }),
+  ricochetBall: define({
+    id: 'ricochetBall',
+    name: 'Bank Shot',
+    description: 'Confirmed ball impacts bank into nearby targets with spectral force.',
+    kind: 'weapon',
+    maxStacks: 4,
+    minPlayerLevel: 3,
+    prerequisites: [{ upgradeId: 'piercingStuds', minStacks: 1 }],
+    modifierPerStack: {
+      ricochetDamage: 5,
+      ricochetTargets: 1,
+      ricochetRange: 0.4,
+    },
+  }),
+  bloodBarrier: define({
+    id: 'bloodBarrier',
+    name: 'Blood Barrier',
+    description: 'Gain a recharging ward that completely absorbs one incoming hit.',
+    kind: 'passive',
+    maxStacks: 3,
+    minPlayerLevel: 2,
+    prerequisites: [],
+    modifierPerStack: {
+      bloodBarrierCharges: 1,
+      bloodBarrierRechargeMultiplier: -0.12,
+    },
+  }),
 } satisfies Record<UpgradeId, UpgradeDefinition>);
 
 function define(definition: UpgradeDefinition): Readonly<UpgradeDefinition> {

@@ -37,7 +37,7 @@ describe('upgrade card presentation', () => {
         expect(partner).toBeDefined();
         if (!partner) continue;
         const card = getUpgradeCardPresentation(requirement.upgradeId, 0, state);
-        expect(card.evolutionHint).toBe(
+        expect(card.evolutionHint).toContain(
           `EVOLVES WITH ${UPGRADE_DEFINITIONS[partner.upgradeId].name} → ${evolution.name}`,
         );
         expect(card.ariaLabel).toContain(card.evolutionHint);

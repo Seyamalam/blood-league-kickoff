@@ -25,6 +25,9 @@ export interface GameResultStats {
   accountLevel?: number;
   unlockedCharacterIds?: readonly CharacterId[];
   completedChallengeIds?: readonly ChallengeId[];
+  masteryRewardIds?: readonly string[];
+  runMode?: 'standard' | 'daily' | 'weekly' | 'custom';
+  seedCode?: string;
 }
 
 export interface ResultsOverlayCallbacks {
@@ -190,6 +193,8 @@ export class ResultsOverlay {
       ...(stats.accountLevel !== undefined
         ? ([['Career Level', String(Math.max(1, integer(stats.accountLevel)))]] as const)
         : []),
+      ...(stats.runMode ? ([['Run', stats.runMode.toUpperCase()]] as const) : []),
+      ...(stats.seedCode ? ([['Seed', stats.seedCode]] as const) : []),
     ];
     const statNodes: HTMLElement[] = [];
     for (const [label, value] of statEntries) {
@@ -234,6 +239,12 @@ export class ResultsOverlay {
       const item = document.createElement('li');
       item.className = 'results-upgrades__evolution';
       item.textContent = `CHALLENGE COMPLETE · ${challengeId.replace(/([A-Z])/g, ' $1').toUpperCase()}`;
+      upgradeNodes.push(item);
+    }
+    for (const rewardId of stats.masteryRewardIds ?? []) {
+      const item = document.createElement('li');
+      item.className = 'results-upgrades__evolution';
+      item.textContent = `MASTERY UNLOCK · ${rewardId.replace(/-/g, ' ').toUpperCase()}`;
       upgradeNodes.push(item);
     }
     if (upgradeNodes.length === 0) {

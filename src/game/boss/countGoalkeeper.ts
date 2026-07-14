@@ -92,9 +92,7 @@ export function updateCountGoalkeeper(
   }
 
   if (next.phase === 'guarding') {
-    const targetX = clamp(input.playerPosition.x, -config.goalHalfWidth, config.goalHalfWidth);
-    const step = clamp(targetX - next.position.x, -config.guardingSpeed * dt, config.guardingSpeed * dt);
-    next = { ...next, position: { x: next.position.x + step, y: next.position.y, z: config.goalLineZ } };
+    next = updateDiveCycle(next, input.playerPosition, dt, config, events);
   } else {
     next = updateChargeCycle(next, input.playerPosition, dt, config, events);
   }
@@ -138,13 +136,33 @@ export function damageCountGoalkeeper(
     return { state, events: [], appliedDamage: 0 };
   }
 
+  if (state.action === 'dive' && (hit.source === 'ball' || hit.source === 'secondary')) {
+    const events: CountGoalkeeperEvent[] = [
+      { type: 'shotParried', source: hit.source },
+      { type: 'counterattackStarted', duration: config.counterattackDuration },
+    ];
+    return {
+      state: {
+        ...state,
+        action: 'counterattack',
+        actionElapsed: 0,
+        velocity: ZERO,
+        hitInvulnerability: config.hitInvulnerability,
+        secondaryHitInvulnerability: config.secondaryHitInvulnerability,
+      },
+      events,
+      appliedDamage: 0,
+    };
+  }
+
   const multiplier =
     hit.source === 'ball'
       ? config.ballDamageMultiplier
       : hit.source === 'secondary'
         ? config.secondaryDamageMultiplier
         : 1;
-  const appliedDamage = Math.min(state.health, hit.amount * multiplier);
+  const vulnerabilityMultiplier = state.action === 'vulnerable' ? config.vulnerabilityDamageMultiplier : 1;
+  const appliedDamage = Math.min(state.health, hit.amount * multiplier * vulnerabilityMultiplier);
   const health = Math.max(0, state.health - appliedDamage);
   const events: CountGoalkeeperEvent[] = [
     { type: 'damaged', amount: appliedDamage, remainingHealth: health },
@@ -201,9 +219,24 @@ function updateChargeCycle(
       z: clamp(state.position.z + state.velocity.z * dt, -config.arenaHalfDepth, config.arenaHalfDepth),
     };
     if (state.actionElapsed >= config.chargeDuration) {
-      return { ...state, position, action: 'recover', actionElapsed: 0, velocity: ZERO };
+      events.push({
+        type: 'vulnerabilityOpened',
+        duration: config.vulnerabilityDuration,
+        damageMultiplier: config.vulnerabilityDamageMultiplier,
+      });
+      return { ...state, position, action: 'vulnerable', actionElapsed: 0, velocity: ZERO };
     }
     return { ...state, position };
+  }
+  if (state.action === 'vulnerable' && state.actionElapsed >= config.vulnerabilityDuration) {
+    events.push({ type: 'vulnerabilityClosed' });
+    return {
+      ...state,
+      action: 'idle',
+      actionElapsed: 0,
+      actionCooldown: config.chargeCooldown,
+      velocity: ZERO,
+    };
   }
   if (state.action === 'recover' && state.actionElapsed >= config.recoverDuration) {
     return {
@@ -213,6 +246,79 @@ function updateChargeCycle(
       actionCooldown: config.chargeCooldown,
       velocity: ZERO,
     };
+  }
+  return state;
+}
+
+function updateDiveCycle(
+  state: CountGoalkeeperState,
+  player: BossVec3,
+  dt: number,
+  config: CountGoalkeeperConfig,
+  events: CountGoalkeeperEvent[],
+): CountGoalkeeperState {
+  if (state.action === 'idle' && state.actionCooldown <= 0) {
+    const targetX = clamp(player.x, -config.goalHalfWidth, config.goalHalfWidth);
+    events.push({ type: 'diveTelegraphed', targetX, duration: config.diveTelegraphDuration });
+    return {
+      ...state,
+      action: 'diveTelegraph',
+      actionElapsed: 0,
+      chargeTarget: { x: targetX, y: state.position.y, z: config.goalLineZ },
+      velocity: ZERO,
+    };
+  }
+  if (state.action === 'diveTelegraph' && state.actionElapsed >= config.diveTelegraphDuration) {
+    const direction = Math.sign(state.chargeTarget.x - state.position.x) || 1;
+    const velocity = { x: direction * config.diveSpeed, y: 0, z: 0 };
+    events.push({ type: 'diveStarted', velocity });
+    return { ...state, action: 'dive', actionElapsed: 0, velocity };
+  }
+  if (state.action === 'dive') {
+    const position = {
+      x: clamp(state.position.x + state.velocity.x * dt, -config.goalHalfWidth, config.goalHalfWidth),
+      y: state.position.y,
+      z: config.goalLineZ,
+    };
+    if (state.actionElapsed >= config.diveDuration) {
+      return { ...state, position, action: 'recover', actionElapsed: 0, velocity: ZERO };
+    }
+    return { ...state, position };
+  }
+  if (state.action === 'counterattack' && state.actionElapsed >= config.counterattackDuration) {
+    events.push(
+      { type: 'counterattackReleased', target: { ...player }, damage: config.counterattackDamage },
+      {
+        type: 'vulnerabilityOpened',
+        duration: config.vulnerabilityDuration,
+        damageMultiplier: config.vulnerabilityDamageMultiplier,
+      },
+    );
+    return { ...state, action: 'vulnerable', actionElapsed: 0, velocity: ZERO };
+  }
+  if (state.action === 'vulnerable' && state.actionElapsed >= config.vulnerabilityDuration) {
+    events.push({ type: 'vulnerabilityClosed' });
+    return {
+      ...state,
+      action: 'idle',
+      actionElapsed: 0,
+      actionCooldown: config.diveCooldown,
+      velocity: ZERO,
+    };
+  }
+  if (state.action === 'recover' && state.actionElapsed >= config.recoverDuration) {
+    return {
+      ...state,
+      action: 'idle',
+      actionElapsed: 0,
+      actionCooldown: config.diveCooldown,
+      velocity: ZERO,
+    };
+  }
+  if (state.action === 'idle') {
+    const targetX = clamp(player.x, -config.goalHalfWidth, config.goalHalfWidth);
+    const step = clamp(targetX - state.position.x, -config.guardingSpeed * dt, config.guardingSpeed * dt);
+    return { ...state, position: { x: state.position.x + step, y: state.position.y, z: config.goalLineZ } };
   }
   return state;
 }
@@ -244,7 +350,7 @@ function enterPhase(
     phaseElapsed: 0,
     action: 'idle',
     actionElapsed: 0,
-    actionCooldown: phase === 'guarding' ? config.chargeCooldown : config.chargeCooldown * 0.55,
+    actionCooldown: phase === 'guarding' ? config.diveCooldown : config.chargeCooldown * 0.55,
     velocity: ZERO,
   };
 }
@@ -269,7 +375,13 @@ function validateStep(dt: number): void {
 }
 
 function validateConfig(config: CountGoalkeeperConfig): void {
-  if (config.maxHealth <= 0 || config.radius <= 0 || config.chargeSpeed <= 0)
+  if (
+    config.maxHealth <= 0 ||
+    config.radius <= 0 ||
+    config.chargeSpeed <= 0 ||
+    config.diveSpeed <= 0 ||
+    config.vulnerabilityDamageMultiplier < 1
+  )
     throw new Error('Invalid boss config.');
   if (config.desperationHealthRatio <= 0 || config.desperationHealthRatio >= config.bloodRushHealthRatio) {
     throw new Error('Boss health phase ratios must be ordered between zero and one.');

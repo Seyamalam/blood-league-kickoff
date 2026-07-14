@@ -1,4 +1,11 @@
-import type { EliteEnemyArchetype, EnemyArchetype, EnemyState, GameState, Vec3 } from './types';
+import type {
+  EliteEnemyArchetype,
+  EnemyArchetype,
+  EnemyProjectileState,
+  EnemyState,
+  GameState,
+  Vec3,
+} from './types';
 import { EnemySpatialGrid } from './EnemySpatialGrid';
 import type { SecondaryDamageHit } from '../combat';
 import {
@@ -36,6 +43,7 @@ export function createGameState(): GameState {
     combo: 0,
     comboTimer: 0,
     nextEnemyId: 1,
+    nextEnemyProjectileId: 1,
     spawnTimer: 0.8,
     player: {
       position: { x: 0, y: 0.9, z: 5 },
@@ -50,6 +58,8 @@ export function createGameState(): GameState {
       dashDirection: { x: 0, y: 0, z: -1 },
     },
     enemies: [],
+    enemyProjectiles: [],
+    enemyEvents: [],
   };
 }
 
@@ -60,6 +70,8 @@ export function resetGameState(state: GameState): void {
 /** Resets the on-pitch formation after a goal without touching run rewards or health. */
 export function resetKickoffFormation(state: GameState): void {
   state.enemies.length = 0;
+  state.enemyProjectiles.length = 0;
+  state.enemyEvents.length = 0;
   state.spawnTimer = 0.8;
   state.player.position.x = 0;
   state.player.position.y = 0.9;
@@ -134,7 +146,9 @@ export function updateEnemies(
   rng: SpawnRandomSource = Math.random,
   goalkeeperTarget?: Readonly<Vec3>,
   damageTakenMultiplier = 1,
+  damageReducer: (damage: number) => number = identityDamage,
 ): void {
+  state.enemyEvents.length = 0;
   if (state.phase !== 'playing') return;
 
   state.elapsed += dt;
@@ -158,6 +172,7 @@ export function updateEnemies(
   const safeDamageTakenMultiplier = Number.isFinite(damageTakenMultiplier)
     ? clamp(damageTakenMultiplier, 0.25, 2)
     : 1;
+  updateEnemyProjectiles(state, dt, safeDamageTakenMultiplier, damageReducer);
   enemySpatialGrid.rebuild(state.enemies);
   for (let enemyIndex = 0; enemyIndex < state.enemies.length; enemyIndex += 1) {
     const enemy = state.enemies[enemyIndex]!;
@@ -218,7 +233,10 @@ export function updateEnemies(
     if (enemy.archetype === 'corruptReferee') {
       const whistleHit = updateRefereeAttack(enemy, distance, dt);
       if (whistleHit && distance <= 6.5 && player.invulnerability <= 0) {
-        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
+        player.health = Math.max(
+          0,
+          player.health - reduceDamage(enemy.attackDamage * safeDamageTakenMultiplier, damageReducer),
+        );
         player.invulnerability = 0.45;
         if (player.health <= 0) state.phase = 'dead';
       }
@@ -228,6 +246,73 @@ export function updateEnemies(
       } else if (distance < 4.5) {
         movementX = -chaseX * enemy.speed * speedBuff;
         movementZ = -chaseZ * enemy.speed * speedBuff;
+      }
+    }
+
+    if (enemy.archetype === 'bloodArcher') {
+      const fired = updateBloodArcherAttack(enemy, player.position, distance, dt);
+      if (fired) spawnEnemyProjectile(state, enemy, player.position);
+      if (distance < 6.5) {
+        movementX = -chaseX * enemy.speed * speedBuff;
+        movementZ = -chaseZ * enemy.speed * speedBuff;
+      } else if (distance <= 10.5 || enemy.attackState !== 'chase') {
+        movementX = 0;
+        movementZ = 0;
+      }
+    }
+
+    if (enemy.archetype === 'shadowRunner') {
+      const teleport = updateShadowRunnerAttack(enemy, player.position, distance, dt);
+      if (teleport?.type === 'telegraph') {
+        state.enemyEvents.push({
+          type: 'teleportTelegraphed',
+          enemyId: enemy.id,
+          duration: teleport.duration,
+        });
+        movementX = 0;
+        movementZ = 0;
+      } else if (teleport?.type === 'teleport') {
+        const from = { ...enemy.position };
+        enemy.position = teleport.position;
+        copyVec3(enemy.previousPosition, enemy.position);
+        state.enemyEvents.push({ type: 'teleported', enemyId: enemy.id, from, to: { ...enemy.position } });
+        movementX = 0;
+        movementZ = 0;
+      } else if (enemy.attackState === 'vanish' || enemy.attackState === 'recover') {
+        movementX = 0;
+        movementZ = 0;
+      }
+    }
+
+    if (enemy.archetype === 'corpseBomber') {
+      const bomb = updateCorpseBomberAttack(enemy, distance, dt);
+      if (bomb === 'telegraph') {
+        state.enemyEvents.push({
+          type: 'explosionTelegraphed',
+          enemyId: enemy.id,
+          duration: 0.9,
+          radius: 3.2,
+        });
+      } else if (bomb === 'explode') {
+        const hit = distance <= 3.2 && player.invulnerability <= 0;
+        const damage = hit ? reduceDamage(enemy.attackDamage * safeDamageTakenMultiplier, damageReducer) : 0;
+        if (damage > 0) {
+          player.health = Math.max(0, player.health - damage);
+          player.invulnerability = 0.75;
+          if (player.health <= 0) state.phase = 'dead';
+        }
+        state.enemyEvents.push({
+          type: 'exploded',
+          enemyId: enemy.id,
+          position: { ...enemy.position },
+          radius: 3.2,
+          damage,
+        });
+        enemy.hitPoints = 0;
+      }
+      if (enemy.attackState === 'fuse' || enemy.attackState === 'recover') {
+        movementX = 0;
+        movementZ = 0;
       }
     }
 
@@ -277,17 +362,30 @@ export function updateEnemies(
         if (enemy.attackState !== 'drain') continue;
         // The short immunity window creates several clear drain pulses during a
         // latch while the striker converts each successful pulse into health.
-        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
+        player.health = Math.max(
+          0,
+          player.health - reduceDamage(enemy.attackDamage * safeDamageTakenMultiplier, damageReducer),
+        );
         player.invulnerability = 0.18;
         enemy.hitPoints = Math.min(enemy.maxHitPoints, enemy.hitPoints + 1);
       } else {
-        player.health = Math.max(0, player.health - enemy.attackDamage * safeDamageTakenMultiplier);
+        player.health = Math.max(
+          0,
+          player.health - reduceDamage(enemy.attackDamage * safeDamageTakenMultiplier, damageReducer),
+        );
         player.invulnerability = 0.62;
         enemy.position.x -= (contactDx / contactDistance) * 1.4;
         enemy.position.z -= (contactDz / contactDistance) * 1.4;
       }
       if (player.health <= 0) state.phase = 'dead';
     }
+  }
+
+  // Bombers consume themselves. Other defeat paths continue to award kills in
+  // the damage functions, so a self-detonation cannot inflate score or combo.
+  for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
+    const enemy = state.enemies[index]!;
+    if (enemy.archetype === 'corpseBomber' && enemy.hitPoints <= 0) state.enemies.splice(index, 1);
   }
 }
 
@@ -570,6 +668,68 @@ function createEnemyState(
   };
 }
 
+function updateEnemyProjectiles(
+  state: GameState,
+  dt: number,
+  damageTakenMultiplier: number,
+  damageReducer: (damage: number) => number,
+): void {
+  const player = state.player;
+  for (let index = state.enemyProjectiles.length - 1; index >= 0; index -= 1) {
+    const projectile = state.enemyProjectiles[index]!;
+    copyVec3(projectile.previousPosition, projectile.position);
+    projectile.position.x += projectile.velocity.x * dt;
+    projectile.position.z += projectile.velocity.z * dt;
+    projectile.lifetime -= dt;
+    const dx = player.position.x - projectile.position.x;
+    const dz = player.position.z - projectile.position.z;
+    const hitPlayer = dx * dx + dz * dz <= (projectile.radius + 0.58) ** 2;
+    if (hitPlayer && player.invulnerability <= 0) {
+      const damage = reduceDamage(projectile.damage * damageTakenMultiplier, damageReducer);
+      player.health = Math.max(0, player.health - damage);
+      player.invulnerability = 0.42;
+      state.enemyEvents.push({ type: 'projectileHit', projectileId: projectile.id, damage });
+      state.enemyProjectiles.splice(index, 1);
+      if (player.health <= 0) state.phase = 'dead';
+    } else if (
+      projectile.lifetime <= 0 ||
+      Math.abs(projectile.position.x) > PLAYABLE_HALF_WIDTH + 2 ||
+      Math.abs(projectile.position.z) > PLAYABLE_HALF_LENGTH + 2
+    ) {
+      state.enemyProjectiles.splice(index, 1);
+    }
+  }
+}
+
+function identityDamage(damage: number): number {
+  return damage;
+}
+
+function reduceDamage(damage: number, reducer: (damage: number) => number): number {
+  const reduced = reducer(damage);
+  return Number.isFinite(reduced) ? Math.max(0, Math.min(damage, reduced)) : damage;
+}
+
+function spawnEnemyProjectile(state: GameState, enemy: EnemyState, target: Vec3): EnemyProjectileState {
+  const dx = target.x - enemy.position.x;
+  const dz = target.z - enemy.position.z;
+  const length = Math.max(0.001, Math.hypot(dx, dz));
+  const speed = 9.5;
+  const projectile: EnemyProjectileState = {
+    id: state.nextEnemyProjectileId++,
+    ownerId: enemy.id,
+    position: { ...enemy.position, y: 0.82 },
+    previousPosition: { ...enemy.position, y: 0.82 },
+    velocity: { x: (dx / length) * speed, y: 0, z: (dz / length) * speed },
+    radius: 0.22,
+    damage: enemy.attackDamage,
+    lifetime: 2.2,
+  };
+  state.enemyProjectiles.push(projectile);
+  state.enemyEvents.push({ type: 'projectileSpawned', projectileId: projectile.id, ownerId: enemy.id });
+  return projectile;
+}
+
 function updateWingerAttack(enemy: EnemyState, player: Vec3, distance: number, dt: number): void {
   if (enemy.attackState === 'chase') {
     if (distance <= 4.5 && enemy.attackCooldown <= 0) {
@@ -644,6 +804,100 @@ function updateRefereeAttack(enemy: EnemyState, distance: number, dt: number): b
   return false;
 }
 
+function updateBloodArcherAttack(enemy: EnemyState, player: Vec3, distance: number, dt: number): boolean {
+  if (enemy.attackState === 'chase') {
+    if (distance <= 10.5 && enemy.attackCooldown <= 0) {
+      const dx = player.x - enemy.position.x;
+      const dz = player.z - enemy.position.z;
+      const length = Math.max(0.001, Math.hypot(dx, dz));
+      enemy.attackDirection.x = dx / length;
+      enemy.attackDirection.z = dz / length;
+      enemy.attackState = 'telegraph';
+      enemy.attackTimer = 0.72;
+    }
+    return false;
+  }
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return false;
+  if (enemy.attackState === 'telegraph') {
+    enemy.attackState = 'volley';
+    enemy.attackTimer = 0.12;
+    return true;
+  }
+  if (enemy.attackState === 'volley') {
+    enemy.attackState = 'recover';
+    enemy.attackTimer = 0.5;
+  } else if (enemy.attackState === 'recover') {
+    enemy.attackState = 'chase';
+    enemy.attackCooldown = 2.1;
+  }
+  return false;
+}
+
+type ShadowTeleportResult =
+  | { readonly type: 'telegraph'; readonly duration: number }
+  | { readonly type: 'teleport'; readonly position: Vec3 };
+
+function updateShadowRunnerAttack(
+  enemy: EnemyState,
+  player: Vec3,
+  distance: number,
+  dt: number,
+): ShadowTeleportResult | undefined {
+  if (enemy.attackState === 'chase') {
+    if (distance <= 7.5 && distance >= 2.2 && enemy.attackCooldown <= 0) {
+      enemy.attackState = 'vanish';
+      enemy.attackTimer = 0.55;
+      return { type: 'telegraph', duration: 0.55 };
+    }
+    return undefined;
+  }
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return undefined;
+  if (enemy.attackState === 'vanish') {
+    const dx = player.x - enemy.position.x;
+    const dz = player.z - enemy.position.z;
+    const length = Math.max(0.001, Math.hypot(dx, dz));
+    enemy.attackState = 'recover';
+    enemy.attackTimer = 0.28;
+    return {
+      type: 'teleport',
+      position: {
+        x: clamp(player.x + (dx / length) * 1.7, -PLAYABLE_HALF_WIDTH, PLAYABLE_HALF_WIDTH),
+        y: enemy.position.y,
+        z: clamp(player.z + (dz / length) * 1.7, -PLAYABLE_HALF_LENGTH, PLAYABLE_HALF_LENGTH),
+      },
+    };
+  }
+  if (enemy.attackState === 'recover') {
+    enemy.attackState = 'chase';
+    enemy.attackCooldown = 2.6;
+  }
+  return undefined;
+}
+
+function updateCorpseBomberAttack(
+  enemy: EnemyState,
+  distance: number,
+  dt: number,
+): 'telegraph' | 'explode' | undefined {
+  if (enemy.attackState === 'chase') {
+    if (distance <= 3.2 && enemy.attackCooldown <= 0) {
+      enemy.attackState = 'fuse';
+      enemy.attackTimer = 0.9;
+      return 'telegraph';
+    }
+    return undefined;
+  }
+  enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+  if (enemy.attackTimer > 0) return undefined;
+  if (enemy.attackState === 'fuse') {
+    enemy.attackState = 'recover';
+    return 'explode';
+  }
+  return undefined;
+}
+
 function enemyStats(
   archetype: EnemyArchetype,
   elapsed: number,
@@ -668,6 +922,12 @@ function enemyStats(
       return { radius: 0.48, speed: 2.8 + pace * 0.7, attackDamage: 4, hitPoints: 3, y: 0.94 };
     case 'corruptReferee':
       return { radius: 0.55, speed: 2.25 + pace * 0.45, attackDamage: 6, hitPoints: 3, y: 0.98 };
+    case 'bloodArcher':
+      return { radius: 0.5, speed: 1.85 + pace * 0.35, attackDamage: 9, hitPoints: 2, y: 0.96 };
+    case 'shadowRunner':
+      return { radius: 0.43, speed: 3.45 + pace * 0.8, attackDamage: 12, hitPoints: 2, y: 0.9 };
+    case 'corpseBomber':
+      return { radius: 0.7, speed: 1.65 + pace * 0.35, attackDamage: 24, hitPoints: 3, y: 1.02 };
     case 'goalkeeperBrute':
       return { radius: 0.92, speed: 0.95 + pace * 0.25, attackDamage: 28, hitPoints: 8, y: 1.18 };
     case 'bloodFan':

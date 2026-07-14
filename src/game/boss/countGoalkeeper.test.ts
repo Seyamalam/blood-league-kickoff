@@ -82,4 +82,71 @@ describe('Count Goalkeeper', () => {
   it('uses deterministic seeded state', () => {
     expect(spawnCountGoalkeeper({ seed: 77 })).toEqual(spawnCountGoalkeeper({ seed: 77 }));
   });
+
+  it('telegraphs a goal-line dive and parries shots during the dive', () => {
+    let state: ReturnType<typeof spawnCountGoalkeeper> = {
+      ...spawnCountGoalkeeper({ seed: 123 }),
+      phase: 'guarding' as const,
+      phaseElapsed: 0,
+      actionCooldown: 0,
+    };
+    const telegraph = updateCountGoalkeeper(state, {
+      dt: 0.01,
+      playerPosition: { x: 4, y: 0.9, z: 0 },
+    });
+    expect(telegraph.state.action).toBe('diveTelegraph');
+    expect(telegraph.events.some((event) => event.type === 'diveTelegraphed')).toBe(true);
+
+    state = { ...telegraph.state, actionElapsed: 0.48 };
+    const dive = updateCountGoalkeeper(state, {
+      dt: 0.01,
+      playerPosition: { x: 4, y: 0.9, z: 0 },
+    });
+    expect(dive.state.action).toBe('dive');
+    expect(dive.events.some((event) => event.type === 'diveStarted')).toBe(true);
+
+    const parry = damageCountGoalkeeper(dive.state, { amount: 30, source: 'ball' });
+    expect(parry.appliedDamage).toBe(0);
+    expect(parry.state.action).toBe('counterattack');
+    expect(parry.events.map((event) => event.type)).toEqual(['shotParried', 'counterattackStarted']);
+  });
+
+  it('releases a parry counterattack then opens a high-damage penalty window', () => {
+    const counterattacking = {
+      ...spawnCountGoalkeeper({ seed: 123 }),
+      phase: 'guarding' as const,
+      phaseElapsed: 0,
+      action: 'counterattack' as const,
+      actionElapsed: 0.55,
+    };
+    const counter = updateCountGoalkeeper(counterattacking, {
+      dt: 0.01,
+      playerPosition: { x: 2, y: 0.9, z: 3 },
+    });
+    expect(counter.state.action).toBe('vulnerable');
+    expect(counter.events.map((event) => event.type)).toEqual([
+      'counterattackReleased',
+      'vulnerabilityOpened',
+    ]);
+
+    const penalty = damageCountGoalkeeper(counter.state, { amount: 10, source: 'ball' });
+    expect(penalty.appliedDamage).toBe(17.5);
+  });
+
+  it('opens a vulnerability window after completing a Blood Rush charge', () => {
+    const charging = {
+      ...spawnCountGoalkeeper({ seed: 123 }),
+      phase: 'bloodRush' as const,
+      phaseElapsed: 1,
+      action: 'charge' as const,
+      actionElapsed: 1.15,
+      velocity: { x: 1, y: 0, z: 0 },
+    };
+    const update = updateCountGoalkeeper(charging, {
+      dt: 0.01,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+    });
+    expect(update.state.action).toBe('vulnerable');
+    expect(update.events.some((event) => event.type === 'vulnerabilityOpened')).toBe(true);
+  });
 });

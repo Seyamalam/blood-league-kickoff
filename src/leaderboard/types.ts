@@ -1,4 +1,4 @@
-import type { CharacterId, PlayerProfile, RunRecord } from '../profile';
+import type { CharacterId, PlayerProfile, RecordedRunMode, RunRecord } from '../profile';
 
 export type LocalLeaderboardCategory = 'score' | 'fastestVictory';
 
@@ -6,6 +6,8 @@ export interface LocalLeaderboardQuery {
   category: LocalLeaderboardCategory;
   buildVersion: string;
   characterId?: CharacterId;
+  runMode?: RecordedRunMode;
+  challengeKey?: string;
   limit?: number;
 }
 

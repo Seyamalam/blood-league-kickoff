@@ -20,6 +20,13 @@ export class InputController {
   private restartQueued = false;
   private dashQueued = false;
   private focusKickQueued = false;
+  private gamepadMoveX = 0;
+  private gamepadMoveZ = 0;
+  private gamepadRecallHeld = false;
+  private gamepadLookSensitivity = 1;
+  private gamepadVibration = true;
+  private activeGamepad: Gamepad | null = null;
+  private readonly previousGamepadButtons = new Array<boolean>(18).fill(false);
   private keyBindings: KeyBindings = { ...DEFAULT_KEY_BINDINGS };
 
   constructor(private readonly target: HTMLElement) {
@@ -50,12 +57,21 @@ export class InputController {
     this.keyBindings = { ...bindings };
   }
 
+  setGamepadSettings(lookSensitivity: number, vibration: boolean): void {
+    this.gamepadLookSensitivity = Number.isFinite(lookSensitivity)
+      ? Math.max(0.4, Math.min(2.5, lookSensitivity))
+      : 1;
+    this.gamepadVibration = vibration;
+  }
+
   movement(yaw: number): { x: number; z: number; dash: boolean } {
-    const forward =
+    const keyboardForward =
       Number(this.keys.has(this.keyBindings.moveForward)) -
       Number(this.keys.has(this.keyBindings.moveBackward));
-    const strafe =
+    const keyboardStrafe =
       Number(this.keys.has(this.keyBindings.moveRight)) - Number(this.keys.has(this.keyBindings.moveLeft));
+    const forward = Math.max(-1, Math.min(1, keyboardForward - this.gamepadMoveZ));
+    const strafe = Math.max(-1, Math.min(1, keyboardStrafe + this.gamepadMoveX));
     const movement = {
       x: -Math.sin(yaw) * forward + Math.cos(yaw) * strafe,
       z: -Math.cos(yaw) * forward - Math.sin(yaw) * strafe,
@@ -66,6 +82,7 @@ export class InputController {
   }
 
   consumeMouseDelta(): { x: number; y: number } {
+    this.pollGamepad();
     const delta = { x: this.mouseDx, y: this.mouseDy };
     this.mouseDx = 0;
     this.mouseDy = 0;
@@ -87,7 +104,7 @@ export class InputController {
   }
 
   get recall(): boolean {
-    return this.recallHeld || this.keys.has(this.keyBindings.recall);
+    return this.recallHeld || this.gamepadRecallHeld || this.keys.has(this.keyBindings.recall);
   }
 
   consumeRestart(): boolean {
@@ -100,6 +117,19 @@ export class InputController {
     const queued = this.focusKickQueued;
     this.focusKickQueued = false;
     return queued;
+  }
+
+  rumble(strength = 0.5, durationMs = 90): void {
+    if (!this.gamepadVibration) return;
+    const actuator = this.activeGamepad?.vibrationActuator;
+    if (!actuator) return;
+    void actuator
+      .playEffect('dual-rumble', {
+        duration: Math.max(20, Math.min(500, durationMs)),
+        strongMagnitude: Math.max(0, Math.min(1, strength)),
+        weakMagnitude: Math.max(0, Math.min(1, strength * 0.65)),
+      })
+      .catch(() => undefined);
   }
 
   dispose(): void {
@@ -172,6 +202,10 @@ export class InputController {
     this.kickCurvePixels = 0;
     this.dashQueued = false;
     this.focusKickQueued = false;
+    this.gamepadMoveX = 0;
+    this.gamepadMoveZ = 0;
+    this.gamepadRecallHeld = false;
+    this.previousGamepadButtons.fill(false);
     this.mouseDx = 0;
     this.mouseDy = 0;
   };
@@ -185,6 +219,51 @@ export class InputController {
   };
 
   private readonly preventContextMenu = (event: Event): void => event.preventDefault();
+
+  private pollGamepad(): void {
+    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+    const gamepad =
+      [...pads].find((candidate): candidate is Gamepad => Boolean(candidate?.connected)) ?? null;
+    this.activeGamepad = gamepad;
+    if (!gamepad) {
+      this.gamepadMoveX = 0;
+      this.gamepadMoveZ = 0;
+      this.gamepadRecallHeld = false;
+      this.previousGamepadButtons.fill(false);
+      return;
+    }
+
+    this.gamepadMoveX = applyStickDeadzone(gamepad.axes[0] ?? 0);
+    this.gamepadMoveZ = applyStickDeadzone(gamepad.axes[1] ?? 0);
+    this.mouseDx += applyStickDeadzone(gamepad.axes[2] ?? 0) * 13 * this.gamepadLookSensitivity;
+    this.mouseDy += applyStickDeadzone(gamepad.axes[3] ?? 0) * 13 * this.gamepadLookSensitivity;
+
+    const dashPressed = buttonPressed(gamepad, 0);
+    const focusPressed = buttonPressed(gamepad, 3);
+    const restartPressed = buttonPressed(gamepad, 9);
+    if (dashPressed && !this.previousGamepadButtons[0]) this.dashQueued = true;
+    if (focusPressed && !this.previousGamepadButtons[3]) this.focusKickQueued = true;
+    if (restartPressed && !this.previousGamepadButtons[9]) this.restartQueued = true;
+    this.gamepadRecallHeld = buttonValue(gamepad, 6) > 0.28;
+
+    const kickPressed = buttonValue(gamepad, 7) > 0.22;
+    if (kickPressed && !this.previousGamepadButtons[7] && this.kickStartedAt === null) {
+      this.kickStartedAt = performance.now();
+      this.kickCurvePixels = 0;
+    } else if (!kickPressed && this.previousGamepadButtons[7] && this.kickStartedAt !== null) {
+      const heldSeconds = (performance.now() - this.kickStartedAt) / 1000;
+      const curve = buttonValue(gamepad, 5) - buttonValue(gamepad, 4);
+      this.kickReleaseQueued = {
+        charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
+        curve: Math.abs(curve) < 0.12 ? 0 : Math.max(-1, Math.min(1, curve)),
+      };
+      this.kickStartedAt = null;
+    }
+
+    for (let index = 0; index < this.previousGamepadButtons.length; index += 1) {
+      this.previousGamepadButtons[index] = buttonPressed(gamepad, index);
+    }
+  }
 }
 
 /** Pure normalization shared with tests and alternate input adapters. */
@@ -194,5 +273,21 @@ export function normalizeKickCurveIntent(horizontalPixels: number): number {
   const magnitude = Math.abs(bounded);
   if (magnitude <= CURVE_DEADZONE) return 0;
   return (Math.sign(bounded) * (magnitude - CURVE_DEADZONE)) / (1 - CURVE_DEADZONE);
+}
+
+export function applyStickDeadzone(value: number, deadzone = 0.16): number {
+  if (!Number.isFinite(value)) return 0;
+  const bounded = Math.max(-1, Math.min(1, value));
+  const magnitude = Math.abs(bounded);
+  if (magnitude <= deadzone) return 0;
+  return (Math.sign(bounded) * (magnitude - deadzone)) / (1 - deadzone);
+}
+
+function buttonPressed(gamepad: Gamepad, index: number): boolean {
+  return gamepad.buttons[index]?.pressed ?? false;
+}
+
+function buttonValue(gamepad: Gamepad, index: number): number {
+  return gamepad.buttons[index]?.value ?? 0;
 }
 import { DEFAULT_KEY_BINDINGS, type KeyBindings } from '../../settings/SettingsStore';

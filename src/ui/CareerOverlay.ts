@@ -1,10 +1,13 @@
 import { CHARACTER_DEFINITIONS } from '../game/characters';
+import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { LocalLeaderboardRepository } from '../leaderboard';
 import {
   accountLevelForXp,
   CHALLENGE_DEFINITIONS,
   CHARACTER_IDS,
   CHARACTER_UNLOCK_LEVELS,
+  masteryLevelForXp,
+  masteryRewardsFor,
   ProfileStore,
   totalAccountXpForLevel,
   type ChallengeId,
@@ -25,6 +28,8 @@ export interface CareerCharacterView {
   selected: boolean;
   unlockLevel: number;
   masteryXp: number;
+  masteryLevel: number;
+  nextMasteryReward: string | null;
   matches: number;
   wins: number;
   bestScore: number;
@@ -48,6 +53,8 @@ export interface CareerViewModel {
   recentRuns: readonly RunRecord[];
   scoreBoard: readonly RunRecord[];
   fastestVictoryBoard: readonly RunRecord[];
+  dailyBoard: readonly RunRecord[];
+  weeklyBoard: readonly RunRecord[];
 }
 
 /** Persistent career, mastery, challenge, history, and offline-record dialog. */
@@ -63,6 +70,8 @@ export class CareerOverlay {
   private readonly recentRuns: HTMLElement;
   private readonly scoreBoard: HTMLElement;
   private readonly fastestVictoryBoard: HTMLElement;
+  private readonly dailyBoard: HTMLElement;
+  private readonly weeklyBoard: HTMLElement;
   private readonly repository: LocalLeaderboardRepository;
   private readonly unsubscribe: () => void;
   private previouslyFocused: HTMLElement | null = null;
@@ -117,6 +126,8 @@ export class CareerOverlay {
             <div class="career-leaderboards__grid">
               <section aria-labelledby="career-score-board-title"><h4 id="career-score-board-title">LOCAL HIGH SCORE</h4><ol class="career-score-board"></ol></section>
               <section aria-labelledby="career-speed-board-title"><h4 id="career-speed-board-title">LOCAL FASTEST VICTORY</h4><ol class="career-speed-board"></ol></section>
+              <section aria-labelledby="career-daily-board-title"><h4 id="career-daily-board-title">TODAY'S DAILY</h4><ol class="career-daily-board"></ol></section>
+              <section aria-labelledby="career-weekly-board-title"><h4 id="career-weekly-board-title">THIS WEEK</h4><ol class="career-weekly-board"></ol></section>
             </div>
           </section>
         </div>
@@ -133,6 +144,8 @@ export class CareerOverlay {
     this.recentRuns = requiredElement(this.element, '.career-runs');
     this.scoreBoard = requiredElement(this.element, '.career-score-board');
     this.fastestVictoryBoard = requiredElement(this.element, '.career-speed-board');
+    this.dailyBoard = requiredElement(this.element, '.career-daily-board');
+    this.weeklyBoard = requiredElement(this.element, '.career-weekly-board');
     requiredElement(this.element, '.career-build').textContent = buildVersion;
     this.closeButton.addEventListener('click', this.hide);
     this.element.addEventListener('click', this.handleClick);
@@ -179,6 +192,8 @@ export class CareerOverlay {
     renderRuns(this.recentRuns, view.recentRuns, 'No completed runs saved yet.');
     renderBoard(this.scoreBoard, view.scoreBoard, 'score');
     renderBoard(this.fastestVictoryBoard, view.fastestVictoryBoard, 'fastestVictory');
+    renderBoard(this.dailyBoard, view.dailyBoard, 'score');
+    renderBoard(this.weeklyBoard, view.weeklyBoard, 'score');
   }
 
   public dispose(): void {
@@ -229,7 +244,8 @@ export class CareerOverlay {
           <header><div><small>${character.role}</small><h4>${character.name}</h4></div><span>${character.unlocked ? (character.selected ? 'SELECTED' : 'UNLOCKED') : `LEVEL ${character.unlockLevel}`}</span></header>
           <p><strong>TRAIT</strong> ${character.trait}</p>
           <p><strong>WEAKNESS</strong> ${character.weakness}</p>
-          <dl><div><dt>Mastery XP</dt><dd>${character.masteryXp.toLocaleString()}</dd></div><div><dt>Matches</dt><dd>${character.matches}</dd></div><div><dt>Wins</dt><dd>${character.wins}</dd></div><div><dt>Best score</dt><dd>${character.bestScore.toLocaleString()}</dd></div></dl>
+          <dl><div><dt>Mastery</dt><dd>LV ${character.masteryLevel}</dd></div><div><dt>Mastery XP</dt><dd>${character.masteryXp.toLocaleString()}</dd></div><div><dt>Matches</dt><dd>${character.matches}</dd></div><div><dt>Wins</dt><dd>${character.wins}</dd></div><div><dt>Best score</dt><dd>${character.bestScore.toLocaleString()}</dd></div></dl>
+          <p class="career-character__mastery"><strong>NEXT REWARD</strong> ${character.nextMasteryReward ?? 'All signature rewards unlocked'}</p>
           <button type="button" data-character-id="${character.id}" ${character.unlocked && !character.selected ? '' : 'disabled'}>${character.selected ? 'CURRENT PLAYER' : character.unlocked ? `SELECT ${character.name.toUpperCase()}` : `LOCKED · ACCOUNT LEVEL ${character.unlockLevel}`}</button>
         `;
         return article;
@@ -289,6 +305,8 @@ export function createCareerViewModel(
   const accountLevel = accountLevelForXp(profile.accountXp);
   const levelFloor = totalAccountXpForLevel(accountLevel);
   const nextLevel = totalAccountXpForLevel(accountLevel + 1);
+  const daily = dailyRunSeed();
+  const weekly = weeklyRunSeed();
   return {
     accountLevel,
     accountXp: profile.accountXp,
@@ -297,6 +315,8 @@ export function createCareerViewModel(
     characters: CHARACTER_IDS.map((id) => {
       const definition = CHARACTER_DEFINITIONS[id];
       const mastery = profile.characterMastery[id];
+      const masteryLevel = masteryLevelForXp(mastery.xp);
+      const nextMasteryReward = masteryRewardsFor(id).find((reward) => reward.level > masteryLevel);
       return {
         id,
         name: definition.name,
@@ -307,6 +327,10 @@ export function createCareerViewModel(
         selected: profile.selectedCharacterId === id,
         unlockLevel: CHARACTER_UNLOCK_LEVELS[id],
         masteryXp: mastery.xp,
+        masteryLevel,
+        nextMasteryReward: nextMasteryReward
+          ? `LV ${nextMasteryReward.level} · ${nextMasteryReward.name}`
+          : null,
         matches: mastery.matches,
         wins: mastery.wins,
         bestScore: mastery.bestScore,
@@ -329,6 +353,24 @@ export function createCareerViewModel(
     fastestVictoryBoard: repository
       .getEntries({ category: 'fastestVictory', buildVersion, limit: 10 })
       .map((entry) => cloneRun(entry.run)),
+    dailyBoard: repository
+      .getEntries({
+        category: 'score',
+        buildVersion,
+        runMode: 'daily',
+        challengeKey: daily.challengeKey,
+        limit: 10,
+      })
+      .map((entry) => cloneRun(entry.run)),
+    weeklyBoard: repository
+      .getEntries({
+        category: 'score',
+        buildVersion,
+        runMode: 'weekly',
+        challengeKey: weekly.challengeKey,
+        limit: 10,
+      })
+      .map((entry) => cloneRun(entry.run)),
   };
 }
 
@@ -341,7 +383,7 @@ function renderRuns(root: HTMLElement, runs: readonly RunRecord[], emptyMessage:
     ...runs.map((run) => {
       const item = document.createElement('li');
       item.className = `career-run career-run--${run.outcome}`;
-      item.innerHTML = `<strong>${run.outcome.toUpperCase()} · ${CHARACTER_DEFINITIONS[run.characterId].name}</strong><span>${run.score.toLocaleString()} score · ${run.kills} kills · ${run.goals} goals · ${formatTime(run.timeSeconds)}</span><small>${run.buildVersion} · ${formatDate(run.completedAt)}</small>`;
+      item.innerHTML = `<strong>${run.outcome.toUpperCase()} · ${CHARACTER_DEFINITIONS[run.characterId].name}</strong><span>${run.score.toLocaleString()} score · ${run.kills} kills · ${run.goals} goals · ${formatTime(run.timeSeconds)}</span><small>${(run.runMode ?? 'standard').toUpperCase()}${run.seedCode ? ` · SEED ${run.seedCode}` : ''} · ${run.buildVersion} · ${formatDate(run.completedAt)}</small>`;
       return item;
     }),
   );

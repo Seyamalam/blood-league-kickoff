@@ -26,6 +26,14 @@ describe('player settings sanitization', () => {
     expect(migrated.invertVerticalLook).toBe(false);
     expect(migrated.aimAssistStrength).toBe('low');
     expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
+    expect(migrated).toMatchObject({
+      reducedFlashes: false,
+      highContrastHud: false,
+      hudScale: 1,
+      colorVisionMode: 'default',
+      gamepadLookSensitivity: 1,
+      gamepadVibration: true,
+    });
   });
 
   it('clamps audio values and rejects malformed values', () => {
@@ -54,6 +62,27 @@ describe('player settings sanitization', () => {
   it('accepts only boolean vertical-look inversion values', () => {
     expect(sanitizePlayerSettings({ invertVerticalLook: true }).invertVerticalLook).toBe(true);
     expect(sanitizePlayerSettings({ invertVerticalLook: 'true' }).invertVerticalLook).toBe(false);
+  });
+
+  it('validates accessibility and gamepad settings', () => {
+    expect(
+      sanitizePlayerSettings({
+        reducedFlashes: true,
+        highContrastHud: true,
+        hudScale: 9,
+        colorVisionMode: 'tritanopia',
+        gamepadLookSensitivity: 0.1,
+        gamepadVibration: false,
+      }),
+    ).toMatchObject({
+      reducedFlashes: true,
+      highContrastHud: true,
+      hudScale: 1.4,
+      colorVisionMode: 'tritanopia',
+      gamepadLookSensitivity: 0.4,
+      gamepadVibration: false,
+    });
+    expect(sanitizePlayerSettings({ colorVisionMode: 'rainbow' }).colorVisionMode).toBe('default');
   });
 
   it('accepts keyboard codes while rejecting reserved, mouse, malformed, and duplicate bindings', () => {
@@ -140,6 +169,6 @@ describe('player settings sanitization', () => {
     expect(restored.invertVerticalLook).toBe(true);
     expect(restored.keyBindings.dash).toBe('ShiftLeft');
     expect(restored.keyBindings.focusKick).toBe('KeyQ');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 5 });
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 6 });
   });
 });

@@ -55,4 +55,22 @@ describe('LocalLeaderboardRepository', () => {
     expect(entries.map((entry) => entry.run.id)).toEqual(['03', '02']);
     expect(entries.map((entry) => entry.rank)).toEqual([1, 2]);
   });
+
+  it('partitions seeded challenge boards by mode and challenge key', () => {
+    const profile = createDefaultProfile();
+    profile.recentRuns = [
+      record('01', 100, 100, { runMode: 'daily', challengeKey: 'daily:2026-07-14' }),
+      record('02', 500, 100, { runMode: 'daily', challengeKey: 'daily:2026-07-13' }),
+      record('03', 900, 100, { runMode: 'weekly', challengeKey: 'weekly:2026-W29' }),
+    ];
+    const repository = new LocalLeaderboardRepository(profile);
+    const entries = repository.getEntries({
+      category: 'score',
+      buildVersion: 'alpha.1',
+      runMode: 'daily',
+      challengeKey: 'daily:2026-07-14',
+    });
+
+    expect(entries.map((entry) => entry.run.id)).toEqual(['01']);
+  });
 });

@@ -71,6 +71,10 @@ export class Hud {
         <h1>BLOOD LEAGUE<br><em>KICKOFF</em></h1>
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
         <button type="button" id="kickoff-button">ENTER THE PITCH</button>
+        <div class="title-challenge-runs" aria-label="Seeded challenge runs">
+          <button type="button" id="daily-run-button" class="title-settings">DAILY RUN</button>
+          <button type="button" id="weekly-run-button" class="title-settings">WEEKLY RUN</button>
+        </div>
         <button type="button" id="title-career-button" class="title-settings">CAREER & CHARACTERS</button>
         <button type="button" id="title-settings-button" class="title-settings">SETTINGS</button>
         <button type="button" id="title-quit-button" class="title-settings title-quit">QUIT GAME</button>
@@ -126,6 +130,14 @@ export class Hud {
 
   get restartButton(): HTMLElement {
     return required('restart-button');
+  }
+
+  get dailyRunButton(): HTMLElement {
+    return required('daily-run-button');
+  }
+
+  get weeklyRunButton(): HTMLElement {
+    return required('weekly-run-button');
   }
 
   get victoryRestartButton(): HTMLElement {

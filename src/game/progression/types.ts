@@ -17,6 +17,10 @@ export const UPGRADE_IDS = [
   'bloodMagnet',
   'killerInstinct',
   'bloodDrinker',
+  'dashShockwave',
+  'consecratedPitch',
+  'ricochetBall',
+  'bloodBarrier',
 ] as const;
 
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
@@ -27,6 +31,8 @@ export const EVOLUTION_IDS = [
   'graveFrostWake',
   'stormHalo',
   'phantomSingularity',
+  'thunderclapRush',
+  'sacredAegis',
 ] as const;
 
 export type EvolutionId = (typeof EVOLUTION_IDS)[number];
@@ -85,6 +91,17 @@ export interface ProgressionModifiers {
   volleyWindowBonus: number;
   eliteDamageMultiplier: number;
   secondaryDamageMultiplier: number;
+  dashShockwaveDamage: number;
+  dashShockwaveRadius: number;
+  dashShockwaveKnockback: number;
+  holyZoneDamage: number;
+  holyZoneRadius: number;
+  holyZoneDuration: number;
+  ricochetDamage: number;
+  ricochetTargets: number;
+  ricochetRange: number;
+  bloodBarrierCharges: number;
+  bloodBarrierRechargeMultiplier: number;
 }
 
 export type UpgradeModifierKey = keyof ProgressionModifiers;
@@ -130,6 +147,8 @@ export interface ProgressionState {
   pendingLevelUps: number;
   upgradeStacks: UpgradeStacks;
   evolutions: EvolutionUnlocks;
+  /** Permanent character bonuses active for this run, such as mastery perks. */
+  masteryModifierBonus: Readonly<Partial<ProgressionModifiers>>;
   modifiers: ProgressionModifiers;
 }
 

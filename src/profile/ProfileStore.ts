@@ -1,6 +1,7 @@
 import { evaluateChallenges } from './challenges';
 import { accountLevelForXp, updateLifetime, updateMastery, updatePersonalBests } from './profileProgression';
 import { calculateRunAccountXp } from './runRewards';
+import { masteryLevelForXp, newlyUnlockedMasteryRewards } from './mastery';
 import {
   CHALLENGE_IDS,
   CHARACTER_IDS,
@@ -56,6 +57,7 @@ export class ProfileStore {
         accountLevel: previousAccountLevel,
         newlyUnlockedCharacterIds: [],
         completedChallengeIds: [],
+        newlyUnlockedMasteryRewardIds: [],
       };
     }
 
@@ -67,6 +69,7 @@ export class ProfileStore {
     };
     const previousUnlocked = new Set(this.profile.unlockedCharacterIds);
     const characterMastery = cloneMastery(this.profile.characterMastery);
+    const previousMasteryLevel = masteryLevelForXp(characterMastery[run.characterId].xp);
     characterMastery[run.characterId] = updateMastery(
       characterMastery[run.characterId],
       run,
@@ -92,6 +95,12 @@ export class ProfileStore {
     const newlyUnlockedCharacterIds = next.unlockedCharacterIds.filter(
       (characterId) => !previousUnlocked.has(characterId),
     );
+    const nextMasteryLevel = masteryLevelForXp(characterMastery[run.characterId].xp);
+    const newlyUnlockedMasteryRewardIds = newlyUnlockedMasteryRewards(
+      run.characterId,
+      previousMasteryLevel,
+      nextMasteryLevel,
+    ).map((reward) => reward.id);
 
     this.profile = next;
     this.persist();
@@ -105,6 +114,7 @@ export class ProfileStore {
       accountLevel,
       newlyUnlockedCharacterIds,
       completedChallengeIds: challengeUpdate.completed,
+      newlyUnlockedMasteryRewardIds,
     };
   }
 
@@ -231,7 +241,23 @@ function sanitizeCompletedRun(value: unknown): CompletedRun | null {
     level: Math.max(1, integer(value.level)),
     upgradeIds: uniqueStrings(array(value.upgradeIds)),
     evolutionIds: uniqueStrings(array(value.evolutionIds)),
+    ...sanitizeReplayMetadata(value),
   };
+}
+
+function sanitizeReplayMetadata(
+  value: Record<string, unknown>,
+): Pick<CompletedRun, 'seed' | 'seedCode' | 'runMode' | 'challengeKey' | 'rulesetVersion'> {
+  const metadata: Pick<CompletedRun, 'seed' | 'seedCode' | 'runMode' | 'challengeKey' | 'rulesetVersion'> =
+    {};
+  if (typeof value.seed === 'number' && Number.isFinite(value.seed))
+    metadata.seed = Math.floor(value.seed) >>> 0;
+  if (nonEmptyString(value.seedCode)) metadata.seedCode = value.seedCode.slice(0, 32);
+  if (isRecordedRunMode(value.runMode)) metadata.runMode = value.runMode;
+  if (value.challengeKey === null) metadata.challengeKey = null;
+  else if (nonEmptyString(value.challengeKey)) metadata.challengeKey = value.challengeKey.slice(0, 80);
+  if (nonEmptyString(value.rulesetVersion)) metadata.rulesetVersion = value.rulesetVersion.slice(0, 64);
+  return metadata;
 }
 
 function sanitizeRunRecord(value: unknown): RunRecord | null {
@@ -382,6 +408,10 @@ function browserStorage(): StorageLike | null {
 
 function isCharacterId(value: unknown): value is CharacterId {
   return typeof value === 'string' && CHARACTER_IDS.includes(value as CharacterId);
+}
+
+function isRecordedRunMode(value: unknown): value is CompletedRun['runMode'] {
+  return value === 'standard' || value === 'daily' || value === 'weekly' || value === 'custom';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

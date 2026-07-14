@@ -61,7 +61,10 @@ export type SecondaryDamageSource =
   | 'chain-lightning'
   | 'frost-burst'
   | 'multi-ball'
-  | 'black-hole';
+  | 'black-hole'
+  | 'dash-shockwave'
+  | 'holy-penalty-zone'
+  | 'ricochet-ball';
 
 export interface SecondaryDamageHit {
   targetId: number;

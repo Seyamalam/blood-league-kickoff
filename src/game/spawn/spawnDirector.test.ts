@@ -34,6 +34,20 @@ describe('spawn director', () => {
     expect(selectSpawnArchetype(profile, () => 1)).toBe('winger');
   });
 
+  it('introduces the expanded special roster progressively', () => {
+    const early = resolveSpawnProfile({ stage: 'firstHalf', stageElapsed: 35, matchElapsed: 65 });
+    const advanced = resolveSpawnProfile({ stage: 'escalation', stageElapsed: 20, matchElapsed: 185 });
+    const earlyNames = early.roster
+      .filter((entry) => (entry.unlockMatchTime ?? 0) <= early.matchElapsed)
+      .map((entry) => entry.archetype);
+    const advancedNames = advanced.roster
+      .filter((entry) => (entry.unlockMatchTime ?? 0) <= advanced.matchElapsed)
+      .map((entry) => entry.archetype);
+
+    expect(earlyNames).not.toContain('bloodArcher');
+    expect(advancedNames).toEqual(expect.arrayContaining(['bloodArcher', 'shadowRunner', 'corpseBomber']));
+  });
+
   it('sanitizes invalid elapsed time and ignores invalid weights', () => {
     const base = FULL_MATCH_SPAWN_CONFIG.opening;
     if (!base.enabled) throw new Error('Opening spawn stage must be enabled.');

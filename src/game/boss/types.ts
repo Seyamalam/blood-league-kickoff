@@ -5,7 +5,8 @@ export interface BossVec3 {
 }
 
 export type CountGoalkeeperPhase = 'entrance' | 'guarding' | 'bloodRush' | 'desperation' | 'defeated';
-export type BossAction = 'idle' | 'telegraph' | 'charge' | 'recover';
+export type BossAction =
+  'idle' | 'telegraph' | 'charge' | 'diveTelegraph' | 'dive' | 'counterattack' | 'vulnerable' | 'recover';
 
 export interface CountGoalkeeperConfig {
   readonly maxHealth: number;
@@ -16,12 +17,20 @@ export interface CountGoalkeeperConfig {
   readonly arenaHalfDepth: number;
   readonly entranceDuration: number;
   readonly guardingSpeed: number;
+  readonly diveCooldown: number;
+  readonly diveTelegraphDuration: number;
+  readonly diveDuration: number;
+  readonly diveSpeed: number;
   readonly bloodRushHealthRatio: number;
   readonly desperationHealthRatio: number;
   readonly chargeCooldown: number;
   readonly telegraphDuration: number;
   readonly chargeDuration: number;
   readonly recoverDuration: number;
+  readonly vulnerabilityDuration: number;
+  readonly vulnerabilityDamageMultiplier: number;
+  readonly counterattackDuration: number;
+  readonly counterattackDamage: number;
   readonly chargeSpeed: number;
   readonly desperationSpeedMultiplier: number;
   readonly contactDamage: number;
@@ -63,6 +72,13 @@ export type CountGoalkeeperEvent =
   | { readonly type: 'phaseChanged'; readonly from: CountGoalkeeperPhase; readonly to: CountGoalkeeperPhase }
   | { readonly type: 'chargeTelegraphed'; readonly target: BossVec3; readonly duration: number }
   | { readonly type: 'chargeStarted'; readonly velocity: BossVec3 }
+  | { readonly type: 'diveTelegraphed'; readonly targetX: number; readonly duration: number }
+  | { readonly type: 'diveStarted'; readonly velocity: BossVec3 }
+  | { readonly type: 'shotParried'; readonly source: BossDamageInput['source'] }
+  | { readonly type: 'counterattackStarted'; readonly duration: number }
+  | { readonly type: 'counterattackReleased'; readonly target: BossVec3; readonly damage: number }
+  | { readonly type: 'vulnerabilityOpened'; readonly duration: number; readonly damageMultiplier: number }
+  | { readonly type: 'vulnerabilityClosed' }
   | { readonly type: 'contactAttack'; readonly damage: number }
   | { readonly type: 'summonElite'; readonly archetype: 'winger' | 'defender'; readonly side: -1 | 1 }
   | { readonly type: 'damaged'; readonly amount: number; readonly remainingHealth: number }

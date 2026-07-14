@@ -65,13 +65,27 @@ const BASE_MODIFIERS: Readonly<ProgressionModifiers> = Object.freeze({
   volleyWindowBonus: 0,
   eliteDamageMultiplier: 1,
   secondaryDamageMultiplier: 1,
+  dashShockwaveDamage: 0,
+  dashShockwaveRadius: 0,
+  dashShockwaveKnockback: 0,
+  holyZoneDamage: 0,
+  holyZoneRadius: 0,
+  holyZoneDuration: 0,
+  ricochetDamage: 0,
+  ricochetTargets: 0,
+  ricochetRange: 0,
+  bloodBarrierCharges: 0,
+  bloodBarrierRechargeMultiplier: 1,
 });
 
 /** Total Blood XP preserved across the shard burst created by one enemy kill. */
 export const BLOOD_XP_PER_KILL = 2;
 
 /** Creates a fresh run progression state. */
-export function createProgressionState(characterId: CharacterId | null = null): ProgressionState {
+export function createProgressionState(
+  characterId: CharacterId | null = null,
+  masteryModifierBonus: Readonly<Partial<ProgressionModifiers>> = {},
+): ProgressionState {
   const upgradeStacks = createEmptyStacks();
   const evolutions = createEmptyEvolutions();
   return {
@@ -81,7 +95,8 @@ export function createProgressionState(characterId: CharacterId | null = null): 
     pendingLevelUps: 0,
     upgradeStacks,
     evolutions,
-    modifiers: calculateModifiers(upgradeStacks, evolutions, characterId),
+    masteryModifierBonus: { ...masteryModifierBonus },
+    modifiers: calculateModifiers(upgradeStacks, evolutions, characterId, masteryModifierBonus),
   };
 }
 
@@ -202,7 +217,7 @@ export function chooseUpgrade(state: Readonly<ProgressionState>, upgradeId: Upgr
     pendingLevelUps: state.pendingLevelUps - 1,
     upgradeStacks,
     evolutions,
-    modifiers: calculateModifiers(upgradeStacks, evolutions, state.characterId),
+    modifiers: calculateModifiers(upgradeStacks, evolutions, state.characterId, state.masteryModifierBonus),
   };
   return {
     applied: true,
@@ -233,11 +248,13 @@ export function calculateModifiers(
   stacks: Readonly<UpgradeStacks>,
   evolutions?: Readonly<EvolutionUnlocks>,
   characterId: CharacterId | null = null,
+  masteryModifierBonus: Readonly<Partial<ProgressionModifiers>> = {},
 ): ProgressionModifiers {
   const modifiers: ProgressionModifiers = { ...BASE_MODIFIERS };
   if (characterId) {
     applyModifierValues(modifiers, CHARACTER_DEFINITIONS[characterId].modifierBonus);
   }
+  applyModifierValues(modifiers, masteryModifierBonus);
   for (const upgradeId of UPGRADE_IDS) {
     const definition = UPGRADE_DEFINITIONS[upgradeId];
     const stackCount = Math.min(definition.maxStacks, Math.max(0, Math.floor(stacks[upgradeId])));
@@ -263,6 +280,21 @@ export function calculateModifiers(
   modifiers.lifeStealOnSecondaryKill = Math.max(0, Math.min(5, modifiers.lifeStealOnSecondaryKill));
   modifiers.bossLifeStealRatio = Math.max(0, Math.min(0.05, modifiers.bossLifeStealRatio));
   modifiers.volleyWindowBonus = Math.max(0, Math.min(0.8, modifiers.volleyWindowBonus));
+  modifiers.dashShockwaveDamage = Math.max(0, Math.min(80, modifiers.dashShockwaveDamage));
+  modifiers.dashShockwaveRadius = Math.max(0, Math.min(3, modifiers.dashShockwaveRadius));
+  modifiers.dashShockwaveKnockback = Math.max(0, Math.min(16, modifiers.dashShockwaveKnockback));
+  modifiers.holyZoneDamage = Math.max(0, Math.min(32, modifiers.holyZoneDamage));
+  modifiers.holyZoneRadius = Math.max(0, Math.min(2.5, modifiers.holyZoneRadius));
+  modifiers.holyZoneDuration = Math.max(0, Math.min(8, modifiers.holyZoneDuration));
+  modifiers.ricochetDamage = Math.max(0, Math.min(64, modifiers.ricochetDamage));
+  modifiers.ricochetTargets = Math.floor(Math.max(0, Math.min(6, modifiers.ricochetTargets)));
+  modifiers.ricochetRange = Math.max(0, Math.min(3, modifiers.ricochetRange));
+  modifiers.bloodBarrierCharges = Math.floor(Math.max(0, Math.min(3, modifiers.bloodBarrierCharges)));
+  modifiers.bloodBarrierRechargeMultiplier = clampMultiplier(
+    modifiers.bloodBarrierRechargeMultiplier,
+    0.35,
+    2,
+  );
   return modifiers;
 }
 
@@ -296,6 +328,10 @@ function createEmptyStacks(): UpgradeStacks {
     bloodMagnet: 0,
     killerInstinct: 0,
     bloodDrinker: 0,
+    dashShockwave: 0,
+    consecratedPitch: 0,
+    ricochetBall: 0,
+    bloodBarrier: 0,
   };
 }
 
@@ -306,6 +342,8 @@ function createEmptyEvolutions(): EvolutionUnlocks {
     graveFrostWake: false,
     stormHalo: false,
     phantomSingularity: false,
+    thunderclapRush: false,
+    sacredAegis: false,
   };
 }
 
@@ -324,6 +362,7 @@ function cloneState(state: Readonly<ProgressionState>): ProgressionState {
     ...state,
     upgradeStacks: { ...state.upgradeStacks },
     evolutions: { ...state.evolutions },
+    masteryModifierBonus: { ...state.masteryModifierBonus },
     modifiers: { ...state.modifiers },
   };
 }

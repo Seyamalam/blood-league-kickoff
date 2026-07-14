@@ -3,9 +3,14 @@ import graveFrostWakeIcon from '../assets/progression/evolutions/grave-frost-wak
 import moonBreakerIcon from '../assets/progression/evolutions/moon-breaker.svg';
 import phantomSingularityIcon from '../assets/progression/evolutions/phantom-singularity.svg';
 import stormHaloIcon from '../assets/progression/evolutions/storm-halo.svg';
+import sacredAegisIcon from '../assets/progression/evolutions/sacred-aegis.svg';
+import thunderclapRushIcon from '../assets/progression/evolutions/thunderclap-rush.svg';
+import bloodBarrierIcon from '../assets/progression/upgrades/blood-barrier.svg';
 import bloodBombIcon from '../assets/progression/upgrades/blood-bomb.svg';
 import bloodDrinkerIcon from '../assets/progression/upgrades/blood-drinker.svg';
 import bloodMagnetIcon from '../assets/progression/upgrades/blood-magnet.svg';
+import consecratedPitchIcon from '../assets/progression/upgrades/consecrated-pitch.svg';
+import dashShockwaveIcon from '../assets/progression/upgrades/dash-shockwave.svg';
 import frostCleatsIcon from '../assets/progression/upgrades/frost-cleats.svg';
 import garlicTrailIcon from '../assets/progression/upgrades/garlic-trail.svg';
 import ghostPassIcon from '../assets/progression/upgrades/ghost-pass.svg';
@@ -15,6 +20,7 @@ import orbitingSpectralBallIcon from '../assets/progression/upgrades/orbiting-sp
 import piercingStudsIcon from '../assets/progression/upgrades/piercing-studs.svg';
 import powerKickIcon from '../assets/progression/upgrades/power-kick.svg';
 import rapidRecallIcon from '../assets/progression/upgrades/rapid-recall.svg';
+import ricochetBallIcon from '../assets/progression/upgrades/ricochet-ball.svg';
 import silverBallIcon from '../assets/progression/upgrades/silver-ball.svg';
 import spectralVolleyIcon from '../assets/progression/upgrades/spectral-volley.svg';
 import stormStudsIcon from '../assets/progression/upgrades/storm-studs.svg';
@@ -39,6 +45,10 @@ export const UPGRADE_ICON_URLS = Object.freeze({
   bloodMagnet: bloodMagnetIcon,
   killerInstinct: killerInstinctIcon,
   bloodDrinker: bloodDrinkerIcon,
+  dashShockwave: dashShockwaveIcon,
+  consecratedPitch: consecratedPitchIcon,
+  ricochetBall: ricochetBallIcon,
+  bloodBarrier: bloodBarrierIcon,
 } satisfies Record<UpgradeId, string>);
 
 /** Build-verified presentation assets for every automatic evolution. */
@@ -48,4 +58,6 @@ export const EVOLUTION_ICON_URLS = Object.freeze({
   graveFrostWake: graveFrostWakeIcon,
   stormHalo: stormHaloIcon,
   phantomSingularity: phantomSingularityIcon,
+  thunderclapRush: thunderclapRushIcon,
+  sacredAegis: sacredAegisIcon,
 } satisfies Record<EvolutionId, string>);

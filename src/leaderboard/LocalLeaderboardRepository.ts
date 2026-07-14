@@ -14,6 +14,8 @@ export class LocalLeaderboardRepository {
       (run) =>
         run.buildVersion === query.buildVersion &&
         (query.characterId === undefined || run.characterId === query.characterId) &&
+        (query.runMode === undefined || run.runMode === query.runMode) &&
+        (query.challengeKey === undefined || run.challengeKey === query.challengeKey) &&
         (query.category !== 'fastestVictory' || run.outcome === 'victory'),
     );
     eligible.sort(query.category === 'score' ? compareScore : compareFastestVictory);

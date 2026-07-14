@@ -1,6 +1,7 @@
 export type RenderQuality = 'performance' | 'balanced' | 'quality';
 export type FpsLimit = 60 | 120 | 'unlimited';
 export type AimAssistStrength = 'off' | 'low' | 'high';
+export type ColorVisionMode = 'default' | 'deuteranopia' | 'protanopia' | 'tritanopia';
 export type ControlAction =
   'moveForward' | 'moveBackward' | 'moveLeft' | 'moveRight' | 'dash' | 'recall' | 'focusKick' | 'restart';
 
@@ -17,12 +18,18 @@ export interface PlayerSettings {
   fpsLimit: FpsLimit;
   aimAssistStrength: AimAssistStrength;
   reducedCameraShake: boolean;
+  reducedFlashes: boolean;
+  highContrastHud: boolean;
+  hudScale: number;
+  colorVisionMode: ColorVisionMode;
+  gamepadLookSensitivity: number;
+  gamepadVibration: boolean;
   keyBindings: KeyBindings;
 }
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 5;
+const SETTINGS_VERSION = 6;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -47,6 +54,12 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   fpsLimit: 120,
   aimAssistStrength: 'low',
   reducedCameraShake: false,
+  reducedFlashes: false,
+  highContrastHud: false,
+  hudScale: 1,
+  colorVisionMode: 'default',
+  gamepadLookSensitivity: 1,
+  gamepadVibration: true,
   keyBindings: DEFAULT_KEY_BINDINGS,
 });
 
@@ -101,7 +114,12 @@ export class SettingsStore {
       if (!isRecord(parsed)) return defaultPlayerSettings();
       const version = parsed.version;
       const wrappedSettings =
-        (version === 1 || version === 2 || version === 3 || version === 4 || version === SETTINGS_VERSION) &&
+        (version === 1 ||
+          version === 2 ||
+          version === 3 ||
+          version === 4 ||
+          version === 5 ||
+          version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
           : null;
@@ -158,6 +176,28 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       typeof source.reducedCameraShake === 'boolean'
         ? source.reducedCameraShake
         : DEFAULT_PLAYER_SETTINGS.reducedCameraShake,
+    reducedFlashes:
+      typeof source.reducedFlashes === 'boolean'
+        ? source.reducedFlashes
+        : DEFAULT_PLAYER_SETTINGS.reducedFlashes,
+    highContrastHud:
+      typeof source.highContrastHud === 'boolean'
+        ? source.highContrastHud
+        : DEFAULT_PLAYER_SETTINGS.highContrastHud,
+    hudScale: boundedNumber(source.hudScale, 0.8, 1.4, DEFAULT_PLAYER_SETTINGS.hudScale),
+    colorVisionMode: isColorVisionMode(source.colorVisionMode)
+      ? source.colorVisionMode
+      : DEFAULT_PLAYER_SETTINGS.colorVisionMode,
+    gamepadLookSensitivity: boundedNumber(
+      source.gamepadLookSensitivity,
+      0.4,
+      2.5,
+      DEFAULT_PLAYER_SETTINGS.gamepadLookSensitivity,
+    ),
+    gamepadVibration:
+      typeof source.gamepadVibration === 'boolean'
+        ? source.gamepadVibration
+        : DEFAULT_PLAYER_SETTINGS.gamepadVibration,
     keyBindings: sanitizeKeyBindings(source.keyBindings),
   };
 }
@@ -226,6 +266,10 @@ function isAimAssistStrength(value: unknown): value is AimAssistStrength {
   return value === 'off' || value === 'low' || value === 'high';
 }
 
+function isColorVisionMode(value: unknown): value is ColorVisionMode {
+  return value === 'default' || value === 'deuteranopia' || value === 'protanopia' || value === 'tritanopia';
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -242,6 +286,12 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.fpsLimit === right.fpsLimit &&
     left.aimAssistStrength === right.aimAssistStrength &&
     left.reducedCameraShake === right.reducedCameraShake &&
+    left.reducedFlashes === right.reducedFlashes &&
+    left.highContrastHud === right.highContrastHud &&
+    left.hudScale === right.hudScale &&
+    left.colorVisionMode === right.colorVisionMode &&
+    left.gamepadLookSensitivity === right.gamepadLookSensitivity &&
+    left.gamepadVibration === right.gamepadVibration &&
     CONTROL_ACTIONS.every((action) => left.keyBindings[action] === right.keyBindings[action])
   );
 }
