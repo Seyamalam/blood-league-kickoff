@@ -152,7 +152,9 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
 - [x] Persistent volume, sensitivity, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
-- [x] Moon Breaker and Crimson Meteor evolutions unlock automatically from their required upgrade pairs
+- [x] Five automatic evolutions: Moon Breaker, Crimson Meteor, Grave-Frost Wake, Storm Halo, and Phantom Singularity
+- [x] Cross-weapon evolution mechanics add freezing garlic trails, chain-lightning orbiters, and ghost-triggered singularities
+- [x] Upgrade cards show evolution partners, unlock toasts use unique icons, and results preserve the evolved final loadout
 - [x] Full match director covers first goal, escalation, halftime, Blood Moon, final goal, boss wave, and outcomes
 - [x] Power, Pace, and Control halftime choices apply distinct second-half combat bonuses
 - [x] Goal celebrations reset the live formation and begin a fresh kickoff without erasing run progress

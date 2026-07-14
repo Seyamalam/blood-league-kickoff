@@ -52,6 +52,8 @@ const EVENT_CAP_PER_STEP = 64;
 interface GarlicZoneInternal extends GarlicZoneState {
   nextTick: number;
   damage: number;
+  slowAmount: number;
+  slowDuration: number;
 }
 
 interface OrbitingBallInternal extends OrbitingBallState {
@@ -69,6 +71,11 @@ interface GhostPassInternal extends GhostPassState {
   damage: number;
   hitTargets: Set<number>;
   spawnEventCount: number;
+  voidTriggered: boolean;
+  voidDamage: number;
+  voidRadius: number;
+  voidPullStrength: number;
+  voidDuration: number;
 }
 
 interface ChainLightningInternal {
@@ -259,6 +266,11 @@ export class SecondaryWeaponSystem {
       ghost.radius = GHOST_PASS_RADIUS;
       ghost.damage = baseDamage * multiplier;
       ghost.spawnEventCount = index === 0 ? count : 0;
+      ghost.voidTriggered = false;
+      ghost.voidDamage = safeFinite(trigger.modifiers.ghostVoidDamage, 0, 80, 0);
+      ghost.voidRadius = safeFinite(trigger.modifiers.ghostVoidRadius, 0, 3, 0);
+      ghost.voidPullStrength = safeFinite(trigger.modifiers.ghostVoidPullStrength, 0, 30, 0);
+      ghost.voidDuration = safeFinite(trigger.modifiers.ghostVoidDuration, 0, 8, 0);
       copyPosition(ghost.position, trigger.origin);
       ghost.velocity.x = (nx * cos - nz * sin) * GHOST_PASS_SPEED;
       ghost.velocity.y = ny * GHOST_PASS_SPEED;
@@ -278,6 +290,16 @@ export class SecondaryWeaponSystem {
     const targetCount = Math.floor(
       safeFinite(modifiers.chainLightningTargets, 0, CHAIN_LIGHTNING_TARGET_CAP, 0),
     );
+    if (!Number.isInteger(originTargetId) || damage <= 0 || targetCount <= 0) return false;
+    return this.queueChainLightning(originTargetId, originPosition, damage, targetCount);
+  }
+
+  private queueChainLightning(
+    originTargetId: number,
+    originPosition: Readonly<Vec3>,
+    damage: number,
+    targetCount: number,
+  ): boolean {
     if (!Number.isInteger(originTargetId) || damage <= 0 || targetCount <= 0) return false;
     const chain = this.chainLightningTriggers[this.chainLightningCursor]!;
     this.chainLightningCursor = (this.chainLightningCursor + 1) % this.chainLightningTriggers.length;
@@ -345,6 +367,17 @@ export class SecondaryWeaponSystem {
     const duration = safeFinite(modifiers.blackHoleDuration, 0, 8, 0);
     if ((damage <= 0 && pullStrength <= 0) || duration <= 0) return false;
     const bonusRadius = safeFinite(modifiers.blackHoleRadius, 0, 3, 0);
+    return this.spawnBlackHole(position, damage, bonusRadius, pullStrength, duration);
+  }
+
+  private spawnBlackHole(
+    position: Readonly<Vec3>,
+    damage: number,
+    bonusRadius: number,
+    pullStrength: number,
+    duration: number,
+  ): boolean {
+    if ((damage <= 0 && pullStrength <= 0) || duration <= 0) return false;
     const zone = this.blackHoleZones[this.blackHoleCursor]!;
     this.blackHoleCursor = (this.blackHoleCursor + 1) % this.blackHoleZones.length;
     zone.active = true;
@@ -365,7 +398,12 @@ export class SecondaryWeaponSystem {
       const dx = input.ballPosition.x - this.lastGarlicPosition.x;
       const dz = input.ballPosition.z - this.lastGarlicPosition.z;
       if (!this.garlicPositionValid || dx * dx + dz * dz >= GARLIC_SPACING_SQUARED) {
-        this.spawnGarlicZone(input.ballPosition, damage);
+        this.spawnGarlicZone(
+          input.ballPosition,
+          damage,
+          safeFinite(input.modifiers.garlicSlowAmount, 0, 0.8, 0),
+          safeFinite(input.modifiers.garlicSlowDuration, 0, 6, 0),
+        );
         copyPosition(this.lastGarlicPosition, input.ballPosition);
         this.garlicPositionValid = true;
       }
@@ -382,11 +420,16 @@ export class SecondaryWeaponSystem {
       }
       if (zone.age < zone.nextTick) continue;
       zone.nextTick += GARLIC_TICK;
-      this.queryRadius(input.targets, zone.position, zone.radius, zone.damage, 'garlic-trail');
+      this.queryGarlicRadius(input.targets, zone);
     }
   }
 
-  private spawnGarlicZone(position: Readonly<Vec3>, damage: number): void {
+  private spawnGarlicZone(
+    position: Readonly<Vec3>,
+    damage: number,
+    slowAmount: number,
+    slowDuration: number,
+  ): void {
     const zone = this.garlicZones[this.garlicCursor]!;
     this.garlicCursor = (this.garlicCursor + 1) % this.garlicZones.length;
     zone.active = true;
@@ -395,6 +438,8 @@ export class SecondaryWeaponSystem {
     zone.nextTick = 0;
     zone.radius = GARLIC_RADIUS;
     zone.damage = damage;
+    zone.slowAmount = slowAmount;
+    zone.slowDuration = slowDuration;
     copyPosition(zone.position, position);
     pushCapped(
       this.events,
@@ -432,6 +477,12 @@ export class SecondaryWeaponSystem {
         this.pushHit(target, damage, 'spectral-ball', orbit.position);
         orbit.hitTimes.set(target.id, ORBIT_HIT_COOLDOWN);
         trimMap(orbit.hitTimes, 128);
+        this.queueChainLightning(
+          target.id,
+          orbit.position,
+          safeFinite(input.modifiers.orbitChainDamage, 0, 80, 0),
+          Math.floor(safeFinite(input.modifiers.orbitChainTargets, 0, CHAIN_LIGHTNING_TARGET_CAP, 0)),
+        );
         pushCapped(
           this.events,
           {
@@ -490,6 +541,15 @@ export class SecondaryWeaponSystem {
         if (!overlaps(ghost.position, ghost.radius, target)) continue;
         this.pushHit(target, ghost.damage, 'ghost-pass', ghost.position);
         ghost.hitTargets.add(target.id);
+        if (!ghost.voidTriggered) {
+          ghost.voidTriggered = this.spawnBlackHole(
+            ghost.position,
+            ghost.voidDamage,
+            ghost.voidRadius,
+            ghost.voidPullStrength,
+            ghost.voidDuration,
+          );
+        }
         pushCapped(
           this.events,
           {
@@ -732,6 +792,25 @@ export class SecondaryWeaponSystem {
     }
   }
 
+  private queryGarlicRadius(targets: readonly CombatTarget[], zone: GarlicZoneInternal): void {
+    for (const target of targets) {
+      if (!overlaps(zone.position, zone.radius, target)) continue;
+      this.pushHit(target, zone.damage, 'garlic-trail', zone.position);
+      if (zone.slowAmount <= 0 || zone.slowDuration <= 0) continue;
+      pushCapped(
+        this.events,
+        {
+          type: 'garlic-frost-hit',
+          position: target.position,
+          targetId: target.id,
+          speedMultiplier: 1 - zone.slowAmount,
+          duration: zone.slowDuration,
+        },
+        EVENT_CAP_PER_STEP,
+      );
+    }
+  }
+
   private pushHit(
     target: CombatTarget,
     damage: number,
@@ -751,6 +830,8 @@ function createGarlicZone(): GarlicZoneInternal {
     lifetime: GARLIC_LIFETIME,
     nextTick: 0,
     damage: 0,
+    slowAmount: 0,
+    slowDuration: 0,
   };
 }
 
@@ -778,6 +859,11 @@ function createGhostPass(): GhostPassInternal {
     damage: 0,
     hitTargets: new Set<number>(),
     spawnEventCount: 0,
+    voidTriggered: false,
+    voidDamage: 0,
+    voidRadius: 0,
+    voidPullStrength: 0,
+    voidDuration: 0,
   };
 }
 

@@ -1,63 +1,169 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EVOLUTION_DEFINITIONS,
+  EVOLUTION_IDS,
+  UPGRADE_DEFINITIONS,
   calculateModifiers,
   chooseUpgrade,
   createProgressionState,
   getEligibleEvolutionIds,
   grantBloodXp,
   totalXpRequiredForLevel,
+  type EvolutionUnlockEvent,
+  type ProgressionState,
+  type UpgradeId,
 } from './index';
 
-describe('evolutions', () => {
-  it('automatically unlocks Moon Breaker after its second requirement', () => {
-    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(4)).state;
-    const silver = chooseUpgrade(state, 'silverBall');
-    expect(silver.applied).toBe(true);
-    if (!silver.applied) return;
-    state = silver.state;
-    expect(getEligibleEvolutionIds(state)).toEqual([]);
+describe('evolution definitions', () => {
+  it('defines every evolution as a unique, reachable two-upgrade contract', () => {
+    expect(Object.keys(EVOLUTION_DEFINITIONS)).toEqual([...EVOLUTION_IDS]);
+    const signatures = new Set<string>();
 
-    const studs = chooseUpgrade(state, 'piercingStuds');
-    expect(studs.applied).toBe(true);
-    if (!studs.applied) return;
-    expect(studs.state.evolutions.moonBreaker).toBe(true);
-    expect(studs.evolutionEvents.map((event) => event.evolutionId)).toEqual(['moonBreaker']);
-    expect(studs.state.modifiers.ballDamageMultiplier).toBeCloseTo(1.87);
-    expect(studs.state.modifiers.pierceCount).toBe(3);
-  });
+    for (const evolutionId of EVOLUTION_IDS) {
+      const definition = EVOLUTION_DEFINITIONS[evolutionId];
+      expect(definition.id).toBe(evolutionId);
+      expect(definition.requirements).toHaveLength(2);
+      expect(new Set(definition.requirements.map(({ upgradeId }) => upgradeId)).size).toBe(2);
+      for (const requirement of definition.requirements) {
+        expect(requirement.minStacks).toBeGreaterThanOrEqual(1);
+        expect(requirement.minStacks).toBeLessThanOrEqual(
+          UPGRADE_DEFINITIONS[requirement.upgradeId].maxStacks,
+        );
+      }
+      const signature = definition.requirements
+        .map(({ upgradeId, minStacks }) => `${upgradeId}:${minStacks}`)
+        .sort()
+        .join('|');
+      expect(signatures.has(signature)).toBe(false);
+      signatures.add(signature);
 
-  it('automatically unlocks Crimson Meteor and rebuilds its combat bonuses', () => {
-    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(4)).state;
-    const power = chooseUpgrade(state, 'powerKick');
-    expect(power.applied).toBe(true);
-    if (!power.applied) return;
-    state = power.state;
-    const bomb = chooseUpgrade(state, 'bloodBomb');
-    expect(bomb.applied).toBe(true);
-    if (!bomb.applied) return;
-
-    expect(bomb.state.evolutions.crimsonMeteor).toBe(true);
-    expect(bomb.evolutionEvents[0]?.type).toBe('evolution-unlocked');
-    expect(bomb.state.modifiers.bloodBombDamage).toBe(20);
-    expect(bomb.state.modifiers.bloodBombRadius).toBeCloseTo(1.1);
-    expect(bomb.state.modifiers.kickPowerMultiplier).toBeCloseTo(1.41);
-
-    const rebuilt = calculateModifiers(bomb.state.upgradeStacks, bomb.state.evolutions);
-    expect(rebuilt).toEqual(bomb.state.modifiers);
-    expect(calculateModifiers(bomb.state.upgradeStacks)).toEqual(bomb.state.modifiers);
-  });
-
-  it('does not emit an evolution twice', () => {
-    let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(5)).state;
-    for (const upgradeId of ['silverBall', 'piercingStuds'] as const) {
-      const choice = chooseUpgrade(state, upgradeId);
-      expect(choice.applied).toBe(true);
-      if (!choice.applied) return;
-      state = choice.state;
+      const bonuses = Object.values(definition.modifierBonus);
+      expect(bonuses.length).toBeGreaterThan(0);
+      expect(bonuses.every((bonus) => Number.isFinite(bonus) && bonus !== 0)).toBe(true);
     }
-    const anotherSilver = chooseUpgrade(state, 'silverBall');
-    expect(anotherSilver.applied).toBe(true);
-    if (!anotherSilver.applied) return;
-    expect(anotherSilver.evolutionEvents).toEqual([]);
+  });
+
+  it.each(EVOLUTION_IDS)('%s becomes eligible only at every exact requirement boundary', (evolutionId) => {
+    const definition = EVOLUTION_DEFINITIONS[evolutionId];
+    for (let missingIndex = 0; missingIndex < definition.requirements.length; missingIndex += 1) {
+      const state = createProgressionState();
+      definition.requirements.forEach((requirement, index) => {
+        state.upgradeStacks[requirement.upgradeId] = requirement.minStacks - (index === missingIndex ? 1 : 0);
+      });
+      expect(getEligibleEvolutionIds(state)).not.toContain(evolutionId);
+      const missing = definition.requirements[missingIndex]!;
+      state.upgradeStacks[missing.upgradeId] = missing.minStacks;
+      expect(getEligibleEvolutionIds(state)).toContain(evolutionId);
+    }
   });
 });
+
+describe('evolution unlocks', () => {
+  it.each(EVOLUTION_IDS)(
+    '%s unlocks once through real upgrade choices and rebuilds exactly',
+    (evolutionId) => {
+      let state = createHighLevelState();
+      const events: EvolutionUnlockEvent[] = [];
+      for (const requirement of EVOLUTION_DEFINITIONS[evolutionId].requirements) {
+        ({ state } = ensureUpgrade(state, requirement.upgradeId, requirement.minStacks, events));
+      }
+
+      expect(state.evolutions[evolutionId]).toBe(true);
+      expect(events.filter((event) => event.evolutionId === evolutionId)).toHaveLength(1);
+      expect(calculateModifiers(state.upgradeStacks, state.evolutions)).toEqual(state.modifiers);
+      expect(calculateModifiers(state.upgradeStacks)).toEqual(state.modifiers);
+
+      const firstRequirement = EVOLUTION_DEFINITIONS[evolutionId].requirements[0]!;
+      if (
+        state.upgradeStacks[firstRequirement.upgradeId] <
+        UPGRADE_DEFINITIONS[firstRequirement.upgradeId].maxStacks
+      ) {
+        const extra = chooseUpgrade(state, firstRequirement.upgradeId);
+        expect(extra.applied).toBe(true);
+        if (!extra.applied) return;
+        expect(extra.evolutionEvents.filter((event) => event.evolutionId === evolutionId)).toHaveLength(0);
+        expect(extra.state.evolutions[evolutionId]).toBe(true);
+      }
+    },
+  );
+
+  it('unlocks all five in one reachable build without duplicate events or modifier drift', () => {
+    let state = createHighLevelState();
+    const events: EvolutionUnlockEvent[] = [];
+    const buildOrder: readonly UpgradeId[] = [
+      'silverBall',
+      'piercingStuds',
+      'powerKick',
+      'bloodBomb',
+      'rapidRecall',
+      'garlicTrail',
+      'frostCleats',
+      'orbitingSpectralBall',
+      'stormStuds',
+      'ghostPass',
+      'voidGoal',
+    ];
+    for (const upgradeId of buildOrder) ({ state } = ensureUpgrade(state, upgradeId, 1, events));
+
+    expect(events.map((event) => event.evolutionId).sort()).toEqual([...EVOLUTION_IDS].sort());
+    expect(EVOLUTION_IDS.every((evolutionId) => state.evolutions[evolutionId])).toBe(true);
+    expect(calculateModifiers(state.upgradeStacks, state.evolutions)).toEqual(state.modifiers);
+    expect(Object.values(state.modifiers).every(Number.isFinite)).toBe(true);
+  });
+
+  it('builds the three cross-weapon evolution mechanics into generic combat modifiers', () => {
+    let state = createHighLevelState();
+    const events: EvolutionUnlockEvent[] = [];
+    for (const upgradeId of [
+      'rapidRecall',
+      'garlicTrail',
+      'frostCleats',
+      'silverBall',
+      'orbitingSpectralBall',
+      'stormStuds',
+      'powerKick',
+      'bloodBomb',
+      'ghostPass',
+      'voidGoal',
+    ] as const) {
+      ({ state } = ensureUpgrade(state, upgradeId, 1, events));
+    }
+
+    expect(state.modifiers).toMatchObject({
+      garlicTrailDamage: 8,
+      garlicSlowAmount: 0.28,
+      garlicSlowDuration: 1.6,
+      orbitingBallDamage: 11,
+      orbitChainDamage: 6,
+      orbitChainTargets: 2,
+      ghostPassDamageMultiplier: 1.27,
+      ghostVoidDamage: 2,
+      ghostVoidRadius: 0.25,
+      ghostVoidPullStrength: 5,
+      ghostVoidDuration: 1.2,
+    });
+  });
+});
+
+function createHighLevelState(): ProgressionState {
+  return grantBloodXp(createProgressionState(), totalXpRequiredForLevel(30)).state;
+}
+
+function ensureUpgrade(
+  initialState: ProgressionState,
+  upgradeId: UpgradeId,
+  minStacks: number,
+  events: EvolutionUnlockEvent[],
+): { state: ProgressionState } {
+  let state = initialState;
+  for (const prerequisite of UPGRADE_DEFINITIONS[upgradeId].prerequisites) {
+    ({ state } = ensureUpgrade(state, prerequisite.upgradeId, prerequisite.minStacks, events));
+  }
+  while (state.upgradeStacks[upgradeId] < minStacks) {
+    const choice = chooseUpgrade(state, upgradeId);
+    if (!choice.applied) throw new Error(`Unable to apply ${upgradeId}: ${choice.reason}`);
+    state = choice.state;
+    events.push(...choice.evolutionEvents);
+  }
+  return { state };
+}

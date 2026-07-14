@@ -8,7 +8,13 @@ import {
   readDenseWaveStressMode,
 } from './diagnostics/DenseWaveStress';
 import { PresentationFrameScheduler } from './diagnostics/PresentationFrameScheduler';
-import { createQaTerminalFixture, installQaSnapshotHook, readQaScenario } from './diagnostics/QaScenario';
+import {
+  createQaEvolutionFixture,
+  createQaTerminalFixture,
+  installQaSnapshotHook,
+  readQaEvolutionId,
+  readQaScenario,
+} from './diagnostics/QaScenario';
 import { InputController } from './game/input/InputController';
 import {
   damageCountGoalkeeper,
@@ -40,9 +46,9 @@ import { BloodShardSystem } from './game/pickups';
 import {
   BLOOD_XP_PER_KILL,
   chooseUpgrade,
-  calculateModifiers,
   createUpgradeOffer,
   createProgressionState,
+  getUnlockedEvolutionIds,
   grantBloodXp,
   totalXpRequiredForLevel,
   UPGRADE_IDS,
@@ -101,6 +107,8 @@ async function bootstrap(): Promise<void> {
   const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
   const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
+  const qaEvolutionId = readQaEvolutionId(window.location.search, import.meta.env.DEV);
+  const qaEvolutionFixture = qaEvolutionId ? createQaEvolutionFixture(qaEvolutionId) : null;
   const qaTerminalFixture =
     qaScenario === 'victory' || qaScenario === 'defeat' ? createQaTerminalFixture(qaScenario) : null;
   if (qaTerminalFixture) {
@@ -152,13 +160,9 @@ async function bootstrap(): Promise<void> {
   const frameScheduler = new PresentationFrameScheduler();
   let accumulator = 0;
   let previousBallState = physics.ballState;
-  let progression = createProgressionState();
-  if (qaScenario === 'upgrade' || qaScenario === 'evolution') {
+  let progression = qaEvolutionFixture?.state ?? createProgressionState();
+  if (qaScenario === 'upgrade') {
     progression = grantBloodXp(progression, totalXpRequiredForLevel(2)).state;
-  }
-  if (qaScenario === 'evolution') {
-    progression.upgradeStacks.silverBall = 1;
-    progression.modifiers = calculateModifiers(progression.upgradeStacks, progression.evolutions);
   }
   let focusKick = createFocusKickState();
   let match = qaTerminalFixture
@@ -199,6 +203,10 @@ async function bootstrap(): Promise<void> {
               : null,
         upgradeVisible: upgradeOverlay.isVisible,
         evolutionVisible: evolutionToast.isVisible,
+        requestedEvolutionId: qaEvolutionId,
+        unlockedEvolutionIds: getUnlockedEvolutionIds(progression),
+        evolutionToastId: evolutionToast.currentEvolutionId,
+        evolutionToastName: evolutionToast.currentName,
         pointerLocked: input.isLocked,
       }))
     : () => undefined;
@@ -227,7 +235,9 @@ async function bootstrap(): Promise<void> {
       state.phase !== 'playing'
     )
       return;
-    const choices = createUpgradeOffer(progression, qaScenario === 'evolution' ? () => 0.65 : Math.random);
+    const choices = qaEvolutionFixture
+      ? [qaEvolutionFixture.finalUpgradeId]
+      : createUpgradeOffer(progression, Math.random);
     if (choices.length === 0) return;
     if (input.isLocked) void document.exitPointerLock();
     void upgradeOverlay.show(choices, progression).then((upgradeId) => {
@@ -627,6 +637,10 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'frost-burst-hit') {
             applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
           }
+          if (event.type === 'garlic-frost-hit') {
+            applyEnemySlow(state, event.targetId, event.speedMultiplier, event.duration);
+            bridge.frostBurst(event.position, 0.55);
+          }
           if (event.type === 'black-hole-pulse') bridge.voidBurst(event.position, 0.75);
           if (event.type === 'black-hole-pull') {
             const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
@@ -827,6 +841,7 @@ async function bootstrap(): Promise<void> {
             upgradeId,
             stacks: progression.upgradeStacks[upgradeId],
           })),
+          evolutions: getUnlockedEvolutionIds(progression),
         },
         { onRestart: restart, onMainMenu: returnToMenu },
       );

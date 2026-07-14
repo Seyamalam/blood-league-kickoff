@@ -22,7 +22,7 @@
 
 ## Current Source Baseline
 
-The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, two evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized.
+The current game contains the complete nine-minute run: eight ordinary enemy archetypes, elite modifiers, twelve upgrades, five evolutions, four target weapon paths, halftime tactics, escalating match phases, Focus Kick, the Count Goalkeeper boss, and terminal results. It shares one runtime across browser and Electron. The Spawn Director is a pure, data-driven phase boundary with injectable randomness for deterministic composition tests. Live spawn positions, upgrades, and elite rolls still use `Math.random()`, so full runs are intentionally not replay-synchronized.
 
 ## Runtime Flow
 

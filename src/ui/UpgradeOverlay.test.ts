@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createProgressionState, UPGRADE_DEFINITIONS, UPGRADE_IDS } from '../game/progression';
+import {
+  EVOLUTION_DEFINITIONS,
+  EVOLUTION_IDS,
+  createProgressionState,
+  UPGRADE_DEFINITIONS,
+  UPGRADE_IDS,
+} from '../game/progression';
 import { getUpgradeCardPresentation } from './UpgradeOverlay';
 import { UPGRADE_ICON_URLS } from './progressionIcons';
 
@@ -17,6 +23,25 @@ describe('upgrade card presentation', () => {
       expect(card.ariaLabel).toContain(`${index + 1}. ${definition.name}.`);
       expect(card.ariaLabel).toContain(definition.description);
       expect(card.ariaLabel).toContain(`Stack 0 to 1 of ${definition.maxStacks}.`);
+    }
+  });
+
+  it('names the partner and result on every evolution component card', () => {
+    const state = createProgressionState();
+    for (const evolutionId of EVOLUTION_IDS) {
+      const evolution = EVOLUTION_DEFINITIONS[evolutionId];
+      for (const requirement of evolution.requirements) {
+        const partner = evolution.requirements.find(
+          (candidate) => candidate.upgradeId !== requirement.upgradeId,
+        );
+        expect(partner).toBeDefined();
+        if (!partner) continue;
+        const card = getUpgradeCardPresentation(requirement.upgradeId, 0, state);
+        expect(card.evolutionHint).toBe(
+          `EVOLVES WITH ${UPGRADE_DEFINITIONS[partner.upgradeId].name} → ${evolution.name}`,
+        );
+        expect(card.ariaLabel).toContain(card.evolutionHint);
+      }
     }
   });
 

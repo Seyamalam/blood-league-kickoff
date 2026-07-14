@@ -120,6 +120,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Ghost Pass.
 - [x] `P0` Moon Breaker evolution.
 - [x] `P0` Crimson Meteor evolution.
+- [x] `P1` Grave-Frost Wake evolution.
+- [x] `P1` Storm Halo evolution.
+- [x] `P1` Phantom Singularity evolution.
 - [x] `P0` Upgrade stacks, prerequisites, duplicate limits, and valid randomized offers.
 
 ### Complete run
@@ -131,7 +134,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Final-wave transition and prototype victory condition.
 - [x] `P0` Count Goalkeeper simulation, visual, boss HUD, damage phases, and stable final-elite fallback foundation.
 - [x] `P0` Victory and defeat sequences.
-- [x] `P0` Results with time, kills, goals, level, and upgrades.
+- [x] `P0` Results with time, kills, goals, level, upgrades, and evolutions.
 - [ ] `P0` Balance the full run to 8–10 minutes.
 - [x] `P0` Update all public documentation to match actual content.
 - [x] `P0` Commit/push the completed guaranteed-run implementation.
@@ -164,7 +167,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add the frost path.
 - [x] `P1` Add the multiball path.
 - [x] `P1` Add the black-hole path.
-- [ ] `P1` Add remaining evolution combinations.
+- [x] `P1` Add remaining evolution combinations.
 - [ ] `P2` Add uniform/material variants and stadium transformations.
 - [x] `P2` Add expanded victory presentation.
 - [ ] `P0` Update screenshots, feature list, credits, controls, and known issues.

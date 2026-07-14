@@ -600,6 +600,14 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+.upgrade-overlay__choices[data-choice-count='1'] {
+  grid-template-columns: minmax(0, 340px);
+  justify-content: center;
+}
+.upgrade-overlay__choices[data-choice-count='2'] {
+  grid-template-columns: repeat(2, minmax(0, 340px));
+  justify-content: center;
+}
 .upgrade-overlay .upgrade-card {
   position: relative;
   min-width: 0;
@@ -708,6 +716,20 @@ button {
   font:
     16px/1.35 Arial,
     sans-serif;
+}
+.upgrade-card__evolution {
+  min-height: 26px;
+  margin: 5px 0 10px;
+  color: #9adbc5;
+  font:
+    800 9px/1.35 Arial,
+    sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.upgrade-card__evolution[hidden] {
+  display: block;
+  visibility: hidden;
 }
 .upgrade-card__stack {
   width: 100%;
@@ -1518,6 +1540,15 @@ button {
 }
 .results-upgrades li strong {
   color: #e9c46f;
+}
+.results-upgrades li.results-upgrades__evolution {
+  color: #dff9ef;
+  border: 1px solid rgba(123, 214, 176, 0.25);
+  background: linear-gradient(90deg, rgba(83, 42, 104, 0.32), rgba(43, 122, 94, 0.18));
+}
+.results-upgrades li.results-upgrades__evolution strong {
+  color: #7bd6b0;
+  letter-spacing: 0.08em;
 }
 .results-upgrades li.results-upgrades__empty {
   grid-column: 1/-1;

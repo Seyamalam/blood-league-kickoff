@@ -1,4 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import {
+  chooseUpgrade,
+  createProgressionState,
+  grantBloodXp,
+  totalXpRequiredForLevel,
+  type ProgressionModifiers,
+  type UpgradeId,
+} from '../progression';
 import { SecondaryWeaponSystem, type SecondaryCombatModifiers } from './index';
 
 const EMPTY: SecondaryCombatModifiers = {
@@ -15,12 +23,20 @@ const EMPTY: SecondaryCombatModifiers = {
   frostBurstRadius: 0,
   frostSlowAmount: 0,
   frostSlowDuration: 0,
+  garlicSlowAmount: 0,
+  garlicSlowDuration: 0,
   multiBallCount: 0,
   multiBallDamageMultiplier: 0,
+  orbitChainDamage: 0,
+  orbitChainTargets: 0,
   blackHoleDamage: 0,
   blackHoleRadius: 0,
   blackHolePullStrength: 0,
   blackHoleDuration: 0,
+  ghostVoidDamage: 0,
+  ghostVoidRadius: 0,
+  ghostVoidPullStrength: 0,
+  ghostVoidDuration: 0,
 };
 
 describe('SecondaryWeaponSystem', () => {
@@ -142,6 +158,97 @@ describe('SecondaryWeaponSystem', () => {
 
   it('does not queue frost bursts without frost damage', () => {
     expect(new SecondaryWeaponSystem().triggerFrostBurst({ x: 0, y: 0, z: 0 }, EMPTY)).toBe(false);
+  });
+
+  it('turns Grave-Frost Wake trail ticks into damaging slows', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = unlockBuild(['rapidRecall', 'garlicTrail', 'frostCleats']);
+    const result = system.step({
+      dt: 1 / 60,
+      playerPosition: { x: 5, y: 0.9, z: 5 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 10,
+      ballInFlight: true,
+      ballReturning: false,
+      modifiers,
+      targets: [{ id: 7, position: { x: 0.2, y: 0.9, z: 0 }, radius: 0.3 }],
+    });
+
+    expect(result.hits).toContainEqual(
+      expect.objectContaining({ targetId: 7, damage: 8, source: 'garlic-trail' }),
+    );
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: 'garlic-frost-hit',
+        targetId: 7,
+        speedMultiplier: 0.72,
+        duration: 1.6,
+      }),
+    );
+  });
+
+  it('turns a Storm Halo collision into a bounded lightning chain', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = unlockBuild(['silverBall', 'orbitingSpectralBall', 'stormStuds']);
+    const result = system.step({
+      dt: 1 / 60,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 8, y: 0.9, z: 8 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets: [
+        { id: 1, position: { x: 1.72, y: 1.08, z: 0.08 }, radius: 0.3 },
+        { id: 2, position: { x: 3, y: 1.08, z: 0.08 }, radius: 0.3 },
+        { id: 3, position: { x: 4, y: 1.08, z: 0.08 }, radius: 0.3 },
+      ],
+    });
+
+    expect(result.hits).toContainEqual(
+      expect.objectContaining({ targetId: 1, damage: 11, source: 'spectral-ball' }),
+    );
+    expect(result.hits.filter((hit) => hit.source === 'chain-lightning')).toEqual([
+      expect.objectContaining({ targetId: 2, damage: 6 }),
+      expect.objectContaining({ targetId: 3, damage: 6 }),
+    ]);
+  });
+
+  it('opens one Phantom Singularity on each ghost pass first hit', () => {
+    const system = new SecondaryWeaponSystem();
+    const modifiers = unlockBuild(['rapidRecall', 'ghostPass', 'powerKick', 'bloodBomb', 'voidGoal']);
+    expect(
+      system.triggerGhostPass({
+        origin: { x: 0, y: 0.9, z: 0 },
+        direction: { x: 1, y: 0, z: 0 },
+        baseDamage: 10,
+        modifiers,
+      }),
+    ).toBe(1);
+    const input = {
+      dt: 0.05,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+      ballPosition: { x: 0, y: 0.9, z: 0 },
+      ballSpeed: 0,
+      ballInFlight: false,
+      ballReturning: false,
+      modifiers,
+      targets: [{ id: 9, position: { x: 1.25, y: 0.9, z: 0 }, radius: 0.25 }],
+    };
+    const first = system.step(input);
+
+    expect(first.hits).toContainEqual(
+      expect.objectContaining({ targetId: 9, damage: 12.7, source: 'ghost-pass' }),
+    );
+    expect(first.hits).toContainEqual(
+      expect.objectContaining({ targetId: 9, damage: 2, source: 'black-hole' }),
+    );
+    expect(first.events).toContainEqual(
+      expect.objectContaining({ type: 'black-hole-spawned', radius: 1.85, duration: 1.2 }),
+    );
+    expect(system.step({ ...input, dt: 0 }).events).not.toContainEqual(
+      expect.objectContaining({ type: 'black-hole-spawned' }),
+    );
   });
 
   it('spawns a deterministic symmetric multiball fan in a bounded pool', () => {
@@ -355,3 +462,13 @@ describe('SecondaryWeaponSystem', () => {
     expect(renderState.blackHoleZones).toBe(poolReferences.blackHoleZones);
   });
 });
+
+function unlockBuild(upgradeIds: readonly UpgradeId[]): ProgressionModifiers {
+  let state = grantBloodXp(createProgressionState(), totalXpRequiredForLevel(12)).state;
+  for (const upgradeId of upgradeIds) {
+    const result = chooseUpgrade(state, upgradeId);
+    if (!result.applied) throw new Error(`Unable to apply ${upgradeId}: ${result.reason}`);
+    state = result.state;
+  }
+  return state.modifiers;
+}

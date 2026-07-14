@@ -1,5 +1,5 @@
-import type { UpgradeId } from '../game/progression';
-import { UPGRADE_DEFINITIONS } from '../game/progression';
+import type { EvolutionId, UpgradeId } from '../game/progression';
+import { EVOLUTION_DEFINITIONS, UPGRADE_DEFINITIONS } from '../game/progression';
 import { BUILD_METADATA } from '../build/buildMetadata';
 
 export type GameResultOutcome = 'victory' | 'defeat';
@@ -17,6 +17,7 @@ export interface GameResultStats {
   timeSeconds: number;
   level: number;
   upgrades: readonly ResultUpgrade[];
+  evolutions: readonly EvolutionId[];
 }
 
 export interface ResultsOverlayCallbacks {
@@ -174,6 +175,7 @@ export class ResultsOverlay {
         'Upgrades',
         String(stats.upgrades.reduce((total, upgrade) => total + Math.max(0, integer(upgrade.stacks)), 0)),
       ],
+      ['Evolutions', String(stats.evolutions.length)],
     ];
     const statNodes: HTMLElement[] = [];
     for (const [label, value] of statEntries) {
@@ -198,6 +200,16 @@ export class ResultsOverlay {
         item.append(name, stacks);
         return item;
       });
+    for (const evolutionId of stats.evolutions) {
+      const item = document.createElement('li');
+      item.className = 'results-upgrades__evolution';
+      const name = document.createElement('span');
+      const status = document.createElement('strong');
+      name.textContent = `✦ ${EVOLUTION_DEFINITIONS[evolutionId].name}`;
+      status.textContent = 'EVOLVED';
+      item.append(name, status);
+      upgradeNodes.push(item);
+    }
     if (upgradeNodes.length === 0) {
       const empty = document.createElement('li');
       empty.className = 'results-upgrades__empty';

@@ -93,7 +93,15 @@ Guaranteed upgrades:
 | Blood Bomb             | Defeated enemies or ball impacts explode      |
 | Ghost Pass             | Spectral teammate redirects/duplicates a shot |
 
-Evolutions require both components plus a defined level threshold. Guaranteed examples are **Moon Breaker** (Silver Ball + Piercing Studs) and **Crimson Meteor** (Blood Bomb + Power Kick).
+Evolutions unlock automatically when both components are owned. Component availability gates provide the level threshold, while every relevant upgrade card names its partner and result.
+
+| Evolution           | Components                           | Evolved behavior                                      |
+| ------------------- | ------------------------------------ | ----------------------------------------------------- |
+| Moon Breaker        | Silver Ball + Piercing Studs         | Greater primary-ball damage and penetration           |
+| Crimson Meteor      | Blood Bomb + Power Kick              | Larger blood eruptions and stronger, faster kicks     |
+| Grave-Frost Wake    | Garlic Trail + Frost Cleats          | Garlic zones damage and slow enemies                  |
+| Storm Halo          | Orbiting Spectral Ball + Storm Studs | Fresh orb collisions launch bounded lightning chains  |
+| Phantom Singularity | Ghost Pass + Void Goal               | Each ghost opens one pooled gravity well on first hit |
 
 ## Match Flow
 
