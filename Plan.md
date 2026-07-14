@@ -49,7 +49,7 @@ Timings and balance values live in data files and remain easy to shorten during 
 
 Rapier provides collision queries and important rigid-body interactions. Game code owns ball state, aim assistance, recall steering, damage, recovery, and velocity limits so combat remains predictable. A fail-safe returns an inaccessible ball after a short timeout.
 
-The playable field uses a shared 68×105 regulation-proportioned definition across simulation, collision, scoring, and rendering. Each goal has physical posts and a crossbar. Scoring uses a swept previous-to-current ball path and the whole ball must pass beyond the goal line between the inside post planes and below the crossbar; touching or only partially crossing does not score.
+The playable field uses a shared 88×136 expanded regulation-proportioned definition across simulation, collision, scoring, and rendering. Each goal has physical posts and a crossbar. Scoring uses a swept previous-to-current ball path and the whole ball must pass beyond the goal line between the inside post planes and below the crossbar; touching or only partially crossing does not score.
 
 ### Guaranteed upgrades
 
@@ -222,7 +222,7 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `TutorialTracker` / `TutorialPrompt`: persistent first-run lessons driven by demonstrated gameplay signals
 - `PerfMeter`: stable live snapshots for cadence, renderer work, fixed steps, enemies, and pool occupancy
 - `GoalBeacon`: lightweight animated world-space marker for the active opponent goal
-- `field`: shared 68×105 pitch, physical-goal, and whole-ball scoring constants/queries
+- `field`: shared 88×136 expanded pitch, physical-goal, and whole-ball scoring constants/queries
 - `AimGuide`: reusable long red world-space line driven by the current camera aim
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
@@ -389,4 +389,4 @@ The Alpha 8 content pass expands each original character with a fixed starting i
 
 ## 14. Current State
 
-As of July 14, 2026, the feature-complete v0.9 release candidate implements the full nine-minute run through goals, halftime tactics, Blood Moon escalation, Count Goalkeeper's winged second form, and terminal results. The current game includes the shared 68×105 field, physical goal frames, swept whole-ball scoring, a special goalkeeper blocker, a long red aim line, conventional/invertible vertical look, twenty-one weapon paths, five live passives, eleven evolutions, six persistent selectable characters with signature ultimates and procedural silhouettes, four difficulty leagues, five optional match modifiers, weighted rarity drafting, account unlocks, a Career Codex, 20-level mastery perks/rewards, seeded standard/daily/weekly runs, achievements/history, four local exact-build ranking categories, expanded procedural music/SFX, eleven ordinary enemy archetypes plus elites and minibosses, physical XP shards, onboarding, gamepad controls, accessibility settings, diagnostics, rebinding, and a phase-aware Spawn Director. Deterministic full-run balance and production-browser QA are green. Web and macOS are frozen and validated before the confirmation-gated Windows/Linux build pass; hands-on target-OS and controller acceptance remain human sign-offs.
+As of July 14, 2026, post-RC development has expanded the shared field to 88×136, added five selectable stadium identities, three Momentum Gates, a wide-field Blood Moon encounter, and a detailed 36-part humanoid striker while preserving the complete nine-minute run, physical scoring, progression, accessibility, and deterministic balance coverage. The frozen `v0.9.0-rc.1` release remains available; these newer changes are the next development line.

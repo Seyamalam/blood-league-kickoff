@@ -29,7 +29,9 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay-alpha8.jpg)
+![Expanded Royal Amethyst stadium and detailed humanoid striker](docs/screenshots/expanded-stadium-humanoid.jpg)
+
+The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Five live-switchable stadium designs change the pitch, stripes, markings, walls, stands, crowd, sky, fog, lighting, and architecture. Select Blood Court, Moonlit Classic, Emerald Cathedral, Royal Amethyst, Frostbound Arena, or a random stadium each launch from Settings.
 
 ### Cursed contracts and live telemetry
 
@@ -102,7 +104,9 @@ The next replayability layer uses six original football-style archetypes. They d
 | The Engine    | Relentless runner       | Pickup range and pitch coverage     | Lower starting damage    |
 | The Guardian  | Defensive anchor        | Damage resistance                   | Lower kick power         |
 
-Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. Original portraits/models remain future visual polish.
+Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The former placeholder has been replaced by a 36-part original stylized humanoid with a face, hair, hands, articulated limbs, layered kit, socks, and studded hero boots. All six archetypes retain their own palettes and silhouette accessories.
+
+The current humanoid is an honest project-created fallback, not an imported or AI-generated model. A GLB replacement contract covering rigging, animation clips, node naming, budgets, provenance, and validation is documented in the [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md). A genuine generated model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
 
 Five passive upgrades now join twenty-one active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. The football armory adds Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone. Four new combinations—**Royal Header**, **Tempest Set Piece**, **Phantom Formation**, and **Referee's Reckoning**—expand the evolution roster to eleven. Six optional cursed contracts trade safety for stronger rewards and a more aggressive encounter director.
 
@@ -211,7 +215,11 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Full nine-minute match director with two goals, halftime tactics, Blood Moon, boss wave, and victory screen
 - [x] Phase-aware Spawn Director with authored population caps, spawn cadence, roster weights, and rest stages
 - [x] On-pitch animated goal beacon during scoring opportunities
-- [x] Regulation-proportioned 68×105 pitch with shared field definitions, physical goal frames, deep nets, full markings, and instanced crowds at both ends
+- [x] Expanded regulation-proportioned 88×136 pitch with shared field definitions, physical goal frames, deep nets, full markings, and scaled instanced crowds
+- [x] Add five persisted/random stadium variants with distinct palettes, skies, fog, lighting, crowds, and gothic/bowl/cathedral/colosseum/fortress architecture
+- [x] Add three reusable Momentum Gates with speed bursts, dash refunds, cooldown presentation, and ball-safe collision rules
+- [x] Add a touchline-spanning Wide Overload Blood Moon formation and authored event-spacing protection
+- [x] Replace the player placeholder with a detailed 36-part original humanoid, articulated animation, six character identities, resource budgets, and a documented GLB upgrade path
 - [x] Swept whole-ball goal detection prevents tunneling and requires the complete ball to cross the goal line inside the physical frame
 - [x] Special goalkeeper blocker protects the active scoring goal with dedicated state, elite presentation, and interception behavior
 - [x] Speed-reactive ball trail, pooled hit/volley bursts, and restrained camera impact feedback
@@ -299,6 +307,8 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [Asset credits](docs/ASSET_CREDITS.md)
 - [Submission asset inventory](docs/ASSET_INVENTORY.md)
 - [Release-candidate QA record](docs/RELEASE_CANDIDATE_QA.md)
+- [Character GLB asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md)
+- [Post-RC expansion roadmap](docs/EXPANSION_ROADMAP.md)
 - [Performance baseline](docs/PERFORMANCE_BASELINE.md)
 - [Changelog](CHANGELOG.md)
 

@@ -83,7 +83,18 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Implement three-choice upgrade selection.
 - [x] `P0` Implement health, XP, clock, objective, and ball-state HUD.
 - [x] `P0` Implement first goal opening, scoring, reset, and new kickoff.
-- [x] `P0` Rebuild the field around shared 68×105 regulation proportions and physical goal frames.
+- [x] `P0` Rebuild the field around shared regulation proportions and physical goal frames, then expand it to 88×136 for more traversal and encounter space.
+
+## Post-RC world and character expansion
+
+- [x] `P1` Expand playable surface area by roughly 68% without desynchronizing physics, goals, spawns, boss clamps, aim guides, or camera walls.
+- [x] `P1` Add five selectable stadium designs and a persisted random-per-launch option.
+- [x] `P1` Rebuild stadium presentation safely at runtime with complete geometry/material disposal.
+- [x] `P1` Add Momentum Gates and a wide-field Blood Moon formation so the larger pitch changes play.
+- [x] `P1` Replace the crude player placeholder with a detailed articulated original humanoid and six character variants.
+- [x] `P1` Define the production GLB/rig/animation/LOD/provenance acceptance contract.
+- [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
+- [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
 - [x] `P0` Require swept whole-ball crossing inside the posts and under the crossbar for scoring.
 - [x] `P0` Create a three-minute mini-run with a clear win state.
 - [x] `P0` Add tutorial prompts that clear after demonstrated actions.

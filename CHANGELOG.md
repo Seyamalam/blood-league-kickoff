@@ -2,6 +2,14 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## Unreleased — post-RC expansion
+
+- Expanded the pitch from 105×68 to 136×88 while keeping goals, physics walls, camera limits, spawns, formations, bosses, and scoring on shared field constants.
+- Added Blood Court, Moonlit Classic, Emerald Cathedral, Royal Amethyst, and Frostbound Arena with distinct palettes, skies, fog, lighting, crowds, and architecture plus a persisted random option.
+- Added three reusable Momentum Gates, a touchline-spanning Wide Overload Blood Moon formation, and authored event spacing.
+- Rebuilt the striker as a detailed 36-part original humanoid with articulated locomotion, six character identities, bounded shared resources, and a documented production GLB replacement contract.
+- Captured and visually verified the expanded production stadium at 1280×720; all five stadiums were exercised through live Settings switching.
+
 ## v0.9.0-rc.1 — 2026-07-14
 
 - Added weighted Common/Rare/Epic/Legendary upgrade drafting with two rerolls, one banish, one skip, owned-stack context, evolution partners, and build previews.
