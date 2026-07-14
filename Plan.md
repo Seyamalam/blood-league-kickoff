@@ -332,6 +332,8 @@ Normal pushes and pull requests run a pinned Linux verification job using `npm c
 
 Planned tags: `v0.1.0` foundation, `v0.2.0` combat prototype, `v0.3.0` vertical slice, `v0.5.0` complete run, `v0.8.0` content complete, `v0.9.0` release candidate, and `v1.0.0` frozen submission.
 
+The Alpha 8 content pass expands each original character with a fixed starting identity and signature ultimate; adds six football weapons, four evolutions, six optional curses, elite modifiers, formations, pitch events, two minibosses, environmental interactions, goal-quality rewards, custom seeds, eighteen achievements, and live/post-run telemetry. All menu overlays use contained scrolling at short viewport heights, and iconography is shared consistently across title, pause, settings, career, results, progression, curses, and combat HUD surfaces.
+
 ## 12. Production Schedule
 
 ### July 14 — Foundation and feel

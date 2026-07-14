@@ -159,6 +159,18 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Presentation and target content (`v0.8.0`)
 
+### Alpha 8 gameplay expansion
+
+- [x] Give all six characters distinct starting loadouts and unique charge-based signature ultimates.
+- [x] Add six football-armory weapons, four evolutions, authored icons, and fixed-pool runtime behavior.
+- [x] Add six optional curses with explicit benefits, drawbacks, encounter pressure, and reward modifiers.
+- [x] Add elite modifiers, authored formations, timed pitch events, two minibosses, and interactive pitch objects.
+- [x] Add goal-quality scoring, custom seeds, eighteen achievements, and detailed in-run/post-run telemetry.
+- [x] Expand first-run onboarding to cover character ultimates.
+- [x] Add live run statistics to pause and fix short-viewport scrolling across every major overlay.
+- [x] Add consistent inline menu/action icons plus dedicated weapon, evolution, curse, and ultimate art.
+- [x] Add procedural ultimate, curse-contract, and miniboss cues.
+
 - [x] `P0` Lock the low-poly gothic visual palette.
 - [x] `P0` Generate original key art, itch cover, and menu background.
 - [x] `P0` Create readable original upgrade/evolution icons.

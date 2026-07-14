@@ -4,12 +4,12 @@ This is the authoritative asset and license ledger. The submission-facing file i
 
 ## Project-Created Assets
 
-| Asset/path                                | Creator | Tool                                   | Date              | Notes                                                                                                                                      |
-| ----------------------------------------- | ------- | -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Game design and source code               | Huntrix | Codex and local development tools      | 2026-07-14 onward | Team roster: Touhidul Alam Seyam and MD. Abtahee Kabir; AI assistance is not required at runtime                                           |
-| Procedural visuals, UI, and audio systems | Huntrix | TypeScript, Three.js, CSS, Web Audio   | 2026-07-14 onward | Generated at runtime from project source; no external media files                                                                          |
-| `src/assets/progression/**/*.svg`         | Huntrix | Authored SVG/XML with Codex assistance | 2026-07-14        | Twenty-seven original icons: fifteen weapon upgrades, five passives, and seven evolutions using the locked palette; no external source art |
-| `docs/screenshots/*.jpg`                  | Huntrix | Chromium capture and FFmpeg            | 2026-07-14        | Ten direct game captures at documented historical/current dimensions; the title composites the generated key art recorded below            |
+| Asset/path                                | Creator | Tool                                   | Date              | Notes                                                                                                                                   |
+| ----------------------------------------- | ------- | -------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Game design and source code               | Huntrix | Codex and local development tools      | 2026-07-14 onward | Team roster: Touhidul Alam Seyam and MD. Abtahee Kabir; AI assistance is not required at runtime                                        |
+| Procedural visuals, UI, and audio systems | Huntrix | TypeScript, Three.js, CSS, Web Audio   | 2026-07-14 onward | Generated at runtime from project source; no external media files                                                                       |
+| `src/assets/**/*.svg`                     | Huntrix | Authored SVG/XML with Codex assistance | 2026-07-14        | Forty-nine original icons: twenty-one weapons, five passives, eleven evolutions, six curses, and six ultimates; no external source art  |
+| `docs/screenshots/*.jpg`                  | Huntrix | Chromium capture and FFmpeg            | 2026-07-14        | Fifteen direct game captures at documented historical/current dimensions; title captures composite the generated key art recorded below |
 
 ## AI-Generated Assets
 

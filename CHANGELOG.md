@@ -2,6 +2,17 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.8.0-alpha.8 — 2026-07-14
+
+- Gave all six original characters fixed starting loadouts and distinct charge-based signature ultimates with authored icons, HUD feedback, rebindable keyboard/gamepad input, audio/VFX responses, and onboarding.
+- Added Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone plus Royal Header, Tempest Set Piece, Phantom Formation, and Referee's Reckoning evolutions.
+- Added six optional cursed contracts, custom-seed runs, and deterministic curse pressure/reward modifiers.
+- Added five elite modifiers, five authored formations, timed pitch events, Blood Barrel/Holy Beacon/Barrier interactions, and two pre-final minibosses.
+- Added placement/speed-based goal-quality rewards, eighteen persistent achievements, and detailed damage/action telemetry in both pause and results.
+- Expanded procedural audio with signature-ultimate, cursed-contract, and miniboss cues.
+- Added consistent inline action icons and corrected short-viewport scrolling for title, pause, results, settings, Career, upgrade, halftime, and curse overlays.
+- Expanded automated coverage beyond 320 tests and added production-browser responsive visual QA.
+
 ## v0.8.0-alpha.7 — 2026-07-14
 
 - Added Dash Shockwave, Consecrated Pitch, Ricochet Ball, and Blood Barrier, plus Thunderclap Rush and Sacred Aegis evolutions with authored icons, bounded pools, boss routing, and tests.

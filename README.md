@@ -15,7 +15,7 @@
 
 ### Current title screen
 
-![Blood League: Kickoff title screen](docs/screenshots/title-screen.jpg)
+![Blood League: Kickoff title screen](docs/screenshots/title-screen-alpha8.jpg)
 
 ## The Game
 
@@ -25,7 +25,13 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay.jpg)
+![Third-person gameplay in the cursed stadium](docs/screenshots/gameplay-alpha8.jpg)
+
+### Cursed contracts and live telemetry
+
+![Cursed-contract selection with authored curse icons](docs/screenshots/cursed-contract.jpg)
+
+![Live run statistics available from pause](docs/screenshots/live-run-stats.jpg)
 
 ### Goalkeeper showdown
 
@@ -86,9 +92,9 @@ The next replayability layer uses six original football-style archetypes. They d
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. Original portraits/models remain future visual polish.
 
-Five passive upgrades now join fifteen active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. New active paths add a dash shockwave, consecrated penalty zones, and chained ricochets, with **Thunderclap Rush** and **Sacred Aegis** expanding the evolution roster to seven.
+Five passive upgrades now join twenty-one active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. The football armory adds Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone. Four new combinations—**Royal Header**, **Tempest Set Piece**, **Phantom Formation**, and **Referee's Reckoning**—expand the evolution roster to eleven. Six optional cursed contracts trade safety for stronger rewards and a more aggressive encounter director.
 
-A versioned local profile records account XP, six character unlock levels, 20-level character mastery with gameplay perks and rewards, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. Standard, daily, and weekly runs use deterministic named random streams and preserve their seed metadata. The Career screen exposes exact-build local score, fastest-victory, current-daily, and current-weekly tables. These rankings never claim to be global or cheat-proof.
+A versioned local profile records account XP, six character unlock levels, 20-level character mastery with gameplay perks and rewards, eighteen achievements, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. Standard, daily, weekly, cursed-contract, and custom-seed runs preserve their seed and ruleset metadata. The Career screen exposes exact-build local score, fastest-victory, current-daily, and current-weekly tables. These rankings never claim to be global or cheat-proof.
 
 ## Controls
 
@@ -101,9 +107,10 @@ A versioned local profile records account XP, six character unlock levels, 20-le
 | Restart after kickoff | `R`                                                                            | Implemented                                               |
 | Dash                  | `Space`                                                                        | Implemented with cooldown and brief invulnerability       |
 | Focus Kick ultimate   | `F`                                                                            | Implemented with first-person slow-time aiming            |
+| Character ultimate    | `Q`                                                                            | Unique signature ability for each of six characters       |
 | Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus     |
 | Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                                |
-| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus                   | Implemented with sensitivity and vibration settings       |
+| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus, `X` ultimate     | Implemented with sensitivity and vibration settings       |
 
 Controls and bindings may change during playtesting.
 
@@ -133,8 +140,8 @@ For participant privacy, contact details and student identity numbers are not pu
 ### Target build
 
 - Eight enemy behaviors with visual variants
-- Fifteen weapons, five passive upgrades, and seven evolutions
-- Six original football-style character foundations
+- Twenty-one weapons, five passive upgrades, eleven evolutions, and six optional curses
+- Six original football-style characters with starting loadouts and unique ultimates
 - Persistent profile, 20-level mastery, challenges, seeded daily/weekly runs, history, and offline rankings
 - Three match phases and a halftime choice
 - Brief first-person Focus Kick ultimate
@@ -178,6 +185,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Apply every passive modifier and its health/life-steal feedback through the live runtime and upgrade UI
 - [x] Six immutable original football-style character definitions with distinct strengths, weaknesses, affinities, modifier sets, and visual palettes
 - [x] Add character selection/profile UI, live selected-character startup, and unlock presentation
+- [x] Give every character a unique starting loadout, signature ultimate, HUD meter, icon, audio/VFX response, and rebindable control
 - [ ] Add original character portraits/models
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection
@@ -195,6 +203,8 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
 - [x] Every secondary weapon and evolution can damage Count Goalkeeper through capped boss-only routing without granting ordinary kill rewards
 - [x] Five automatic evolutions: Moon Breaker, Crimson Meteor, Grave-Frost Wake, Storm Halo, and Phantom Singularity
+- [x] Add six football-armory weapons and four football-themed evolutions with bounded pools and authored icons
+- [x] Add six optional risk/reward curses and a scroll-safe cursed-contract run setup
 - [x] Cross-weapon evolution mechanics add freezing garlic trails, chain-lightning orbiters, and ghost-triggered singularities
 - [x] Upgrade cards show evolution partners, unlock toasts use unique icons, and results preserve the evolved final loadout
 - [x] Full match director covers first goal, escalation, halftime, Blood Moon, final goal, boss wave, and outcomes
@@ -203,8 +213,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Stage-reactive fog, lighting, embers, and animated match announcements communicate escalation
 - [x] Count Goalkeeper summons readable boosted Winger and Defender elites
 - [x] Accessible pause menu and detailed victory/defeat results with run statistics and final loadout
+- [x] Add a live in-run telemetry screen with damage-source shares, healing, blocks, kicks, dashes, volleys, and goals
+- [x] Add custom-seed runs, goal-quality rewards, and eighteen persistent achievements
 - [x] Focus-loss and hidden-window pause protection
-- [x] Six-step first-run tutorial for movement, kick, recall, dash, progression, and scoring
+- [x] Seven-step first-run tutorial for movement, kick, recall, dash, character ultimate, progression, and scoring
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
@@ -231,7 +243,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Versioned local profile foundation for account XP, character unlocks/mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe settlement, and bounded run history
 - [x] Local/offline score and fastest-victory leaderboard repository partitioned by exact build version and optional character
 - [x] Integrate profile settlement, progression/history screens, personal-best feedback, character selection, and clearly labeled local leaderboards into the runtime UI
-- [ ] Add deterministic run-wide seeds before considering daily/weekly or remotely verified rankings; no online leaderboard is currently claimed
+- [x] Add deterministic run-wide seeds for standard, daily, weekly, cursed, and custom-seed play; no online leaderboard is currently claimed
 - [x] Complete HMR/shutdown disposal for listeners, UI, WebGL, shared render resources, and Rapier
 - [x] Secure macOS Electron window-size and fullscreen/windowed controls, with desktop Quit available only from the title screen
 - [x] Deterministic full nine-minute stage/deadline/goal/halftime/boss outcome coverage, secondary-boss damage parity, and dense-crowd stress tests
