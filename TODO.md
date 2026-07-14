@@ -200,7 +200,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Build character selection, profile, mastery, challenge, recent-history, and local-leaderboard UI.
 - [x] `P0` Start runs with the selected unlocked character and settle each terminal result exactly once.
 - [x] `P0` Show XP, unlocks, completed challenges, personal bests, and local/offline records across results and Career screens.
-- [ ] `P1` Introduce deterministic run-wide seeds before considering daily/weekly or remotely verified leaderboards.
+- [x] `P1` Introduce deterministic run-wide seeds and isolated streams for standard, daily, and weekly local runs.
+- [x] `P1` Add current daily/weekly local challenge boards with saved seed and ruleset metadata.
+- [x] `P1` Add 20-level character mastery rewards and live character-specific mastery perks.
 - [ ] `P2` Add a remote leaderboard only behind a server-side validation boundary; never ship a private key in browser or Electron builds.
 
 - [x] `P0` Main menu and start flow.
@@ -216,6 +218,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Aim-assist strength.
 - [x] `P1` Rebindable controls.
 - [x] `P1` Color-independent enemy/ball-state indicators.
+- [x] `P1` Standard gamepad support with remapped combat verbs, sensitivity, and optional vibration.
+- [x] `P1` Reduced-flash, HUD-scale, high-contrast, and color-vision presentation settings.
 
 ## Performance
 

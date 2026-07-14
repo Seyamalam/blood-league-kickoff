@@ -2,6 +2,7 @@ export const CHARACTER_IDS = ['maestro', 'breakaway', 'tower', 'finisher', 'engi
 
 export type CharacterId = (typeof CHARACTER_IDS)[number];
 export type RunOutcome = 'victory' | 'defeat';
+export type RecordedRunMode = 'standard' | 'daily' | 'weekly' | 'custom';
 
 export const CHALLENGE_IDS = [
   'firstMatch',
@@ -31,6 +32,12 @@ export interface CompletedRun {
   level: number;
   upgradeIds: readonly string[];
   evolutionIds: readonly string[];
+  /** Optional replay metadata. Older profile documents remain valid without it. */
+  seed?: number;
+  seedCode?: string;
+  runMode?: RecordedRunMode;
+  challengeKey?: string | null;
+  rulesetVersion?: string;
 }
 
 export interface RunRecord extends CompletedRun {
@@ -99,6 +106,7 @@ export interface RunSettlement {
   accountLevel: number;
   newlyUnlockedCharacterIds: readonly CharacterId[];
   completedChallengeIds: readonly ChallengeId[];
+  newlyUnlockedMasteryRewardIds: readonly string[];
 }
 
 export interface StorageLike {

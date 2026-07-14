@@ -4,3 +4,4 @@ export * from './runRewards';
 export * from './profileProgression';
 export * from './challenges';
 export * from './unlocks';
+export * from './mastery';

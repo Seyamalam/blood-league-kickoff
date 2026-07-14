@@ -2,6 +2,17 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.8.0-alpha.7 — 2026-07-14
+
+- Added Dash Shockwave, Consecrated Pitch, Ricochet Ball, and Blood Barrier, plus Thunderclap Rush and Sacred Aegis evolutions with authored icons, bounded pools, boss routing, and tests.
+- Added Blood Archer projectiles, Shadow Runner teleports, and Corpse Bomber fuse explosions with distinct silhouettes, telegraphs, combat events, and spawn weights.
+- Expanded Count Goalkeeper with dive telegraphs, parries, counterattacks, and vulnerability windows.
+- Added deterministic run descriptors and isolated random streams, selectable daily/weekly challenges, saved seed metadata, and current-challenge local leaderboards.
+- Expanded character mastery to 20 levels with rewards and two live gameplay perks per character; added character-specific kit palettes and mastery reward presentation.
+- Added standard-gamepad movement, aiming, kicking, recall, dash, focus, restart, and vibration support.
+- Added reduced-flash, high-contrast HUD, HUD-scale, color-vision, gamepad sensitivity, and vibration settings with safe migration.
+- Expanded the suite to 253 passing tests and visually smoke-tested the production title, Career, and daily-run gameplay states.
+
 ## v0.8.0-alpha.6 — 2026-07-14
 
 - Added four live passive upgrades—Iron Heart, Blood Magnet, Killer Instinct, and Blood Drinker—with mixed offers, bounded modifiers, health/life-steal feedback, tests, and four original SVG icons.

@@ -2,6 +2,7 @@ import {
   CONTROL_ACTIONS,
   type AimAssistStrength,
   type ControlAction,
+  type ColorVisionMode,
   type FpsLimit,
   type PlayerSettings,
   type RenderQuality,
@@ -29,6 +30,14 @@ export class SettingsOverlay {
   private readonly fpsLimit: HTMLSelectElement;
   private readonly aimAssistStrength: HTMLSelectElement;
   private readonly reducedCameraShake: HTMLInputElement;
+  private readonly reducedFlashes: HTMLInputElement;
+  private readonly highContrastHud: HTMLInputElement;
+  private readonly hudScale: HTMLInputElement;
+  private readonly hudScaleValue: HTMLOutputElement;
+  private readonly colorVisionMode: HTMLSelectElement;
+  private readonly gamepadLookSensitivity: HTMLInputElement;
+  private readonly gamepadLookSensitivityValue: HTMLOutputElement;
+  private readonly gamepadVibration: HTMLInputElement;
   private readonly bindingButtons: Record<ControlAction, HTMLButtonElement>;
   private readonly bindingStatus: HTMLElement;
   private readonly closeButton: HTMLButtonElement;
@@ -113,6 +122,38 @@ export class SettingsOverlay {
             <span><strong>Reduced camera shake</strong><small>Limits impact movement and intense screen feedback.</small></span>
             <input id="setting-reduced-shake" type="checkbox">
           </label>
+          <label class="settings-toggle" for="setting-reduced-flashes">
+            <span><strong>Reduced flashes</strong><small>Replaces rapid impact flashes with steadier highlights.</small></span>
+            <input id="setting-reduced-flashes" type="checkbox">
+          </label>
+          <label class="settings-toggle" for="setting-high-contrast-hud">
+            <span><strong>High-contrast HUD</strong><small>Strengthens panel backing, borders, and critical status text.</small></span>
+            <input id="setting-high-contrast-hud" type="checkbox">
+          </label>
+          <div class="settings-field">
+            <div class="settings-field__label"><label for="setting-hud-scale">HUD scale</label><output for="setting-hud-scale"></output></div>
+            <input id="setting-hud-scale" type="range" min="0.8" max="1.4" step="0.05">
+          </div>
+          <div class="settings-field">
+            <label for="setting-color-vision">Color-vision palette</label>
+            <select id="setting-color-vision">
+              <option value="default">Default</option>
+              <option value="deuteranopia">Deuteranopia support</option>
+              <option value="protanopia">Protanopia support</option>
+              <option value="tritanopia">Tritanopia support</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__label"><label for="setting-gamepad-look">Gamepad look sensitivity</label><output for="setting-gamepad-look"></output></div>
+            <input id="setting-gamepad-look" type="range" min="0.4" max="2.5" step="0.05">
+          </div>
+          <label class="settings-toggle" for="setting-gamepad-vibration">
+            <span><strong>Gamepad vibration</strong><small>Impact feedback for supported controllers.</small></span>
+            <input id="setting-gamepad-vibration" type="checkbox">
+          </label>
+          <div class="settings-controller-map" aria-label="Standard gamepad controls">
+            <strong>GAMEPAD</strong><span>Left stick move · Right stick aim · RT kick · LT recall · A dash · Y Focus Kick</span>
+          </div>
           <fieldset class="settings-controls" aria-describedby="settings-binding-help settings-binding-status">
             <legend>KEYBOARD CONTROLS</legend>
             <p id="settings-binding-help">Choose a control, then press a keyboard key. Escape cancels. Mouse buttons cannot be assigned.</p>
@@ -161,6 +202,14 @@ export class SettingsOverlay {
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
     this.aimAssistStrength = requiredSelect(this.element, '#setting-aim-assist');
     this.reducedCameraShake = requiredInput(this.element, '#setting-reduced-shake');
+    this.reducedFlashes = requiredInput(this.element, '#setting-reduced-flashes');
+    this.highContrastHud = requiredInput(this.element, '#setting-high-contrast-hud');
+    this.hudScale = requiredInput(this.element, '#setting-hud-scale');
+    this.hudScaleValue = requiredOutput(this.element, '[for="setting-hud-scale"]');
+    this.colorVisionMode = requiredSelect(this.element, '#setting-color-vision');
+    this.gamepadLookSensitivity = requiredInput(this.element, '#setting-gamepad-look');
+    this.gamepadLookSensitivityValue = requiredOutput(this.element, '[for="setting-gamepad-look"]');
+    this.gamepadVibration = requiredInput(this.element, '#setting-gamepad-vibration');
     this.bindingButtons = requiredBindingButtons(this.element);
     this.bindingStatus = requiredElement(this.element, '#settings-binding-status');
     this.closeButton = requiredButton(this.element, '.settings-panel__close');
@@ -251,6 +300,14 @@ export class SettingsOverlay {
     this.fpsLimit.value = String(settings.fpsLimit);
     this.aimAssistStrength.value = settings.aimAssistStrength;
     this.reducedCameraShake.checked = settings.reducedCameraShake;
+    this.reducedFlashes.checked = settings.reducedFlashes;
+    this.highContrastHud.checked = settings.highContrastHud;
+    this.hudScale.value = String(settings.hudScale);
+    this.hudScaleValue.value = `${Math.round(settings.hudScale * 100)}%`;
+    this.colorVisionMode.value = settings.colorVisionMode;
+    this.gamepadLookSensitivity.value = String(settings.gamepadLookSensitivity);
+    this.gamepadLookSensitivityValue.value = `${settings.gamepadLookSensitivity.toFixed(2)}×`;
+    this.gamepadVibration.checked = settings.gamepadVibration;
     for (const action of CONTROL_ACTIONS) {
       const button = this.bindingButtons[action];
       const code = settings.keyBindings[action];
@@ -273,7 +330,9 @@ export class SettingsOverlay {
         target === this.musicVolume ||
         target === this.effectsVolume ||
         target === this.mouseSensitivity ||
-        target === this.renderScale)
+        target === this.renderScale ||
+        target === this.hudScale ||
+        target === this.gamepadLookSensitivity)
     ) {
       return;
     }
@@ -293,6 +352,14 @@ export class SettingsOverlay {
       patch = { aimAssistStrength: this.aimAssistStrength.value as AimAssistStrength };
     else if (target === this.reducedCameraShake)
       patch = { reducedCameraShake: this.reducedCameraShake.checked };
+    else if (target === this.reducedFlashes) patch = { reducedFlashes: this.reducedFlashes.checked };
+    else if (target === this.highContrastHud) patch = { highContrastHud: this.highContrastHud.checked };
+    else if (target === this.hudScale) patch = { hudScale: this.hudScale.valueAsNumber };
+    else if (target === this.colorVisionMode)
+      patch = { colorVisionMode: this.colorVisionMode.value as ColorVisionMode };
+    else if (target === this.gamepadLookSensitivity)
+      patch = { gamepadLookSensitivity: this.gamepadLookSensitivity.valueAsNumber };
+    else if (target === this.gamepadVibration) patch = { gamepadVibration: this.gamepadVibration.checked };
     if (!patch) return;
     const settings = this.store.update(patch);
     this.onChange?.(settings);

@@ -61,9 +61,32 @@ describe('ProfileStore', () => {
     expect(first.accountLevel).toBe(2);
     expect(first.newlyUnlockedCharacterIds).toEqual(['breakaway']);
     expect(first.completedChallengeIds).toEqual(expect.arrayContaining(['firstMatch', 'firstVictory']));
+    expect(first.newlyUnlockedMasteryRewardIds).toEqual(['maestro-mastery-2']);
     expect(duplicate.applied).toBe(false);
     expect(store.value.lifetime.matchesPlayed).toBe(1);
     expect(store.value.characterMastery.maestro).toMatchObject({ matches: 1, wins: 1, xp: 445 });
+  });
+
+  it('round-trips optional deterministic replay metadata without changing the schema version', () => {
+    const { storage, values } = memoryStorage();
+    const store = new ProfileStore('profile', storage);
+    store.recordRun(
+      run('seeded', {
+        seed: 0xf00dcafe,
+        seedCode: '1UK2WDA',
+        runMode: 'daily',
+        challengeKey: 'daily:2026-07-14',
+        rulesetVersion: 'alpha.7',
+      }),
+    );
+    const document = JSON.parse(values.get('profile') ?? '{}');
+    expect(document.version).toBe(1);
+    expect(new ProfileStore('profile', storage).value.recentRuns[0]).toMatchObject({
+      seed: 0xf00dcafe,
+      runMode: 'daily',
+      challengeKey: 'daily:2026-07-14',
+      rulesetVersion: 'alpha.7',
+    });
   });
 
   it('caps visible history at twenty while retaining duplicate guards', () => {

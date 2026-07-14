@@ -11,7 +11,7 @@
 | Team      | Huntrix — 2 participants                                         |
 | Platforms | Web and macOS during alpha; Windows x64 and Linux x64 final-only |
 | Stack     | Three.js, TypeScript, Vite, Rapier, Electron                     |
-| Input     | Keyboard and mouse                                               |
+| Input     | Keyboard/mouse and standard gamepad                              |
 
 ### Current title screen
 
@@ -86,9 +86,9 @@ The next replayability layer uses six original football-style archetypes. They d
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. Original portraits/models remain future visual polish.
 
-Four passive upgrades now join the twelve active/weapon paths: **Iron Heart** raises maximum health, **Blood Magnet** expands Blood XP attraction, **Killer Instinct** raises all damage, and **Blood Drinker** restores health from primary/secondary kills and boss damage. They are active in live runs with authored SVG icons and audio feedback; full-run balance validation remains in progress.
+Five passive upgrades now join fifteen active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. New active paths add a dash shockwave, consecrated penalty zones, and chained ricochets, with **Thunderclap Rush** and **Sacred Aegis** expanding the evolution roster to seven.
 
-A versioned local profile records account XP, six character unlock levels, mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. The Career screen exposes all of it plus local/offline score and fastest-victory tables for the exact build. These rankings never claim to be global or cheat-proof, and no remote service or secret is shipped in the game.
+A versioned local profile records account XP, six character unlock levels, 20-level character mastery with gameplay perks and rewards, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs. Standard, daily, and weekly runs use deterministic named random streams and preserve their seed metadata. The Career screen exposes exact-build local score, fastest-victory, current-daily, and current-weekly tables. These rankings never claim to be global or cheat-proof.
 
 ## Controls
 
@@ -103,6 +103,7 @@ A versioned local profile records account XP, six character unlock levels, maste
 | Focus Kick ultimate   | `F`                                                                            | Implemented with first-person slow-time aiming            |
 | Pause                 | `Esc`                                                                          | Implemented; also activates when the game loses focus     |
 | Settings              | Title-screen or in-game `⚙ SETTINGS` button                                    | Implemented and persistent                                |
+| Gamepad               | Sticks move/aim, `RT` kick, `LT` recall, `A` dash, `Y` focus                   | Implemented with sensitivity and vibration settings       |
 
 Controls and bindings may change during playtesting.
 
@@ -124,7 +125,7 @@ For participant privacy, contact details and student identity numbers are not pu
 - One playable striker and one gothic stadium
 - One complete 8–10 minute run
 - Kick, rebound, recall, curve, and perfect-volley mechanics
-- Eight normal enemy behaviors plus a final boss or fallback final elite wave
+- Eleven normal enemy behaviors plus a multi-phase final boss
 - Twelve upgrades and two evolved combinations
 - Menus, settings, tutorial prompts, win, loss, pause, and restart
 - Playable web build and native desktop packages for Windows, macOS, and Linux
@@ -132,9 +133,9 @@ For participant privacy, contact details and student identity numbers are not pu
 ### Target build
 
 - Eight enemy behaviors with visual variants
-- Twelve weapons, four passive upgrades, and five evolutions
+- Fifteen weapons, five passive upgrades, and seven evolutions
 - Six original football-style character foundations
-- Persistent local profile, mastery, challenges, history, and offline rankings
+- Persistent profile, 20-level mastery, challenges, seeded daily/weekly runs, history, and offline rankings
 - Three match phases and a halftime choice
 - Brief first-person Focus Kick ultimate
 - Performance, balanced, and quality presets

@@ -118,6 +118,9 @@ Guaranteed upgrades:
 | Orbiting Spectral Ball | Automatic close-range protection              |
 | Blood Bomb             | Defeated enemies or ball impacts explode      |
 | Ghost Pass             | Spectral teammate redirects/duplicates a shot |
+| Dash Shockwave         | Dashes erupt into a damaging knockback ring   |
+| Consecrated Pitch      | Charged kicks leave a burning penalty zone    |
+| Ricochet Ball          | Primary impacts chain into nearby enemies     |
 
 Passive foundations:
 
@@ -127,6 +130,7 @@ Passive foundations:
 | Blood Magnet    | Expands Blood XP attraction range                                  |
 | Killer Instinct | Raises damage from every source within a bounded multiplier        |
 | Blood Drinker   | Adds capped healing from primary/secondary kills and boss damage   |
+| Blood Barrier   | Absorbs incoming hits and recharges during combat                  |
 
 When both categories are available, a multi-card offer includes at least one weapon and one passive. Definitions, calculations, bounds, icons, live-combat application, healing feedback, and tests are implemented; final UI polish and balance acceptance remain in progress.
 
@@ -139,10 +143,12 @@ Evolutions unlock automatically when both components are owned. Component availa
 | Grave-Frost Wake    | Garlic Trail + Frost Cleats          | Garlic zones damage and slow enemies                  |
 | Storm Halo          | Orbiting Spectral Ball + Storm Studs | Fresh orb collisions launch bounded lightning chains  |
 | Phantom Singularity | Ghost Pass + Void Goal               | Each ghost opens one pooled gravity well on first hit |
+| Thunderclap Rush    | Dash Shockwave + Storm Studs         | Wider, stronger, storm-charged dash eruptions         |
+| Sacred Aegis        | Consecrated Pitch + Blood Barrier    | Stronger holy zones and faster barrier recovery       |
 
 ## Persistent Progression and Rankings
 
-Run upgrades reset at kickoff; the local profile persists replay goals without turning the standard leaderboard into a permanent-stat advantage contest. The implemented data/store foundation includes account XP and level, character unlock levels, per-character mastery, ten challenges, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs.
+Run upgrades reset at kickoff; the local profile persists replay goals without turning the standard leaderboard into a permanent-stat advantage contest. The implemented data/store foundation includes account XP and level, 20-level per-character mastery rewards/perks, character unlock levels, ten challenges, deterministic standard/daily/weekly run metadata, lifetime statistics, personal bests, duplicate-safe run settlement, and the twenty most recent runs.
 
 Local/offline rankings expose highest score and fastest victory. They are partitioned by exact build version and may be filtered by character so balance changes and archetypes are not mixed unfairly. The Career screen presents profile, challenge, mastery, run history, character selection, and these device-local tables. They are not global, server-verified, or cheat-proof.
 

@@ -36,6 +36,7 @@ import {
   getFocusKickTimeScale,
   resetFocusKick,
   SecondaryWeaponSystem,
+  WeaponExpansionSystem,
   selectAimAssistTarget,
   sumSecondaryBossDamage,
   steerAimDirection,
@@ -53,6 +54,7 @@ import {
 } from './game/match';
 import { BloodShardSystem } from './game/pickups';
 import { CHARACTER_DEFINITIONS, type CharacterId } from './game/characters';
+import { createRunDescriptor, createRunRandomStreams, type RunMode } from './game/runs';
 import {
   BLOOD_XP_PER_KILL,
   chooseUpgrade,
@@ -89,7 +91,7 @@ import { SecondaryWeaponRenderer } from './render/objects/SecondaryWeaponRendere
 import { AimGuide } from './render/objects/AimGuide';
 import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
-import { ProfileStore, type RunSettlement } from './profile';
+import { masteryLevelForXp, masteryModifierBonusFor, ProfileStore, type RunSettlement } from './profile';
 import { Hud } from './ui/Hud';
 import { CareerOverlay } from './ui/CareerOverlay';
 import { EvolutionToast } from './ui/EvolutionToast';
@@ -123,6 +125,18 @@ async function bootstrap(): Promise<void> {
   const settingsStore = new SettingsStore();
   const profileStore = new ProfileStore();
   let selectedCharacterId: CharacterId = profileStore.value.selectedCharacterId;
+  const createSelectedProgression = (characterId: CharacterId) => {
+    const masteryLevel = masteryLevelForXp(profileStore.value.characterMastery[characterId].xp);
+    return createProgressionState(characterId, masteryModifierBonusFor(characterId, masteryLevel));
+  };
+  let selectedRunMode: RunMode = 'standard';
+  let runDescriptor = createRunDescriptor({ mode: selectedRunMode, rulesetVersion: BUILD_METADATA.version });
+  let runRandomStreams = createRunRandomStreams(runDescriptor);
+  const prepareRun = (mode: RunMode = selectedRunMode): void => {
+    selectedRunMode = mode;
+    runDescriptor = createRunDescriptor({ mode, rulesetVersion: BUILD_METADATA.version });
+    runRandomStreams = createRunRandomStreams(runDescriptor);
+  };
   let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
   const scene = createScene();
@@ -156,12 +170,14 @@ async function bootstrap(): Promise<void> {
     physics.reset(state.player.position);
   }
   const bridge = new RenderBridge(scene);
+  bridge.setCharacter(selectedCharacterId);
   const aimGuide = new AimGuide(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
   const bloodShards = new BloodShardSystem();
   const bloodShardRenderer = new BloodShardRenderer(scene, bloodShards.state.capacity);
   const secondaryWeapons = new SecondaryWeaponSystem();
+  const weaponExpansion = new WeaponExpansionSystem();
   const secondaryTargets: CombatTarget[] = [];
   const bossCombatTarget: CombatTarget = {
     id: COUNT_GOALKEEPER_COMBAT_TARGET_ID,
@@ -177,8 +193,9 @@ async function bootstrap(): Promise<void> {
   const hud = new Hud(root);
   const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
     selectedCharacterId = characterId;
+    bridge.setCharacter(characterId);
     if (state.phase === 'ready') {
-      progression = createProgressionState(characterId);
+      progression = createSelectedProgression(characterId);
       applyProgressionHealth(state.player.maxHealth);
     }
     audio.playUiSelect();
@@ -215,7 +232,7 @@ async function bootstrap(): Promise<void> {
   const frameScheduler = new PresentationFrameScheduler();
   let accumulator = 0;
   let previousBallState = physics.ballState;
-  let progression = qaEvolutionFixture?.state ?? createProgressionState(selectedCharacterId);
+  let progression = qaEvolutionFixture?.state ?? createSelectedProgression(selectedCharacterId);
   if (qaScenario === 'upgrade') {
     progression = grantBloodXp(progression, totalXpRequiredForLevel(2)).state;
   }
@@ -272,6 +289,16 @@ async function bootstrap(): Promise<void> {
       if (lifeSteal) audio.playLifeSteal();
       else audio.playHeal();
     }
+  };
+
+  const absorbIncomingDamage = (damage: number): number => {
+    const barrier = weaponExpansion.absorbWithBloodBarrier(damage, progression.modifiers);
+    if (barrier.absorbedDamage > 0) {
+      audio.playWallImpact(0.9);
+      bridge.volleyBurst(state.player.position, 1.15);
+      input.rumble(0.42, 95);
+    }
+    return barrier.remainingDamage;
   };
   const uninstallQaSnapshotHook = qaScenario
     ? installQaSnapshotHook(window, () => ({
@@ -344,7 +371,7 @@ async function bootstrap(): Promise<void> {
       return;
     const choices = qaEvolutionFixture
       ? [qaEvolutionFixture.finalUpgradeId]
-      : createUpgradeOffer(progression, Math.random);
+      : createUpgradeOffer(progression, runRandomStreams.upgrades.next);
     if (choices.length === 0) return;
     if (input.isLocked) void document.exitPointerLock();
     void upgradeOverlay.show(choices, progression).then((upgradeId) => {
@@ -389,7 +416,13 @@ async function bootstrap(): Promise<void> {
     cameraController.setInvertVerticalLook(settings.invertVerticalLook);
     cameraController.setReducedShake(settings.reducedCameraShake);
     input.setKeyBindings(settings.keyBindings);
+    input.setGamepadSettings(settings.gamepadLookSensitivity, settings.gamepadVibration);
     hud.setControlBindings(settings.keyBindings);
+    bridge.setReducedFlashes(settings.reducedFlashes);
+    root.style.setProperty('--hud-scale', String(settings.hudScale));
+    root.dataset.colorVision = settings.colorVisionMode;
+    root.classList.toggle('high-contrast-hud', settings.highContrastHud);
+    root.classList.toggle('reduced-flashes', settings.reducedFlashes);
     renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
     resize();
   };
@@ -411,6 +444,11 @@ async function bootstrap(): Promise<void> {
     hud.start();
     input.requestPointerLock();
   };
+  const beginChallengeRun = (mode: 'daily' | 'weekly'): void => {
+    prepareRun(mode);
+    begin();
+    announcement.show('kickoff', `${mode.toUpperCase()} CHALLENGE · SEED ${runDescriptor.seedCode}`);
+  };
   const restart = (): void => {
     void audio.unlock();
     resetGameState(state);
@@ -422,6 +460,7 @@ async function bootstrap(): Promise<void> {
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
+    weaponExpansion.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -434,7 +473,9 @@ async function bootstrap(): Promise<void> {
     resultsOverlay.reset();
     hud.reset();
     selectedCharacterId = profileStore.value.selectedCharacterId;
-    progression = createProgressionState(selectedCharacterId);
+    bridge.setCharacter(selectedCharacterId);
+    prepareRun(selectedRunMode);
+    progression = createSelectedProgression(selectedCharacterId);
     applyProgressionHealth(100);
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
@@ -464,9 +505,13 @@ async function bootstrap(): Promise<void> {
     input.requestPointerLock();
   };
   const kickoffButton = hud.kickoffButton;
+  const dailyRunButton = hud.dailyRunButton;
+  const weeklyRunButton = hud.weeklyRunButton;
   const restartButton = hud.restartButton;
   const victoryRestartButton = hud.victoryRestartButton;
   kickoffButton.addEventListener('click', begin);
+  dailyRunButton.addEventListener('click', () => beginChallengeRun('daily'));
+  weeklyRunButton.addEventListener('click', () => beginChallengeRun('weekly'));
   restartButton.addEventListener('click', restart);
   victoryRestartButton.addEventListener('click', restart);
   const openSettings = (): void => {
@@ -497,6 +542,7 @@ async function bootstrap(): Promise<void> {
     bloodShards.reset();
     bloodShardRenderer.reset();
     secondaryWeapons.reset();
+    weaponExpansion.reset();
     secondaryRenderer.reset();
     atmosphere.reset();
     announcement.reset();
@@ -507,7 +553,9 @@ async function bootstrap(): Promise<void> {
     pauseOverlay.hide();
     state.phase = 'ready';
     selectedCharacterId = profileStore.value.selectedCharacterId;
-    progression = createProgressionState(selectedCharacterId);
+    bridge.setCharacter(selectedCharacterId);
+    prepareRun('standard');
+    progression = createSelectedProgression(selectedCharacterId);
     applyProgressionHealth(100);
     focusKick = resetFocusKick();
     match = createMatchDirectorState();
@@ -641,6 +689,9 @@ async function bootstrap(): Promise<void> {
         kick.curve * progression.modifiers.curveStrengthMultiplier,
       );
       if (result) {
+        if (result.charge >= 0.72) {
+          weaponExpansion.triggerHolyPenaltyZone(state.player.position, progression.modifiers);
+        }
         if (focusShot.empowered) {
           focusKick = focusShot.state;
           bridge.volleyBurst(state.player.position, 2);
@@ -648,6 +699,7 @@ async function bootstrap(): Promise<void> {
         }
         signalTutorial('kick-demonstrated');
         audio.playKick(result.charge);
+        input.rumble(0.25 + result.charge * 0.45, 85);
         if (result.perfectVolley) {
           audio.playVolley();
           bridge.volleyBurst(physics.ballPosition, 1 + result.charge * 0.4);
@@ -692,7 +744,12 @@ async function bootstrap(): Promise<void> {
           movementSpeedMultiplier * progression.modifiers.movementSpeedMultiplier,
           progression.modifiers.dashCooldownMultiplier,
         );
-        if (!dashWasActive && state.player.dashTime > 0) audio.playDash();
+        const dashStarted = !dashWasActive && state.player.dashTime > 0;
+        if (dashStarted) {
+          audio.playDash();
+          input.rumble(0.32, 70);
+          weaponExpansion.triggerDashShockwave(state.player.position, progression.modifiers);
+        }
         spawnDirectorInputScratch.stage = match.stage;
         spawnDirectorInputScratch.stageElapsed = match.stageElapsed;
         spawnDirectorInputScratch.matchElapsed = match.matchElapsed;
@@ -700,12 +757,31 @@ async function bootstrap(): Promise<void> {
           state,
           FIXED_STEP,
           spawnDirectorInputScratch,
-          Math.random,
+          runRandomStreams.spawn.next,
           physics.ballPosition,
           progression.modifiers.damageTakenMultiplier,
+          absorbIncomingDamage,
         );
+        for (const event of state.enemyEvents) {
+          if (event.type === 'projectileSpawned') audio.playWallImpact(0.25);
+          if (event.type === 'projectileHit') bridge.hitBurst(state.player.position, 0.75);
+          if (event.type === 'teleportTelegraphed') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.enemyId);
+            if (enemy) bridge.voidBurst(enemy.position, 0.65);
+          }
+          if (event.type === 'teleported') {
+            bridge.voidBurst(event.from, 0.8);
+            bridge.voidBurst(event.to, 0.95);
+          }
+          if (event.type === 'exploded') {
+            bridge.volleyBurst(event.position, 1.55);
+            cameraController.addImpulse(event.damage > 0 ? 0.38 : 0.18);
+            audio.playHit(event.damage > 0 ? 1 : 0.6);
+          }
+        }
         if (state.player.health < healthBeforeUpdate) {
           audio.playPlayerHurt();
+          input.rumble(0.7, 130);
           cameraController.addImpulse(0.24);
         }
       }
@@ -736,9 +812,15 @@ async function bootstrap(): Promise<void> {
           chargeFocusKick('enemy-hit', hits);
           if (primaryDamage.firstHitEnemyId !== undefined) {
             triggerPrimaryImpactWeapons(primaryDamage.firstHitEnemyId, physics.ballPosition);
+            weaponExpansion.triggerRicochet(
+              primaryDamage.firstHitEnemyId,
+              physics.ballPosition,
+              progression.modifiers,
+            );
           }
           const hitIntensity = Math.min(1, physics.ballSpeed / physics.maxBallSpeed);
           audio.playHit(hitIntensity);
+          input.rumble(0.28 + hitIntensity * 0.34, 75);
           bridge.hitBurst(physics.ballPosition, hitIntensity);
           cameraController.hitImpulse(hitIntensity);
         }
@@ -774,13 +856,27 @@ async function bootstrap(): Promise<void> {
           modifiers: progression.modifiers,
           targets: secondaryTargets,
         });
+        const expansionStep = weaponExpansion.step({
+          dt: FIXED_STEP,
+          playerPosition: state.player.position,
+          modifiers: progression.modifiers,
+          targets: secondaryTargets,
+        });
         const secondaryBossDamage =
-          sumSecondaryBossDamage(secondaryStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) *
+          (sumSecondaryBossDamage(secondaryStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID) +
+            sumSecondaryBossDamage(expansionStep.hits, COUNT_GOALKEEPER_COMBAT_TARGET_ID)) *
           progression.modifiers.allDamageMultiplier *
           progression.modifiers.secondaryDamageMultiplier;
         const secondaryDamage = damageEnemiesWithSecondary(
           state,
           secondaryStep.hits,
+          COUNT_GOALKEEPER_COMBAT_TARGET_ID,
+          progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
+          progression.modifiers.eliteDamageMultiplier,
+        );
+        const expansionDamage = damageEnemiesWithSecondary(
+          state,
+          expansionStep.hits,
           COUNT_GOALKEEPER_COMBAT_TARGET_ID,
           progression.modifiers.allDamageMultiplier * progression.modifiers.secondaryDamageMultiplier,
           progression.modifiers.eliteDamageMultiplier,
@@ -805,6 +901,33 @@ async function bootstrap(): Promise<void> {
           );
           audio.playKill(state.combo);
           healPlayer(secondaryDamage.kills * progression.modifiers.lifeStealOnSecondaryKill, true);
+        }
+        if (expansionDamage.hits > 0) {
+          chargeFocusKick('enemy-hit', expansionDamage.hits);
+          audio.playHit(0.82);
+        }
+        if (expansionDamage.kills > 0) {
+          chargeFocusKick('enemy-kill', expansionDamage.kills);
+          bloodShards.spawnOnKill(
+            state.player.position,
+            expansionDamage.kills * BLOOD_XP_PER_KILL,
+            Math.min(9, expansionDamage.kills * 3),
+          );
+          audio.playKill(state.combo);
+          healPlayer(expansionDamage.kills * progression.modifiers.lifeStealOnSecondaryKill, true);
+        }
+        for (const event of expansionStep.events) {
+          if (event.type === 'dash-shockwave') bridge.lightningBurst(event.position, 1.35);
+          if (event.type === 'holy-zone-spawned') bridge.volleyBurst(event.position, 1.15);
+          if (event.type === 'holy-zone-pulse') bridge.frostBurst(event.position, 0.7);
+          if (event.type === 'ricochet-hit') bridge.lightningBurst(event.position, 0.72);
+          if (event.type === 'dash-shockwave-knockback') {
+            const enemy = state.enemies.find((candidate) => candidate.id === event.targetId);
+            if (enemy) {
+              enemy.knockbackVelocity.x += event.force.x;
+              enemy.knockbackVelocity.z += event.force.z;
+            }
+          }
         }
         for (const event of secondaryStep.events) {
           if (event.type === 'blood-bomb-triggered') bridge.volleyBurst(event.position, 1.2);
@@ -845,12 +968,13 @@ async function bootstrap(): Promise<void> {
         if (boss && boss.phase !== 'defeated') {
           for (const event of bossUpdateThisStep?.events ?? []) {
             if (event.type === 'contactAttack' && state.player.invulnerability <= 0) {
-              state.player.health = Math.max(
-                0,
-                state.player.health - event.damage * progression.modifiers.damageTakenMultiplier,
+              const incomingDamage = absorbIncomingDamage(
+                event.damage * progression.modifiers.damageTakenMultiplier,
               );
+              state.player.health = Math.max(0, state.player.health - incomingDamage);
               state.player.invulnerability = 0.7;
               audio.playPlayerHurt();
+              input.rumble(0.75, 150);
               cameraController.addImpulse(0.32);
               if (state.player.health <= 0) state.phase = 'dead';
             }
@@ -859,6 +983,26 @@ async function bootstrap(): Promise<void> {
               else audio.playPhase(2);
             }
             if (event.type === 'summonElite') spawnEliteEnemy(state, event.archetype, event.side);
+            if (event.type === 'diveTelegraphed') audio.playGoalkeeperParry();
+            if (event.type === 'diveStarted') cameraController.addImpulse(0.2);
+            if (event.type === 'counterattackStarted') audio.playBossPhase('bloodRush');
+            if (event.type === 'counterattackReleased' && state.player.invulnerability <= 0) {
+              const incomingDamage = absorbIncomingDamage(
+                event.damage * progression.modifiers.damageTakenMultiplier,
+              );
+              state.player.health = Math.max(0, state.player.health - incomingDamage);
+              state.player.invulnerability = 0.7;
+              if (incomingDamage > 0) {
+                audio.playPlayerHurt();
+                input.rumble(0.8, 170);
+                cameraController.addImpulse(0.36);
+              }
+              if (state.player.health <= 0) state.phase = 'dead';
+            }
+            if (event.type === 'vulnerabilityOpened') {
+              audio.playGoalkeeperGuardBreak();
+              bridge.volleyBurst(boss.position, 1.35);
+            }
           }
 
           const bossDistance = Math.hypot(
@@ -875,6 +1019,17 @@ async function bootstrap(): Promise<void> {
               source: 'ball',
             });
             boss = damage.state;
+            for (const event of damage.events) {
+              if (event.type === 'shotParried') {
+                audio.playGoalkeeperParry();
+                bridge.hitBurst(boss.position, 1.15);
+                physics.applyBallRebound(
+                  { x: Math.sign(physics.ballPosition.x - boss.position.x) || 1, y: 0, z: 1 },
+                  0.78,
+                );
+              }
+              if (event.type === 'counterattackStarted') audio.playBossPhase('bloodRush');
+            }
             if (damage.appliedDamage > 0) {
               healPlayer(damage.appliedDamage * progression.modifiers.bossLifeStealRatio, true);
               chargeFocusKick('boss-hit');
@@ -950,6 +1105,7 @@ async function bootstrap(): Promise<void> {
             physics.reset(state.player.position);
             bloodShards.reset();
             secondaryWeapons.reset();
+            weaponExpansion.reset();
           }
           if (event.type === 'goalOpportunityStarted' && event.goal === 'final') {
             announcement.show('finalGoal');
@@ -1084,6 +1240,11 @@ async function bootstrap(): Promise<void> {
           level: progression.level,
           upgradeIds: UPGRADE_IDS.filter((upgradeId) => progression.upgradeStacks[upgradeId] > 0),
           evolutionIds: getUnlockedEvolutionIds(progression),
+          seed: runDescriptor.seed,
+          seedCode: runDescriptor.seedCode,
+          runMode: runDescriptor.mode,
+          challengeKey: runDescriptor.challengeKey,
+          rulesetVersion: runDescriptor.rulesetVersion,
         });
         if (state.score > previousBestScore) audio.playNewRecord();
         if (settlement.newlyUnlockedCharacterIds.length > 0) audio.playUnlock();
@@ -1106,6 +1267,9 @@ async function bootstrap(): Promise<void> {
           accountLevel: settlement?.accountLevel,
           unlockedCharacterIds: settlement?.newlyUnlockedCharacterIds,
           completedChallengeIds: settlement?.completedChallengeIds,
+          masteryRewardIds: settlement?.newlyUnlockedMasteryRewardIds,
+          runMode: runDescriptor.mode,
+          seedCode: runDescriptor.seedCode,
         },
         { onRestart: restart, onMainMenu: returnToMenu },
       );
