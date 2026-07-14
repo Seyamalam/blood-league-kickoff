@@ -1,6 +1,6 @@
 import type { Vec3 } from '../simulation/types';
 
-export type EnvironmentInteractionKind = 'bloodBarrel' | 'holyBeacon' | 'breakableBarrier';
+export type EnvironmentInteractionKind = 'bloodBarrel' | 'holyBeacon' | 'breakableBarrier' | 'momentumGate';
 
 export interface EnvironmentInteractionDefinition {
   readonly kind: EnvironmentInteractionKind;
@@ -41,6 +41,14 @@ export type EnvironmentInteractionEvent =
       readonly type: 'barrierBroken';
       readonly interactionId: number;
       readonly position: Vec3;
+    }
+  | {
+      readonly type: 'momentumBoost';
+      readonly interactionId: number;
+      readonly position: Vec3;
+      readonly duration: number;
+      readonly speedMultiplier: number;
+      readonly dashCooldownRefund: number;
     };
 
 export const ENVIRONMENT_INTERACTION_DEFINITIONS: Readonly<
@@ -69,6 +77,14 @@ export const ENVIRONMENT_INTERACTION_DEFINITIONS: Readonly<
     icon: 'breakable-wall',
     radius: 1.25,
     hitPoints: 8,
+  }),
+  momentumGate: Object.freeze({
+    kind: 'momentumGate',
+    name: 'Momentum Gate',
+    description: 'Sprint through it for a short pace burst and an immediate dash refund.',
+    icon: 'momentum-gate',
+    radius: 1.75,
+    hitPoints: 1,
   }),
 });
 
@@ -124,11 +140,33 @@ export function damageEnvironmentInteraction(
 export function updateEnvironmentInteractions(
   interactions: readonly EnvironmentInteractionState[],
   dt: number,
+  playerPosition?: Readonly<Vec3>,
 ): readonly EnvironmentInteractionEvent[] {
   const events: EnvironmentInteractionEvent[] = [];
   const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(1, dt)) : 0;
   for (const interaction of interactions) {
-    if (!interaction.active || interaction.kind !== 'holyBeacon') continue;
+    if (!interaction.active) continue;
+    if (interaction.kind === 'momentumGate') {
+      interaction.pulseTimer = Math.max(0, interaction.pulseTimer - safeDt);
+      if (
+        playerPosition &&
+        interaction.pulseTimer <= 0 &&
+        Math.hypot(playerPosition.x - interaction.position.x, playerPosition.z - interaction.position.z) <=
+          interaction.radius
+      ) {
+        interaction.pulseTimer = 7;
+        events.push({
+          type: 'momentumBoost',
+          interactionId: interaction.id,
+          position: { ...interaction.position },
+          duration: 2.5,
+          speedMultiplier: 1.35,
+          dashCooldownRefund: 0.75,
+        });
+      }
+      continue;
+    }
+    if (interaction.kind !== 'holyBeacon') continue;
     interaction.pulseTimer -= safeDt;
     if (interaction.pulseTimer > 0) continue;
     events.push({
@@ -151,6 +189,7 @@ export function findInteractionHit(
   return interactions.find(
     (interaction) =>
       interaction.active &&
+      interaction.kind !== 'momentumGate' &&
       Math.hypot(point.x - interaction.position.x, point.z - interaction.position.z) <=
         interaction.radius + Math.max(0, projectileRadius),
   );

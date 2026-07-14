@@ -11,26 +11,43 @@ import {
   PITCH_LENGTH,
   PITCH_WIDTH,
 } from '../../game/field';
+import { resolveStadiumVariant, type StadiumSelection, type StadiumVariant } from './stadiumVariants';
 
-export function createStadium(scene: THREE.Scene): void {
+export function createStadium(scene: THREE.Scene, selection: StadiumSelection = 'blood-court'): THREE.Group {
+  const existing = scene.getObjectByName('stadium-environment');
+  if (existing) {
+    scene.remove(existing);
+    disposeObject(existing);
+  }
+  const variant = resolveStadiumVariant(selection);
+  const stadium = new THREE.Group();
+  stadium.name = 'stadium-environment';
+  stadium.userData.variantId = variant.id;
+  stadium.userData.architecture = variant.architecture;
+  scene.add(stadium);
+
   const field = new THREE.Mesh(
     new THREE.PlaneGeometry(PITCH_WIDTH, PITCH_LENGTH),
-    new THREE.MeshStandardMaterial({ color: 0x284238, roughness: 0.92, metalness: 0.02 }),
+    new THREE.MeshStandardMaterial({ color: variant.pitch, roughness: 0.92, metalness: 0.02 }),
   );
   field.name = 'stadium-pitch';
   field.rotation.x = -Math.PI / 2;
   field.receiveShadow = true;
-  scene.add(field);
+  stadium.add(field);
 
-  const stripeMaterial = new THREE.MeshBasicMaterial({ color: 0x4a6254, transparent: true, opacity: 0.32 });
+  const stripeMaterial = new THREE.MeshBasicMaterial({
+    color: variant.stripe,
+    transparent: true,
+    opacity: 0.38,
+  });
   for (let z = -PITCH_HALF_LENGTH + 3.75; z < PITCH_HALF_LENGTH; z += 7.5) {
     const stripe = new THREE.Mesh(new THREE.PlaneGeometry(PITCH_WIDTH - 0.2, 7.5), stripeMaterial);
     stripe.rotation.x = -Math.PI / 2;
     stripe.position.set(0, 0.006, z);
-    scene.add(stripe);
+    stadium.add(stripe);
   }
 
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xb7c9bd, transparent: true, opacity: 0.88 });
+  const lineMaterial = new THREE.LineBasicMaterial({ color: variant.line, transparent: true, opacity: 0.92 });
   const boundaryPoints = [
     new THREE.Vector3(-PITCH_HALF_WIDTH, 0.025, -PITCH_HALF_LENGTH),
     new THREE.Vector3(PITCH_HALF_WIDTH, 0.025, -PITCH_HALF_LENGTH),
@@ -40,7 +57,7 @@ export function createStadium(scene: THREE.Scene): void {
   ];
   const boundary = new THREE.Line(new THREE.BufferGeometry().setFromPoints(boundaryPoints), lineMaterial);
   boundary.name = 'pitch-boundary';
-  scene.add(boundary);
+  stadium.add(boundary);
   const centerCircle = new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints(
       Array.from({ length: 64 }, (_, index) => {
@@ -51,10 +68,14 @@ export function createStadium(scene: THREE.Scene): void {
     lineMaterial,
   );
   centerCircle.name = 'pitch-center-circle';
-  scene.add(centerCircle);
-  addPitchGuides(scene, lineMaterial);
+  stadium.add(centerCircle);
+  addPitchGuides(stadium, lineMaterial);
 
-  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x2c1d2a, roughness: 0.7, metalness: 0.28 });
+  const wallMaterial = new THREE.MeshStandardMaterial({
+    color: variant.wall,
+    roughness: 0.7,
+    metalness: 0.28,
+  });
   const wallGeometryX = new THREE.BoxGeometry(ARENA_WALL_HALF_WIDTH * 2 + 0.4, 1.35, 0.4);
   const wallGeometryZ = new THREE.BoxGeometry(0.4, 1.35, ARENA_WALL_HALF_LENGTH * 2);
   for (const z of [-ARENA_WALL_HALF_LENGTH, ARENA_WALL_HALF_LENGTH]) {
@@ -63,7 +84,7 @@ export function createStadium(scene: THREE.Scene): void {
     wall.position.set(0, 0.675, z);
     wall.castShadow = true;
     wall.receiveShadow = true;
-    scene.add(wall);
+    stadium.add(wall);
   }
   for (const x of [-ARENA_WALL_HALF_WIDTH, ARENA_WALL_HALF_WIDTH]) {
     const wall = new THREE.Mesh(wallGeometryZ, wallMaterial);
@@ -71,18 +92,20 @@ export function createStadium(scene: THREE.Scene): void {
     wall.position.set(x, 0.675, 0);
     wall.castShadow = true;
     wall.receiveShadow = true;
-    scene.add(wall);
+    stadium.add(wall);
   }
 
-  addGoal(scene, -1);
-  addGoal(scene, 1);
-  addArenaRails(scene);
-  addUpperFence(scene);
-  addStands(scene);
-  addCrowdSilhouettes(scene);
+  addGoal(stadium, -1, variant);
+  addGoal(stadium, 1, variant);
+  addArenaRails(stadium, variant);
+  addUpperFence(stadium, variant);
+  addStands(stadium, variant);
+  addArchitecture(stadium, variant);
+  addCrowdSilhouettes(stadium, variant);
+  return stadium;
 }
 
-function addPitchGuides(scene: THREE.Scene, material: THREE.LineBasicMaterial): void {
+function addPitchGuides(scene: THREE.Object3D, material: THREE.LineBasicMaterial): void {
   const points: THREE.Vector3[] = [];
   const segment = (x1: number, z1: number, x2: number, z2: number): void => {
     points.push(new THREE.Vector3(x1, 0.028, z1), new THREE.Vector3(x2, 0.028, z2));
@@ -106,10 +129,10 @@ function addPitchGuides(scene: THREE.Scene, material: THREE.LineBasicMaterial): 
   scene.add(guides);
 }
 
-function addGoal(scene: THREE.Scene, side: -1 | 1): void {
+function addGoal(scene: THREE.Object3D, side: -1 | 1, variant: StadiumVariant): void {
   const group = new THREE.Group();
   group.name = side === -1 ? 'opponent-goal' : 'home-goal';
-  const frameColor = side === -1 ? 0xe4dcc3 : 0xb93855;
+  const frameColor = side === -1 ? variant.line : variant.accent;
   const material = new THREE.MeshStandardMaterial({
     color: frameColor,
     emissive: side === -1 ? 0x6e5d34 : 0x4c0718,
@@ -178,10 +201,10 @@ function addGoal(scene: THREE.Scene, side: -1 | 1): void {
   scene.add(group);
 }
 
-function addArenaRails(scene: THREE.Scene): void {
+function addArenaRails(scene: THREE.Object3D, variant: StadiumVariant): void {
   const material = new THREE.MeshStandardMaterial({
-    color: 0xa52843,
-    emissive: 0x5e0b22,
+    color: variant.accent,
+    emissive: variant.accent,
     emissiveIntensity: 0.68,
     roughness: 0.42,
   });
@@ -201,7 +224,7 @@ function addArenaRails(scene: THREE.Scene): void {
   }
 }
 
-function addUpperFence(scene: THREE.Scene): void {
+function addUpperFence(scene: THREE.Object3D, variant: StadiumVariant): void {
   const points: THREE.Vector3[] = [];
   const segment = (x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): void => {
     points.push(new THREE.Vector3(x1, y1, z1), new THREE.Vector3(x2, y2, z2));
@@ -250,16 +273,16 @@ function addUpperFence(scene: THREE.Scene): void {
   }
   const fence = new THREE.LineSegments(
     new THREE.BufferGeometry().setFromPoints(points),
-    new THREE.LineBasicMaterial({ color: 0x9a536e, transparent: true, opacity: 0.38 }),
+    new THREE.LineBasicMaterial({ color: variant.accent, transparent: true, opacity: 0.38 }),
   );
   fence.name = 'arena-upper-fence';
   scene.add(fence);
 }
 
-function addStands(scene: THREE.Scene): void {
+function addStands(scene: THREE.Object3D, variant: StadiumVariant): void {
   const concrete = [
-    new THREE.MeshStandardMaterial({ color: 0x1d1d29, roughness: 0.88 }),
-    new THREE.MeshStandardMaterial({ color: 0x272333, roughness: 0.88 }),
+    new THREE.MeshStandardMaterial({ color: variant.stand[0], roughness: 0.88 }),
+    new THREE.MeshStandardMaterial({ color: variant.stand[1], roughness: 0.88 }),
   ];
   for (const zSide of [-1, 1]) {
     for (let row = 0; row < 4; row += 1) {
@@ -279,7 +302,7 @@ function addStands(scene: THREE.Scene): void {
     }
   }
 
-  const bannerMaterial = new THREE.MeshBasicMaterial({ color: 0x821733 });
+  const bannerMaterial = new THREE.MeshBasicMaterial({ color: variant.accent });
   for (let x = -PITCH_HALF_WIDTH + 5; x <= PITCH_HALF_WIDTH - 5; x += 8) {
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 1.1), bannerMaterial);
     banner.position.set(x, 0.72, -ARENA_WALL_HALF_LENGTH + 0.24);
@@ -287,15 +310,15 @@ function addStands(scene: THREE.Scene): void {
   }
 }
 
-function addCrowdSilhouettes(scene: THREE.Scene): void {
-  const columns = 28;
+function addCrowdSilhouettes(scene: THREE.Object3D, variant: StadiumVariant): void {
+  const columns = 38;
   const rows = 3;
   const count = columns * rows * 2;
   const bodyGeometry = new THREE.CylinderGeometry(0.16, 0.22, 0.42, 5);
   const headGeometry = new THREE.DodecahedronGeometry(0.15, 0);
   const material = new THREE.MeshStandardMaterial({
-    color: 0x6b365b,
-    emissive: 0x210a1c,
+    color: variant.crowd[0],
+    emissive: variant.wall,
     emissiveIntensity: 0.42,
     roughness: 0.82,
   });
@@ -309,14 +332,14 @@ function addCrowdSilhouettes(scene: THREE.Scene): void {
   for (const zSide of [-1, 1]) {
     for (let row = 0; row < rows; row += 1) {
       for (let column = 0; column < columns; column += 1) {
-        const x = -28.35 + column * 2.1;
+        const x = -38.85 + column * 2.1;
         const z = zSide * (ARENA_WALL_HALF_LENGTH + 0.98 + row * 1.2);
         const baseY = 2.28 + row * 0.72 + (column % 2) * 0.04;
         matrix.makeTranslation(x, baseY, z);
         bodies.setMatrixAt(index, matrix);
         matrix.makeTranslation(x, baseY + 0.36, z);
         heads.setMatrixAt(index, matrix);
-        color.setHex(column % 3 === 0 ? 0x8b3b62 : column % 3 === 1 ? 0x53314f : 0x74506b);
+        color.setHex(variant.crowd[column % 3]!);
         bodies.setColorAt(index, color);
         heads.setColorAt(index, color);
         index += 1;
@@ -328,4 +351,66 @@ function addCrowdSilhouettes(scene: THREE.Scene): void {
   if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
   if (heads.instanceColor) heads.instanceColor.needsUpdate = true;
   scene.add(bodies, heads);
+}
+
+function addArchitecture(scene: THREE.Object3D, variant: StadiumVariant): void {
+  const group = new THREE.Group();
+  group.name = `stadium-architecture-${variant.architecture}`;
+  const stone = new THREE.MeshStandardMaterial({ color: variant.stand[1], roughness: 0.78, metalness: 0.08 });
+  const glow = new THREE.MeshBasicMaterial({ color: variant.accent, transparent: true, opacity: 0.72 });
+
+  if (variant.architecture === 'gothic' || variant.architecture === 'cathedral') {
+    const towerGeometry = new THREE.BoxGeometry(2.8, variant.architecture === 'cathedral' ? 10 : 8, 2.8);
+    const spireGeometry = new THREE.ConeGeometry(2.3, 5, 4);
+    for (const x of [-PITCH_HALF_WIDTH - 7, PITCH_HALF_WIDTH + 7]) {
+      for (const z of [-PITCH_HALF_LENGTH - 7, PITCH_HALF_LENGTH + 7]) {
+        const tower = new THREE.Mesh(towerGeometry, stone);
+        tower.position.set(x, towerGeometry.parameters.height / 2, z);
+        tower.castShadow = true;
+        const spire = new THREE.Mesh(spireGeometry, glow);
+        spire.position.set(x, towerGeometry.parameters.height + 2.5, z);
+        group.add(tower, spire);
+      }
+    }
+  } else if (variant.architecture === 'bowl') {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(PITCH_HALF_WIDTH + 10, 0.55, 8, 96), glow);
+    ring.name = 'stadium-bowl-halo';
+    ring.rotation.x = Math.PI / 2;
+    ring.scale.z = PITCH_LENGTH / PITCH_WIDTH;
+    ring.position.y = 8;
+    group.add(ring);
+  } else if (variant.architecture === 'colosseum') {
+    const columnGeometry = new THREE.CylinderGeometry(0.65, 0.8, 7, 8);
+    for (let z = -PITCH_HALF_LENGTH + 7; z <= PITCH_HALF_LENGTH - 7; z += 10) {
+      for (const x of [-PITCH_HALF_WIDTH - 8, PITCH_HALF_WIDTH + 8]) {
+        const column = new THREE.Mesh(columnGeometry, stone);
+        column.position.set(x, 4.2, z);
+        group.add(column);
+      }
+    }
+  } else {
+    const battlementGeometry = new THREE.BoxGeometry(3, 2.8, 3);
+    for (let z = -PITCH_HALF_LENGTH; z <= PITCH_HALF_LENGTH; z += 9) {
+      for (const x of [-PITCH_HALF_WIDTH - 7, PITCH_HALF_WIDTH + 7]) {
+        const battlement = new THREE.Mesh(battlementGeometry, stone);
+        battlement.position.set(x, 5.2 + (Math.abs(z) % 18 === 0 ? 1.2 : 0), z);
+        group.add(battlement);
+      }
+    }
+  }
+  scene.add(group);
+}
+
+function disposeObject(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (!(
+      object instanceof THREE.Mesh ||
+      object instanceof THREE.Line ||
+      object instanceof THREE.LineSegments
+    ))
+      return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) material.dispose();
+  });
 }

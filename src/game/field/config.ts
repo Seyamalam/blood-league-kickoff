@@ -1,8 +1,14 @@
 import type { Vec3 } from '../simulation/types';
 
-/** Regulation-proportioned football pitch dimensions in game-world metres. */
-export const PITCH_WIDTH = 68;
-export const PITCH_LENGTH = 105;
+/**
+ * Oversized, regulation-proportioned survivor arena in game-world metres.
+ *
+ * A regulation 105 x 68 pitch felt cramped once elite formations, pickups and
+ * boss attacks overlapped. The larger footprint keeps the familiar football
+ * ratio while adding roughly 68% more playable surface area.
+ */
+export const PITCH_WIDTH = 88;
+export const PITCH_LENGTH = 136;
 export const PITCH_HALF_WIDTH = PITCH_WIDTH / 2;
 export const PITCH_HALF_LENGTH = PITCH_LENGTH / 2;
 

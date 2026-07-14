@@ -10,6 +10,7 @@ import {
   isBindableKeyboardCode,
 } from '../settings/SettingsStore';
 import { uiIcon } from './icons';
+import type { StadiumSelection } from '../render/objects/stadiumVariants';
 
 export type SettingsChangeCallback = (settings: Readonly<PlayerSettings>) => void;
 
@@ -26,6 +27,7 @@ export class SettingsOverlay {
   private readonly mouseSensitivityValue: HTMLOutputElement;
   private readonly invertVerticalLook: HTMLInputElement;
   private readonly renderQuality: HTMLSelectElement;
+  private readonly stadiumSelection: HTMLSelectElement;
   private readonly renderScale: HTMLInputElement;
   private readonly renderScaleValue: HTMLOutputElement;
   private readonly fpsLimit: HTMLSelectElement;
@@ -97,6 +99,17 @@ export class SettingsOverlay {
               <option value="performance">Performance</option>
               <option value="balanced">Balanced</option>
               <option value="quality">Quality</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label for="setting-stadium">Stadium design</label>
+            <select id="setting-stadium">
+              <option value="random">Surprise me each launch</option>
+              <option value="blood-court">Blood Court</option>
+              <option value="moonlit-classic">Moonlit Classic</option>
+              <option value="emerald-cathedral">Emerald Cathedral</option>
+              <option value="royal-amethyst">Royal Amethyst</option>
+              <option value="frostbound-arena">Frostbound Arena</option>
             </select>
           </div>
           <div class="settings-field">
@@ -199,6 +212,7 @@ export class SettingsOverlay {
     this.mouseSensitivityValue = requiredOutput(this.element, '[for="setting-mouse-sensitivity"]');
     this.invertVerticalLook = requiredInput(this.element, '#setting-invert-vertical-look');
     this.renderQuality = requiredSelect(this.element, '#setting-render-quality');
+    this.stadiumSelection = requiredSelect(this.element, '#setting-stadium');
     this.renderScale = requiredInput(this.element, '#setting-render-scale');
     this.renderScaleValue = requiredOutput(this.element, '[for="setting-render-scale"]');
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
@@ -297,6 +311,7 @@ export class SettingsOverlay {
     this.mouseSensitivityValue.value = `${settings.mouseSensitivity.toFixed(2)}×`;
     this.invertVerticalLook.checked = settings.invertVerticalLook;
     this.renderQuality.value = settings.renderQuality;
+    this.stadiumSelection.value = settings.stadiumSelection;
     this.renderScale.value = String(settings.renderScale);
     this.renderScaleValue.value = `${Math.round(settings.renderScale * 100)}%`;
     this.fpsLimit.value = String(settings.fpsLimit);
@@ -348,6 +363,8 @@ export class SettingsOverlay {
       patch = { invertVerticalLook: this.invertVerticalLook.checked };
     else if (target === this.renderQuality)
       patch = { renderQuality: this.renderQuality.value as RenderQuality };
+    else if (target === this.stadiumSelection)
+      patch = { stadiumSelection: this.stadiumSelection.value as StadiumSelection };
     else if (target === this.renderScale) patch = { renderScale: this.renderScale.valueAsNumber };
     else if (target === this.fpsLimit) patch = { fpsLimit: parseFpsLimit(this.fpsLimit.value) };
     else if (target === this.aimAssistStrength)

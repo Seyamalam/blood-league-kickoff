@@ -30,4 +30,39 @@ describe('pitch event director', () => {
     expect(updatePitchEventDirector(director, game, 'firstHalf')).toBeUndefined();
     expect(director.triggered.size).toBe(0);
   });
+
+  it('paces overdue authored formations instead of spawning them in consecutive frames', () => {
+    const game = createGameState();
+    game.phase = 'playing';
+    game.elapsed = 375;
+    const director = createPitchEventDirectorState();
+
+    expect(updatePitchEventDirector(director, game, 'bloodMoon')?.eventId).toBe('cornerCurse');
+    expect(updatePitchEventDirector(director, game, 'bloodMoon')).toBeUndefined();
+    game.elapsed += 10;
+    expect(updatePitchEventDirector(director, game, 'bloodMoon')?.eventId).toBe('wideOverload');
+  });
+
+  it('uses the enlarged pitch width for a late-match two-wing overload', () => {
+    const game = createGameState();
+    game.phase = 'playing';
+    game.elapsed = 375;
+    const director = createPitchEventDirectorState();
+    director.triggered.add('firstPress');
+    director.triggered.add('boxAmbush');
+    director.triggered.add('midfieldCollapse');
+    director.triggered.add('cornerCurse');
+
+    const event = updatePitchEventDirector(director, game, 'bloodMoon');
+
+    expect(event).toMatchObject({
+      eventId: 'wideOverload',
+      announcement: 'THE WINGS ARE FLOODED',
+      formation: { formationId: 'wideOverload' },
+    });
+    const lateralPositions = event?.formation.enemies.map((enemy) => enemy.position.x) ?? [];
+    expect(Math.min(...lateralPositions)).toBeLessThanOrEqual(-20);
+    expect(Math.max(...lateralPositions)).toBeGreaterThanOrEqual(20);
+    expect(event?.eliteBindings).toHaveLength(2);
+  });
 });

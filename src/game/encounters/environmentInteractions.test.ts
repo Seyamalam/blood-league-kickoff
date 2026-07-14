@@ -25,4 +25,31 @@ describe('environment interactions', () => {
       expect.objectContaining({ type: 'holyPulse', interactionId: 2 }),
     ]);
   });
+
+  it('turns large-pitch traversal gates into timed, reusable movement boosts', () => {
+    const gate = createEnvironmentInteraction(3, 'momentumGate', { x: 12, y: 0, z: -4 });
+
+    expect(updateEnvironmentInteractions([gate], 0.1, { x: 12.5, y: 0, z: -4 })).toEqual([
+      expect.objectContaining({
+        type: 'momentumBoost',
+        interactionId: 3,
+        duration: 2.5,
+        speedMultiplier: 1.35,
+        dashCooldownRefund: 0.75,
+      }),
+    ]);
+    expect(gate.pulseTimer).toBe(7);
+    expect(updateEnvironmentInteractions([gate], 1, { x: 12, y: 0, z: -4 })).toEqual([]);
+    for (let second = 0; second < 6; second += 1) {
+      expect(updateEnvironmentInteractions([gate], 1, { x: 30, y: 0, z: -4 })).toEqual([]);
+    }
+    expect(updateEnvironmentInteractions([gate], 0, { x: 12, y: 0, z: -4 })).toHaveLength(1);
+  });
+
+  it('does not let the ball consume or damage a momentum gate', () => {
+    const gate = createEnvironmentInteraction(4, 'momentumGate', { x: 0, y: 0, z: 0 });
+
+    expect(findInteractionHit([gate], { x: 0, y: 0.4, z: 0 }, 0.5)).toBeUndefined();
+    expect(gate.active).toBe(true);
+  });
 });

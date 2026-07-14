@@ -23,4 +23,22 @@ describe('encounter renderer', () => {
     expect(scene.getObjectByName('miniboss-graveyardPlaymaker')?.visible).toBe(false);
     renderer.dispose();
   });
+
+  it('renders a reusable momentum gate and visibly cools it down after activation', () => {
+    const scene = new THREE.Scene();
+    const renderer = new EncounterRenderer(scene);
+    const gate = createEnvironmentInteraction(77, 'momentumGate', { x: 5, y: 0, z: -3 });
+
+    renderer.sync([], [], null, [gate], 1, 1);
+    const visual = scene.getObjectByName('environment-momentumGate-77');
+    expect(visual).toBeInstanceOf(THREE.Group);
+    expect(visual?.getObjectByName('momentum-gate-arrow')).toBeInstanceOf(THREE.Mesh);
+
+    gate.pulseTimer = 4;
+    renderer.sync([], [], null, [gate], 2, 1);
+    expect(visual?.scale.x).toBeCloseTo(0.82);
+
+    renderer.dispose();
+    expect(scene.getObjectByName('environment-momentumGate-77')).toBeUndefined();
+  });
 });

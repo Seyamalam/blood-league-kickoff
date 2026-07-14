@@ -31,6 +31,7 @@ describe('player settings sanitization', () => {
       highContrastHud: false,
       hudScale: 1,
       colorVisionMode: 'default',
+      stadiumSelection: 'random',
       gamepadLookSensitivity: 1,
       gamepadVibration: true,
     });
@@ -57,6 +58,14 @@ describe('player settings sanitization', () => {
     expect(sanitizePlayerSettings({ aimAssistStrength: 'maximum' }).aimAssistStrength).toBe(
       DEFAULT_PLAYER_SETTINGS.aimAssistStrength,
     );
+  });
+
+  it('accepts authored and random stadium selections', () => {
+    expect(sanitizePlayerSettings({ stadiumSelection: 'emerald-cathedral' }).stadiumSelection).toBe(
+      'emerald-cathedral',
+    );
+    expect(sanitizePlayerSettings({ stadiumSelection: 'random' }).stadiumSelection).toBe('random');
+    expect(sanitizePlayerSettings({ stadiumSelection: 'parking-lot' }).stadiumSelection).toBe('random');
   });
 
   it('accepts only boolean vertical-look inversion values', () => {
@@ -175,6 +184,6 @@ describe('player settings sanitization', () => {
     expect(restored.keyBindings.dash).toBe('ShiftLeft');
     expect(restored.keyBindings.focusKick).toBe('KeyG');
     expect(restored.keyBindings.characterUltimate).toBe('KeyQ');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 7 });
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 8 });
   });
 });

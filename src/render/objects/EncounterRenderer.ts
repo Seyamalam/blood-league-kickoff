@@ -66,6 +66,16 @@ export class EncounterRenderer {
       visual.visible = interaction.active;
       visual.position.set(interaction.position.x, 0, interaction.position.z);
       if (interaction.kind === 'holyBeacon') visual.rotation.y = elapsed * 0.55;
+      if (interaction.kind === 'momentumGate') {
+        const ready = interaction.pulseTimer <= 0;
+        visual.rotation.y = Math.sin(elapsed * 1.6 + interaction.id) * 0.06;
+        visual.scale.setScalar(ready ? 1 + Math.sin(elapsed * 5) * 0.035 : 0.82);
+        visual.traverse((object) => {
+          if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshStandardMaterial) {
+            object.material.emissiveIntensity = ready ? 1.25 : 0.18;
+          }
+        });
+      }
     }
     for (const [interactionId, visual] of this.interactionVisuals) {
       if (liveInteractionIds.has(interactionId)) continue;
@@ -200,13 +210,39 @@ function createInteractionVisual(interaction: EnvironmentInteractionState): THRE
     halo.position.y = 1.5;
     halo.rotation.x = Math.PI / 2;
     group.add(pillar, halo);
-  } else {
+  } else if (interaction.kind === 'breakableBarrier') {
     const wall = new THREE.Mesh(
       new THREE.BoxGeometry(2.5, 1.4, 0.42),
       new THREE.MeshStandardMaterial({ color: 0x38333e, roughness: 0.88 }),
     );
     wall.position.y = 0.7;
     group.add(wall);
+  } else {
+    const gateMaterial = new THREE.MeshStandardMaterial({
+      color: 0x59f7ff,
+      emissive: 0x087d99,
+      emissiveIntensity: 1.25,
+      metalness: 0.42,
+      roughness: 0.28,
+    });
+    const left = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.65, 0.18), gateMaterial);
+    const right = left.clone();
+    left.position.set(-1.15, 0.82, 0);
+    right.position.set(1.15, 0.82, 0);
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(2.48, 0.16, 0.16), gateMaterial);
+    rail.position.y = 1.62;
+    const arrowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xc9fdff,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    });
+    const arrows = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.72, 3), arrowMaterial);
+    arrows.name = 'momentum-gate-arrow';
+    arrows.position.y = 0.08;
+    arrows.rotation.x = -Math.PI / 2;
+    arrows.rotation.z = Math.PI;
+    group.add(left, right, rail, arrows);
   }
   return group;
 }

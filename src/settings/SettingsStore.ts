@@ -1,3 +1,5 @@
+import { isStadiumSelection, type StadiumSelection } from '../render/objects/stadiumVariants';
+
 export type RenderQuality = 'performance' | 'balanced' | 'quality';
 export type FpsLimit = 60 | 120 | 'unlimited';
 export type AimAssistStrength = 'off' | 'low' | 'high';
@@ -30,6 +32,7 @@ export interface PlayerSettings {
   highContrastHud: boolean;
   hudScale: number;
   colorVisionMode: ColorVisionMode;
+  stadiumSelection: StadiumSelection;
   gamepadLookSensitivity: number;
   gamepadVibration: boolean;
   keyBindings: KeyBindings;
@@ -37,7 +40,7 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 7;
+const SETTINGS_VERSION = 8;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -67,6 +70,7 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   highContrastHud: false,
   hudScale: 1,
   colorVisionMode: 'default',
+  stadiumSelection: 'random',
   gamepadLookSensitivity: 1,
   gamepadVibration: true,
   keyBindings: DEFAULT_KEY_BINDINGS,
@@ -129,6 +133,7 @@ export class SettingsStore {
           version === 4 ||
           version === 5 ||
           version === 6 ||
+          version === 7 ||
           version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
@@ -198,6 +203,9 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
     colorVisionMode: isColorVisionMode(source.colorVisionMode)
       ? source.colorVisionMode
       : DEFAULT_PLAYER_SETTINGS.colorVisionMode,
+    stadiumSelection: isStadiumSelection(source.stadiumSelection)
+      ? source.stadiumSelection
+      : DEFAULT_PLAYER_SETTINGS.stadiumSelection,
     gamepadLookSensitivity: boundedNumber(
       source.gamepadLookSensitivity,
       0.4,
@@ -301,6 +309,7 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.highContrastHud === right.highContrastHud &&
     left.hudScale === right.hudScale &&
     left.colorVisionMode === right.colorVisionMode &&
+    left.stadiumSelection === right.stadiumSelection &&
     left.gamepadLookSensitivity === right.gamepadLookSensitivity &&
     left.gamepadVibration === right.gamepadVibration &&
     CONTROL_ACTIONS.every((action) => left.keyBindings[action] === right.keyBindings[action])

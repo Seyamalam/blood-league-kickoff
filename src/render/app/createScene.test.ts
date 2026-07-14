@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createScene } from './createScene';
+import { applyStadiumSelection, createScene } from './createScene';
 
 describe('arena lighting', () => {
   it('adds a shadow-free gameplay fill while retaining one shadow-casting key', () => {
@@ -24,5 +24,18 @@ describe('arena lighting', () => {
     expect(bloodGoal).toBeInstanceOf(THREE.PointLight);
     expect(bloodGoal?.castShadow).toBe(false);
     expect(lights.filter((light) => light.castShadow)).toEqual([moon]);
+  });
+
+  it('applies an arena palette and architecture without replacing gameplay lights', () => {
+    const scene = createScene('moonlit-classic');
+    const moon = scene.getObjectByName('arena-moon-key-light');
+    const stadium = scene.getObjectByName('stadium-environment');
+
+    expect(stadium?.userData.variantId).toBe('moonlit-classic');
+    expect(applyStadiumSelection(scene, 'royal-amethyst')).toBe('royal-amethyst');
+    expect(scene.getObjectByName('stadium-environment')?.userData.variantId).toBe('royal-amethyst');
+    expect(scene.getObjectByName('stadium-architecture-colosseum')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('arena-moon-key-light')).toBe(moon);
+    expect((scene.background as THREE.Color).getHex()).toBe(0x10071a);
   });
 });

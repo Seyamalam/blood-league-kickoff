@@ -125,7 +125,7 @@ import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
 import { CameraController } from './render/app/CameraController';
 import { createRenderer } from './render/app/createRenderer';
-import { createScene } from './render/app/createScene';
+import { applyStadiumSelection, createScene } from './render/app/createScene';
 import { GoalBeacon } from './render/objects/GoalBeacon';
 import { CountGoalkeeperVisual } from './render/objects/CountGoalkeeperVisual';
 import { BloodShardRenderer } from './render/objects/BloodShardRenderer';
@@ -237,7 +237,8 @@ async function bootstrap(): Promise<void> {
   };
   let playerSettings = settingsStore.value;
   const renderer = createRenderer(root);
-  const scene = createScene();
+  const scene = createScene(playerSettings.stadiumSelection);
+  let appliedStadiumSelection = playerSettings.stadiumSelection;
   const cameraController = new CameraController();
   const combatFeedback = new CombatFeedbackSystem();
   const input = new InputController(renderer.domElement);
@@ -423,6 +424,8 @@ async function bootstrap(): Promise<void> {
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
   let movementSpeedMultiplier = 1;
+  let momentumSpeedMultiplier = 1;
+  let momentumBoostTimer = 0;
   let kickPowerMultiplier = 1;
   let ballDamageMultiplier = 1;
   let recallSpeedMultiplier = 1;
@@ -558,6 +561,15 @@ async function bootstrap(): Promise<void> {
   };
   const resolveEnvironmentEvents = (events: readonly EnvironmentInteractionEvent[]): void => {
     for (const event of events) {
+      if (event.type === 'momentumBoost') {
+        momentumSpeedMultiplier = Math.max(momentumSpeedMultiplier, event.speedMultiplier);
+        momentumBoostTimer = Math.max(momentumBoostTimer, event.duration);
+        state.player.dashCooldown = Math.max(0, state.player.dashCooldown - event.dashCooldownRefund);
+        bridge.lightningBurst(event.position, 0.9);
+        audio.playDash();
+        input.rumble(0.24, 65);
+        continue;
+      }
       if (event.type === 'barrierBroken') {
         bridge.hitBurst(event.position, 1.1);
         audio.playWallImpact(0.9);
@@ -742,6 +754,10 @@ async function bootstrap(): Promise<void> {
     cameraController.resize(window.innerWidth, window.innerHeight);
   };
   const applyPlayerSettings = (settings: Readonly<PlayerSettings>): void => {
+    if (settings.stadiumSelection !== appliedStadiumSelection) {
+      applyStadiumSelection(scene, settings.stadiumSelection);
+      appliedStadiumSelection = settings.stadiumSelection;
+    }
     audio.setVolume(settings.masterVolume);
     audio.setMusicVolume(settings.musicVolume);
     audio.setEffectsVolume(settings.effectsVolume);
@@ -847,6 +863,8 @@ async function bootstrap(): Promise<void> {
     tutorialPrompt.reset();
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
+    momentumSpeedMultiplier = 1;
+    momentumBoostTimer = 0;
     kickPowerMultiplier = 1;
     ballDamageMultiplier = 1;
     recallSpeedMultiplier = 1;
@@ -997,6 +1015,8 @@ async function bootstrap(): Promise<void> {
     audio.setMatchIntensity('menu');
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
+    momentumSpeedMultiplier = 1;
+    momentumBoostTimer = 0;
     kickPowerMultiplier = 1;
     ballDamageMultiplier = 1;
     recallSpeedMultiplier = 1;
@@ -1267,12 +1287,15 @@ async function bootstrap(): Promise<void> {
         if (Math.hypot(movement.x, movement.z) > 0.2) signalTutorial('movement-demonstrated');
         if (movement.dash) signalTutorial('dash-demonstrated');
         const dashWasActive = state.player.dashTime > 0;
+        momentumBoostTimer = Math.max(0, momentumBoostTimer - FIXED_STEP);
+        if (momentumBoostTimer <= 0) momentumSpeedMultiplier = 1;
         updatePlayer(
           state,
           movement,
           cameraController.yaw,
           FIXED_STEP,
           movementSpeedMultiplier *
+            momentumSpeedMultiplier *
             progression.modifiers.movementSpeedMultiplier *
             activeUltimateEffects.movementSpeedMultiplier,
           progression.modifiers.dashCooldownMultiplier * activeUltimateEffects.dashCooldownMultiplier,
@@ -1710,7 +1733,9 @@ async function bootstrap(): Promise<void> {
           }
         }
 
-        resolveEnvironmentEvents(updateEnvironmentInteractions(environmentInteractions, FIXED_STEP));
+        resolveEnvironmentEvents(
+          updateEnvironmentInteractions(environmentInteractions, FIXED_STEP, state.player.position),
+        );
         const environmentHit = findInteractionHit(environmentInteractions, physics.ballPosition, 0.42);
         if (environmentHit && physics.ballSpeed >= 7) {
           if (lastEnvironmentHitId !== environmentHit.id) {
@@ -2246,6 +2271,9 @@ function createPitchInteractions(): EnvironmentInteractionState[] {
     createEnvironmentInteraction(5, 'holyBeacon', { x: 0, y: 0.82, z: 13 }),
     createEnvironmentInteraction(6, 'breakableBarrier', { x: -8, y: 0.7, z: -24 }),
     createEnvironmentInteraction(7, 'breakableBarrier', { x: 8, y: 0.7, z: -24 }),
+    createEnvironmentInteraction(8, 'momentumGate', { x: -20, y: 0, z: 2 }),
+    createEnvironmentInteraction(9, 'momentumGate', { x: 20, y: 0, z: 2 }),
+    createEnvironmentInteraction(10, 'momentumGate', { x: 0, y: 0, z: 27 }),
   ];
 }
 

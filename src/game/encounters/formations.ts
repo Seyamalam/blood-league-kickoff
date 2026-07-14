@@ -4,7 +4,7 @@ import type { EnemyArchetype, EnemyState, GameState, Vec3 } from '../simulation/
 import { applyEliteModifier, type EliteModifierBinding, type EliteModifierId } from './eliteModifiers';
 
 export type EnemyFormationId =
-  'lineBreakers' | 'penaltyBoxAmbush' | 'midfieldSwarm' | 'cornerAssault' | 'pitchInvasion';
+  'lineBreakers' | 'penaltyBoxAmbush' | 'midfieldSwarm' | 'wideOverload' | 'cornerAssault' | 'pitchInvasion';
 
 export interface FormationSlot {
   readonly archetype: EnemyArchetype;
@@ -76,6 +76,21 @@ export const ENEMY_FORMATIONS: Readonly<Record<EnemyFormationId, EnemyFormationD
       { archetype: 'bloodFan', x: 7, z: 1 },
       { archetype: 'leechStriker', x: -3, z: 4 },
       { archetype: 'leechStriker', x: 3, z: 4 },
+    ],
+  }),
+  wideOverload: freezeFormation({
+    id: 'wideOverload',
+    name: 'Wide Overload',
+    announcement: 'THE WINGS ARE FLOODED',
+    icon: 'wide-overload',
+    slots: [
+      { archetype: 'shadowRunner', x: -20, z: -3, eliteModifier: 'frenzied' },
+      { archetype: 'winger', x: -15, z: 1 },
+      { archetype: 'bloodArcher', x: -20, z: 6 },
+      { archetype: 'shadowRunner', x: 20, z: -3 },
+      { archetype: 'winger', x: 15, z: 1 },
+      { archetype: 'bloodArcher', x: 20, z: 6 },
+      { archetype: 'coach', x: 0, z: 4, eliteModifier: 'possessed' },
     ],
   }),
   cornerAssault: freezeFormation({

@@ -17,7 +17,9 @@ describe('stadium readability geometry', () => {
     expect(pitch.geometry.parameters.height).toBe(PITCH_LENGTH);
     expect(PITCH_LENGTH).toBeGreaterThan(PITCH_WIDTH);
 
-    const boards = scene.children.filter((object) => object.name === 'arena-board');
+    const boards = scene
+      .getObjectByName('stadium-environment')!
+      .children.filter((object) => object.name === 'arena-board');
     expect(boards).toHaveLength(4);
     for (const board of boards) {
       expect(board).toBeInstanceOf(THREE.Mesh);
@@ -48,14 +50,28 @@ describe('stadium readability geometry', () => {
     const heads = scene.getObjectByName('stadium-crowd-heads');
     expect(bodies).toBeInstanceOf(THREE.InstancedMesh);
     expect(heads).toBeInstanceOf(THREE.InstancedMesh);
-    expect((bodies as THREE.InstancedMesh).count).toBe(168);
-    expect((heads as THREE.InstancedMesh).count).toBe(168);
+    expect((bodies as THREE.InstancedMesh).count).toBe(228);
+    expect((heads as THREE.InstancedMesh).count).toBe(228);
     expect((bodies as THREE.InstancedMesh).instanceColor).not.toBeNull();
     expect((heads as THREE.InstancedMesh).instanceColor).not.toBeNull();
 
-    const rails = scene.children.filter((object) => object.name === 'arena-light-rail');
+    const rails = scene
+      .getObjectByName('stadium-environment')!
+      .children.filter((object) => object.name === 'arena-light-rail');
     expect(rails).toHaveLength(4);
     expect(rails.every((rail) => !rail.castShadow)).toBe(true);
     expect(scene.getObjectByName('arena-upper-fence')).toBeInstanceOf(THREE.LineSegments);
+  });
+
+  it('builds distinct architecture and replaces the previous stadium cleanly', () => {
+    const scene = new THREE.Scene();
+    const first = createStadium(scene, 'emerald-cathedral');
+    expect(first.userData).toMatchObject({ variantId: 'emerald-cathedral', architecture: 'cathedral' });
+    expect(first.getObjectByName('stadium-architecture-cathedral')).toBeInstanceOf(THREE.Group);
+
+    const second = createStadium(scene, 'frostbound-arena');
+    expect(scene.children.filter((child) => child.name === 'stadium-environment')).toEqual([second]);
+    expect(first.parent).toBeNull();
+    expect(second.getObjectByName('stadium-architecture-fortress')).toBeInstanceOf(THREE.Group);
   });
 });

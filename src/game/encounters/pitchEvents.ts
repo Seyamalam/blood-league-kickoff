@@ -3,7 +3,8 @@ import type { GameState, Vec3 } from '../simulation/types';
 import type { EliteModifierBinding } from './eliteModifiers';
 import { spawnEnemyFormation, type EnemyFormationId, type FormationSpawnResult } from './formations';
 
-export type PitchEventId = 'firstPress' | 'boxAmbush' | 'midfieldCollapse' | 'cornerCurse' | 'finalInvasion';
+export type PitchEventId =
+  'firstPress' | 'boxAmbush' | 'midfieldCollapse' | 'wideOverload' | 'cornerCurse' | 'finalInvasion';
 
 export interface PitchEventDefinition {
   readonly id: PitchEventId;
@@ -82,6 +83,18 @@ const EVENT_ORDER: readonly PitchEventDefinition[] = Object.freeze([
     maxPopulation: 64,
   }),
   Object.freeze({
+    id: 'wideOverload',
+    name: 'Wide Overload',
+    announcement: 'THE WINGS ARE FLOODED',
+    icon: 'wide-overload',
+    triggerTime: 370,
+    stages: Object.freeze(['bloodMoon'] as const),
+    formationId: 'wideOverload',
+    anchor: Object.freeze({ x: 0, y: 0.9, z: 5 }),
+    facing: -1,
+    maxPopulation: 60,
+  }),
+  Object.freeze({
     id: 'finalInvasion',
     name: 'Final Invasion',
     announcement: 'THE DEAD STORM THE PITCH',
@@ -94,6 +107,8 @@ const EVENT_ORDER: readonly PitchEventDefinition[] = Object.freeze([
     maxPopulation: 62,
   }),
 ]);
+
+const MINIMUM_EVENT_SPACING = 10;
 
 export const PITCH_EVENT_DEFINITIONS: Readonly<Record<PitchEventId, PitchEventDefinition>> = Object.freeze(
   Object.fromEntries(EVENT_ORDER.map((definition) => [definition.id, definition])) as Record<
@@ -121,6 +136,7 @@ export function updatePitchEventDirector(
   stage: MatchStage,
 ): PitchEventTriggered | undefined {
   if (game.phase !== 'playing') return undefined;
+  if (game.elapsed - director.lastEventTime < MINIMUM_EVENT_SPACING) return undefined;
   for (const definition of EVENT_ORDER) {
     if (director.triggered.has(definition.id)) continue;
     if (game.elapsed < definition.triggerTime) return undefined;
