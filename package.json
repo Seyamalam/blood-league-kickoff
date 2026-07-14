@@ -3,7 +3,7 @@
   "description": "A third-person football-combat horde-survival roguelite.",
   "author": "Huntrix",
   "private": true,
-  "version": "0.12.0-alpha.1",
+  "version": "0.13.0-alpha.1",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run format:check && npm test && npm run typecheck && npm run build",
+    "assets:character:validate": "node scripts/validate-character-assets.mjs",
+    "check": "npm run assets:character:validate && npm run lint && npm run format:check && npm test && npm run typecheck && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "desktop": "electron .",

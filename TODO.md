@@ -94,6 +94,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Replace the crude player placeholder with a detailed articulated original humanoid and six character variants.
 - [x] `P1` Define the production GLB/rig/animation/LOD/provenance acceptance contract.
 - [x] `P1` Import and optimize an audited CC0 skinned humanoid and compatible authored animation library while preserving the procedural fallback.
+- [x] `P1` Define the original no-likeness hero turnaround, kit, palette, face, equipment, modular-mesh, and shared-rig production package.
+- [x] `P1` Add a machine-readable 65-joint manifest and reproducible GLB geometry/skeleton/animation/texture validation gate.
+- [x] `P1` Add six runtime shared-rig silhouettes with bounded proportions and socketed equipment.
+- [x] `P1` Add semantic runtime routing for all requested football animation states and expose placeholder gaps honestly.
 - [x] `P1` Add stadium-specific weather, reactive crowd presentation, animated banners/flags, rails, and floodlights.
 - [x] `P1` Add slide-tackle and bicycle-kick combat verbs with boss, telemetry, VFX, and knockback routing.
 - [x] `P1` Add four seeded rival vampire clubs with bounded match identities.
@@ -106,6 +110,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add integrated photo controls, PNG capture, bounded highlight events, and expanded motion/feedback settings.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
+- [ ] `P1` Author the eleven remaining dedicated football motions on the canonical skeleton and replace every placeholder alias.
 - [ ] `P1` Connect tournament state to a persistent visible campaign screen and authored fixture flow.
 - [ ] `P1` Add commanded teammate formations/one-twos and full ghost-frame playback.
 - [ ] `P1` Add penalty shootouts, overtime, elemental pitch zones, and ordinary-enemy GLB/LOD families.

@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://huntrix.games/schemas/character-asset-manifest.schema.json",
+  "title": "Blood League humanoid character asset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "assetFamily",
+    "runtime",
+    "coordinateContract",
+    "skeleton",
+    "shippingGate",
+    "productionTarget",
+    "runtimeRequiredClips",
+    "productionAnimationSlots",
+    "variants",
+    "variantCompatibility"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "assetFamily": { "type": "string", "minLength": 1 },
+    "runtime": {
+      "type": "object",
+      "required": ["character", "animations", "runtimeYawRadians", "worldPositionOwner"],
+      "properties": {
+        "character": { "type": "string", "pattern": "\\.glb$" },
+        "animations": { "type": "string", "pattern": "\\.glb$" },
+        "fallback": { "type": "string" },
+        "runtimeYawRadians": { "type": "number" },
+        "worldPositionOwner": { "const": "simulation" }
+      }
+    },
+    "coordinateContract": {
+      "type": "object",
+      "required": ["units", "upAxis", "authoredForwardAxis", "gameplayForwardAxis", "feetAtY", "rootMotion"],
+      "properties": {
+        "units": { "const": "meters" },
+        "upAxis": { "const": "+Y" },
+        "authoredForwardAxis": { "enum": ["+Z", "-Z"] },
+        "gameplayForwardAxis": { "const": "-Z" },
+        "feetAtY": { "const": 0 },
+        "feetToleranceMeters": { "type": "number", "minimum": 0 },
+        "identitySceneRootTransform": { "const": true },
+        "rootMotion": { "const": false }
+      }
+    },
+    "skeleton": {
+      "type": "object",
+      "required": ["sceneRoot", "skinName", "jointCount", "joints", "attachmentJoints"],
+      "properties": {
+        "sceneRoot": { "type": "string" },
+        "skinName": { "type": "string" },
+        "jointCount": { "type": "integer", "minimum": 1 },
+        "joints": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+        "attachmentJoints": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "shippingGate": { "$ref": "#/$defs/budget" },
+    "productionTarget": { "type": "object" },
+    "runtimeRequiredClips": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "productionAnimationSlots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot", "clip", "status"],
+        "properties": {
+          "slot": { "type": "string" },
+          "clip": { "type": ["string", "null"] },
+          "status": { "enum": ["usable", "placeholder", "missing"] }
+        }
+      }
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["id", "bodyProfile", "headProfile", "hairProfile", "accessory"],
+        "properties": {
+          "id": { "type": "string" },
+          "bodyProfile": { "type": "string" },
+          "headProfile": { "type": "string" },
+          "hairProfile": { "type": "string" },
+          "accessory": { "type": "string" }
+        }
+      }
+    },
+    "variantCompatibility": { "type": "object" }
+  },
+  "$defs": {
+    "budget": {
+      "type": "object",
+      "required": [
+        "characterMaxBytes",
+        "animationMaxBytes",
+        "maxTriangles",
+        "maxMaterials",
+        "maxTextures",
+        "maxTextureDimension"
+      ],
+      "properties": {
+        "characterMaxBytes": { "type": "integer", "minimum": 1 },
+        "animationMaxBytes": { "type": "integer", "minimum": 1 },
+        "maxTriangles": { "type": "integer", "minimum": 1 },
+        "maxMaterials": { "type": "integer", "minimum": 1 },
+        "maxTextures": { "type": "integer", "minimum": 0 },
+        "maxTextureDimension": { "type": "integer", "minimum": 1 },
+        "maxGpuTextureBytes": { "type": "integer", "minimum": 1 },
+        "maxCharacterHeightMeters": { "type": "number", "minimum": 0 },
+        "maxSceneCount": { "type": "integer", "minimum": 1 },
+        "maxSkinCount": { "type": "integer", "minimum": 1 },
+        "allowCameras": { "type": "boolean" },
+        "allowLights": { "type": "boolean" }
+      }
+    }
+  }
+}

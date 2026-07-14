@@ -448,6 +448,7 @@ button {
   pointer-events: none;
 }
 .modal.splash {
+  justify-content: flex-start;
   padding: 24px 16px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -463,6 +464,11 @@ button {
     ),
     radial-gradient(circle at 50% 45%, rgba(5, 5, 10, 0.38), rgba(5, 5, 10, 0.9) 78%),
     url('./assets/key-art/menu-background.jpg') center / cover no-repeat;
+}
+@media (min-height: 760px) {
+  .modal.splash {
+    justify-content: center;
+  }
 }
 .modal.splash > * {
   position: relative;

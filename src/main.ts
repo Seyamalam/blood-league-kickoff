@@ -1240,7 +1240,7 @@ async function bootstrap(): Promise<void> {
             },
           });
         }
-        bridge.playPlayerTechnique(result.perfectVolley ? 'bicycle' : 'kick');
+        bridge.playPlayerTechnique(result.perfectVolley ? 'bicycle' : result.kind);
         lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
         lastKickWasVolley = result.perfectVolley;
         reboundsSinceKick = 0;

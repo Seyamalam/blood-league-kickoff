@@ -84,6 +84,7 @@ export class RenderBridge {
       const accessory = this.player.getObjectByName(`player-accessory-${id}`);
       if (accessory) accessory.visible = id === characterId;
     }
+    this.playerAsset.setCharacter(characterId);
   }
 
   sync(state: GameState, ballPosition: Vec3, ballSpeed: number, dt: number, alpha: number): void {
@@ -194,7 +195,7 @@ export class RenderBridge {
     this.reducedFlashes = active;
   }
 
-  playPlayerTechnique(technique: 'kick' | 'bicycle'): void {
+  playPlayerTechnique(technique: 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle'): void {
     this.playerAsset.playTechnique(technique);
   }
 

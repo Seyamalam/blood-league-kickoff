@@ -2,6 +2,16 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.13.0-alpha.1 — 2026-07-14
+
+- Defined the original Rook Vesper hero turnaround, face, kit, palette, equipment, mesh partitions, shared-rig rules, likeness exclusions, and provenance gate.
+- Added a machine-readable 65-joint character manifest plus a pure-Node GLB validator for skeleton parity, clips, geometry, textures, dimensions, hashes, and shipping budgets.
+- Added six runtime character silhouettes that retain one skeleton and animation library while varying bounded proportions, palette accents, and bone-socketed equipment.
+- Added a fifteen-state football animation contract that prefers dedicated clips and labels every current general-purpose substitute as a fallback alias.
+- Routed ground passes, lob passes, shots, slide tackles, and bicycle kicks into their correct semantic animation states.
+- Recorded the current baseline honestly: 14,318 triangles, 43 compatible clips, 6.17 MiB transfer, 27.33 MiB estimated texture memory, and eleven football-motion slots still requiring authored replacements.
+- Fixed small-height title scrolling so Career, Settings, and Quit remain reachable below the hero artwork.
+
 ## v0.12.0-alpha.1 — 2026-07-14
 
 - Added controlled ground passes and lob passes alongside charged, curved shots; enemy contact can now knock the ball loose and create a real possession-recovery duel.
