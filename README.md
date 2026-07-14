@@ -136,6 +136,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Charged kicks, a capped 36-unit ball speed, recall states, and perfect-return volleys
 - [x] Eight enemy archetypes through Bat Swarm, Leech Striker, Corrupt Referee, and Goalkeeper Brute
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
+- [x] Direct-reference enemy rendering with state-driven attack/defense poses and a five-mesh silhouette budget for every ordinary archetype
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow

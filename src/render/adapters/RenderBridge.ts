@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 
 const TRAIL_POINTS = 16;
@@ -14,6 +15,25 @@ interface HitBurst {
   duration: number;
 }
 
+interface EnemyVisual {
+  group: THREE.Group;
+  bodyRoot: THREE.Group;
+  threatMarker: THREE.Mesh;
+  eliteMarker?: THREE.Mesh;
+  body?: THREE.Mesh;
+  shield?: THREE.Mesh;
+  aura?: THREE.Mesh;
+  leftWing?: THREE.Mesh;
+  rightWing?: THREE.Mesh;
+  mouth?: THREE.Mesh;
+  drainRing?: THREE.Mesh;
+  whistle?: THREE.Mesh;
+  whistleRing?: THREE.Mesh;
+  leftGlove?: THREE.Mesh;
+  rightGlove?: THREE.Mesh;
+  catchRing?: THREE.Mesh;
+}
+
 export class RenderBridge {
   private readonly player: THREE.Group;
   private readonly ball: THREE.Mesh;
@@ -22,7 +42,7 @@ export class RenderBridge {
   private readonly trail: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
   private readonly trailPositions: Float32Array;
   private readonly bursts: HitBurst[];
-  private readonly enemies = new Map<number, THREE.Group>();
+  private readonly enemies = new Map<number, EnemyVisual>();
   private readonly liveEnemyIds = new Set<number>();
   private ballSpin = 0;
   private trailInitialized = false;
@@ -66,12 +86,13 @@ export class RenderBridge {
     this.liveEnemyIds.clear();
     for (const enemy of state.enemies) {
       this.liveEnemyIds.add(enemy.id);
-      let mesh = this.enemies.get(enemy.id);
-      if (!mesh) {
-        mesh = createEnemy(enemy);
-        this.enemies.set(enemy.id, mesh);
-        this.scene.add(mesh);
+      let visual = this.enemies.get(enemy.id);
+      if (!visual) {
+        visual = createEnemy(enemy);
+        this.enemies.set(enemy.id, visual);
+        this.scene.add(visual.group);
       }
+      const mesh = visual.group;
       const flightHeight =
         enemy.archetype === 'batSwarm' ? 0.62 + Math.sin(state.elapsed * 8 + enemy.id) * 0.16 : 0;
       mesh.position.set(
@@ -79,71 +100,31 @@ export class RenderBridge {
         flightHeight,
         THREE.MathUtils.lerp(enemy.previousPosition.z, enemy.position.z, alpha),
       );
-      mesh.lookAt(p.x, 0, p.z);
+      const useAttackFacing =
+        enemy.archetype === 'winger' &&
+        (enemy.attackState === 'telegraph' || enemy.attackState === 'lunge') &&
+        (enemy.attackDirection.x !== 0 || enemy.attackDirection.z !== 0);
+      const facingX = useAttackFacing ? enemy.attackDirection.x : p.x - mesh.position.x;
+      const facingZ = useAttackFacing ? enemy.attackDirection.z : p.z - mesh.position.z;
+      if (facingX !== 0 || facingZ !== 0) mesh.rotation.y = Math.atan2(facingX, facingZ);
       const pulse = enemy.hitFlash > 0 ? 1.28 : 1;
       const coachPulse = enemy.archetype === 'coach' ? 1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.025 : 1;
       const telegraphPulse = enemy.attackState === 'telegraph' ? 1 + Math.sin(state.elapsed * 34) * 0.08 : 1;
+      const buffPulse = enemy.buffed ? 1 + Math.sin(state.elapsed * 9 + enemy.id) * 0.025 : 1;
       const eliteScale = enemy.elite ? 1.18 : 1;
-      mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * eliteScale);
-
-      const threatMarker = mesh.getObjectByName('enemy-threat-marker');
-      if (threatMarker) {
-        threatMarker.visible =
-          enemy.attackState === 'telegraph' ||
-          enemy.attackState === 'drain' ||
-          enemy.attackState === 'whistle';
-        threatMarker.position.y = 2.3 + Math.sin(state.elapsed * 13 + enemy.id) * 0.12;
-        threatMarker.rotation.y += dt * 7;
-        threatMarker.rotation.z -= dt * 4;
-        threatMarker.scale.setScalar(enemy.attackState === 'whistle' ? 1.55 : 1);
-      }
-
-      const shield = mesh.getObjectByName('defender-shield');
-      if (shield) {
-        const shieldPulse = enemy.shieldFlash > 0 ? 1.18 + Math.sin(state.elapsed * 48) * 0.08 : 1;
-        shield.scale.set(shieldPulse, shieldPulse, enemy.shieldFlash > 0 ? 1.65 : 1);
-      }
-      const eliteMarker = mesh.getObjectByName('elite-marker');
-      if (eliteMarker) {
-        eliteMarker.rotation.z += dt * 1.5;
-        eliteMarker.scale.setScalar(1 + Math.sin(state.elapsed * 5 + enemy.id) * 0.08);
-      }
-      const leftBatWing = mesh.getObjectByName('bat-wing-left');
-      const rightBatWing = mesh.getObjectByName('bat-wing-right');
-      if (leftBatWing && rightBatWing) {
-        const flap = Math.sin(state.elapsed * 18 + enemy.id) * 0.34;
-        leftBatWing.rotation.z = -0.72 - flap;
-        rightBatWing.rotation.z = 0.72 + flap;
-      }
-      const drainRing = mesh.getObjectByName('leech-drain-ring');
-      if (drainRing) {
-        drainRing.visible = enemy.attackState === 'drain';
-        drainRing.scale.setScalar(1 + Math.sin(state.elapsed * 30) * 0.16);
-        drainRing.rotation.z += dt * 2.8;
-      }
-      const whistleRing = mesh.getObjectByName('referee-whistle-ring');
-      if (whistleRing) {
-        whistleRing.visible = enemy.attackState === 'telegraph' || enemy.attackState === 'whistle';
-        const whistlePulse = enemy.attackState === 'whistle' ? 1.8 : 1 + Math.sin(state.elapsed * 24) * 0.12;
-        whistleRing.scale.setScalar(whistlePulse);
-        whistleRing.rotation.z += dt * 1.8;
-      }
-      const bruteCatchRing = mesh.getObjectByName('brute-catch-ring');
-      if (bruteCatchRing) {
-        bruteCatchRing.visible = enemy.shieldFlash > 0;
-        bruteCatchRing.scale.setScalar(1 + Math.sin(state.elapsed * 42) * 0.12);
-      }
+      mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * buffPulse * eliteScale);
+      updateEnemyVisual(visual, enemy, state.elapsed);
     }
-    for (const [id, mesh] of this.enemies) {
+    for (const [id, visual] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
-      this.scene.remove(mesh);
+      this.scene.remove(visual.group);
       this.enemies.delete(id);
     }
   }
 
   reset(): void {
-    for (const mesh of this.enemies.values()) {
-      this.scene.remove(mesh);
+    for (const visual of this.enemies.values()) {
+      this.scene.remove(visual.group);
     }
     this.enemies.clear();
     this.trailInitialized = false;
@@ -423,19 +404,142 @@ function createBall(): THREE.Mesh {
   return mesh;
 }
 
-function createEnemy(enemy: EnemyState): THREE.Group {
+function createEnemy(enemy: EnemyState): EnemyVisual {
   const group = new THREE.Group();
-  if (enemy.archetype === 'winger') addWinger(group);
-  else if (enemy.archetype === 'defender') addDefender(group);
-  else if (enemy.archetype === 'coach') addCoach(group);
-  else if (enemy.archetype === 'batSwarm') addBatSwarm(group);
-  else if (enemy.archetype === 'leechStriker') addLeechStriker(group);
-  else if (enemy.archetype === 'corruptReferee') addCorruptReferee(group);
-  else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(group);
-  else addBloodFan(group);
-  addThreatMarker(group);
-  if (enemy.elite) addEliteMarker(group);
-  return group;
+  group.name = `enemy-${enemy.id}`;
+  group.userData.enemyArchetype = enemy.archetype;
+  const bodyRoot = new THREE.Group();
+  bodyRoot.name = 'enemy-body-root';
+  group.add(bodyRoot);
+
+  const parts: Partial<EnemyVisual> = {};
+  if (enemy.archetype === 'winger') addWinger(bodyRoot, parts);
+  else if (enemy.archetype === 'defender') addDefender(bodyRoot, parts);
+  else if (enemy.archetype === 'coach') addCoach(bodyRoot, parts);
+  else if (enemy.archetype === 'batSwarm') addBatSwarm(bodyRoot, parts);
+  else if (enemy.archetype === 'leechStriker') addLeechStriker(bodyRoot, parts);
+  else if (enemy.archetype === 'corruptReferee') addCorruptReferee(bodyRoot, parts);
+  else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(bodyRoot, parts);
+  else addBloodFan(bodyRoot, parts);
+
+  // Ground-space cues must not inherit body lean or hit recoil.
+  for (const groundCue of [parts.aura, parts.drainRing, parts.whistleRing]) {
+    if (!groundCue) continue;
+    bodyRoot.remove(groundCue);
+    group.add(groundCue);
+  }
+
+  return {
+    ...parts,
+    group,
+    bodyRoot,
+    threatMarker: addThreatMarker(group),
+    eliteMarker: enemy.elite ? addEliteMarker(group) : undefined,
+  };
+}
+
+function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: number): void {
+  const phase = elapsed + enemy.id * 0.37;
+  const dx = enemy.position.x - enemy.previousPosition.x;
+  const dz = enemy.position.z - enemy.previousPosition.z;
+  const moving = dx * dx + dz * dz > 0.000001;
+  const slowFactor = enemy.slowTimer > 0 ? 0.55 : 1;
+  const gait = Math.sin(phase * (enemy.buffed ? 11 : 7) * slowFactor);
+  const step = moving ? Math.abs(gait) : Math.abs(Math.sin(phase * 2.2)) * 0.18;
+  let lean = moving ? 0.045 : 0;
+  let sway = moving ? gait * 0.035 : Math.sin(phase * 1.8) * 0.012;
+
+  if (enemy.attackState === 'telegraph') lean = -0.12;
+  else if (enemy.attackState === 'lunge' || enemy.attackState === 'drain') lean = 0.28;
+  else if (enemy.attackState === 'whistle') lean = 0.14;
+  else if (enemy.attackState === 'recover') lean = -0.08;
+  if (enemy.hitFlash > 0) {
+    lean = -0.2;
+    sway *= 2;
+  }
+
+  visual.bodyRoot.position.y = enemy.archetype === 'batSwarm' ? 0 : step * 0.055;
+  visual.bodyRoot.rotation.set(lean, 0, sway);
+
+  const marker = visual.threatMarker;
+  marker.visible =
+    enemy.attackState === 'telegraph' || enemy.attackState === 'drain' || enemy.attackState === 'whistle';
+  marker.position.y = 2.3 + Math.sin(elapsed * 13 + enemy.id) * 0.12;
+  marker.rotation.y = elapsed * 7 + enemy.id;
+  marker.rotation.z = -elapsed * 4 - enemy.id * 0.5;
+  marker.scale.setScalar(enemy.attackState === 'whistle' ? 1.55 : 1);
+
+  if (visual.eliteMarker) {
+    visual.eliteMarker.rotation.z = elapsed * 1.5 + enemy.id;
+    visual.eliteMarker.scale.setScalar(1 + Math.sin(elapsed * 5 + enemy.id) * 0.08);
+  }
+
+  if (visual.shield) {
+    const shieldPulse = enemy.shieldFlash > 0 ? 1.18 + Math.sin(elapsed * 48) * 0.08 : 1;
+    visual.shield.scale.set(shieldPulse, shieldPulse, enemy.shieldFlash > 0 ? 1.65 : 1);
+    visual.shield.position.z = enemy.shieldFlash > 0 ? 0.31 : 0.42;
+  }
+
+  if (visual.aura) {
+    visual.aura.rotation.z = elapsed * 0.32;
+    visual.aura.scale.setScalar(1 + Math.sin(elapsed * 4 + enemy.id) * 0.025);
+  }
+
+  if (visual.leftWing && visual.rightWing) {
+    let wingBase = 0.72;
+    let wingMotion = Math.sin(elapsed * 18 + enemy.id) * 0.34;
+    if (enemy.archetype === 'winger') {
+      wingMotion = Math.sin(elapsed * 12 + enemy.id) * 0.12;
+      if (enemy.attackState === 'telegraph') wingBase = 1.08;
+      else if (enemy.attackState === 'lunge') wingBase = 0.28;
+      else if (enemy.attackState === 'recover') wingBase = 0.52;
+    }
+    visual.leftWing.rotation.z = -wingBase - wingMotion;
+    visual.rightWing.rotation.z = wingBase + wingMotion;
+  }
+
+  if (visual.drainRing) {
+    const draining = enemy.attackState === 'drain';
+    visual.drainRing.visible = draining;
+    visual.drainRing.scale.setScalar(1 + Math.sin(elapsed * 30) * 0.16);
+    visual.drainRing.rotation.z = elapsed * 2.8;
+    visual.mouth?.scale.setScalar(draining ? 1.35 + Math.sin(elapsed * 24) * 0.1 : 1);
+  }
+
+  if (visual.whistleRing) {
+    const signalling = enemy.attackState === 'telegraph' || enemy.attackState === 'whistle';
+    visual.whistleRing.visible = signalling;
+    const whistlePulse = enemy.attackState === 'whistle' ? 1.8 : 1 + Math.sin(elapsed * 24) * 0.12;
+    visual.whistleRing.scale.setScalar(whistlePulse);
+    visual.whistleRing.rotation.z = elapsed * 1.8;
+    if (visual.whistle) {
+      visual.whistle.position.y = enemy.attackState === 'telegraph' ? 1.58 : 1.42;
+      visual.whistle.position.z = enemy.attackState === 'whistle' ? 0.52 : 0.39;
+    }
+  }
+
+  if (visual.catchRing && visual.leftGlove && visual.rightGlove) {
+    const catching = enemy.shieldFlash > 0;
+    visual.catchRing.visible = catching;
+    visual.catchRing.scale.setScalar(1 + Math.sin(elapsed * 42) * 0.12);
+    const gloveInset = catching ? 0.3 : 0;
+    const gloveForward = catching ? 0.24 : 0;
+    visual.leftGlove.position.set(-0.92 + gloveInset, 1.02, 0.28 + gloveForward);
+    visual.rightGlove.position.set(0.92 - gloveInset, 1.02, 0.28 + gloveForward);
+  }
+}
+
+function mergeEnemyParts(
+  parts: Array<{ geometry: THREE.BufferGeometry; position: readonly [number, number, number] }>,
+) {
+  const geometries = parts.map(({ geometry, position }) => {
+    geometry.translate(position[0], position[1], position[2]);
+    return geometry;
+  });
+  const merged = mergeGeometries(geometries, false);
+  for (const geometry of geometries) geometry.dispose();
+  if (!merged) throw new Error('Could not merge shared enemy geometry');
+  return merged;
 }
 
 const enemyGeometry = {
@@ -450,12 +554,20 @@ const enemyGeometry = {
   coachAura: new THREE.RingGeometry(5.3, 5.5, 40),
   batBody: new THREE.SphereGeometry(0.25, 7, 5),
   batWing: new THREE.ConeGeometry(0.3, 0.7, 3),
-  batEar: new THREE.ConeGeometry(0.07, 0.22, 4),
+  batEars: mergeEnemyParts([
+    { geometry: new THREE.ConeGeometry(0.07, 0.22, 4), position: [-0.1, 1.02, 0] },
+    { geometry: new THREE.ConeGeometry(0.07, 0.22, 4), position: [0.1, 1.02, 0] },
+  ]),
   leechBody: new THREE.CapsuleGeometry(0.38, 0.72, 4, 7),
   leechMouth: new THREE.TorusGeometry(0.2, 0.07, 5, 12),
   leechDrainRing: new THREE.TorusGeometry(0.62, 0.045, 5, 18),
   refereeBody: new THREE.BoxGeometry(0.7, 1.35, 0.46),
-  refereeStripe: new THREE.BoxGeometry(0.13, 1.2, 0.03),
+  refereeStripes: mergeEnemyParts(
+    [-0.22, 0, 0.22].map((x) => ({
+      geometry: new THREE.BoxGeometry(0.13, 1.2, 0.03),
+      position: [x, 0.78, 0.245] as const,
+    })),
+  ),
   refereeWhistle: new THREE.ConeGeometry(0.1, 0.26, 5),
   refereeWhistleRing: new THREE.TorusGeometry(0.74, 0.055, 5, 20),
   bruteBody: new THREE.BoxGeometry(1.45, 1.65, 0.82),
@@ -524,145 +636,177 @@ function disposeSharedRenderResources(): void {
   for (const material of Object.values(enemyMaterial)) material.dispose();
 }
 
-function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, y: number): THREE.Mesh {
+function mesh(
+  geometry: THREE.BufferGeometry,
+  material: THREE.Material,
+  y: number,
+  name?: string,
+): THREE.Mesh {
   const result = new THREE.Mesh(geometry, material);
+  if (name) result.name = name;
   result.position.y = y;
   result.castShadow = true;
   return result;
 }
 
-function addFace(group: THREE.Group, headY: number): void {
-  group.add(mesh(enemyGeometry.fanHead, enemyMaterial.pale, headY));
-  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, headY + 0.05);
+function addFace(group: THREE.Group, headY: number, prefix: string): void {
+  group.add(mesh(enemyGeometry.fanHead, enemyMaterial.pale, headY, `${prefix}-head`));
+  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, headY + 0.05, `${prefix}-eyes`);
   eyes.position.z = 0.285;
   eyes.castShadow = false;
   group.add(eyes);
 }
 
-function addBloodFan(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.fanCloak, enemyMaterial.fan, 0.72));
-  addFace(group, 1.52);
+function addBloodFan(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.fanCloak, enemyMaterial.fan, 0.72, 'blood-fan-cloak');
+  parts.body = body;
+  group.add(body);
+  addFace(group, 1.52, 'blood-fan');
 }
 
-function addWinger(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.wingerBody, enemyMaterial.winger, 0.83));
-  const leftWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92);
+function addWinger(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.wingerBody, enemyMaterial.winger, 0.83, 'winger-body');
+  const leftWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92, 'winger-wing-left');
   leftWing.position.x = -0.43;
   leftWing.rotation.z = -0.55;
-  const rightWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92);
+  const rightWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92, 'winger-wing-right');
   rightWing.position.x = 0.43;
   rightWing.rotation.z = 0.55;
-  group.add(leftWing, rightWing);
-  addFace(group, 1.55);
+  parts.body = body;
+  parts.leftWing = leftWing;
+  parts.rightWing = rightWing;
+  group.add(body, leftWing, rightWing);
+  addFace(group, 1.55, 'winger');
 }
 
-function addDefender(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.defenderBody, enemyMaterial.defender, 0.75));
-  const shield = mesh(enemyGeometry.defenderShield, enemyMaterial.shield, 0.72);
+function addDefender(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.defenderBody, enemyMaterial.defender, 0.75, 'defender-body');
+  const shield = mesh(enemyGeometry.defenderShield, enemyMaterial.shield, 0.72, 'defender-shield');
   shield.name = 'defender-shield';
   shield.position.z = 0.42;
-  group.add(shield);
-  addFace(group, 1.65);
+  parts.body = body;
+  parts.shield = shield;
+  group.add(body, shield);
+  addFace(group, 1.65, 'defender');
 }
 
-function addEliteMarker(group: THREE.Group): void {
-  const marker = mesh(enemyGeometry.eliteMarker, enemyMaterial.elite, 2.25);
+function addEliteMarker(group: THREE.Group): THREE.Mesh {
+  const marker = mesh(enemyGeometry.eliteMarker, enemyMaterial.elite, 2.25, 'elite-marker');
   marker.name = 'elite-marker';
   marker.rotation.x = Math.PI / 2;
   marker.castShadow = false;
   group.add(marker);
+  return marker;
 }
 
-function addCoach(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.coachBody, enemyMaterial.coach, 0.8));
-  addFace(group, 1.7);
-  const aura = mesh(enemyGeometry.coachAura, enemyMaterial.aura, 0.035);
+function addCoach(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.coachBody, enemyMaterial.coach, 0.8, 'coach-body');
+  group.add(body);
+  addFace(group, 1.7, 'coach');
+  const aura = mesh(enemyGeometry.coachAura, enemyMaterial.aura, 0.035, 'coach-aura');
   aura.rotation.x = -Math.PI / 2;
   aura.castShadow = false;
+  parts.body = body;
+  parts.aura = aura;
   group.add(aura);
 }
 
-function addBatSwarm(group: THREE.Group): void {
-  const body = mesh(enemyGeometry.batBody, enemyMaterial.bat, 0.72);
+function addBatSwarm(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.batBody, enemyMaterial.bat, 0.72, 'bat-body');
   body.scale.set(1, 0.72, 1.18);
   group.add(body);
 
-  const leftWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75);
+  const leftWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75, 'bat-wing-left');
   leftWing.name = 'bat-wing-left';
   leftWing.position.x = -0.34;
   leftWing.rotation.set(0, 0, -0.72);
-  const rightWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75);
+  const rightWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75, 'bat-wing-right');
   rightWing.name = 'bat-wing-right';
   rightWing.position.x = 0.34;
   rightWing.rotation.set(0, 0, 0.72);
 
-  const leftEar = mesh(enemyGeometry.batEar, enemyMaterial.bat, 1.02);
-  leftEar.position.x = -0.1;
-  const rightEar = mesh(enemyGeometry.batEar, enemyMaterial.bat, 1.02);
-  rightEar.position.x = 0.1;
-  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, 0.8);
+  const ears = mesh(enemyGeometry.batEars, enemyMaterial.bat, 0, 'bat-ears');
+  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, 0.8, 'bat-eyes');
   eyes.scale.setScalar(0.55);
   eyes.position.z = 0.24;
   eyes.castShadow = false;
-  group.add(leftWing, rightWing, leftEar, rightEar, eyes);
+  parts.body = body;
+  parts.leftWing = leftWing;
+  parts.rightWing = rightWing;
+  group.add(leftWing, rightWing, ears, eyes);
 }
 
-function addLeechStriker(group: THREE.Group): void {
-  const body = mesh(enemyGeometry.leechBody, enemyMaterial.leech, 0.78);
+function addLeechStriker(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.leechBody, enemyMaterial.leech, 0.78, 'leech-body');
   body.rotation.x = -0.38;
   body.scale.set(1.05, 1, 1.2);
-  const mouth = mesh(enemyGeometry.leechMouth, enemyMaterial.leechMouth, 0.96);
+  const mouth = mesh(enemyGeometry.leechMouth, enemyMaterial.leechMouth, 0.96, 'leech-mouth');
   mouth.position.z = 0.42;
   mouth.rotation.x = Math.PI / 2;
   mouth.castShadow = false;
-  const drainRing = mesh(enemyGeometry.leechDrainRing, enemyMaterial.leechDrain, 0.08);
+  const drainRing = mesh(enemyGeometry.leechDrainRing, enemyMaterial.leechDrain, 0.08, 'leech-drain-ring');
   drainRing.name = 'leech-drain-ring';
   drainRing.rotation.x = -Math.PI / 2;
   drainRing.castShadow = false;
   drainRing.visible = false;
+  parts.body = body;
+  parts.mouth = mouth;
+  parts.drainRing = drainRing;
   group.add(body, mouth, drainRing);
 }
 
-function addCorruptReferee(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.refereeBody, enemyMaterial.referee, 0.78));
-  for (const x of [-0.22, 0, 0.22]) {
-    const stripe = mesh(enemyGeometry.refereeStripe, enemyMaterial.refereeStripe, 0.78);
-    stripe.position.set(x, 0.78, 0.245);
-    group.add(stripe);
-  }
-  addFace(group, 1.66);
-  const whistle = mesh(enemyGeometry.refereeWhistle, enemyMaterial.refereeWhistle, 1.42);
+function addCorruptReferee(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.refereeBody, enemyMaterial.referee, 0.78, 'referee-body');
+  group.add(body);
+  const stripes = mesh(enemyGeometry.refereeStripes, enemyMaterial.refereeStripe, 0, 'referee-stripes');
+  group.add(stripes);
+  addFace(group, 1.66, 'referee');
+  const whistle = mesh(enemyGeometry.refereeWhistle, enemyMaterial.refereeWhistle, 1.42, 'referee-whistle');
   whistle.position.z = 0.39;
   whistle.rotation.x = Math.PI / 2;
-  const ring = mesh(enemyGeometry.refereeWhistleRing, enemyMaterial.refereeRing, 0.08);
+  const ring = mesh(
+    enemyGeometry.refereeWhistleRing,
+    enemyMaterial.refereeRing,
+    0.08,
+    'referee-whistle-ring',
+  );
   ring.name = 'referee-whistle-ring';
   ring.rotation.x = -Math.PI / 2;
   ring.castShadow = false;
   ring.visible = false;
+  parts.body = body;
+  parts.whistle = whistle;
+  parts.whistleRing = ring;
   group.add(whistle, ring);
 }
 
-function addGoalkeeperBrute(group: THREE.Group): void {
-  group.add(mesh(enemyGeometry.bruteBody, enemyMaterial.brute, 0.9));
-  addFace(group, 1.95);
-  const leftGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02);
+function addGoalkeeperBrute(group: THREE.Group, parts: Partial<EnemyVisual>): void {
+  const body = mesh(enemyGeometry.bruteBody, enemyMaterial.brute, 0.9, 'brute-body');
+  group.add(body);
+  addFace(group, 1.95, 'brute');
+  const leftGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02, 'brute-glove-left');
   leftGlove.position.set(-0.92, 1.02, 0.28);
-  const rightGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02);
+  const rightGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02, 'brute-glove-right');
   rightGlove.position.set(0.92, 1.02, 0.28);
-  const catchRing = mesh(enemyGeometry.bruteCatchRing, enemyMaterial.bruteCatch, 1.05);
+  const catchRing = mesh(enemyGeometry.bruteCatchRing, enemyMaterial.bruteCatch, 1.05, 'brute-catch-ring');
   catchRing.name = 'brute-catch-ring';
   catchRing.rotation.x = Math.PI / 2;
   catchRing.position.z = 0.48;
   catchRing.castShadow = false;
   catchRing.visible = false;
+  parts.body = body;
+  parts.leftGlove = leftGlove;
+  parts.rightGlove = rightGlove;
+  parts.catchRing = catchRing;
   group.add(leftGlove, rightGlove, catchRing);
 }
 
-function addThreatMarker(group: THREE.Group): void {
-  const marker = mesh(enemyGeometry.threatMarker, enemyMaterial.threatMarker, 2.3);
+function addThreatMarker(group: THREE.Group): THREE.Mesh {
+  const marker = mesh(enemyGeometry.threatMarker, enemyMaterial.threatMarker, 2.3, 'enemy-threat-marker');
   marker.name = 'enemy-threat-marker';
   marker.rotation.set(Math.PI / 4, 0, Math.PI / 4);
   marker.castShadow = false;
   marker.visible = false;
   group.add(marker);
+  return marker;
 }

@@ -52,7 +52,7 @@ callback, and changing limits resets the schedule immediately.
 - **`game/spawn`:** immutable per-stage population/cadence/roster definitions plus allocation-free fixed-step profile resolution and weighted selection.
 - **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
 - **Match, progression, combat, boss, and pickup modules:** typed definitions plus isolated mutable systems for the full run.
-- **`CameraController` and `RenderBridge`:** third-person/Focus cameras and synchronized pooled/shared-resource presentation.
+- **`CameraController` and `RenderBridge`:** third-person/Focus cameras and synchronized pooled/shared-resource presentation. Enemy visuals retain typed part references from spawn to removal, so per-frame poses never search the scene tree.
 - **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
 - **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings.
 

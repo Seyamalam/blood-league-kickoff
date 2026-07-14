@@ -7,8 +7,11 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Rebuilt the stadium readability layer with brighter pitch landmarks, low boards plus collision-matched upper fencing, spatially deep goals and nets, arena rails, tiered stands, and two-ended instanced crowds.
 - Simplified the scoring beacon into a goal-aligned halo, arrow, beam, and shadow-free light so it highlights the authored goal instead of drawing a second offset frame.
 - Added semantic render regression coverage for stadium landmarks, goal structure, instanced crowd resources, arena lighting, and the goal-beacon lifecycle.
+- Replaced nine recursive scene-tree lookups per enemy per frame with typed visual references captured once at spawn.
+- Added state-driven Winger, Defender, Coach, Bat Swarm, Leech, Referee, and Goalkeeper Brute poses while preserving ground-space telegraphs and locked attack facing.
+- Merged Bat Swarm ears and Corrupt Referee stripes into shared geometry so every ordinary archetype stays within the five-visible-mesh budget; the 72-enemy scene dropped from 188 to 178 draw calls.
 - Replaced the continuous time-only enemy formula with a data-driven Spawn Director: every combat stage now owns its ramping population cap, cadence, and weighted roster, while goals, halftime, victory, and death stop ordinary spawns.
-- Added deterministic Spawn Director and non-combat rest-stage coverage; the complete suite now contains 128 passing tests.
+- Added deterministic Spawn Director, non-combat rest-stage, and enemy visual/resource coverage; the complete suite now contains 135 passing tests.
 
 ## v0.8.0-alpha.4 — 2026-07-14
 
