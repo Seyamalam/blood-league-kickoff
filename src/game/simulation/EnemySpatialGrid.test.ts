@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EnemySpatialGrid } from './EnemySpatialGrid';
 import type { EnemyArchetype, EnemyState } from './types';
+import { getEnemyArchetypeDefinition } from './enemyArchetypes';
 
 describe('EnemySpatialGrid', () => {
   it('finds coaches across cell boundaries and rejects coaches outside the aura', () => {
@@ -57,6 +58,7 @@ function enemy(id: number, archetype: EnemyArchetype, x: number, z: number): Ene
   return {
     id,
     archetype,
+    role: getEnemyArchetypeDefinition(archetype).role,
     position,
     previousPosition: { ...position },
     radius: 0.52,

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
+import { getEnemyArchetypeDefinition } from '../../game/simulation/enemyArchetypes';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
 import { PlayerCharacterAsset } from '../objects/PlayerCharacterAsset';
 
@@ -626,8 +627,13 @@ function createBall(): THREE.Mesh {
 
 function createEnemy(enemy: EnemyState): EnemyVisual {
   const group = new THREE.Group();
+  const definition = getEnemyArchetypeDefinition(enemy.archetype);
   group.name = `enemy-${enemy.id}`;
   group.userData.enemyArchetype = enemy.archetype;
+  group.userData.enemyRole = definition.role;
+  group.userData.enemyDisplayName = definition.displayName;
+  group.userData.enemyThreatLevel = definition.threatLevel;
+  group.userData.enemySignature = definition.signature;
   const bodyRoot = new THREE.Group();
   bodyRoot.name = 'enemy-body-root';
   group.add(bodyRoot);

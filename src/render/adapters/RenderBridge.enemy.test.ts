@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { createGameState, spawnEnemyAt } from '../../game/simulation/gameState';
 import type { EnemyArchetype, EnemyState, GameState } from '../../game/simulation/types';
+import { ENEMY_ARCHETYPE_DEFINITIONS } from '../../game/simulation/enemyArchetypes';
 import { RenderBridge } from './RenderBridge';
 
 const ARCHETYPES: readonly EnemyArchetype[] = [
@@ -80,7 +81,12 @@ describe('RenderBridge enemy visuals', () => {
 
       for (const root of roots) {
         const archetype = root.userData.enemyArchetype as EnemyArchetype;
+        const definition = ENEMY_ARCHETYPE_DEFINITIONS[archetype];
         expect(root.name).toMatch(/^enemy-\d+$/);
+        expect(root.userData.enemyRole).toBe(definition.role);
+        expect(root.userData.enemyDisplayName).toBe(definition.displayName);
+        expect(root.userData.enemyThreatLevel).toBe(definition.threatLevel);
+        expect(root.userData.enemySignature).toBe(definition.signature);
         expect(root.getObjectByName('enemy-body-root')).toBeInstanceOf(THREE.Group);
         expect(root.getObjectByName('enemy-threat-marker')).toBeInstanceOf(THREE.Mesh);
         for (const partName of REQUIRED_PARTS[archetype]) {

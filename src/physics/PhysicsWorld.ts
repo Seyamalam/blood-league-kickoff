@@ -27,6 +27,14 @@ export type KickResult = {
   curve: number;
 };
 
+export type PassResult = {
+  kind: 'ground-pass' | 'lob-pass';
+  charge: 0;
+  perfectVolley: false;
+  speed: number;
+  curve: 0;
+};
+
 /** Upgrade values consumed by ball physics. Full ProgressionModifiers is structurally compatible. */
 export type BallCombatModifiers = Partial<
   Pick<ProgressionModifiers, 'kickPowerMultiplier' | 'ballSpeedMultiplier' | 'recallSpeedMultiplier'>
@@ -193,6 +201,30 @@ export class PhysicsWorld {
     };
   }
 
+  /** A controlled football pass with a lower damage/speed ceiling than a charged shot. */
+  pass(
+    origin: Readonly<Vec3>,
+    direction: Readonly<Vec3>,
+    kind: PassResult['kind'] = 'ground-pass',
+  ): PassResult | null {
+    if (!this.possessed) return null;
+    const horizontalLength = Math.max(0.001, Math.hypot(direction.x, direction.z));
+    const x = direction.x / horizontalLength;
+    const z = direction.z / horizontalLength;
+    const speed = kind === 'lob-pass' ? 15 : 18;
+    this.possessed = false;
+    this.recallRequested = false;
+    this.automaticRecall = false;
+    this.volleyWindow = false;
+    this.curve = 0;
+    this.curveAge = 0;
+    this.speedCap = MAX_BALL_SPEED;
+    this.ballBody.setTranslation({ x: origin.x + x * 1.05, y: 0.58, z: origin.z + z * 1.05 }, true);
+    this.ballBody.setLinvel({ x: x * speed, y: kind === 'lob-pass' ? 8.4 : 1.15, z: z * speed }, true);
+    this.ballBody.setAngvel({ x: z * 15, y: 0, z: -x * 15 }, true);
+    return { kind, charge: 0, perfectVolley: false, speed, curve: 0 };
+  }
+
   setRecall(active: boolean, modifiers: Readonly<BallCombatModifiers> = {}, volleyWindowBonus = 0): void {
     this.recallRequested = active;
     this.recallSpeedMultiplier = safeMultiplier(modifiers.recallSpeedMultiplier, 0.5, 2);
@@ -216,6 +248,27 @@ export class PhysicsWorld {
       },
       true,
     );
+  }
+
+  /** Breaks possession after a successful enemy tackle, creating a recoverable loose-ball duel. */
+  knockBallLoose(origin: Readonly<Vec3>, awayDirection: Readonly<Vec3>, force = 9): boolean {
+    if (!this.possessed) return false;
+    const horizontalLength = Math.max(0.001, Math.hypot(awayDirection.x, awayDirection.z));
+    const safeForce = Number.isFinite(force) ? Math.max(4, Math.min(18, force)) : 9;
+    const x = awayDirection.x / horizontalLength;
+    const z = awayDirection.z / horizontalLength;
+    this.possessed = false;
+    this.recallRequested = false;
+    this.automaticRecall = false;
+    this.volleyWindow = false;
+    this.curve = 0;
+    this.curveAge = 0;
+    this.unpossessedTime = 0;
+    this.stalledTime = 0;
+    this.ballBody.setTranslation({ x: origin.x + x, y: 0.62, z: origin.z + z }, true);
+    this.ballBody.setLinvel({ x: x * safeForce, y: 3.2, z: z * safeForce }, true);
+    this.ballBody.setAngvel({ x: z * 12, y: 4, z: -x * 12 }, true);
+    return true;
   }
 
   step(playerPosition: Vec3, playerFacing: number, dt: number): void {

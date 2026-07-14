@@ -6,6 +6,7 @@ import type {
   GameState,
   Vec3,
 } from './types';
+import { getEnemyArchetypeDefinition } from './enemyArchetypes';
 import { EnemySpatialGrid } from './EnemySpatialGrid';
 import type { SecondaryDamageHit } from '../combat';
 import {
@@ -637,6 +638,7 @@ function createEnemyState(
   elite: boolean,
 ): EnemyState {
   const stats = enemyStats(archetype, state.elapsed);
+  const definition = getEnemyArchetypeDefinition(archetype);
   const eliteModifier = elite ? 1.35 : 1;
   const hitPoints = elite
     ? Math.max(stats.hitPoints + 2, Math.ceil(stats.hitPoints * 1.65))
@@ -644,6 +646,7 @@ function createEnemyState(
   return {
     id: state.nextEnemyId++,
     archetype,
+    role: definition.role,
     position,
     previousPosition: { ...position },
     radius: stats.radius * (elite ? 1.12 : 1),

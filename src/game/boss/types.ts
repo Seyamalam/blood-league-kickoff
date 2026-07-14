@@ -66,6 +66,9 @@ export interface CountGoalkeeperUpdateInput {
   readonly dt: number;
   readonly playerPosition: BossVec3;
   readonly playerRadius?: number;
+  /** Current ball telemetry lets the keeper read real shots instead of tracking only the player. */
+  readonly ballPosition?: BossVec3;
+  readonly ballVelocity?: BossVec3;
 }
 
 export type CountGoalkeeperEvent =

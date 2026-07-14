@@ -21,6 +21,18 @@ describe('encounter renderer', () => {
     expect(scene.getObjectByName('environment-bloodBarrel-1')).toBeDefined();
     expect(scene.getObjectByName('miniboss-crimsonCaptain')?.visible).toBe(true);
     expect(scene.getObjectByName('miniboss-graveyardPlaymaker')?.visible).toBe(false);
+    const captainVisual = scene.getObjectByName('miniboss-crimsonCaptain')!;
+    expect(captainVisual.userData.minibossRole).toBe('juggernaut');
+    expect(captainVisual.getObjectByName('captain-armband')).toBeInstanceOf(THREE.Mesh);
+    expect(captainVisual.getObjectByName('captain-charge-horn')).toBeInstanceOf(THREE.Mesh);
+
+    const playmaker = spawnMiniboss('graveyardPlaymaker', 91);
+    renderer.sync([], [], playmaker, [], 2, 1);
+    const playmakerVisual = scene.getObjectByName('miniboss-graveyardPlaymaker')!;
+    expect(playmakerVisual.visible).toBe(true);
+    expect(playmakerVisual.userData.minibossRole).toBe('summoner');
+    expect(playmakerVisual.getObjectByName('playmaker-orbit')).toBeInstanceOf(THREE.Group);
+    expect(playmakerVisual.getObjectByName('playmaker-staff')).toBeInstanceOf(THREE.Mesh);
     renderer.dispose();
   });
 

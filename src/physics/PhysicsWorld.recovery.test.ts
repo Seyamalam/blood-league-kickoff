@@ -67,6 +67,30 @@ describe('PhysicsWorld recovery', () => {
     expect(physics.ballSpeed).toBe(0);
   });
 
+  it('turns an enemy tackle into a recoverable loose-ball state', async () => {
+    const physics = await PhysicsWorld.create();
+    expect(physics.knockBallLoose(PLAYER, { x: 1, y: 0, z: 0 }, 10)).toBe(true);
+    expect(physics.ballState).toBe('free');
+    expect(physics.ballVelocity.x).toBeGreaterThan(9);
+    expect(physics.knockBallLoose(PLAYER, { x: -1, y: 0, z: 0 })).toBe(false);
+    physics.setRecall(true);
+    for (let index = 0; index < 360 && !physics.ballPossessed; index += 1) {
+      physics.step(PLAYER, Math.PI, STEP);
+    }
+    expect(physics.ballPossessed).toBe(true);
+  });
+
+  it('supports distinct controlled ground and lob passes', async () => {
+    const physics = await PhysicsWorld.create();
+    const ground = physics.pass(PLAYER, { x: 0, y: 0, z: -1 }, 'ground-pass');
+    expect(ground?.kind).toBe('ground-pass');
+    expect(physics.ballVelocity.y).toBeLessThan(2);
+    physics.reset(PLAYER);
+    const lob = physics.pass(PLAYER, { x: 0, y: 0, z: -1 }, 'lob-pass');
+    expect(lob?.kind).toBe('lob-pass');
+    expect(physics.ballVelocity.y).toBeGreaterThan(8);
+  });
+
   it('physically rebounds a shot from an opponent goalpost', async () => {
     const physics = await PhysicsWorld.create();
     const shooter = { x: GOAL_HALF_WIDTH, y: 0.9, z: OPPONENT_GOAL_LINE_Z + 6 };

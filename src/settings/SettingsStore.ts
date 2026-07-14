@@ -28,6 +28,9 @@ export interface PlayerSettings {
   fpsLimit: FpsLimit;
   aimAssistStrength: AimAssistStrength;
   reducedCameraShake: boolean;
+  screenShakeIntensity: number;
+  reducedMotion: boolean;
+  damageNumbers: boolean;
   reducedFlashes: boolean;
   highContrastHud: boolean;
   hudScale: number;
@@ -40,7 +43,7 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 8;
+const SETTINGS_VERSION = 9;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -66,6 +69,9 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   fpsLimit: 120,
   aimAssistStrength: 'low',
   reducedCameraShake: false,
+  screenShakeIntensity: 1,
+  reducedMotion: false,
+  damageNumbers: true,
   reducedFlashes: false,
   highContrastHud: false,
   hudScale: 1,
@@ -134,6 +140,7 @@ export class SettingsStore {
           version === 5 ||
           version === 6 ||
           version === 7 ||
+          version === 8 ||
           version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
@@ -191,6 +198,20 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       typeof source.reducedCameraShake === 'boolean'
         ? source.reducedCameraShake
         : DEFAULT_PLAYER_SETTINGS.reducedCameraShake,
+    screenShakeIntensity: boundedNumber(
+      source.screenShakeIntensity,
+      0,
+      1,
+      source.reducedCameraShake === true ? 0.28 : DEFAULT_PLAYER_SETTINGS.screenShakeIntensity,
+    ),
+    reducedMotion:
+      typeof source.reducedMotion === 'boolean'
+        ? source.reducedMotion
+        : DEFAULT_PLAYER_SETTINGS.reducedMotion,
+    damageNumbers:
+      typeof source.damageNumbers === 'boolean'
+        ? source.damageNumbers
+        : DEFAULT_PLAYER_SETTINGS.damageNumbers,
     reducedFlashes:
       typeof source.reducedFlashes === 'boolean'
         ? source.reducedFlashes
@@ -305,6 +326,9 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.fpsLimit === right.fpsLimit &&
     left.aimAssistStrength === right.aimAssistStrength &&
     left.reducedCameraShake === right.reducedCameraShake &&
+    left.screenShakeIntensity === right.screenShakeIntensity &&
+    left.reducedMotion === right.reducedMotion &&
+    left.damageNumbers === right.damageNumbers &&
     left.reducedFlashes === right.reducedFlashes &&
     left.highContrastHud === right.highContrastHud &&
     left.hudScale === right.hudScale &&

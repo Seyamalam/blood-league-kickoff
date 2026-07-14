@@ -92,7 +92,7 @@ export function updateCountGoalkeeper(
   }
 
   if (next.phase === 'guarding') {
-    next = updateDiveCycle(next, input.playerPosition, dt, config, events);
+    next = updateDiveCycle(next, input, dt, config, events);
   } else {
     next = updateChargeCycle(next, input.playerPosition, dt, config, events);
   }
@@ -252,19 +252,21 @@ function updateChargeCycle(
 
 function updateDiveCycle(
   state: CountGoalkeeperState,
-  player: BossVec3,
+  input: CountGoalkeeperUpdateInput,
   dt: number,
   config: CountGoalkeeperConfig,
   events: CountGoalkeeperEvent[],
 ): CountGoalkeeperState {
+  const player = input.playerPosition;
   if (state.action === 'idle' && state.actionCooldown <= 0) {
-    const targetX = clamp(player.x, -config.goalHalfWidth, config.goalHalfWidth);
-    events.push({ type: 'diveTelegraphed', targetX, duration: config.diveTelegraphDuration });
+    const targetX = predictShotCrossingX(input, config) ?? player.x;
+    const clampedTargetX = clamp(targetX, -config.goalHalfWidth, config.goalHalfWidth);
+    events.push({ type: 'diveTelegraphed', targetX: clampedTargetX, duration: config.diveTelegraphDuration });
     return {
       ...state,
       action: 'diveTelegraph',
       actionElapsed: 0,
-      chargeTarget: { x: targetX, y: state.position.y, z: config.goalLineZ },
+      chargeTarget: { x: clampedTargetX, y: state.position.y, z: config.goalLineZ },
       velocity: ZERO,
     };
   }
@@ -281,7 +283,12 @@ function updateDiveCycle(
       z: config.goalLineZ,
     };
     if (state.actionElapsed >= config.diveDuration) {
-      return { ...state, position, action: 'recover', actionElapsed: 0, velocity: ZERO };
+      events.push({
+        type: 'vulnerabilityOpened',
+        duration: config.vulnerabilityDuration,
+        damageMultiplier: config.vulnerabilityDamageMultiplier,
+      });
+      return { ...state, position, action: 'vulnerable', actionElapsed: 0, velocity: ZERO };
     }
     return { ...state, position };
   }
@@ -321,6 +328,20 @@ function updateDiveCycle(
     return { ...state, position: { x: state.position.x + step, y: state.position.y, z: config.goalLineZ } };
   }
   return state;
+}
+
+/** Predicts where a live shot will cross the keeper line. Returns null for balls moving away or too slowly. */
+export function predictShotCrossingX(
+  input: Pick<CountGoalkeeperUpdateInput, 'ballPosition' | 'ballVelocity'>,
+  config: CountGoalkeeperConfig = DEFAULT_COUNT_GOALKEEPER_CONFIG,
+): number | null {
+  const position = input.ballPosition;
+  const velocity = input.ballVelocity;
+  if (!position || !velocity || !Number.isFinite(velocity.z) || velocity.z >= -0.5) return null;
+  const time = (config.goalLineZ - position.z) / velocity.z;
+  if (!Number.isFinite(time) || time < 0 || time > 2.25) return null;
+  const crossingX = position.x + velocity.x * time;
+  return Number.isFinite(crossingX) ? crossingX : null;
 }
 
 function velocityToward(from: BossVec3, to: BossVec3, speed: number): BossVec3 {

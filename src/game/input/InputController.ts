@@ -1,4 +1,5 @@
 export interface KickInput {
+  readonly technique: 'shot' | 'ground-pass' | 'lob-pass';
   charge: number;
   /** Normalized horizontal bend: -1 curves left, +1 curves right. */
   curve: number;
@@ -9,6 +10,7 @@ const CURVE_DEADZONE = 0.12;
 
 export const GAMEPAD_BUTTONS = Object.freeze({
   dash: 0,
+  pass: 1,
   characterUltimate: 2,
   focusKick: 3,
   curveLeft: 4,
@@ -17,6 +19,7 @@ export const GAMEPAD_BUTTONS = Object.freeze({
   kick: 7,
   restart: 8,
   pause: 9,
+  lobPass: 11,
 });
 
 export class InputController {
@@ -206,6 +209,14 @@ export class InputController {
       this.kickStartedAt = performance.now();
       this.kickCurvePixels = 0;
     }
+    if (event.button === 1) {
+      event.preventDefault();
+      this.kickReleaseQueued = {
+        technique: this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') ? 'lob-pass' : 'ground-pass',
+        charge: 0,
+        curve: 0,
+      };
+    }
     if (event.button === 2) this.recallHeld = true;
   };
 
@@ -213,6 +224,7 @@ export class InputController {
     if (event.button === 0 && this.kickStartedAt !== null) {
       const heldSeconds = (performance.now() - this.kickStartedAt) / 1000;
       this.kickReleaseQueued = {
+        technique: 'shot',
         charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
         curve: normalizeKickCurveIntent(this.kickCurvePixels),
       };
@@ -272,12 +284,20 @@ export class InputController {
     const ultimatePressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.characterUltimate);
     const restartPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.restart);
     const pausePressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.pause);
+    const passPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.pass);
+    const lobPassPressed = buttonPressed(gamepad, GAMEPAD_BUTTONS.lobPass);
     if (dashPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.dash]) this.dashQueued = true;
     if (focusPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.focusKick]) this.focusKickQueued = true;
     if (ultimatePressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.characterUltimate])
       this.characterUltimateQueued = true;
     if (restartPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.restart]) this.restartQueued = true;
     if (pausePressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.pause]) this.pauseQueued = true;
+    if (passPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.pass]) {
+      this.kickReleaseQueued = { technique: 'ground-pass', charge: 0, curve: 0 };
+    }
+    if (lobPassPressed && !this.previousGamepadButtons[GAMEPAD_BUTTONS.lobPass]) {
+      this.kickReleaseQueued = { technique: 'lob-pass', charge: 0, curve: 0 };
+    }
     this.gamepadRecallHeld = buttonValue(gamepad, GAMEPAD_BUTTONS.recall) > 0.28;
 
     const kickPressed = buttonValue(gamepad, GAMEPAD_BUTTONS.kick) > 0.22;
@@ -293,6 +313,7 @@ export class InputController {
       const curve =
         buttonValue(gamepad, GAMEPAD_BUTTONS.curveRight) - buttonValue(gamepad, GAMEPAD_BUTTONS.curveLeft);
       this.kickReleaseQueued = {
+        technique: 'shot',
         charge: Math.min(1, Math.max(0, heldSeconds / InputController.maxKickChargeSeconds)),
         curve: Math.abs(curve) < 0.12 ? 0 : Math.max(-1, Math.min(1, curve)),
       };

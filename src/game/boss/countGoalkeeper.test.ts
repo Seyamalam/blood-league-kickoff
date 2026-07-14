@@ -3,6 +3,7 @@ import {
   COUNT_GOALKEEPER_COMBAT_TARGET_ID,
   damageCountGoalkeeper,
   isCountGoalkeeperDamageable,
+  predictShotCrossingX,
   spawnCountGoalkeeper,
   updateCountGoalkeeper,
 } from './index';
@@ -109,6 +110,45 @@ describe('Count Goalkeeper', () => {
     expect(parry.appliedDamage).toBe(0);
     expect(parry.state.action).toBe('counterattack');
     expect(parry.events.map((event) => event.type)).toEqual(['shotParried', 'counterattackStarted']);
+  });
+
+  it('reads the live shot trajectory instead of blindly following the striker', () => {
+    const state = {
+      ...spawnCountGoalkeeper({ seed: 123 }),
+      phase: 'guarding' as const,
+      phaseElapsed: 0,
+      actionCooldown: 0,
+    };
+    const shot = updateCountGoalkeeper(state, {
+      dt: 0.01,
+      playerPosition: { x: -4, y: 0.9, z: 4 },
+      ballPosition: { x: 1, y: 0.6, z: -45 },
+      ballVelocity: { x: 2, y: 1, z: -12 },
+    });
+    const telegraph = shot.events.find((event) => event.type === 'diveTelegraphed');
+    expect(telegraph?.targetX).toBeGreaterThan(1);
+    expect(
+      predictShotCrossingX({
+        ballPosition: { x: 1, y: 0.6, z: -45 },
+        ballVelocity: { x: 2, y: 1, z: -12 },
+      }),
+    ).toBeGreaterThan(1);
+  });
+
+  it('opens a punish window after missing a dive', () => {
+    const diving = {
+      ...spawnCountGoalkeeper({ seed: 123 }),
+      phase: 'guarding' as const,
+      action: 'dive' as const,
+      actionElapsed: 0.4,
+      velocity: { x: 10, y: 0, z: 0 },
+    };
+    const missed = updateCountGoalkeeper(diving, {
+      dt: 0.01,
+      playerPosition: { x: 0, y: 0.9, z: 0 },
+    });
+    expect(missed.state.action).toBe('vulnerable');
+    expect(missed.events.some((event) => event.type === 'vulnerabilityOpened')).toBe(true);
   });
 
   it('releases a parry counterattack then opens a high-damage penalty window', () => {

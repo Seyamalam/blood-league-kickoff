@@ -4,6 +4,7 @@ export {
   damageCountGoalkeeper,
   didDefeatCountGoalkeeper,
   isCountGoalkeeperDamageable,
+  predictShotCrossingX,
   resetCountGoalkeeper,
   spawnCountGoalkeeper,
   updateCountGoalkeeper,

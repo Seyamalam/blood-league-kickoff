@@ -4,6 +4,7 @@ import { uiIcon, type UiIconName } from './icons';
 export interface PauseOverlayCallbacks {
   onResume: () => void;
   onSettings: () => void;
+  onPhotoMode: () => void;
   onRestart: () => void;
   onMainMenu: () => void;
   getTelemetry: () => RunTelemetrySnapshot;
@@ -12,6 +13,7 @@ export interface PauseOverlayCallbacks {
 const NOOP_CALLBACKS: PauseOverlayCallbacks = {
   onResume: () => undefined,
   onSettings: () => undefined,
+  onPhotoMode: () => undefined,
   onRestart: () => undefined,
   onMainMenu: () => undefined,
   getTelemetry: emptyTelemetry,
@@ -37,6 +39,7 @@ export class PauseOverlay {
   private readonly element: HTMLElement;
   private readonly resumeButton: HTMLButtonElement;
   private readonly settingsButton: HTMLButtonElement;
+  private readonly photoModeButton: HTMLButtonElement;
   private readonly statsButton: HTMLButtonElement;
   private readonly restartButton: HTMLButtonElement;
   private readonly menuButton: HTMLButtonElement;
@@ -69,6 +72,7 @@ export class PauseOverlay {
           <nav class="pause-panel__actions" aria-label="Pause menu">
             <button type="button" data-action="resume">${uiIcon('resume')}<span>RESUME MATCH</span></button>
             <button type="button" data-action="stats">${uiIcon('stats')}<span>LIVE RUN STATS</span></button>
+            <button type="button" data-action="photo">${uiIcon('camera')}<span>PHOTO MODE</span></button>
             <button type="button" data-action="settings">${uiIcon('settings')}<span>SETTINGS</span></button>
             <button type="button" data-action="restart">${uiIcon('restart')}<span>RESTART RUN</span></button>
             <button type="button" data-action="menu" class="pause-panel__secondary">${uiIcon('home')}<span>MAIN MENU</span></button>
@@ -97,12 +101,14 @@ export class PauseOverlay {
     this.statsActions = requiredElement(this.element, '.pause-stats__actions');
     this.resumeButton = requiredButton(this.element, '[data-action="resume"]');
     this.statsButton = requiredButton(this.element, '[data-action="stats"]');
+    this.photoModeButton = requiredButton(this.element, '[data-action="photo"]');
     this.settingsButton = requiredButton(this.element, '[data-action="settings"]');
     this.restartButton = requiredButton(this.element, '[data-action="restart"]');
     this.menuButton = requiredButton(this.element, '[data-action="menu"]');
     this.statsBackButton = requiredButton(this.element, '[data-action="stats-back"]');
     this.resumeButton.addEventListener('click', this.resume);
     this.statsButton.addEventListener('click', this.showStats);
+    this.photoModeButton.addEventListener('click', this.openPhotoMode);
     this.statsBackButton.addEventListener('click', this.hideStats);
     this.settingsButton.addEventListener('click', this.openSettings);
     this.restartButton.addEventListener('click', this.restart);
@@ -148,6 +154,7 @@ export class PauseOverlay {
     this.hide();
     this.resumeButton.removeEventListener('click', this.resume);
     this.statsButton.removeEventListener('click', this.showStats);
+    this.photoModeButton.removeEventListener('click', this.openPhotoMode);
     this.statsBackButton.removeEventListener('click', this.hideStats);
     this.settingsButton.removeEventListener('click', this.openSettings);
     this.restartButton.removeEventListener('click', this.restart);
@@ -163,6 +170,10 @@ export class PauseOverlay {
 
   private readonly openSettings = (): void => {
     if (this.open) this.callbacks.onSettings();
+  };
+
+  private readonly openPhotoMode = (): void => {
+    if (this.open) this.callbacks.onPhotoMode();
   };
 
   private readonly showStats = (): void => {
@@ -202,7 +213,14 @@ export class PauseOverlay {
     if (event.key !== 'Tab') return;
     const buttons = this.statsOpen
       ? [this.statsBackButton]
-      : [this.resumeButton, this.statsButton, this.settingsButton, this.restartButton, this.menuButton];
+      : [
+          this.resumeButton,
+          this.statsButton,
+          this.photoModeButton,
+          this.settingsButton,
+          this.restartButton,
+          this.menuButton,
+        ];
     const first = buttons[0];
     const last = buttons.at(-1);
     if (!first || !last) return;

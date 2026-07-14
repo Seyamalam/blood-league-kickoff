@@ -32,7 +32,10 @@ export class SettingsOverlay {
   private readonly renderScaleValue: HTMLOutputElement;
   private readonly fpsLimit: HTMLSelectElement;
   private readonly aimAssistStrength: HTMLSelectElement;
-  private readonly reducedCameraShake: HTMLInputElement;
+  private readonly screenShakeIntensity: HTMLInputElement;
+  private readonly screenShakeIntensityValue: HTMLOutputElement;
+  private readonly reducedMotion: HTMLInputElement;
+  private readonly damageNumbers: HTMLInputElement;
   private readonly reducedFlashes: HTMLInputElement;
   private readonly highContrastHud: HTMLInputElement;
   private readonly hudScale: HTMLInputElement;
@@ -132,9 +135,17 @@ export class SettingsOverlay {
               <option value="high">High</option>
             </select>
           </div>
-          <label class="settings-toggle" for="setting-reduced-shake">
-            <span><strong>Reduced camera shake</strong><small>Limits impact movement and intense screen feedback.</small></span>
-            <input id="setting-reduced-shake" type="checkbox">
+          <div class="settings-field">
+            <div class="settings-field__label"><label for="setting-shake-intensity">Screen shake</label><output for="setting-shake-intensity"></output></div>
+            <input id="setting-shake-intensity" type="range" min="0" max="1" step="0.05">
+          </div>
+          <label class="settings-toggle" for="setting-reduced-motion">
+            <span><strong>Reduced motion</strong><small>Disables camera shake and non-essential interface animation.</small></span>
+            <input id="setting-reduced-motion" type="checkbox">
+          </label>
+          <label class="settings-toggle" for="setting-damage-numbers">
+            <span><strong>Damage numbers</strong><small>Shows floating combat values when presentation supports them.</small></span>
+            <input id="setting-damage-numbers" type="checkbox">
           </label>
           <label class="settings-toggle" for="setting-reduced-flashes">
             <span><strong>Reduced flashes</strong><small>Replaces rapid impact flashes with steadier highlights.</small></span>
@@ -217,7 +228,10 @@ export class SettingsOverlay {
     this.renderScaleValue = requiredOutput(this.element, '[for="setting-render-scale"]');
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
     this.aimAssistStrength = requiredSelect(this.element, '#setting-aim-assist');
-    this.reducedCameraShake = requiredInput(this.element, '#setting-reduced-shake');
+    this.screenShakeIntensity = requiredInput(this.element, '#setting-shake-intensity');
+    this.screenShakeIntensityValue = requiredOutput(this.element, '[for="setting-shake-intensity"]');
+    this.reducedMotion = requiredInput(this.element, '#setting-reduced-motion');
+    this.damageNumbers = requiredInput(this.element, '#setting-damage-numbers');
     this.reducedFlashes = requiredInput(this.element, '#setting-reduced-flashes');
     this.highContrastHud = requiredInput(this.element, '#setting-high-contrast-hud');
     this.hudScale = requiredInput(this.element, '#setting-hud-scale');
@@ -316,7 +330,10 @@ export class SettingsOverlay {
     this.renderScaleValue.value = `${Math.round(settings.renderScale * 100)}%`;
     this.fpsLimit.value = String(settings.fpsLimit);
     this.aimAssistStrength.value = settings.aimAssistStrength;
-    this.reducedCameraShake.checked = settings.reducedCameraShake;
+    this.screenShakeIntensity.value = String(settings.screenShakeIntensity);
+    this.screenShakeIntensityValue.value = `${Math.round(settings.screenShakeIntensity * 100)}%`;
+    this.reducedMotion.checked = settings.reducedMotion;
+    this.damageNumbers.checked = settings.damageNumbers;
     this.reducedFlashes.checked = settings.reducedFlashes;
     this.highContrastHud.checked = settings.highContrastHud;
     this.hudScale.value = String(settings.hudScale);
@@ -348,6 +365,7 @@ export class SettingsOverlay {
         target === this.effectsVolume ||
         target === this.mouseSensitivity ||
         target === this.renderScale ||
+        target === this.screenShakeIntensity ||
         target === this.hudScale ||
         target === this.gamepadLookSensitivity)
     ) {
@@ -369,8 +387,10 @@ export class SettingsOverlay {
     else if (target === this.fpsLimit) patch = { fpsLimit: parseFpsLimit(this.fpsLimit.value) };
     else if (target === this.aimAssistStrength)
       patch = { aimAssistStrength: this.aimAssistStrength.value as AimAssistStrength };
-    else if (target === this.reducedCameraShake)
-      patch = { reducedCameraShake: this.reducedCameraShake.checked };
+    else if (target === this.screenShakeIntensity)
+      patch = { screenShakeIntensity: this.screenShakeIntensity.valueAsNumber, reducedCameraShake: false };
+    else if (target === this.reducedMotion) patch = { reducedMotion: this.reducedMotion.checked };
+    else if (target === this.damageNumbers) patch = { damageNumbers: this.damageNumbers.checked };
     else if (target === this.reducedFlashes) patch = { reducedFlashes: this.reducedFlashes.checked };
     else if (target === this.highContrastHud) patch = { highContrastHud: this.highContrastHud.checked };
     else if (target === this.hudScale) patch = { hudScale: this.hudScale.valueAsNumber };

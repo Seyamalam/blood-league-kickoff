@@ -67,6 +67,8 @@ export type EnemyCombatEvent =
 export interface EnemyState {
   id: number;
   archetype: EnemyArchetype;
+  /** Stable semantic role used by presentation, accessibility, and diagnostics. */
+  role: import('./enemyArchetypes').EnemyCombatRole;
   position: Vec3;
   previousPosition: Vec3;
   radius: number;

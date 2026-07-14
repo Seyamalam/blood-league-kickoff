@@ -126,6 +126,13 @@ export class EncounterRenderer {
       ring.rotation.z = elapsed * 2.4;
       ring.scale.setScalar(1 + Math.sin(elapsed * 14) * 0.1);
     }
+    const orbit = visual.getObjectByName('playmaker-orbit');
+    if (orbit) {
+      orbit.rotation.y = elapsed * (state.action === 'volley' ? 4.8 : 1.6);
+      orbit.rotation.z = Math.sin(elapsed * 1.4) * 0.18;
+    }
+    const captainArmband = visual.getObjectByName('captain-armband');
+    if (captainArmband) captainArmband.rotation.z = Math.sin(elapsed * 5) * 0.06;
     visual.rotation.z = state.action === 'charge' ? Math.sin(elapsed * 18) * 0.08 : 0;
     visual.scale.setScalar(state.phase === 'enraged' ? 1.12 : 1);
   }
@@ -154,6 +161,8 @@ function createEliteVisual(binding: EliteModifierBinding): EliteVisual {
 function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
   const group = new THREE.Group();
   group.name = `miniboss-${kind}`;
+  group.userData.minibossRole = kind === 'crimsonCaptain' ? 'juggernaut' : 'summoner';
+  group.userData.minibossSignature = kind === 'crimsonCaptain' ? 'armored-captain' : 'orbital-playmaker';
   group.visible = false;
   const primary = new THREE.MeshStandardMaterial({
     color: kind === 'crimsonCaptain' ? 0x8e1238 : 0x45226f,
@@ -162,10 +171,21 @@ function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
     roughness: 0.42,
   });
   const armor = new THREE.MeshStandardMaterial({ color: 0x17131d, metalness: 0.62, roughness: 0.3 });
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.62, 1.15, 5, 8), primary);
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(
+      kind === 'crimsonCaptain' ? 0.68 : 0.48,
+      kind === 'crimsonCaptain' ? 1.18 : 1.35,
+      5,
+      8,
+    ),
+    primary,
+  );
+  body.name = kind === 'crimsonCaptain' ? 'captain-armored-body' : 'playmaker-body';
   body.position.y = 1.1;
   const shoulders = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.28, 0.58), armor);
+  shoulders.name = kind === 'crimsonCaptain' ? 'captain-shoulder-armor' : 'playmaker-shoulder-bar';
   shoulders.position.y = 1.72;
+  if (kind === 'graveyardPlaymaker') shoulders.scale.set(0.58, 0.72, 0.72);
   const crown = new THREE.Mesh(
     kind === 'crimsonCaptain'
       ? new THREE.TorusGeometry(0.42, 0.1, 5, 16)
@@ -173,6 +193,7 @@ function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
     primary,
   );
   crown.position.y = 2.22;
+  crown.name = kind === 'crimsonCaptain' ? 'captain-crown' : 'playmaker-focus';
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(1.18, 0.06, 6, 24),
     new THREE.MeshBasicMaterial({ color: 0xffcf55, transparent: true, opacity: 0.78, depthWrite: false }),
@@ -182,6 +203,32 @@ function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
   ring.rotation.x = -Math.PI / 2;
   ring.visible = false;
   group.add(body, shoulders, crown, ring);
+  if (kind === 'crimsonCaptain') {
+    const armband = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 5, 12), primary);
+    armband.name = 'captain-armband';
+    armband.position.set(-0.77, 1.55, 0);
+    armband.rotation.y = Math.PI / 2;
+    const horns = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.62, 4), armor);
+    horns.name = 'captain-charge-horn';
+    horns.position.set(0, 2.52, 0);
+    horns.rotation.z = Math.PI;
+    group.add(armband, horns);
+  } else {
+    const orbit = new THREE.Group();
+    orbit.name = 'playmaker-orbit';
+    orbit.position.y = 1.45;
+    for (const side of [-1, 1]) {
+      const ball = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), primary);
+      ball.name = side === -1 ? 'playmaker-orb-left' : 'playmaker-orb-right';
+      ball.position.x = side * 1.05;
+      orbit.add(ball);
+    }
+    const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 1.75, 6), armor);
+    staff.name = 'playmaker-staff';
+    staff.position.set(0.64, 1, 0.05);
+    staff.rotation.z = -0.18;
+    group.add(orbit, staff);
+  }
   return group;
 }
 

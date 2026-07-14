@@ -20,9 +20,21 @@ export class CameraController {
   private invertVerticalLook = false;
   private shakeScale = 1;
   private focusMode = false;
+  private photoMode: { yaw: number; pitch: number; distance: number; fov: number } | null = null;
 
   setFocusMode(active: boolean): void {
     this.focusMode = active;
+  }
+
+  setPhotoMode(state: { yaw: number; pitch: number; distance: number; fov: number } | null): void {
+    this.photoMode = state
+      ? {
+          yaw: Number.isFinite(state.yaw) ? state.yaw : 0,
+          pitch: THREE.MathUtils.clamp(state.pitch, -1.25, 1.25),
+          distance: THREE.MathUtils.clamp(state.distance, 2, 24),
+          fov: THREE.MathUtils.clamp(state.fov, 24, 90),
+        }
+      : null;
   }
 
   setSensitivity(value: number): void {
@@ -35,6 +47,11 @@ export class CameraController {
 
   setReducedShake(reduced: boolean): void {
     this.shakeScale = reduced ? 0.28 : 1;
+  }
+
+  /** Sets presentation shake from fully disabled (0) to authored strength (1). */
+  setShakeIntensity(intensity: number): void {
+    this.shakeScale = Number.isFinite(intensity) ? THREE.MathUtils.clamp(intensity, 0, 1) : 1;
   }
 
   /** Adds restrained positional shake. Values in the 0.1–0.35 range work best. */
@@ -64,6 +81,22 @@ export class CameraController {
   }
 
   update(player: Vec3, dt: number): void {
+    if (this.photoMode) {
+      const horizontal = Math.cos(this.photoMode.pitch) * this.photoMode.distance;
+      this.target.set(player.x, player.y + 1.05, player.z);
+      this.desired.set(
+        player.x + Math.sin(this.photoMode.yaw) * horizontal,
+        player.y + 1.05 + Math.sin(this.photoMode.pitch) * this.photoMode.distance,
+        player.z + Math.cos(this.photoMode.yaw) * horizontal,
+      );
+      this.camera.position.lerp(this.desired, 1 - Math.exp(-18 * dt));
+      this.camera.lookAt(this.target);
+      if (Math.abs(this.camera.fov - this.photoMode.fov) > 0.01) {
+        this.camera.fov = this.photoMode.fov;
+        this.camera.updateProjectionMatrix();
+      }
+      return;
+    }
     if (this.focusMode) {
       const forwardX = -Math.sin(this.yaw) * Math.cos(this.pitch);
       const forwardZ = -Math.cos(this.yaw) * Math.cos(this.pitch);

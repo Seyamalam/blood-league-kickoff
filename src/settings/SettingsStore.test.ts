@@ -27,6 +27,9 @@ describe('player settings sanitization', () => {
     expect(migrated.aimAssistStrength).toBe('low');
     expect(migrated.keyBindings).toEqual(DEFAULT_KEY_BINDINGS);
     expect(migrated).toMatchObject({
+      screenShakeIntensity: 0.28,
+      reducedMotion: false,
+      damageNumbers: true,
       reducedFlashes: false,
       highContrastHud: false,
       hudScale: 1,
@@ -77,6 +80,9 @@ describe('player settings sanitization', () => {
     expect(
       sanitizePlayerSettings({
         reducedFlashes: true,
+        reducedMotion: true,
+        damageNumbers: false,
+        screenShakeIntensity: 9,
         highContrastHud: true,
         hudScale: 9,
         colorVisionMode: 'tritanopia',
@@ -85,6 +91,9 @@ describe('player settings sanitization', () => {
       }),
     ).toMatchObject({
       reducedFlashes: true,
+      reducedMotion: true,
+      damageNumbers: false,
+      screenShakeIntensity: 1,
       highContrastHud: true,
       hudScale: 1.4,
       colorVisionMode: 'tritanopia',
@@ -184,6 +193,6 @@ describe('player settings sanitization', () => {
     expect(restored.keyBindings.dash).toBe('ShiftLeft');
     expect(restored.keyBindings.focusKick).toBe('KeyG');
     expect(restored.keyBindings.characterUltimate).toBe('KeyQ');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 8 });
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 9 });
   });
 });

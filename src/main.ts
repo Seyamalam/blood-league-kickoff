@@ -161,6 +161,8 @@ import { SettingsOverlay } from './ui/SettingsOverlay';
 import { TutorialPrompt } from './ui/TutorialPrompt';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 import { DifficultyOverlay } from './ui/DifficultyOverlay';
+import { PhotoModeOverlay } from './ui/PhotoModeOverlay';
+import { ReplayHighlightBuffer } from './game/replay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
@@ -352,6 +354,33 @@ async function bootstrap(): Promise<void> {
     applyPlayerSettings(settings);
   });
   const pauseOverlay = new PauseOverlay(root);
+  const replayHighlights = new ReplayHighlightBuffer();
+  const photoModeOverlay = new PhotoModeOverlay(root, undefined, {
+    onStateChange: (photo) => {
+      cameraController.setPhotoMode(photo);
+      renderer.toneMappingExposure = photo.exposure;
+      root.dataset.photoFilter = photo.filter;
+      root.classList.toggle('photo-clean-capture', photo.hideUi);
+    },
+    onCapture: () => {
+      renderer.render(scene, cameraController.camera);
+      renderer.domElement.toBlob((blob) => {
+        if (!blob) return;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `blood-league-highlight-${Date.now()}.png`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1_000);
+      }, 'image/png');
+    },
+    onExit: () => {
+      cameraController.setPhotoMode(null);
+      renderer.toneMappingExposure = 1;
+      root.dataset.photoFilter = 'none';
+      root.classList.remove('photo-clean-capture');
+      pauseOverlay.show();
+    },
+  });
   const resultsOverlay = new ResultsOverlay(root);
   const halftimeOverlay = new HalftimeOverlay(root);
   const announcement = new MatchAnnouncement(root);
@@ -775,7 +804,13 @@ async function bootstrap(): Promise<void> {
     audio.setEffectsVolume(settings.effectsVolume);
     cameraController.setSensitivity(settings.mouseSensitivity);
     cameraController.setInvertVerticalLook(settings.invertVerticalLook);
-    cameraController.setReducedShake(settings.reducedCameraShake);
+    cameraController.setShakeIntensity(
+      settings.reducedMotion
+        ? 0
+        : settings.reducedCameraShake
+          ? Math.min(0.28, settings.screenShakeIntensity)
+          : settings.screenShakeIntensity,
+    );
     input.setKeyBindings(settings.keyBindings);
     input.setGamepadSettings(settings.gamepadLookSensitivity, settings.gamepadVibration);
     hud.setControlBindings(settings.keyBindings);
@@ -784,6 +819,8 @@ async function bootstrap(): Promise<void> {
     root.dataset.colorVision = settings.colorVisionMode;
     root.classList.toggle('high-contrast-hud', settings.highContrastHud);
     root.classList.toggle('reduced-flashes', settings.reducedFlashes);
+    root.classList.toggle('reduced-motion', settings.reducedMotion);
+    root.dataset.damageNumbers = settings.damageNumbers ? 'visible' : 'hidden';
     renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
     resize();
   };
@@ -797,6 +834,8 @@ async function bootstrap(): Promise<void> {
     audio.playKickoff();
     audio.playPhase(0);
     audio.setMatchIntensity('opening');
+    replayHighlights.clear();
+    replayHighlights.record({ kind: 'kickoff', matchTime: 0, label: 'Opening kickoff' });
     announcement.show(
       'kickoff',
       `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
@@ -857,6 +896,8 @@ async function bootstrap(): Promise<void> {
     careerOverlay.hide();
     curseOverlay.reset();
     pauseOverlay.hide();
+    photoModeOverlay.hide();
+    replayHighlights.clear();
     resultsOverlay.reset();
     hud.reset();
     selectedCharacterId = profileStore.value.selectedCharacterId;
@@ -887,6 +928,7 @@ async function bootstrap(): Promise<void> {
     audio.playKickoff();
     audio.playPhase(0);
     audio.setMatchIntensity('opening');
+    replayHighlights.record({ kind: 'kickoff', matchTime: 0, label: 'Restart kickoff' });
     announcement.show(
       'kickoff',
       `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
@@ -1005,6 +1047,8 @@ async function bootstrap(): Promise<void> {
     curseOverlay.reset();
     difficultyOverlay.reset();
     pauseOverlay.hide();
+    photoModeOverlay.hide();
+    replayHighlights.clear();
     state.phase = 'ready';
     selectedCharacterId = profileStore.value.selectedCharacterId;
     bridge.setCharacter(selectedCharacterId);
@@ -1051,6 +1095,11 @@ async function bootstrap(): Promise<void> {
         input.requestPointerLock();
       },
       onSettings: openSettings,
+      onPhotoMode: () => {
+        pauseOverlay.hide();
+        photoModeOverlay.controller.update({ yaw: cameraController.yaw, pitch: cameraController.pitch });
+        photoModeOverlay.show();
+      },
       getTelemetry: () => runTelemetry.snapshot(),
       onRestart: restart,
       onMainMenu: returnToMenu,
@@ -1090,7 +1139,7 @@ async function bootstrap(): Promise<void> {
       if (pauseOverlay.isVisible) pauseOverlay.toggle();
       else showPause();
     }
-    cameraController.applyMouseDelta(mouse.x, mouse.y);
+    if (!photoModeOverlay.isVisible) cameraController.applyMouseDelta(mouse.x, mouse.y);
     focusKick = stepFocusKick(focusKick, frameTime);
     if (
       input.consumeFocusKick() &&
@@ -1132,6 +1181,7 @@ async function bootstrap(): Promise<void> {
       !settingsOverlay.isVisible &&
       !careerOverlay.isVisible &&
       !pauseOverlay.isVisible &&
+      !photoModeOverlay.isVisible &&
       !halftimeOverlay.isVisible &&
       kick
     ) {
@@ -1148,24 +1198,28 @@ async function bootstrap(): Promise<void> {
         : { x: rawAim.x, z: rawAim.z };
       const horizontalScale = Math.sqrt(Math.max(0, 1 - rawAim.y * rawAim.y));
       const focusShot = consumeFocusKickShot(focusKick);
-      const result = physics.kick(
-        state.player.position,
-        {
-          x: assistedHorizontal.x * horizontalScale,
-          y: rawAim.y,
-          z: assistedHorizontal.z * horizontalScale,
-        },
-        kick.charge,
-        {
-          ...progression.modifiers,
-          kickPowerMultiplier:
-            progression.modifiers.kickPowerMultiplier *
-            kickPowerMultiplier *
-            (focusShot.empowered ? 1.75 : 1) *
-            activeUltimateEffects.ballDamageMultiplier,
-        },
-        kick.curve * progression.modifiers.curveStrengthMultiplier,
-      );
+      const aimDirection = {
+        x: assistedHorizontal.x * horizontalScale,
+        y: rawAim.y,
+        z: assistedHorizontal.z * horizontalScale,
+      };
+      const result =
+        kick.technique === 'shot'
+          ? physics.kick(
+              state.player.position,
+              aimDirection,
+              kick.charge,
+              {
+                ...progression.modifiers,
+                kickPowerMultiplier:
+                  progression.modifiers.kickPowerMultiplier *
+                  kickPowerMultiplier *
+                  (focusShot.empowered ? 1.75 : 1) *
+                  activeUltimateEffects.ballDamageMultiplier,
+              },
+              kick.curve * progression.modifiers.curveStrengthMultiplier,
+            )
+          : physics.pass(state.player.position, aimDirection, kick.technique);
       if (result) {
         const matchModifierEffects = getMatchModifierEffects(matchModifierState, activeRivalTeam);
         if (matchModifierEffects.multiballActive) {
@@ -1211,6 +1265,12 @@ async function bootstrap(): Promise<void> {
         audio.playKick(result.charge);
         input.rumble(0.25 + result.charge * 0.45, 85);
         if (result.perfectVolley) {
+          replayHighlights.record({
+            kind: 'perfect-volley',
+            matchTime: match.matchElapsed,
+            label: 'Perfect bicycle volley',
+            focus: physics.ballPosition,
+          });
           footballArmory.triggerBicycleKick(state.player.position, rawAim, result.charge);
           runTelemetry.recordPerfectVolley();
           audio.playVolley();
@@ -1245,6 +1305,7 @@ async function bootstrap(): Promise<void> {
         !upgradeOverlay.isVisible &&
         !settingsOverlay.isVisible &&
         !pauseOverlay.isVisible &&
+        !photoModeOverlay.isVisible &&
         !halftimeOverlay.isVisible;
       let ultimateBossDamageThisStep = 0;
       let ultimateMinibossDamageThisStep = 0;
@@ -1421,6 +1482,27 @@ async function bootstrap(): Promise<void> {
         }
         if (state.player.health < healthBeforeUpdate) {
           runTelemetry.recordDamageTaken(healthBeforeUpdate - state.player.health);
+          const nearestTackler = state.enemies
+            .filter((enemy) => enemy.hitPoints > 0)
+            .sort(
+              (left, right) =>
+                Math.hypot(
+                  left.position.x - state.player.position.x,
+                  left.position.z - state.player.position.z,
+                ) -
+                Math.hypot(
+                  right.position.x - state.player.position.x,
+                  right.position.z - state.player.position.z,
+                ),
+            )[0];
+          if (nearestTackler && physics.ballPossessed) {
+            const looseX = state.player.position.x - nearestTackler.position.x;
+            const looseZ = state.player.position.z - nearestTackler.position.z;
+            if (physics.knockBallLoose(state.player.position, { x: looseX, y: 0, z: looseZ })) {
+              announcement.show('kickoff', 'POSSESSION LOST · WIN THE BALL BACK', 1.25);
+              bridge.hitBurst(physics.ballPosition, 0.75);
+            }
+          }
           audio.playPlayerHurt();
           input.rumble(0.7, 130);
           cameraController.addImpulse(0.24);
@@ -1512,6 +1594,8 @@ async function bootstrap(): Promise<void> {
             ? updateCountGoalkeeper(boss, {
                 dt: FIXED_STEP,
                 playerPosition: state.player.position,
+                ballPosition: physics.ballPosition,
+                ballVelocity: physics.ballVelocity,
               })
             : null;
         if (bossUpdateThisStep) boss = bossUpdateThisStep.state;
@@ -1854,6 +1938,12 @@ async function bootstrap(): Promise<void> {
               if (state.player.health <= 0) state.phase = 'dead';
             }
             if (event.type === 'phaseChanged') {
+              replayHighlights.record({
+                kind: 'boss-phase',
+                matchTime: match.matchElapsed,
+                label: `Count Goalkeeper · ${event.to}`,
+                focus: boss.position,
+              });
               if (event.to === 'bloodRush' || event.to === 'desperation') audio.playBossPhase(event.to);
               else audio.playPhase(2);
               if (event.to === 'desperation') {
@@ -1935,6 +2025,14 @@ async function bootstrap(): Promise<void> {
               audio.playHit(1);
             }
             bossDefeatedThisStep = didDefeatCountGoalkeeper(damage.events);
+            if (bossDefeatedThisStep) {
+              replayHighlights.record({
+                kind: 'boss-defeated',
+                matchTime: match.matchElapsed,
+                label: 'Count Goalkeeper defeated',
+                focus: boss.position,
+              });
+            }
           }
 
           // Primary kicks resolve first. Their short invulnerability window keeps
@@ -2004,6 +2102,13 @@ async function bootstrap(): Promise<void> {
             }
           }
           if (event.type === 'goalScored') {
+            replayHighlights.record({
+              kind: 'goal',
+              matchTime: match.matchElapsed,
+              label: goalQuality?.label ?? 'Goal',
+              focus: goalCrossing?.crossing,
+              metadata: { score: goalQuality?.totalScore ?? 1_000 },
+            });
             runTelemetry.recordGoal();
             characterUltimate.gainCharge(goalQuality?.ultimateCharge ?? 24);
             chargeFocusKick('goal');
@@ -2167,6 +2272,14 @@ async function bootstrap(): Promise<void> {
     );
     if (!resultsShown && (state.phase === 'dead' || state.phase === 'won')) {
       resultsShown = true;
+      if (state.phase === 'dead') {
+        replayHighlights.record({
+          kind: 'player-down',
+          matchTime: match.matchElapsed,
+          label: 'The striker fell',
+          focus: state.player.position,
+        });
+      }
       if (state.phase === 'dead') audio.playDefeat();
       let settlement: RunSettlement | null = null;
       if (!qaScenario) {
@@ -2286,6 +2399,7 @@ async function bootstrap(): Promise<void> {
     upgradeOverlay.dispose();
     settingsOverlay.dispose();
     pauseOverlay.dispose();
+    photoModeOverlay.dispose();
     resultsOverlay.dispose();
     careerOverlay.dispose();
     curseOverlay.dispose();
