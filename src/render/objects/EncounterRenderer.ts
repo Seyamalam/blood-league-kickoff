@@ -6,18 +6,45 @@ import {
   type EnvironmentInteractionState,
 } from '../../game/encounters';
 import type { EnemyState } from '../../game/simulation/types';
+import { defeatPose, enemyDeathPose, minibossEntrancePose } from './VampirePresentation';
 
 interface EliteVisual {
   readonly mesh: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>;
   readonly modifierId: EliteModifierBinding['modifierId'];
 }
 
+interface EnemySnapshot {
+  readonly id: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+interface TimedVisual {
+  readonly group: THREE.Group;
+  readonly startedAt: number;
+  readonly seed: number;
+}
+
+interface MinibossDefeatVisual {
+  readonly startedAt: number;
+  readonly x: number;
+  readonly z: number;
+  readonly direction: number;
+}
+
+const MAX_SIMULTANEOUS_DEATH_REACTIONS = 16;
+
 /** View-only encounter art. Gameplay positions and collision remain simulation-owned. */
 export class EncounterRenderer {
   private readonly eliteVisuals = new Map<number, EliteVisual>();
   private readonly interactionVisuals = new Map<number, THREE.Group>();
+  private readonly enemySnapshots = new Map<number, EnemySnapshot>();
+  private readonly enemyDeathVisuals = new Map<number, TimedVisual>();
+  private readonly lastMinibossStates = new Map<MinibossState['kind'], MinibossState>();
+  private readonly minibossDefeats = new Map<MinibossState['kind'], MinibossDefeatVisual>();
   private readonly captain = createMinibossVisual('crimsonCaptain');
   private readonly playmaker = createMinibossVisual('graveyardPlaymaker');
+  private previousElapsed?: number;
 
   constructor(private readonly scene: THREE.Scene) {
     scene.add(this.captain, this.playmaker);
@@ -31,6 +58,7 @@ export class EncounterRenderer {
     elapsed: number,
     alpha: number,
   ): void {
+    this.syncEnemyDeaths(enemies, elapsed);
     const liveEliteIds = new Set<number>();
     for (const binding of bindings) {
       const enemy = enemies.find((candidate) => candidate.id === binding.enemyId);
@@ -93,8 +121,15 @@ export class EncounterRenderer {
       this.interactionVisuals.delete(interactionId);
     }
 
-    this.syncMiniboss(this.captain, miniboss?.kind === 'crimsonCaptain' ? miniboss : null, elapsed, alpha);
     this.syncMiniboss(
+      'crimsonCaptain',
+      this.captain,
+      miniboss?.kind === 'crimsonCaptain' ? miniboss : null,
+      elapsed,
+      alpha,
+    );
+    this.syncMiniboss(
+      'graveyardPlaymaker',
       this.playmaker,
       miniboss?.kind === 'graveyardPlaymaker' ? miniboss : null,
       elapsed,
@@ -107,6 +142,12 @@ export class EncounterRenderer {
     this.eliteVisuals.clear();
     for (const visual of this.interactionVisuals.values()) disposeGroup(visual);
     this.interactionVisuals.clear();
+    for (const visual of this.enemyDeathVisuals.values()) disposeGroup(visual.group);
+    this.enemyDeathVisuals.clear();
+    this.enemySnapshots.clear();
+    this.lastMinibossStates.clear();
+    this.minibossDefeats.clear();
+    this.previousElapsed = undefined;
     this.captain.visible = false;
     this.playmaker.visible = false;
   }
@@ -118,18 +159,56 @@ export class EncounterRenderer {
   }
 
   private syncMiniboss(
+    kind: MinibossState['kind'],
     visual: THREE.Group,
     state: MinibossState | null,
     elapsed: number,
     alpha: number,
   ): void {
-    visual.visible = state !== null && state.phase !== 'defeated';
-    if (!state) return;
+    if (!state) {
+      const last = this.lastMinibossStates.get(kind);
+      if (last && !this.minibossDefeats.has(kind)) {
+        this.minibossDefeats.set(kind, {
+          startedAt: elapsed,
+          x: last.position.x,
+          z: last.position.z,
+          direction: last.id % 2 === 0 ? 1 : -1,
+        });
+        this.lastMinibossStates.delete(kind);
+      }
+      const defeat = this.minibossDefeats.get(kind);
+      if (!defeat) {
+        visual.visible = false;
+        return;
+      }
+      const pose = defeatPose(elapsed - defeat.startedAt, 1.65, defeat.direction);
+      visual.visible = pose.visible;
+      visual.position.set(defeat.x, pose.height, defeat.z);
+      visual.rotation.set(0, pose.rotationY, pose.rotationZ);
+      visual.scale.setScalar(pose.scale);
+      visual.userData.presentationState = 'defeat';
+      const ring = visual.getObjectByName('miniboss-action-ring');
+      if (ring) ring.visible = false;
+      if (!pose.visible) this.minibossDefeats.delete(kind);
+      return;
+    }
+    this.lastMinibossStates.set(kind, state);
+    this.minibossDefeats.delete(kind);
+    visual.visible = true;
     visual.position.set(
       THREE.MathUtils.lerp(state.previousPosition.x, state.position.x, alpha),
       0,
       THREE.MathUtils.lerp(state.previousPosition.z, state.position.z, alpha),
     );
+    visual.rotation.set(0, 0, 0);
+    visual.scale.setScalar(state.phase === 'enraged' ? 1.12 : 1);
+    visual.userData.presentationState = state.phase;
+    if (state.phase === 'entrance') {
+      const entrance = minibossEntrancePose(state.actionTimer);
+      visual.position.y = entrance.height;
+      visual.rotation.y = entrance.rotationY;
+      visual.scale.setScalar(entrance.scale);
+    }
     const ring = visual.getObjectByName('miniboss-action-ring');
     if (ring) {
       ring.visible = state.action === 'telegraph' || state.action === 'summon';
@@ -150,8 +229,45 @@ export class EncounterRenderer {
     const staffArm = visual.getObjectByName('playmaker-staff-arm');
     if (staffArm)
       staffArm.rotation.z = state.action === 'summon' ? -0.72 : -0.18 + Math.sin(elapsed * 2) * 0.08;
-    visual.rotation.z = state.action === 'charge' ? Math.sin(elapsed * 18) * 0.08 : 0;
-    visual.scale.setScalar(state.phase === 'enraged' ? 1.12 : 1);
+    if (state.phase !== 'entrance') {
+      visual.rotation.z = state.action === 'charge' ? Math.sin(elapsed * 18) * 0.08 : 0;
+    }
+  }
+
+  private syncEnemyDeaths(enemies: readonly EnemyState[], elapsed: number): void {
+    if (this.previousElapsed !== undefined && elapsed >= this.previousElapsed) {
+      const liveIds = new Set(enemies.map((enemy) => enemy.id));
+      for (const snapshot of this.enemySnapshots.values()) {
+        if (liveIds.has(snapshot.id) || this.enemyDeathVisuals.has(snapshot.id)) continue;
+        if (this.enemyDeathVisuals.size >= MAX_SIMULTANEOUS_DEATH_REACTIONS) break;
+        const group = createEnemyDeathVisual(snapshot.id);
+        group.position.set(snapshot.x, 0.12, snapshot.z);
+        this.scene.add(group);
+        this.enemyDeathVisuals.set(snapshot.id, { group, startedAt: elapsed, seed: snapshot.id });
+      }
+    }
+    this.enemySnapshots.clear();
+    for (const enemy of enemies) {
+      this.enemySnapshots.set(enemy.id, { id: enemy.id, x: enemy.position.x, z: enemy.position.z });
+    }
+    this.previousElapsed = elapsed;
+
+    for (const [id, visual] of this.enemyDeathVisuals) {
+      const pose = enemyDeathPose(elapsed - visual.startedAt, visual.seed);
+      visual.group.visible = pose.visible;
+      visual.group.position.y = 0.12 + pose.height;
+      visual.group.rotation.set(0, pose.rotationY, pose.rotationZ);
+      visual.group.scale.setScalar(pose.scale);
+      visual.group.traverse((object) => {
+        if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshBasicMaterial) {
+          object.material.opacity = pose.opacity;
+        }
+      });
+      if (!pose.visible) {
+        disposeGroup(visual.group);
+        this.enemyDeathVisuals.delete(id);
+      }
+    }
   }
 
   private disposeEliteVisual(visual: EliteVisual): void {
@@ -159,6 +275,35 @@ export class EncounterRenderer {
     visual.mesh.geometry.dispose();
     visual.mesh.material.dispose();
   }
+}
+
+function createEnemyDeathVisual(id: number): THREE.Group {
+  const group = new THREE.Group();
+  group.name = `enemy-death-reaction-${id}`;
+  group.userData.presentationRole = 'enemy-death-reaction';
+  const color = id % 3 === 0 ? 0x9d55ff : id % 2 === 0 ? 0xff315f : 0xdcc7a1;
+  for (let index = 0; index < 3; index += 1) {
+    const shard = new THREE.Mesh(
+      new THREE.TetrahedronGeometry(0.16 + index * 0.035, 0),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    shard.position.set((index - 1) * 0.28, 0.3 + index * 0.18, ((index % 2) - 0.5) * 0.3);
+    shard.rotation.set(index * 0.7, id * 0.13 + index, index * 0.45);
+    group.add(shard);
+  }
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.28, 0.38, 16),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  group.add(ring);
+  return group;
 }
 
 function createEliteVisual(binding: EliteModifierBinding): EliteVisual {

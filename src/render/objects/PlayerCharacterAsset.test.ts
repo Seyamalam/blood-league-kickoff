@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { locomotionClipFor, locomotionStateFor, rigDiagnosticsRequested } from './PlayerCharacterAsset';
+import {
+  locomotionClipFor,
+  locomotionStateFor,
+  rigDiagnosticsRequested,
+  techniqueAnimationFor,
+} from './PlayerCharacterAsset';
 import {
   FOOTBALL_ANIMATION_STATES,
   resolveFootballAnimation,
@@ -31,6 +36,17 @@ describe('rig diagnostics opt-in', () => {
     expect(rigDiagnosticsRequested('?rigDebug=0', true)).toBe(false);
     expect(rigDiagnosticsRequested('', true)).toBe(false);
     expect(rigDiagnosticsRequested('?rigDebug=1', false)).toBe(false);
+  });
+});
+
+describe('football technique presentation', () => {
+  it('maps expanded football actions onto stable semantic animation states', () => {
+    expect(techniqueAnimationFor('kick')).toBe('shoot');
+    expect(techniqueAnimationFor('ground-pass')).toBe('groundPass');
+    expect(techniqueAnimationFor('lob-pass')).toBe('lobPass');
+    expect(techniqueAnimationFor('header')).toBe('header');
+    expect(techniqueAnimationFor('slide-tackle')).toBe('slideTackle');
+    expect(techniqueAnimationFor('bicycle')).toBe('bicycleKick');
   });
 });
 

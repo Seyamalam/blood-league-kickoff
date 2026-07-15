@@ -60,6 +60,24 @@ describe('CharacterAnimationController', () => {
     expect(controller.activeBaseName).toBeUndefined();
   });
 
+  it('emits an authored contact marker once when normalized clip time is crossed', () => {
+    const contacts: string[] = [];
+    const controller = createController(clip('Shoot', 2));
+    controller.playBase({
+      name: 'Shoot',
+      priority: 50,
+      loop: THREE.LoopOnce,
+      releaseAfter: 1.8,
+      contactAt: 0.4,
+      onContact: () => contacts.push('foot'),
+    });
+    controller.update(0.79);
+    expect(contacts).toEqual([]);
+    controller.update(0.02);
+    controller.update(0.2);
+    expect(contacts).toEqual(['foot']);
+  });
+
   it('holds terminal poses until an explicit presentation reset', () => {
     const controller = createController(clip('Defeat', 0.1), clip('Idle'));
     controller.playBase({

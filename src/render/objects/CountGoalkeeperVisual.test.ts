@@ -45,6 +45,52 @@ describe('CountGoalkeeperVisual', () => {
     expect(scene.getObjectByName('count-goalkeeper-action-ring')?.visible).toBe(true);
   });
 
+  it('stages an aerial entrance, phase pulse, defeat, and optional victory pose', () => {
+    const scene = new THREE.Scene();
+    const visual = new CountGoalkeeperVisual(scene);
+    const entrance = { ...spawnCountGoalkeeper(), phaseElapsed: 0 };
+    visual.sync(entrance, 1, 0.016);
+    const group = scene.getObjectByName('count-goalkeeper-visual')!;
+    expect(group.position.y).toBeCloseTo(2.8);
+    expect(group.userData.presentationState).toBe('entrance');
+
+    const rush = { ...entrance, phase: 'bloodRush' as const, phaseElapsed: 0 };
+    visual.sync(rush, 1, 0.016);
+    expect(group.scale.x).toBeGreaterThan(1.15);
+    expect(group.userData.presentationState).toBe('phase-change');
+
+    visual.setVictoryPresentation(true);
+    visual.sync({ ...rush, phaseElapsed: 1 }, 1, 0.1);
+    expect(group.userData.presentationState).toBe('victory');
+
+    visual.setVictoryPresentation(false);
+    const defeated = { ...rush, phase: 'defeated' as const, phaseElapsed: 0 };
+    visual.sync(defeated, 1, 0.016);
+    expect(group.visible).toBe(true);
+    expect(group.userData.presentationState).toBe('defeated');
+    for (let frame = 0; frame < 24; frame += 1) visual.sync(defeated, 1, 0.1);
+    expect(group.visible).toBe(false);
+  });
+
+  it('emits one hand contact marker at the readable goalkeeper action frame', () => {
+    const scene = new THREE.Scene();
+    const visual = new CountGoalkeeperVisual(scene);
+    const diving = {
+      ...spawnCountGoalkeeper(),
+      phase: 'guarding' as const,
+      action: 'dive' as const,
+      actionElapsed: 0.2,
+      velocity: { x: -8, y: 0, z: 0 },
+    };
+
+    visual.sync(diving, 1, 0.016);
+    visual.sync({ ...diving, actionElapsed: 0.3 }, 1, 0.016);
+    const events = visual.drainContactEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ action: 'dive', socket: 'hand_l' });
+    expect(Number.isFinite(events[0]!.position.x)).toBe(true);
+  });
+
   it('removes and disposes every owned render resource', () => {
     const scene = new THREE.Scene();
     const visual = new CountGoalkeeperVisual(scene);

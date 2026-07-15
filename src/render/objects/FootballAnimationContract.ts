@@ -19,7 +19,15 @@ export const FOOTBALL_ANIMATION_STATES = [
 export type FootballAnimationState = (typeof FOOTBALL_ANIMATION_STATES)[number];
 export type FootballAnimationPlayback = 'loop' | 'once' | 'terminal';
 
-export type FootballAnimationContactSocket = 'root' | 'foot_l' | 'foot_r' | 'head';
+export type FootballAnimationContactSocket = 'root' | 'foot_l' | 'foot_r' | 'hand_l' | 'hand_r' | 'head';
+
+export interface FootballAnimationContactEvent {
+  readonly state: FootballAnimationState;
+  readonly clipName: string;
+  readonly socket: FootballAnimationContactSocket;
+  /** World-space render position sampled on the authored contact frame. */
+  readonly position: Readonly<{ x: number; y: number; z: number }>;
+}
 
 export interface FootballAnimationPresentation {
   /** Normalized clip time for the readable gameplay contact. Omitted for non-contact motion. */

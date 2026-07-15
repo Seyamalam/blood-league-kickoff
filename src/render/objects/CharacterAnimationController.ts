@@ -13,6 +13,9 @@ export interface BaseAnimationRequest {
   readonly releaseAfter?: number;
   readonly terminal?: boolean;
   readonly forceRestart?: boolean;
+  /** Normalized authored contact marker. Presentation-only; never gates gameplay. */
+  readonly contactAt?: number;
+  readonly onContact?: () => void;
 }
 
 export interface AdditiveOverlayRequest {
@@ -27,6 +30,10 @@ interface ActiveBaseAnimation {
   readonly priority: number;
   readonly terminal: boolean;
   remaining: number;
+  elapsed: number;
+  readonly contactTime?: number;
+  contactEmitted: boolean;
+  readonly onContact?: () => void;
 }
 
 /**
@@ -101,6 +108,13 @@ export class CharacterAnimationController {
       remaining: oneShot
         ? Math.max(0.05, request.releaseAfter ?? clip.duration + fade)
         : Number.POSITIVE_INFINITY,
+      elapsed: 0,
+      contactTime:
+        request.contactAt === undefined
+          ? undefined
+          : clip.duration * THREE.MathUtils.clamp(request.contactAt, 0, 1),
+      contactEmitted: false,
+      onContact: request.onContact,
     };
     this.releasedSinceLastUpdate = false;
     return true;
@@ -130,11 +144,23 @@ export class CharacterAnimationController {
   /** Advances presentation and reports whether a one-shot released this frame. */
   update(dt: number): boolean {
     const active = this.activeBase;
+    const step = Math.max(0, dt);
+    if (active) {
+      active.elapsed += step;
+      if (
+        !active.contactEmitted &&
+        active.contactTime !== undefined &&
+        active.elapsed >= active.contactTime
+      ) {
+        active.contactEmitted = true;
+        active.onContact?.();
+      }
+    }
     if (active && !active.terminal && Number.isFinite(active.remaining)) {
-      active.remaining = Math.max(0, active.remaining - Math.max(0, dt));
+      active.remaining = Math.max(0, active.remaining - step);
       if (active.remaining === 0) this.releaseBase(active.action);
     }
-    this.mixer.update(Math.max(0, dt));
+    this.mixer.update(step);
     const released = this.releasedSinceLastUpdate;
     this.releasedSinceLastUpdate = false;
     return released;

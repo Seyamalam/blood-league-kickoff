@@ -11,13 +11,15 @@ import {
   getFootballAnimationPresentation,
   type FootballAnimationResolution,
   type FootballAnimationState,
+  type FootballAnimationContactEvent,
+  type FootballAnimationContactSocket,
 } from './FootballAnimationContract';
 import { CharacterAnimationController } from './CharacterAnimationController';
 
 const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
 const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
 
-export type PlayerTechnique = 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle';
+export type PlayerTechnique = 'kick' | 'ground-pass' | 'lob-pass' | 'header' | 'slide-tackle' | 'bicycle';
 export type PlayerReaction = 'damage' | 'knockdown';
 export type PlayerOutcome = 'celebration' | 'victory' | 'defeat';
 
@@ -36,6 +38,15 @@ export interface PlayerCharacterAssetOptions {
 
 export function rigDiagnosticsRequested(search: string, isDevelopment: boolean): boolean {
   return isDevelopment && new URLSearchParams(search).get('rigDebug') === '1';
+}
+
+export function techniqueAnimationFor(technique: PlayerTechnique): FootballAnimationState {
+  if (technique === 'bicycle') return 'bicycleKick';
+  if (technique === 'ground-pass') return 'groundPass';
+  if (technique === 'lob-pass') return 'lobPass';
+  if (technique === 'header') return 'header';
+  if (technique === 'slide-tackle') return 'slideTackle';
+  return 'shoot';
 }
 
 /** Resolves movement relative to facing without ever affecting simulation movement. */
@@ -70,6 +81,7 @@ export class PlayerCharacterAsset {
   private readonly clips = new Map<string, THREE.AnimationClip>();
   private footballAnimations: ReadonlyMap<FootballAnimationState, FootballAnimationResolution> = new Map();
   private skeletonHelper?: THREE.SkeletonHelper;
+  private readonly contactEvents: FootballAnimationContactEvent[] = [];
   private previousDashTime = 0;
   private previousHealth?: number;
   private terminalState?: Extract<FootballAnimationState, 'victory' | 'defeat'>;
@@ -153,15 +165,7 @@ export class PlayerCharacterAsset {
   }
 
   playTechnique(technique: PlayerTechnique): void {
-    const animation: FootballAnimationState =
-      technique === 'bicycle'
-        ? 'bicycleKick'
-        : technique === 'ground-pass'
-          ? 'groundPass'
-          : technique === 'lob-pass'
-            ? 'lobPass'
-            : 'shoot';
-    this.playFootballAnimation(animation, 0.06);
+    this.playFootballAnimation(techniqueAnimationFor(technique), 0.06);
   }
 
   setCharacter(id: CharacterId): void {
@@ -180,6 +184,11 @@ export class PlayerCharacterAsset {
    */
   playAdditiveOverlay(name: string, weight = 1): boolean {
     return this.animationController?.playAdditiveOverlay({ name, weight }) ?? false;
+  }
+
+  /** Drains render-only contact markers emitted on authored clip timing. */
+  drainContactEvents(): readonly FootballAnimationContactEvent[] {
+    return this.contactEvents.splice(0);
   }
 
   /** Enables a local SkeletonHelper without affecting the rig or simulation. */
@@ -206,6 +215,7 @@ export class PlayerCharacterAsset {
     this.previousHealth = undefined;
     this.previousDashTime = 0;
     this.animationController?.reset();
+    this.contactEvents.length = 0;
     this.playFootballAnimation('idle', 0.08);
   }
 
@@ -228,9 +238,15 @@ export class PlayerCharacterAsset {
           : state === 'damage'
             ? ANIMATION_PRIORITY.damage
             : ANIMATION_PRIORITY.technique;
+    const presentation = getFootballAnimationPresentation(state);
     this.transitionTo(resolution.clipName, fade, priority, THREE.LoopOnce, true, {
       terminal: resolution.playback === 'terminal',
-      releaseAfter: Math.max(0.12, clip.duration * getFootballAnimationPresentation(state).recoverAt),
+      releaseAfter: Math.max(0.12, clip.duration * presentation.recoverAt),
+      contactAt: presentation.contactAt,
+      onContact:
+        presentation.contactSocket === undefined
+          ? undefined
+          : () => this.emitContact(state, resolution.clipName!, presentation.contactSocket!),
     });
     return resolution;
   }
@@ -258,6 +274,7 @@ export class PlayerCharacterAsset {
     this.mixer = undefined;
     this.clips.clear();
     this.footballAnimations = new Map();
+    this.contactEvents.length = 0;
     this.previousHealth = undefined;
     this.terminalState = undefined;
   }
@@ -268,7 +285,12 @@ export class PlayerCharacterAsset {
     priority: number = ANIMATION_PRIORITY.locomotion,
     loop: THREE.AnimationActionLoopStyles = THREE.LoopRepeat,
     forceRestart = false,
-    options: { readonly terminal?: boolean; readonly releaseAfter?: number } = {},
+    options: {
+      readonly terminal?: boolean;
+      readonly releaseAfter?: number;
+      readonly contactAt?: number;
+      readonly onContact?: () => void;
+    } = {},
   ): void {
     this.animationController?.playBase({
       name,
@@ -278,6 +300,24 @@ export class PlayerCharacterAsset {
       forceRestart,
       terminal: options.terminal,
       releaseAfter: options.releaseAfter,
+      contactAt: options.contactAt,
+      onContact: options.onContact,
+    });
+  }
+
+  private emitContact(
+    state: FootballAnimationState,
+    clipName: string,
+    socket: FootballAnimationContactSocket,
+  ): void {
+    const socketName = socket === 'head' ? 'Head' : socket === 'root' ? 'Armature' : socket;
+    const object = this.importedRoot?.getObjectByName(socketName) ?? this.importedRoot ?? this.fallbackRoot;
+    const position = object.getWorldPosition(new THREE.Vector3());
+    this.contactEvents.push({
+      state,
+      clipName,
+      socket,
+      position: { x: position.x, y: position.y, z: position.z },
     });
   }
 }

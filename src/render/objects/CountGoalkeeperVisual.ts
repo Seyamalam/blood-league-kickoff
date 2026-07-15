@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 import type { CountGoalkeeperState } from '../../game/boss';
+import { defeatPose, goalkeeperEntrancePose } from './VampirePresentation';
+
+export interface GoalkeeperPresentationContactEvent {
+  readonly action: 'dive' | 'counterattack';
+  readonly socket: 'hand_l' | 'hand_r';
+  readonly position: Readonly<{ x: number; y: number; z: number }>;
+}
 
 /** Articulated, view-only boss silhouette. Boss rules and collision stay in the simulation. */
 export class CountGoalkeeperVisual {
@@ -53,6 +60,13 @@ export class CountGoalkeeperVisual {
   private readonly phaseLight = new THREE.PointLight(0xff174f, 0, 9, 2);
   private readonly geometries: THREE.BufferGeometry[] = [];
   private transformation = 0;
+  private previousPhase?: CountGoalkeeperState['phase'];
+  private defeatElapsed = 0;
+  private victoryElapsed = 0;
+  private victoryPresentation = false;
+  private previousAction?: CountGoalkeeperState['action'];
+  private goalkeeperContactEmitted = false;
+  private readonly contactEvents: GoalkeeperPresentationContactEvent[] = [];
 
   constructor(scene: THREE.Scene) {
     this.group.name = 'count-goalkeeper-visual';
@@ -171,15 +185,28 @@ export class CountGoalkeeperVisual {
     scene.add(this.group);
   }
 
-  sync(state: CountGoalkeeperState | null, alpha: number): void {
-    this.group.visible = state !== null && state.phase !== 'defeated';
-    if (!state) return;
+  sync(state: CountGoalkeeperState | null, alpha: number, presentationDt = 1 / 60): void {
+    if (!state) {
+      this.group.visible = false;
+      this.previousPhase = undefined;
+      return;
+    }
+    const dt = THREE.MathUtils.clamp(presentationDt, 0, 0.1);
+    if (state.phase === 'defeated') {
+      this.defeatElapsed = this.previousPhase === 'defeated' ? this.defeatElapsed + dt : 0;
+      this.previousPhase = state.phase;
+      this.poseDefeat(state, alpha);
+      return;
+    }
+    this.defeatElapsed = 0;
+    this.group.visible = true;
     const t = THREE.MathUtils.clamp(alpha, 0, 1);
     this.group.position.set(
       THREE.MathUtils.lerp(state.previousPosition.x, state.position.x, t),
       0,
       THREE.MathUtils.lerp(state.previousPosition.z, state.position.z, t),
     );
+    this.group.scale.setScalar(1.15);
     this.group.rotation.y =
       state.action === 'telegraph' || state.action === 'diveTelegraph'
         ? Math.sin(state.actionElapsed * 28) * 0.08
@@ -230,14 +257,47 @@ export class CountGoalkeeperVisual {
       1 + this.transformation * 0.18,
     );
     this.poseArms(state);
+    this.emitActionContactIfReady(state);
     this.phaseLight.intensity = this.transformation * (state.phase === 'desperation' ? 3.2 : 1.2);
     this.phaseLight.distance = 7 + this.transformation * 6;
     this.bodyMaterial.emissiveIntensity =
       state.phase === 'desperation' ? 2 : state.phase === 'bloodRush' ? 1.35 : 0.8;
+
+    if (state.phase === 'entrance') {
+      const pose = goalkeeperEntrancePose(state.phaseElapsed);
+      this.group.position.y = pose.height;
+      this.group.rotation.y = pose.rotationY;
+      this.group.scale.setScalar(1.15 * pose.scale);
+      this.actionRing.visible = true;
+      this.actionRing.scale.setScalar(0.55 + pose.progress * 0.9);
+      this.actionMaterial.color.setHex(0xff315f);
+      this.leftArm.rotation.z = 1.25 - pose.progress * 1.05;
+      this.rightArm.rotation.z = -1.25 + pose.progress * 1.05;
+      this.group.userData.presentationState = 'entrance';
+    } else {
+      const phasePulse = Math.max(0, 1 - state.phaseElapsed / 0.72);
+      this.group.scale.multiplyScalar(1 + phasePulse * 0.16);
+      this.group.userData.presentationState = phasePulse > 0 ? 'phase-change' : state.phase;
+    }
+    if (this.victoryPresentation) this.poseVictory(dt);
+    this.previousPhase = state.phase;
+  }
+
+  /** Optional render-only pose for the Count winning the match. */
+  setVictoryPresentation(active: boolean): void {
+    if (active && !this.victoryPresentation) this.victoryElapsed = 0;
+    this.victoryPresentation = active;
+  }
+
+  drainContactEvents(): readonly GoalkeeperPresentationContactEvent[] {
+    return this.contactEvents.splice(0);
   }
 
   reset(): void {
     this.group.visible = false;
+    this.group.position.y = 0;
+    this.group.rotation.set(0, 0, 0);
+    this.group.scale.setScalar(1.15);
     this.transformation = 0;
     this.body.scale.setScalar(1);
     this.crown.scale.setScalar(1);
@@ -250,6 +310,13 @@ export class CountGoalkeeperVisual {
     this.leftArm.rotation.set(0, 0, 0);
     this.rightArm.rotation.set(0, 0, 0);
     this.phaseLight.intensity = 0;
+    this.previousPhase = undefined;
+    this.defeatElapsed = 0;
+    this.victoryElapsed = 0;
+    this.victoryPresentation = false;
+    this.previousAction = undefined;
+    this.goalkeeperContactEmitted = false;
+    this.contactEvents.length = 0;
   }
 
   dispose(): void {
@@ -336,6 +403,67 @@ export class CountGoalkeeperVisual {
     const grip = state.action === 'counterattack' ? 1.18 : 1;
     this.leftGlove.scale.setScalar(grip);
     this.rightGlove.scale.setScalar(grip);
+  }
+
+  private poseDefeat(state: CountGoalkeeperState, alpha: number): void {
+    const pose = defeatPose(this.defeatElapsed, 2.15, state.id % 2 === 0 ? 1 : -1);
+    this.group.visible = pose.visible;
+    const t = THREE.MathUtils.clamp(alpha, 0, 1);
+    this.group.position.set(
+      THREE.MathUtils.lerp(state.previousPosition.x, state.position.x, t),
+      pose.height,
+      THREE.MathUtils.lerp(state.previousPosition.z, state.position.z, t),
+    );
+    this.group.rotation.set(0, pose.rotationY, pose.rotationZ);
+    this.group.scale.setScalar(1.15 * pose.scale);
+    this.leftArm.rotation.set(-0.45, 0, -0.9);
+    this.rightArm.rotation.set(-0.45, 0, 0.9);
+    this.cape.visible = true;
+    this.leftWingPivot.visible = true;
+    this.rightWingPivot.visible = true;
+    this.bloodHalo.visible = pose.progress < 0.72;
+    this.phaseMask.visible = false;
+    this.tendrils.visible = false;
+    this.actionRing.visible = false;
+    this.phaseLight.intensity = (1 - pose.progress) * 2.4;
+    this.bodyMaterial.emissiveIntensity = Math.max(0, 1.6 * (1 - pose.progress));
+    this.group.userData.presentationState = 'defeated';
+  }
+
+  private poseVictory(dt: number): void {
+    this.victoryElapsed += dt;
+    const pulse = Math.sin(this.victoryElapsed * 4.5);
+    this.group.position.y += 0.12 + pulse * 0.07;
+    this.leftArm.rotation.set(-0.25, 0, 1.5);
+    this.rightArm.rotation.set(-0.25, 0, -1.5);
+    this.leftWingPivot.visible = true;
+    this.rightWingPivot.visible = true;
+    this.bloodHalo.visible = true;
+    this.actionRing.visible = true;
+    this.actionRing.scale.setScalar(1.3 + pulse * 0.08);
+    this.actionMaterial.color.setHex(0xff315f);
+    this.group.userData.presentationState = 'victory';
+  }
+
+  private emitActionContactIfReady(state: CountGoalkeeperState): void {
+    if (state.action !== this.previousAction) {
+      this.previousAction = state.action;
+      this.goalkeeperContactEmitted = false;
+    }
+    if (this.goalkeeperContactEmitted) return;
+    if (state.action !== 'dive' && state.action !== 'counterattack') return;
+    const action = state.action;
+    const contactTime = action === 'dive' ? 0.18 : 0.32;
+    if (state.actionElapsed < contactTime) return;
+    const socket: 'hand_l' | 'hand_r' = action === 'dive' && state.velocity.x < 0 ? 'hand_l' : 'hand_r';
+    const glove = socket === 'hand_l' ? this.leftGlove : this.rightGlove;
+    const position = glove.getWorldPosition(new THREE.Vector3());
+    this.contactEvents.push({
+      action,
+      socket,
+      position: { x: position.x, y: position.y, z: position.z },
+    });
+    this.goalkeeperContactEmitted = true;
   }
 
   private track<T extends THREE.BufferGeometry>(geometry: T): T {

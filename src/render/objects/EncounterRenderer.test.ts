@@ -90,4 +90,39 @@ describe('encounter renderer', () => {
     }
     renderer.dispose();
   });
+
+  it('leaves a short vampire-shard reaction when an enemy disappears', () => {
+    const scene = new THREE.Scene();
+    const renderer = new EncounterRenderer(scene);
+    const game = createGameState();
+    const enemy = spawnEnemyAt(game, 'bloodFan', { x: 3, y: 1, z: -2 });
+
+    renderer.sync([], game.enemies, null, [], 4, 1);
+    renderer.sync([], [], null, [], 4.1, 1);
+
+    const reaction = scene.getObjectByName(`enemy-death-reaction-${enemy.id}`);
+    expect(reaction).toBeInstanceOf(THREE.Group);
+    expect(reaction?.userData.presentationRole).toBe('enemy-death-reaction');
+    renderer.sync([], [], null, [], 5, 1);
+    expect(scene.getObjectByName(`enemy-death-reaction-${enemy.id}`)).toBeUndefined();
+    renderer.dispose();
+  });
+
+  it('rises minibosses into play and preserves a readable defeat pose after removal', () => {
+    const scene = new THREE.Scene();
+    const renderer = new EncounterRenderer(scene);
+    const captain = spawnMiniboss('crimsonCaptain', 90);
+
+    renderer.sync([], [], captain, [], 2, 1);
+    const visual = scene.getObjectByName('miniboss-crimsonCaptain')!;
+    expect(visual.position.y).toBeLessThan(0);
+    expect(visual.userData.presentationState).toBe('entrance');
+
+    renderer.sync([], [], null, [], 2.1, 1);
+    expect(visual.visible).toBe(true);
+    expect(visual.userData.presentationState).toBe('defeat');
+    renderer.sync([], [], null, [], 4, 1);
+    expect(visual.visible).toBe(false);
+    renderer.dispose();
+  });
 });
