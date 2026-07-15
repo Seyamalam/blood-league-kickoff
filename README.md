@@ -17,10 +17,6 @@
 
 ![Blood League: Kickoff v0.16 title screen](docs/screenshots/title-screen-v016.png)
 
-### Production gameplay trailer
-
-[Watch the 15-second production WebGL gameplay capture](docs/media/gameplay-trailer-rc.webm)
-
 ## The Game
 
 The opening kickoff of a cursed football match awakens a stadium full of vampires. The last human striker must survive the match using an enchanted football, supernatural boots, and spectral teammates.
@@ -29,13 +25,9 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![v0.16 production kickoff with the shared-rig football kit and live aim guide](docs/screenshots/production-gameplay-v016.png)
+![Current v0.16 kickoff with the shared-rig football kit and live aim guide](docs/screenshots/gameplay-v016.png)
 
-![Expanded Royal Amethyst stadium and detailed humanoid striker](docs/screenshots/expanded-stadium-humanoid.jpg)
-
-![Animated CC0 skinned striker on the PBR pitch](docs/screenshots/cc0-animated-striker.jpg)
-
-![Animated enemy GLB pool, authored crowd LODs, panelled football, and rebuilt stadium dressing](docs/screenshots/authored-enemy-stadium-pass.png)
+![Current 72-enemy visual-roster acceptance scene](docs/screenshots/dense-roster-v016.png)
 
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
@@ -43,45 +35,43 @@ The placeholder-replacement pass gives nearby ordinary enemies real skinned and 
 
 ### Cursed contracts and live telemetry
 
-![Cursed-contract selection with authored curse icons](docs/screenshots/cursed-contract.jpg)
+![Current cursed-contract selection with authored curse icons](docs/screenshots/cursed-contract-v016.png)
 
-![Live run statistics available from pause](docs/screenshots/live-run-stats.jpg)
+![Current live run statistics available from pause](docs/screenshots/live-run-stats-v016.png)
 
 ### Goalkeeper showdown
 
-![The special goalkeeper blocker guarding the regulation-size goal](docs/screenshots/goalkeeper.jpg)
+![Current special goalkeeper blocker guarding the regulation-size goal](docs/screenshots/goalkeeper-v016.png)
 
-![Count Goalkeeper's winged second form during Blood Moon](docs/screenshots/boss-second-form-rc.jpg)
+![Current articulated Count Goalkeeper final encounter](docs/screenshots/count-goalkeeper-v016.png)
 
 ### Secondary weapon spectacle
 
-![All five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons.jpg)
+![Current five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons-v016.png)
 
 ### Progression
 
-![Weighted upgrade draft with reroll, banish, skip, rarity, and evolution preview](docs/screenshots/upgrade-draft-rc.jpg)
+![Current weighted upgrade draft with reroll, banish, skip, rarity, and evolution preview](docs/screenshots/upgrade-v016.png)
 
-![Moon Breaker evolution unlock presentation](docs/screenshots/evolution.jpg)
+![Current Moon Breaker evolution unlock presentation](docs/screenshots/evolution-v016.png)
 
 ### Difficulty and Codex
 
-![League difficulty and optional match modifiers](docs/screenshots/difficulty-rc.jpg)
+![Current league difficulty and optional match modifiers](docs/screenshots/difficulty-v016.png)
 
-![Unlockable character, weapon, evolution, enemy, and curse Codex](docs/screenshots/codex-rc.jpg)
-
-![Live shared-rig character preview and original portrait roster](docs/screenshots/character-codex-v016.png)
+![Current live shared-rig character preview and original portrait roster](docs/screenshots/character-codex-v016.png)
 
 ### Settings
 
-![Persistent graphics, frame-rate, audio, motion, accessibility, and camera settings](docs/screenshots/settings-v012.jpg)
+![Current persistent graphics, frame-rate, audio, motion, accessibility, and camera settings](docs/screenshots/settings-v016.png)
 
 ### Career
 
-![Career progression and original character roster](docs/screenshots/career.jpg)
+![Current Career progression and original character portrait roster](docs/screenshots/career-v016.png)
 
 ### Results
 
-![Victory results with run grade and build metadata](docs/screenshots/results-victory.jpg)
+![Current victory results with run grade and build metadata](docs/screenshots/results-v016.png)
 
 ## Design Pillars
 
@@ -114,8 +104,6 @@ The next replayability layer uses six original football-style archetypes. They d
 | The Finisher  | Penalty-box hunter      | Direct damage against elite threats | Weaker secondary weapons |
 | The Engine    | Relentless runner       | Pickup range and pitch coverage     | Lower starting damage    |
 | The Guardian  | Defensive anchor        | Damage resistance                   | Lower kick power         |
-
-![Shared-rig Maestro rendering in the production build](docs/qa/character-visuals/production-gameplay-maestro.png)
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The player now uses an optimized, skinned Quaternius CC0 humanoid and compatible authored animation library for idle, jog, sprint, roll, tackles, and kick techniques. The 36-part original procedural humanoid remains an automatic fallback.
 
