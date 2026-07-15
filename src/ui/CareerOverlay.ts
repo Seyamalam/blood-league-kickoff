@@ -12,6 +12,7 @@ import { ELITE_MODIFIER_DEFINITIONS } from '../game/encounters';
 import { MINIBOSS_CONFIGS } from '../game/boss';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import { CHARACTER_PORTRAIT_URLS } from '../assets/characterPortraits';
+import { ENEMY_PORTRAIT_URLS } from '../assets/oppositionPortraits';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { LocalLeaderboardRepository } from '../leaderboard';
 import {
@@ -528,7 +529,7 @@ export function createCodexViewModel(profile: Readonly<PlayerProfile>): readonly
       category: 'enemy' as const,
       unlocked: true,
       discovered: hasPlayed,
-      iconUrl: null,
+      iconUrl: ENEMY_PORTRAIT_URLS[id],
       unlockHint: 'Encounter this opponent during a match',
     })),
     ...Object.values(MINIBOSS_CONFIGS).map((definition) => ({
