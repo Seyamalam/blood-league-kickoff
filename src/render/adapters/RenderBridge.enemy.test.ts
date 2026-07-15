@@ -98,12 +98,41 @@ describe('RenderBridge enemy visuals', () => {
         }
 
         const visibleMeshes = enemyMeshes(root).filter((mesh) => mesh.visible);
-        expect(visibleMeshes.length, `${archetype} visible mesh count`).toBeLessThanOrEqual(5);
+        // Near characters are genuinely articulated, while mid/far collapse to
+        // one merged silhouette. Keep the close-up presentation bounded.
+        expect(visibleMeshes.length, `${archetype} visible mesh count`).toBeLessThanOrEqual(20);
         expect(
           visibleMeshes.reduce((total, mesh) => total + triangleCount(mesh), 0),
           `${archetype} visible triangle count`,
-        ).toBeLessThanOrEqual(1_500);
+        ).toBeLessThanOrEqual(3_500);
       }
+    } finally {
+      bridge.dispose();
+    }
+  });
+
+  it('uses articulated near characters and merged far silhouettes', () => {
+    const state = createGameState();
+    const nearEnemy = spawnEnemyAt(state, 'bloodFan', { x: 2, y: 0.9, z: 0 });
+    const farEnemy = spawnEnemyAt(state, 'defender', { x: 70, y: 0.9, z: 0 });
+    const scene = new THREE.Scene();
+    const bridge = new RenderBridge(scene);
+    try {
+      sync(bridge, state);
+      const nearRoot = scene.getObjectByName(`enemy-${nearEnemy.id}`)!;
+      expect(nearRoot.getObjectByName('enemy-lod-near')!.visible).toBe(true);
+      expect(nearRoot.getObjectByName('enemy-joint-left-arm')).toBeInstanceOf(THREE.Group);
+      expect(nearRoot.getObjectByName('enemy-joint-right-leg')).toBeInstanceOf(THREE.Group);
+
+      const farRoot = scene.getObjectByName(`enemy-${farEnemy.id}`)!;
+      expect(farRoot.getObjectByName('enemy-lod-near')!.visible).toBe(false);
+      expect(farRoot.getObjectByName('enemy-lod-far')!.visible).toBe(true);
+      const farMeshes = enemyMeshes(farRoot.getObjectByName('enemy-lod-far')!).filter(
+        (candidate) => candidate.visible,
+      );
+      expect(farMeshes).toHaveLength(1);
+      expect(farMeshes[0]!.name).toBe('defender-far-silhouette');
+      expect(farMeshes[0]!.castShadow).toBe(false);
     } finally {
       bridge.dispose();
     }

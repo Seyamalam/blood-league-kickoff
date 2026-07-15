@@ -1,10 +1,18 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 import { getEnemyArchetypeDefinition } from '../../game/simulation/enemyArchetypes';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
 import { PlayerCharacterAsset } from '../objects/PlayerCharacterAsset';
 import type { RenderQuality } from '../../settings/SettingsStore';
+import {
+  chooseEnemyVisualLod,
+  createEnemyCharacterPresentation,
+  disposeEnemyCharacterResources,
+  setEnemyVisualLod,
+  updateEnemyCharacterPose,
+  type EnemyCharacterPresentation,
+} from '../objects/EnemyCharacterVisual';
+import { EnemyCharacterAssetPool } from '../objects/EnemyCharacterAssetPool';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -31,6 +39,7 @@ interface ImpactRing {
 interface EnemyVisual {
   group: THREE.Group;
   bodyRoot: THREE.Group;
+  character: EnemyCharacterPresentation;
   threatMarker: THREE.Mesh;
   eliteMarker?: THREE.Mesh;
   body?: THREE.Mesh;
@@ -60,6 +69,7 @@ export class RenderBridge {
   private readonly bursts: HitBurst[];
   private readonly impactRings: ImpactRing[];
   private readonly enemies = new Map<number, EnemyVisual>();
+  private readonly enemyCharacterPool: EnemyCharacterAssetPool;
   private readonly liveEnemyIds = new Set<number>();
   private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
   private readonly liveEnemyProjectileIds = new Set<number>();
@@ -79,6 +89,7 @@ export class RenderBridge {
     this.player = createPlayer();
     this.playerAsset = new PlayerCharacterAsset(this.player);
     this.playerAsset.load();
+    this.enemyCharacterPool = new EnemyCharacterAssetPool();
     this.ball = createBall();
     this.ballMaterial = this.ball.material as THREE.MeshStandardMaterial;
     const trail = createBallTrail();
@@ -140,6 +151,7 @@ export class RenderBridge {
       if (!visual) {
         visual = createEnemy(enemy);
         this.enemies.set(enemy.id, visual);
+        this.enemyCharacterPool.register(enemy.id, enemy.archetype, visual.character);
         this.scene.add(visual.group);
       }
       const mesh = visual.group;
@@ -163,13 +175,27 @@ export class RenderBridge {
       const buffPulse = enemy.buffed ? 1 + Math.sin(state.elapsed * 9 + enemy.id) * 0.025 : 1;
       const eliteScale = enemy.elite ? 1.18 : 1;
       mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * buffPulse * eliteScale);
-      updateEnemyVisual(visual, enemy, state.elapsed);
+      const enemyDistanceSquared = (p.x - mesh.position.x) ** 2 + (p.z - mesh.position.z) ** 2;
+      const enemyMoved =
+        (enemy.position.x - enemy.previousPosition.x) ** 2 +
+          (enemy.position.z - enemy.previousPosition.z) ** 2 >
+        0.000001;
+      this.enemyCharacterPool.track(
+        enemy.id,
+        enemyDistanceSquared,
+        enemyMoved,
+        enemy.attackState,
+        enemy.hitFlash > 0,
+      );
+      updateEnemyVisual(visual, enemy, state.elapsed, enemyDistanceSquared, this.renderQuality);
     }
     for (const [id, visual] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
+      this.enemyCharacterPool.unregister(id);
       this.scene.remove(visual.group);
       this.enemies.delete(id);
     }
+    this.enemyCharacterPool.update(dt, this.renderQuality);
     this.liveEnemyProjectileIds.clear();
     for (const projectile of state.enemyProjectiles) {
       this.liveEnemyProjectileIds.add(projectile.id);
@@ -199,6 +225,7 @@ export class RenderBridge {
   reset(): void {
     this.previousMatchPhase = undefined;
     this.playerAsset.resetPresentation();
+    this.enemyCharacterPool.clear();
     for (const visual of this.enemies.values()) {
       this.scene.remove(visual.group);
     }
@@ -291,6 +318,7 @@ export class RenderBridge {
     this.disposed = true;
     this.reset();
     this.playerAsset.dispose();
+    this.enemyCharacterPool.dispose();
     this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
     this.ball.geometry.dispose();
     this.ballMaterial.dispose();
@@ -307,7 +335,10 @@ export class RenderBridge {
       ring.mesh.material.dispose();
     }
     activeBridgeCount = Math.max(0, activeBridgeCount - 1);
-    if (activeBridgeCount === 0) disposeSharedRenderResources();
+    if (activeBridgeCount === 0) {
+      disposeSharedRenderResources();
+      disposeEnemyCharacterResources();
+    }
   }
 
   private updateBallEnergy(position: Vec3, speed: number): void {
@@ -771,18 +802,23 @@ function createEnemy(enemy: EnemyState): EnemyVisual {
   bodyRoot.name = 'enemy-body-root';
   group.add(bodyRoot);
 
-  const parts: Partial<EnemyVisual> = {};
-  if (enemy.archetype === 'winger') addWinger(bodyRoot, parts);
-  else if (enemy.archetype === 'defender') addDefender(bodyRoot, parts);
-  else if (enemy.archetype === 'coach') addCoach(bodyRoot, parts);
-  else if (enemy.archetype === 'batSwarm') addBatSwarm(bodyRoot, parts);
-  else if (enemy.archetype === 'leechStriker') addLeechStriker(bodyRoot, parts);
-  else if (enemy.archetype === 'corruptReferee') addCorruptReferee(bodyRoot, parts);
-  else if (enemy.archetype === 'bloodArcher') addBloodArcher(bodyRoot, parts);
-  else if (enemy.archetype === 'shadowRunner') addShadowRunner(bodyRoot, parts);
-  else if (enemy.archetype === 'corpseBomber') addCorpseBomber(bodyRoot, parts);
-  else if (enemy.archetype === 'goalkeeperBrute') addGoalkeeperBrute(bodyRoot, parts);
-  else addBloodFan(bodyRoot, parts);
+  const character = createEnemyCharacterPresentation(enemy.archetype);
+  bodyRoot.add(character.lodRoot);
+  const parts: Partial<EnemyVisual> = {
+    shield: character.shield,
+    aura: character.aura,
+    leftWing: character.leftWing,
+    rightWing: character.rightWing,
+    mouth: character.mouth,
+    drainRing: character.drainRing,
+    whistle: character.whistle,
+    whistleRing: character.whistleRing,
+    leftGlove: character.leftGlove,
+    rightGlove: character.rightGlove,
+    catchRing: character.catchRing,
+    weapon: character.weapon,
+    specialRing: character.specialRing,
+  };
 
   // Ground-space cues must not inherit body lean or hit recoil.
   for (const groundCue of [parts.aura, parts.drainRing, parts.whistleRing, parts.specialRing]) {
@@ -795,16 +831,33 @@ function createEnemy(enemy: EnemyState): EnemyVisual {
     ...parts,
     group,
     bodyRoot,
+    character,
     threatMarker: addThreatMarker(group),
     eliteMarker: enemy.elite ? addEliteMarker(group) : undefined,
   };
 }
 
-function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: number): void {
+function updateEnemyVisual(
+  visual: EnemyVisual,
+  enemy: EnemyState,
+  elapsed: number,
+  distanceSquared: number,
+  quality: RenderQuality,
+): void {
   const phase = elapsed + enemy.id * 0.37;
   const dx = enemy.position.x - enemy.previousPosition.x;
   const dz = enemy.position.z - enemy.previousPosition.z;
   const moving = dx * dx + dz * dz > 0.000001;
+  const lod = chooseEnemyVisualLod(distanceSquared, quality);
+  if (lod !== visual.character.lod) setEnemyVisualLod(visual.character, lod);
+  updateEnemyCharacterPose(
+    visual.character,
+    elapsed,
+    enemy.id,
+    moving,
+    enemy.attackState,
+    enemy.hitFlash > 0,
+  );
   const slowFactor = enemy.slowTimer > 0 ? 0.55 : 1;
   const gait = Math.sin(phase * (enemy.buffed ? 11 : 7) * slowFactor);
   const step = moving ? Math.abs(gait) : Math.abs(Math.sin(phase * 2.2)) * 0.18;
@@ -913,126 +966,15 @@ function updateEnemyVisual(visual: EnemyVisual, enemy: EnemyState, elapsed: numb
   }
 }
 
-function mergeEnemyParts(
-  parts: Array<{ geometry: THREE.BufferGeometry; position: readonly [number, number, number] }>,
-) {
-  const geometries = parts.map(({ geometry, position }) => {
-    geometry.translate(position[0], position[1], position[2]);
-    return geometry;
-  });
-  const merged = mergeGeometries(geometries, false);
-  for (const geometry of geometries) geometry.dispose();
-  if (!merged) throw new Error('Could not merge shared enemy geometry');
-  return merged;
-}
-
 const enemyGeometry = {
-  fanCloak: new THREE.ConeGeometry(0.52, 1.45, 7),
-  fanHead: new THREE.SphereGeometry(0.3, 10, 7),
-  eyes: new THREE.BoxGeometry(0.3, 0.045, 0.045),
-  wingerBody: new THREE.CapsuleGeometry(0.3, 0.82, 4, 7),
-  wingerWing: new THREE.ConeGeometry(0.2, 0.9, 3),
-  defenderBody: new THREE.BoxGeometry(0.95, 1.35, 0.62),
-  defenderShield: new THREE.BoxGeometry(1.18, 1.05, 0.18),
-  coachBody: new THREE.CylinderGeometry(0.38, 0.58, 1.55, 8),
-  coachAura: new THREE.RingGeometry(5.3, 5.5, 40),
-  batBody: new THREE.SphereGeometry(0.25, 7, 5),
-  batWing: new THREE.ConeGeometry(0.3, 0.7, 3),
-  batEars: mergeEnemyParts([
-    { geometry: new THREE.ConeGeometry(0.07, 0.22, 4), position: [-0.1, 1.02, 0] },
-    { geometry: new THREE.ConeGeometry(0.07, 0.22, 4), position: [0.1, 1.02, 0] },
-  ]),
-  leechBody: new THREE.CapsuleGeometry(0.38, 0.72, 4, 7),
-  leechMouth: new THREE.TorusGeometry(0.2, 0.07, 5, 12),
-  leechDrainRing: new THREE.TorusGeometry(0.62, 0.045, 5, 18),
-  refereeBody: new THREE.BoxGeometry(0.7, 1.35, 0.46),
-  refereeStripes: mergeEnemyParts(
-    [-0.22, 0, 0.22].map((x) => ({
-      geometry: new THREE.BoxGeometry(0.13, 1.2, 0.03),
-      position: [x, 0.78, 0.245] as const,
-    })),
-  ),
-  refereeWhistle: new THREE.ConeGeometry(0.1, 0.26, 5),
-  refereeWhistleRing: new THREE.TorusGeometry(0.74, 0.055, 5, 20),
-  bruteBody: new THREE.BoxGeometry(1.45, 1.65, 0.82),
-  bruteGlove: new THREE.SphereGeometry(0.34, 8, 6),
-  bruteCatchRing: new THREE.TorusGeometry(1.02, 0.07, 6, 24),
-  archerBody: new THREE.CylinderGeometry(0.32, 0.46, 1.42, 7),
-  archerBow: new THREE.TorusGeometry(0.52, 0.055, 5, 14, Math.PI * 1.35),
-  shadowBody: new THREE.CapsuleGeometry(0.28, 0.9, 4, 7),
-  shadowVeil: new THREE.ConeGeometry(0.52, 1.2, 5, 1, true),
-  shadowRing: new THREE.RingGeometry(0.7, 0.85, 20),
-  bomberBody: new THREE.DodecahedronGeometry(0.7, 0),
-  bomberFuse: new THREE.CylinderGeometry(0.045, 0.045, 0.5, 5),
-  bomberRing: new THREE.RingGeometry(1.35, 1.5, 24),
   projectile: new THREE.OctahedronGeometry(0.22, 0),
   threatMarker: new THREE.OctahedronGeometry(0.16, 0),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };
 
 const enemyMaterial = {
-  pale: new THREE.MeshStandardMaterial({ color: 0xb9a6ae, roughness: 0.85 }),
-  eyes: new THREE.MeshBasicMaterial({ color: 0xff174f }),
-  fan: new THREE.MeshStandardMaterial({ color: 0x4a1d43, roughness: 0.72 }),
-  winger: new THREE.MeshStandardMaterial({ color: 0x8e143e, roughness: 0.56 }),
-  wingerWing: new THREE.MeshStandardMaterial({ color: 0xdd315d, roughness: 0.5 }),
-  defender: new THREE.MeshStandardMaterial({ color: 0x46245e, roughness: 0.8 }),
-  shield: new THREE.MeshStandardMaterial({ color: 0x74426e, roughness: 0.48, metalness: 0.28 }),
-  coach: new THREE.MeshStandardMaterial({ color: 0xb89526, roughness: 0.58 }),
-  bat: new THREE.MeshStandardMaterial({ color: 0x2c1c38, roughness: 0.78 }),
-  batWing: new THREE.MeshStandardMaterial({ color: 0x84285e, roughness: 0.66, side: THREE.DoubleSide }),
-  leech: new THREE.MeshStandardMaterial({ color: 0x62214c, roughness: 0.72 }),
-  leechMouth: new THREE.MeshBasicMaterial({ color: 0xf2b5cf }),
-  leechDrain: new THREE.MeshBasicMaterial({
-    color: 0xffcf40,
-    transparent: true,
-    opacity: 0.82,
-    depthWrite: false,
-  }),
-  referee: new THREE.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.78 }),
-  refereeStripe: new THREE.MeshStandardMaterial({ color: 0x16131a, roughness: 0.84 }),
-  refereeWhistle: new THREE.MeshStandardMaterial({ color: 0xffcf40, roughness: 0.3, metalness: 0.58 }),
-  refereeRing: new THREE.MeshBasicMaterial({
-    color: 0xffcf40,
-    transparent: true,
-    opacity: 0.88,
-    depthWrite: false,
-  }),
-  brute: new THREE.MeshStandardMaterial({ color: 0x38264f, roughness: 0.76 }),
-  bruteGlove: new THREE.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.58 }),
-  bruteCatch: new THREE.MeshBasicMaterial({
-    color: 0xffcf40,
-    transparent: true,
-    opacity: 0.9,
-    depthWrite: false,
-  }),
-  archer: new THREE.MeshStandardMaterial({ color: 0x6e173a, roughness: 0.62 }),
-  archerBow: new THREE.MeshStandardMaterial({ color: 0xd6a632, roughness: 0.35, metalness: 0.4 }),
-  shadow: new THREE.MeshStandardMaterial({ color: 0x171328, roughness: 0.78 }),
-  shadowVeil: new THREE.MeshBasicMaterial({
-    color: 0x7b58bc,
-    transparent: true,
-    opacity: 0.45,
-    depthWrite: false,
-  }),
-  bomber: new THREE.MeshStandardMaterial({ color: 0x6d3428, roughness: 0.7 }),
-  bomberFuse: new THREE.MeshBasicMaterial({ color: 0xffcf40 }),
-  dangerRing: new THREE.MeshBasicMaterial({
-    color: 0xff6a3d,
-    transparent: true,
-    opacity: 0.72,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  }),
   projectile: new THREE.MeshBasicMaterial({ color: 0xff315d }),
   threatMarker: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-  aura: new THREE.MeshBasicMaterial({
-    color: 0xffcf40,
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  }),
   elite: new THREE.MeshBasicMaterial({
     color: 0xffcf40,
     transparent: true,
@@ -1061,47 +1003,6 @@ function mesh(
   return result;
 }
 
-function addFace(group: THREE.Group, headY: number, prefix: string): void {
-  group.add(mesh(enemyGeometry.fanHead, enemyMaterial.pale, headY, `${prefix}-head`));
-  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, headY + 0.05, `${prefix}-eyes`);
-  eyes.position.z = 0.285;
-  eyes.castShadow = false;
-  group.add(eyes);
-}
-
-function addBloodFan(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.fanCloak, enemyMaterial.fan, 0.72, 'blood-fan-cloak');
-  parts.body = body;
-  group.add(body);
-  addFace(group, 1.52, 'blood-fan');
-}
-
-function addWinger(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.wingerBody, enemyMaterial.winger, 0.83, 'winger-body');
-  const leftWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92, 'winger-wing-left');
-  leftWing.position.x = -0.43;
-  leftWing.rotation.z = -0.55;
-  const rightWing = mesh(enemyGeometry.wingerWing, enemyMaterial.wingerWing, 0.92, 'winger-wing-right');
-  rightWing.position.x = 0.43;
-  rightWing.rotation.z = 0.55;
-  parts.body = body;
-  parts.leftWing = leftWing;
-  parts.rightWing = rightWing;
-  group.add(body, leftWing, rightWing);
-  addFace(group, 1.55, 'winger');
-}
-
-function addDefender(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.defenderBody, enemyMaterial.defender, 0.75, 'defender-body');
-  const shield = mesh(enemyGeometry.defenderShield, enemyMaterial.shield, 0.72, 'defender-shield');
-  shield.name = 'defender-shield';
-  shield.position.z = 0.42;
-  parts.body = body;
-  parts.shield = shield;
-  group.add(body, shield);
-  addFace(group, 1.65, 'defender');
-}
-
 function addEliteMarker(group: THREE.Group): THREE.Mesh {
   const marker = mesh(enemyGeometry.eliteMarker, enemyMaterial.elite, 2.25, 'elite-marker');
   marker.name = 'elite-marker';
@@ -1109,148 +1010,6 @@ function addEliteMarker(group: THREE.Group): THREE.Mesh {
   marker.castShadow = false;
   group.add(marker);
   return marker;
-}
-
-function addCoach(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.coachBody, enemyMaterial.coach, 0.8, 'coach-body');
-  group.add(body);
-  addFace(group, 1.7, 'coach');
-  const aura = mesh(enemyGeometry.coachAura, enemyMaterial.aura, 0.035, 'coach-aura');
-  aura.rotation.x = -Math.PI / 2;
-  aura.castShadow = false;
-  parts.body = body;
-  parts.aura = aura;
-  group.add(aura);
-}
-
-function addBatSwarm(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.batBody, enemyMaterial.bat, 0.72, 'bat-body');
-  body.scale.set(1, 0.72, 1.18);
-  group.add(body);
-
-  const leftWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75, 'bat-wing-left');
-  leftWing.name = 'bat-wing-left';
-  leftWing.position.x = -0.34;
-  leftWing.rotation.set(0, 0, -0.72);
-  const rightWing = mesh(enemyGeometry.batWing, enemyMaterial.batWing, 0.75, 'bat-wing-right');
-  rightWing.name = 'bat-wing-right';
-  rightWing.position.x = 0.34;
-  rightWing.rotation.set(0, 0, 0.72);
-
-  const ears = mesh(enemyGeometry.batEars, enemyMaterial.bat, 0, 'bat-ears');
-  const eyes = mesh(enemyGeometry.eyes, enemyMaterial.eyes, 0.8, 'bat-eyes');
-  eyes.scale.setScalar(0.55);
-  eyes.position.z = 0.24;
-  eyes.castShadow = false;
-  parts.body = body;
-  parts.leftWing = leftWing;
-  parts.rightWing = rightWing;
-  group.add(leftWing, rightWing, ears, eyes);
-}
-
-function addLeechStriker(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.leechBody, enemyMaterial.leech, 0.78, 'leech-body');
-  body.rotation.x = -0.38;
-  body.scale.set(1.05, 1, 1.2);
-  const mouth = mesh(enemyGeometry.leechMouth, enemyMaterial.leechMouth, 0.96, 'leech-mouth');
-  mouth.position.z = 0.42;
-  mouth.rotation.x = Math.PI / 2;
-  mouth.castShadow = false;
-  const drainRing = mesh(enemyGeometry.leechDrainRing, enemyMaterial.leechDrain, 0.08, 'leech-drain-ring');
-  drainRing.name = 'leech-drain-ring';
-  drainRing.rotation.x = -Math.PI / 2;
-  drainRing.castShadow = false;
-  drainRing.visible = false;
-  parts.body = body;
-  parts.mouth = mouth;
-  parts.drainRing = drainRing;
-  group.add(body, mouth, drainRing);
-}
-
-function addCorruptReferee(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.refereeBody, enemyMaterial.referee, 0.78, 'referee-body');
-  group.add(body);
-  const stripes = mesh(enemyGeometry.refereeStripes, enemyMaterial.refereeStripe, 0, 'referee-stripes');
-  group.add(stripes);
-  addFace(group, 1.66, 'referee');
-  const whistle = mesh(enemyGeometry.refereeWhistle, enemyMaterial.refereeWhistle, 1.42, 'referee-whistle');
-  whistle.position.z = 0.39;
-  whistle.rotation.x = Math.PI / 2;
-  const ring = mesh(
-    enemyGeometry.refereeWhistleRing,
-    enemyMaterial.refereeRing,
-    0.08,
-    'referee-whistle-ring',
-  );
-  ring.name = 'referee-whistle-ring';
-  ring.rotation.x = -Math.PI / 2;
-  ring.castShadow = false;
-  ring.visible = false;
-  parts.body = body;
-  parts.whistle = whistle;
-  parts.whistleRing = ring;
-  group.add(whistle, ring);
-}
-
-function addBloodArcher(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.archerBody, enemyMaterial.archer, 0.78, 'archer-body');
-  const bow = mesh(enemyGeometry.archerBow, enemyMaterial.archerBow, 1.02, 'archer-bow');
-  bow.position.set(0.48, 1.02, 0.24);
-  bow.rotation.set(Math.PI / 2, 0, -0.15);
-  parts.body = body;
-  parts.weapon = bow;
-  group.add(body, bow);
-  addFace(group, 1.64, 'archer');
-}
-
-function addShadowRunner(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.shadowBody, enemyMaterial.shadow, 0.84, 'shadow-body');
-  const veil = mesh(enemyGeometry.shadowVeil, enemyMaterial.shadowVeil, 0.82, 'shadow-veil');
-  const ring = mesh(enemyGeometry.shadowRing, enemyMaterial.shadowVeil, 0.06, 'shadow-teleport-ring');
-  ring.rotation.x = -Math.PI / 2;
-  ring.visible = false;
-  ring.castShadow = false;
-  parts.body = body;
-  parts.specialRing = ring;
-  group.add(body, veil, ring);
-  addFace(group, 1.68, 'shadow');
-}
-
-function addCorpseBomber(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.bomberBody, enemyMaterial.bomber, 0.75, 'bomber-body');
-  body.scale.set(0.88, 1.2, 0.88);
-  const fuse = mesh(enemyGeometry.bomberFuse, enemyMaterial.bomberFuse, 1.55, 'bomber-fuse');
-  fuse.rotation.z = 0.3;
-  const ring = mesh(enemyGeometry.bomberRing, enemyMaterial.dangerRing, 0.055, 'bomber-blast-ring');
-  ring.rotation.x = -Math.PI / 2;
-  ring.visible = false;
-  ring.castShadow = false;
-  parts.body = body;
-  parts.weapon = fuse;
-  parts.specialRing = ring;
-  group.add(body, fuse, ring);
-  addFace(group, 1.38, 'bomber');
-}
-
-function addGoalkeeperBrute(group: THREE.Group, parts: Partial<EnemyVisual>): void {
-  const body = mesh(enemyGeometry.bruteBody, enemyMaterial.brute, 0.9, 'brute-body');
-  group.add(body);
-  addFace(group, 1.95, 'brute');
-  const leftGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02, 'brute-glove-left');
-  leftGlove.position.set(-0.92, 1.02, 0.28);
-  const rightGlove = mesh(enemyGeometry.bruteGlove, enemyMaterial.bruteGlove, 1.02, 'brute-glove-right');
-  rightGlove.position.set(0.92, 1.02, 0.28);
-  const catchRing = mesh(enemyGeometry.bruteCatchRing, enemyMaterial.bruteCatch, 1.05, 'brute-catch-ring');
-  catchRing.name = 'brute-catch-ring';
-  catchRing.rotation.x = Math.PI / 2;
-  catchRing.position.z = 0.48;
-  catchRing.castShadow = false;
-  catchRing.visible = false;
-  parts.body = body;
-  parts.leftGlove = leftGlove;
-  parts.rightGlove = rightGlove;
-  parts.catchRing = catchRing;
-  group.add(leftGlove, rightGlove, catchRing);
 }
 
 function addThreatMarker(group: THREE.Group): THREE.Mesh {
