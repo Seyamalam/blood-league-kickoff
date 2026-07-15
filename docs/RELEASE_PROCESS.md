@@ -15,6 +15,7 @@ Every major playable milestone receives a reproducible, documented snapshot. Fre
 | `v0.8.0-alpha.5` | Regulation field/scoring/goalkeeper/aiming web+macOS prerelease     |
 | `v0.8.0`         | Presentation/content complete                                       |
 | `v0.9.0`         | Tested release candidate; features frozen                           |
+| `v0.13.0`        | Stable all-platform character-visuals milestone                     |
 | `v1.0.0`         | Exact itch.io submission revision and repository freeze             |
 
 Patch releases may fix verified blockers between milestones. Do not tag broken or untested revisions merely to match a schedule.
@@ -53,6 +54,8 @@ git push origin vX.Y.Z
 ```
 
 Pushing a version tag runs the verified web/macOS workflow on native GitHub-hosted runners. It creates the GitHub Release if needed, then attaches the web archive, macOS Intel/Apple-silicon packages, and a combined SHA-256 manifest. Alpha tags are prerelease snapshots. Release notes must include:
+
+Tags containing a prerelease suffix such as `-alpha.1` or `-rc.1` are published as GitHub prereleases. Plain semantic-version tags such as `v0.13.0` are published as stable releases and therefore become the repository's **Latest Release**.
 
 - milestone and commit SHA;
 - implemented gameplay/content;

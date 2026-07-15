@@ -126,8 +126,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          RELEASE_FLAGS=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            RELEASE_FLAGS+=(--prerelease)
+          fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
-            gh release create "$GITHUB_REF_NAME" --verify-tag --prerelease \
+            gh release create "$GITHUB_REF_NAME" --verify-tag "${RELEASE_FLAGS[@]}" \
               --title "Blood League: Kickoff $GITHUB_REF_NAME" --generate-notes
           gh release upload "$GITHUB_REF_NAME" \
             release-artifacts/*.dmg \

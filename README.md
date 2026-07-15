@@ -4,16 +4,16 @@
 
 ![Blood League: Kickoff key art](docs/marketing/itch-cover.jpg)
 
-| Project   | Value                                         |
-| --------- | --------------------------------------------- |
-| Status    | Active v0.13 character-visuals alpha          |
-| Theme     | Kickoff                                       |
-| Team      | Huntrix — 2 participants                      |
-| Platforms | Web and macOS first; Windows/Linux final-only |
-| Stack     | Three.js, TypeScript, Vite, Rapier, Electron  |
-| Input     | Keyboard/mouse and standard gamepad           |
+| Project   | Value                                        |
+| --------- | -------------------------------------------- |
+| Status    | Stable v0.13 character-visuals release       |
+| Theme     | Kickoff                                      |
+| Team      | Huntrix — 2 participants                     |
+| Platforms | Web, macOS, Windows, and Linux               |
+| Stack     | Three.js, TypeScript, Vite, Rapier, Electron |
+| Input     | Keyboard/mouse and standard gamepad          |
 
-### Current alpha title screen
+### Current title screen
 
 ![Blood League: Kickoff v0.12 title screen](docs/screenshots/title-screen-v012.jpg)
 
@@ -368,7 +368,7 @@ npm run package:mac
 
 The web build is emitted to `dist/`. Copy `.env.example` to ignored `.env.local`, set `BUTLER_API_KEY`, and run `npm run deploy:itch:web` for a verified local upload. Pushes to `main` run the same full check and automatically update the `seyamalam/blood-league-kickoff:html5` itch.io channel through the encrypted GitHub secret. Manual dispatches are also restricted to `main`; pull requests never deploy. On itch.io, the project is configured as HTML and only the Butler-managed `html5` upload is marked playable in the browser.
 
-Version tags run the verified web/macOS prerelease workflow and attach those artifacts plus `SHA256SUMS.txt` to the matching GitHub Release. Windows and Linux are deliberately excluded from routine alpha tags: their cross-platform workflow is manual, confirmation-gated, and reserved for the finished game. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
+Version tags run the verified web/macOS release workflow and attach those artifacts plus `SHA256SUMS.txt` to the matching GitHub Release. Hyphenated development tags publish as prereleases; plain semantic-version tags publish to GitHub's stable Latest Release channel. Windows and Linux remain explicit, confirmation-gated native builds. Automated macOS builds are currently unsigned and unnotarized; see the [release process](docs/RELEASE_PROCESS.md) for first-launch guidance.
 
 ## Versioning and Releases
 
@@ -377,7 +377,7 @@ Development history is part of the jam submission, so changes are committed in s
 1. Updated README progress and game documentation
 2. A verified production build
 3. A milestone commit pushed to GitHub
-4. A version tag and GitHub prerelease with verified web/macOS artifacts; final-only platforms are added after explicit validation
+4. A version tag and GitHub release with verified web/macOS artifacts; confirmation-gated native platforms are added after explicit validation
 
 Planned release line:
 
@@ -403,6 +403,7 @@ Planned release line:
 | `v0.12.0-alpha.1` | Football systems, tournament foundation, and photo mode     |
 | `v0.13.0-alpha.1` | Shared-rig variants and original-hero production foundation |
 | `v0.13.0-alpha.2` | Verified all-platform release checkpoint                    |
+| `v0.13.0`         | Stable all-platform character-visuals milestone             |
 | `v1.0.0`          | Jam submission freeze                                       |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.

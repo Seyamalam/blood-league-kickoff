@@ -2,6 +2,12 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.13.0 — 2026-07-15
+
+- Promoted the verified character-visuals milestone to the stable release channel so GitHub's Latest Release points to the current game instead of `v0.7.1`.
+- Rebuilt versioned web and native packages from the current unified `main` revision; no gameplay or content changes were introduced after `v0.13.0-alpha.2`.
+- Updated release automation so plain semantic-version tags publish as stable releases while hyphenated alpha/RC tags remain prereleases.
+
 ## v0.13.0-alpha.2 — 2026-07-14
 
 - Rebuilt the latest unified `main` revision for web, macOS Intel, macOS Apple silicon, Windows x64, and Linux x64.
