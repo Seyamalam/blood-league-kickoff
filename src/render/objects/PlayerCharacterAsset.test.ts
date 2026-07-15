@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { locomotionClipFor, locomotionStateFor } from './PlayerCharacterAsset';
+import { locomotionClipFor, locomotionStateFor, rigDiagnosticsRequested } from './PlayerCharacterAsset';
 import {
   FOOTBALL_ANIMATION_STATES,
   resolveFootballAnimation,
@@ -22,6 +22,15 @@ describe('locomotionStateFor', () => {
     expect(locomotionStateFor(4, 4, 0.2)).toBe('dribble');
     expect(locomotionStateFor(4, 0.2, -4)).toBe('strafeLeft');
     expect(locomotionStateFor(4, 0.2, 4)).toBe('strafeRight');
+  });
+});
+
+describe('rig diagnostics opt-in', () => {
+  it('requires both a development build and an explicit query flag', () => {
+    expect(rigDiagnosticsRequested('?rigDebug=1', true)).toBe(true);
+    expect(rigDiagnosticsRequested('?rigDebug=0', true)).toBe(false);
+    expect(rigDiagnosticsRequested('', true)).toBe(false);
+    expect(rigDiagnosticsRequested('?rigDebug=1', false)).toBe(false);
   });
 });
 

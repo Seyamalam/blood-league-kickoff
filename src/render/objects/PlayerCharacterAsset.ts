@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import type { AnimationActionLoopStyles } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { PlayerState } from '../../game/simulation/types';
 import type { CharacterId } from '../../game/characters';
@@ -13,6 +12,7 @@ import {
   type FootballAnimationResolution,
   type FootballAnimationState,
 } from './FootballAnimationContract';
+import { CharacterAnimationController } from './CharacterAnimationController';
 
 const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
 const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
@@ -20,6 +20,23 @@ const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb
 export type PlayerTechnique = 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle';
 export type PlayerReaction = 'damage' | 'knockdown';
 export type PlayerOutcome = 'celebration' | 'victory' | 'defeat';
+
+const ANIMATION_PRIORITY = {
+  locomotion: 10,
+  technique: 50,
+  damage: 70,
+  knockdown: 80,
+  terminal: 100,
+} as const;
+
+export interface PlayerCharacterAssetOptions {
+  /** Disabled by default; intended only for local web rig inspection. */
+  readonly showSkeleton?: boolean;
+}
+
+export function rigDiagnosticsRequested(search: string, isDevelopment: boolean): boolean {
+  return isDevelopment && new URLSearchParams(search).get('rigDebug') === '1';
+}
 
 /** Resolves movement relative to facing without ever affecting simulation movement. */
 export function locomotionStateFor(
@@ -49,11 +66,10 @@ export function locomotionClipFor(speed: number, dashing: boolean): string {
 export class PlayerCharacterAsset {
   private importedRoot?: THREE.Group;
   private mixer?: THREE.AnimationMixer;
+  private animationController?: CharacterAnimationController;
   private readonly clips = new Map<string, THREE.AnimationClip>();
   private footballAnimations: ReadonlyMap<FootballAnimationState, FootballAnimationResolution> = new Map();
-  private activeAction?: THREE.AnimationAction;
-  private activeClip = '';
-  private oneShotRemaining = 0;
+  private skeletonHelper?: THREE.SkeletonHelper;
   private previousDashTime = 0;
   private previousHealth?: number;
   private terminalState?: Extract<FootballAnimationState, 'victory' | 'defeat'>;
@@ -61,7 +77,10 @@ export class PlayerCharacterAsset {
   private selectedCharacterId: CharacterId = 'maestro';
   private variantController?: ImportedCharacterVariantController;
 
-  constructor(private readonly fallbackRoot: THREE.Group) {}
+  constructor(
+    private readonly fallbackRoot: THREE.Group,
+    private readonly options: PlayerCharacterAssetOptions = {},
+  ) {}
 
   get ready(): boolean {
     return this.importedRoot !== undefined;
@@ -94,7 +113,11 @@ export class PlayerCharacterAsset {
         this.variantController.apply(this.selectedCharacterId);
         this.mixer = new THREE.AnimationMixer(model);
         for (const clip of animationLibrary.animations) this.clips.set(clip.name, clip);
+        this.animationController = new CharacterAnimationController(this.mixer, this.clips.values());
         this.footballAnimations = resolveFootballAnimationContract(this.clips.keys());
+        this.setRigDiagnosticsEnabled(
+          this.options.showSkeleton ?? rigDiagnosticsRequested(window.location.search, import.meta.env.DEV),
+        );
         disposeObject(animationLibrary.scene);
         this.playFootballAnimation('idle', 0);
       })
@@ -105,7 +128,8 @@ export class PlayerCharacterAsset {
   }
 
   update(dt: number, player: PlayerState): void {
-    if (!this.mixer) return;
+    if (!this.animationController) return;
+    this.animationController.update(dt);
     const speed = Math.hypot(player.velocity.x, player.velocity.z);
     const forwardSpeed =
       player.velocity.x * Math.sin(player.facing) + player.velocity.z * Math.cos(player.facing);
@@ -120,14 +144,12 @@ export class PlayerCharacterAsset {
     } else if (!this.terminalState && dashStarted) {
       this.playFootballAnimation('slideTackle', 0.06);
     }
-    this.oneShotRemaining = Math.max(0, this.oneShotRemaining - dt);
-    if (!this.terminalState && this.oneShotRemaining === 0) {
+    if (!this.terminalState && !this.animationController.isBaseLocked) {
       // Preserve the pack's authored sprint at high speed; use semantic states
       // elsewhere so dedicated football clips are picked up automatically.
       if (speed > 7.5) this.transitionTo(locomotionClipFor(speed, false));
       else this.playFootballAnimation(locomotionStateFor(speed, forwardSpeed, lateralSpeed));
     }
-    this.mixer.update(dt);
   }
 
   playTechnique(technique: PlayerTechnique): void {
@@ -152,6 +174,26 @@ export class PlayerCharacterAsset {
     return this.playFootballAnimation(reaction, 0.06);
   }
 
+  /**
+   * Optional render-only overlay hook for future web-authored clips. For safety,
+   * only animation names explicitly marked `Additive_*` or `*_Additive` play.
+   */
+  playAdditiveOverlay(name: string, weight = 1): boolean {
+    return this.animationController?.playAdditiveOverlay({ name, weight }) ?? false;
+  }
+
+  /** Enables a local SkeletonHelper without affecting the rig or simulation. */
+  setRigDiagnosticsEnabled(enabled: boolean): void {
+    if (!this.importedRoot) return;
+    if (enabled && !this.skeletonHelper) {
+      this.skeletonHelper = new THREE.SkeletonHelper(this.importedRoot);
+      this.skeletonHelper.name = 'player-rig-diagnostics';
+      this.skeletonHelper.renderOrder = 1000;
+      this.fallbackRoot.add(this.skeletonHelper);
+    }
+    if (this.skeletonHelper) this.skeletonHelper.visible = enabled;
+  }
+
   playOutcome(outcome: PlayerOutcome): FootballAnimationResolution | undefined {
     const result = this.playFootballAnimation(outcome, 0.12);
     if (result?.clipName && (outcome === 'victory' || outcome === 'defeat')) this.terminalState = outcome;
@@ -161,9 +203,9 @@ export class PlayerCharacterAsset {
   /** Clears terminal/one-shot presentation state when a match is restarted. */
   resetPresentation(): void {
     this.terminalState = undefined;
-    this.oneShotRemaining = 0;
     this.previousHealth = undefined;
     this.previousDashTime = 0;
+    this.animationController?.reset();
     this.playFootballAnimation('idle', 0.08);
   }
 
@@ -172,29 +214,45 @@ export class PlayerCharacterAsset {
     const resolution = this.footballAnimations.get(state);
     if (!resolution?.clipName) return resolution;
     if (resolution.playback === 'loop') {
-      this.oneShotRemaining = 0;
-      this.transitionTo(resolution.clipName, fade);
+      this.transitionTo(resolution.clipName, fade, ANIMATION_PRIORITY.locomotion);
       return resolution;
     }
 
     const clip = this.clips.get(resolution.clipName);
     if (!clip) return { ...resolution, clipName: undefined, source: 'unavailable' };
-    this.transitionTo(resolution.clipName, fade, THREE.LoopOnce, true);
-    this.oneShotRemaining =
+    const priority =
       resolution.playback === 'terminal'
-        ? Number.POSITIVE_INFINITY
-        : Math.max(0.12, clip.duration * getFootballAnimationPresentation(state).recoverAt);
+        ? ANIMATION_PRIORITY.terminal
+        : state === 'knockdown'
+          ? ANIMATION_PRIORITY.knockdown
+          : state === 'damage'
+            ? ANIMATION_PRIORITY.damage
+            : ANIMATION_PRIORITY.technique;
+    this.transitionTo(resolution.clipName, fade, priority, THREE.LoopOnce, true, {
+      terminal: resolution.playback === 'terminal',
+      releaseAfter: Math.max(0.12, clip.duration * getFootballAnimationPresentation(state).recoverAt),
+    });
     return resolution;
   }
 
   dispose(): void {
     this.disposed = true;
-    this.mixer?.stopAllAction();
+    this.animationController?.dispose();
+    this.animationController = undefined;
     this.variantController?.dispose();
     this.variantController = undefined;
     if (this.importedRoot) {
       this.fallbackRoot.remove(this.importedRoot);
       disposeObject(this.importedRoot);
+    }
+    if (this.skeletonHelper) {
+      this.fallbackRoot.remove(this.skeletonHelper);
+      this.skeletonHelper.geometry.dispose();
+      const helperMaterials = Array.isArray(this.skeletonHelper.material)
+        ? this.skeletonHelper.material
+        : [this.skeletonHelper.material];
+      for (const material of helperMaterials) material.dispose();
+      this.skeletonHelper = undefined;
     }
     this.importedRoot = undefined;
     this.mixer = undefined;
@@ -207,24 +265,20 @@ export class PlayerCharacterAsset {
   private transitionTo(
     name: string,
     fade = 0.16,
-    loop: AnimationActionLoopStyles = THREE.LoopRepeat,
+    priority: number = ANIMATION_PRIORITY.locomotion,
+    loop: THREE.AnimationActionLoopStyles = THREE.LoopRepeat,
     forceRestart = false,
+    options: { readonly terminal?: boolean; readonly releaseAfter?: number } = {},
   ): void {
-    if (!this.mixer || (!forceRestart && this.activeClip === name)) return;
-    const clip = this.clips.get(name);
-    if (!clip) return;
-    const next = this.mixer.clipAction(clip);
-    const previous = this.activeAction;
-    const restartingActiveAction = previous === next;
-    if (restartingActiveAction) next.stop();
-    next.enabled = true;
-    next.reset();
-    next.setLoop(loop, loop === THREE.LoopOnce ? 1 : Infinity);
-    next.clampWhenFinished = loop === THREE.LoopOnce;
-    next.fadeIn(fade).play();
-    if (previous && !restartingActiveAction) previous.fadeOut(fade);
-    this.activeAction = next;
-    this.activeClip = name;
+    this.animationController?.playBase({
+      name,
+      fade,
+      priority,
+      loop,
+      forceRestart,
+      terminal: options.terminal,
+      releaseAfter: options.releaseAfter,
+    });
   }
 }
 
