@@ -1,5 +1,6 @@
 import type { EnemyArchetype } from '../game/simulation/types';
 import type { RivalTeamId } from '../game/match/rivalTeams';
+import type { MinibossKind } from '../game/boss';
 import batSwarm from './portraits/enemies/bat-swarm.png';
 import bloodArcher from './portraits/enemies/blood-archer.png';
 import bloodFan from './portraits/enemies/blood-fan.png';
@@ -15,6 +16,10 @@ import graveyardUnited from './portraits/rivals/graveyard-united.png';
 import ironCoven from './portraits/rivals/iron-coven.png';
 import nightwings from './portraits/rivals/nightwings.png';
 import velvetFangs from './portraits/rivals/velvet-fangs.png';
+import countGoalkeeper from './portraits/bosses/count-goalkeeper.png';
+import crimsonCaptain from './portraits/bosses/crimson-captain.png';
+import goalLineBlocker from './portraits/bosses/goal-line-blocker.png';
+import graveyardPlaymaker from './portraits/bosses/graveyard-playmaker.png';
 
 export const ENEMY_PORTRAIT_URLS = Object.freeze({
   bloodFan,
@@ -36,3 +41,14 @@ export const RIVAL_PORTRAIT_URLS = Object.freeze({
   'velvet-fangs': velvetFangs,
   'graveyard-united': graveyardUnited,
 } satisfies Record<RivalTeamId, string>);
+
+export const MINIBOSS_PORTRAIT_URLS = Object.freeze({
+  crimsonCaptain,
+  graveyardPlaymaker,
+} satisfies Record<MinibossKind, string>);
+
+/** Portraits for the authored goal-line encounter and nine-minute final boss. */
+export const FEATURED_BOSS_PORTRAIT_URLS = Object.freeze({
+  goalLineBlocker,
+  countGoalkeeper,
+});

@@ -7,7 +7,7 @@ describe('career codex', () => {
   it('contains all major discovery categories and keeps unseen content mysterious', () => {
     const entries = createCodexViewModel(createDefaultProfile());
     expect(new Set(entries.map((entry) => entry.category))).toEqual(
-      new Set(['character', 'weapon', 'evolution', 'enemy', 'curse']),
+      new Set(['character', 'weapon', 'evolution', 'enemy', 'rival', 'curse']),
     );
     expect(entries.filter((entry) => entry.category === 'weapon')).toHaveLength(UPGRADE_IDS.length);
     expect(entries.find((entry) => entry.id === 'maestro')).toMatchObject({

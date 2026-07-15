@@ -12,7 +12,12 @@ import { ELITE_MODIFIER_DEFINITIONS } from '../game/encounters';
 import { MINIBOSS_CONFIGS } from '../game/boss';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import { CHARACTER_PORTRAIT_URLS } from '../assets/characterPortraits';
-import { ENEMY_PORTRAIT_URLS, RIVAL_PORTRAIT_URLS } from '../assets/oppositionPortraits';
+import {
+  ENEMY_PORTRAIT_URLS,
+  FEATURED_BOSS_PORTRAIT_URLS,
+  MINIBOSS_PORTRAIT_URLS,
+  RIVAL_PORTRAIT_URLS,
+} from '../assets/oppositionPortraits';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { RIVAL_TEAM_DEFINITIONS } from '../game/match/rivalTeams';
 import { LocalLeaderboardRepository } from '../leaderboard';
@@ -542,9 +547,29 @@ export function createCodexViewModel(profile: Readonly<PlayerProfile>): readonly
       unlocked: true,
       discovered:
         profile.personalBests.longestSurvivalSeconds >= (definition.kind === 'crimsonCaptain' ? 205 : 345),
-      iconUrl: null,
+      iconUrl: MINIBOSS_PORTRAIT_URLS[definition.kind],
       unlockHint: `Survive to meet ${definition.name}`,
     })),
+    {
+      id: 'goal-line-blocker',
+      name: 'The Goal-Line Blocker',
+      description: 'A dedicated box guardian that tracks the ball and closes the real goal mouth.',
+      category: 'enemy' as const,
+      unlocked: true,
+      discovered: profile.lifetime.goals > 0,
+      iconUrl: FEATURED_BOSS_PORTRAIT_URLS.goalLineBlocker,
+      unlockHint: 'Create a scoring opportunity during a match',
+    },
+    {
+      id: 'count-goalkeeper',
+      name: 'Count Goalkeeper',
+      description: 'The final three-phase ruler of the Blood League goal.',
+      category: 'enemy' as const,
+      unlocked: true,
+      discovered: profile.personalBests.longestSurvivalSeconds >= 480,
+      iconUrl: FEATURED_BOSS_PORTRAIT_URLS.countGoalkeeper,
+      unlockHint: 'Reach the final goalkeeper encounter',
+    },
     ...Object.values(ELITE_MODIFIER_DEFINITIONS).map((definition) => ({
       id: definition.id,
       name: `${definition.name} Elite`,
