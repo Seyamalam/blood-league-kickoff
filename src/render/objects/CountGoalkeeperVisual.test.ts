@@ -15,6 +15,34 @@ describe('CountGoalkeeperVisual', () => {
     expect(scene.getObjectByName('count-goalkeeper-wing-right')?.visible).toBe(true);
     expect(scene.getObjectByName('count-goalkeeper-blood-cape')?.visible).toBe(true);
     expect(scene.getObjectByName('count-goalkeeper-blood-halo')?.visible).toBe(true);
+    expect(scene.getObjectByName('count-goalkeeper-phase-mask')?.visible).toBe(true);
+    expect(scene.getObjectByName('count-goalkeeper-blood-tendrils')?.visible).toBe(true);
+    expect(scene.getObjectByName('count-goalkeeper-glove-left')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('count-goalkeeper-glove-right')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('count-goalkeeper-chest-armor')).toHaveProperty(
+      'geometry.type',
+      'ExtrudeGeometry',
+    );
+  });
+
+  it('poses articulated goalkeeper arms for readable action telegraphs', () => {
+    const scene = new THREE.Scene();
+    const visual = new CountGoalkeeperVisual(scene);
+    const state = {
+      ...spawnCountGoalkeeper(),
+      phase: 'bloodRush' as const,
+      action: 'diveTelegraph' as const,
+      actionElapsed: 0.2,
+      phaseElapsed: 1,
+    };
+
+    visual.sync(state, 1);
+
+    const leftArm = scene.getObjectByName('count-goalkeeper-arm-left')!;
+    const rightArm = scene.getObjectByName('count-goalkeeper-arm-right')!;
+    expect(leftArm.rotation.z).toBeCloseTo(0.85);
+    expect(rightArm.rotation.z).toBeCloseTo(-0.85);
+    expect(scene.getObjectByName('count-goalkeeper-action-ring')?.visible).toBe(true);
   });
 
   it('removes and disposes every owned render resource', () => {

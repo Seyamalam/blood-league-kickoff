@@ -53,4 +53,41 @@ describe('encounter renderer', () => {
     renderer.dispose();
     expect(scene.getObjectByName('environment-momentumGate-77')).toBeUndefined();
   });
+
+  it('uses authored football-horror geometry for every field interaction', () => {
+    const scene = new THREE.Scene();
+    const renderer = new EncounterRenderer(scene);
+    const interactions = [
+      createEnvironmentInteraction(1, 'bloodBarrel', { x: -3, y: 0, z: 0 }),
+      createEnvironmentInteraction(2, 'holyBeacon', { x: -1, y: 0, z: 0 }),
+      createEnvironmentInteraction(3, 'breakableBarrier', { x: 1, y: 0, z: 0 }),
+      createEnvironmentInteraction(4, 'momentumGate', { x: 3, y: 0, z: 0 }),
+    ];
+
+    renderer.sync([], [], null, interactions, 1.5, 1);
+
+    expect(scene.getObjectByName('blood-barrel-vat')).toHaveProperty('geometry.type', 'LatheGeometry');
+    expect(scene.getObjectByName('holy-beacon-reliquary')).toHaveProperty('geometry.type', 'LatheGeometry');
+    expect(scene.getObjectByName('barrier-broken-slab-left')).toHaveProperty(
+      'geometry.type',
+      'ExtrudeGeometry',
+    );
+    expect(scene.getObjectByName('momentum-gate-gothic-arch')).toHaveProperty(
+      'geometry.type',
+      'TubeGeometry',
+    );
+    expect(scene.getObjectByName('momentum-gate-football-sigil')).toBeInstanceOf(THREE.Group);
+
+    for (const interaction of interactions) {
+      const interactionGroup = scene.getObjectByName(`environment-${interaction.kind}-${interaction.id}`)!;
+      const visibleBoxes: THREE.Mesh[] = [];
+      interactionGroup.traverse((object) => {
+        if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BoxGeometry) {
+          visibleBoxes.push(object);
+        }
+      });
+      expect(visibleBoxes).toHaveLength(0);
+    }
+    renderer.dispose();
+  });
 });
