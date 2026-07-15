@@ -13,6 +13,7 @@ import {
   type EnemyCharacterPresentation,
 } from '../objects/EnemyCharacterVisual';
 import { EnemyCharacterAssetPool } from '../objects/EnemyCharacterAssetPool';
+import { createFootballVisual } from '../objects/FootballVisual';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -783,10 +784,7 @@ function animatePlayer(group: THREE.Group, elapsed: number, previous: Vec3, curr
 }
 
 function createBall(): THREE.Mesh {
-  const material = new THREE.MeshStandardMaterial({ color: 0xe8e2cc, roughness: 0.38, metalness: 0.08 });
-  const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 2), material);
-  mesh.castShadow = true;
-  return mesh;
+  return createFootballVisual();
 }
 
 function createEnemy(enemy: EnemyState): EnemyVisual {

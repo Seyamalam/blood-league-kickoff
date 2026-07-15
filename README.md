@@ -33,7 +33,11 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ![Animated CC0 skinned striker on the PBR pitch](docs/screenshots/cc0-animated-striker.jpg)
 
+![Animated enemy GLB pool, authored crowd LODs, panelled football, and rebuilt stadium dressing](docs/screenshots/authored-enemy-stadium-pass.png)
+
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
+
+The placeholder-replacement pass gives nearby ordinary enemies real skinned and animated CC0 characters, capped at 8–16 imported models by quality preset. All eleven archetypes remain identifiable through their own color treatment, equipment, attack pose, and silhouette; articulated rounded humanoids and merged crowd LODs take over at distance. The football now has a one-draw-call ivory, charcoal, and crimson panel treatment. Goals, nets, dugouts, floodlights, advertising boards, encounter props, minibosses, and Count Goalkeeper have also been rebuilt as authored football-horror forms instead of anonymous blocks.
 
 ### Cursed contracts and live telemetry
 
@@ -211,6 +215,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Eight enemy archetypes through Bat Swarm, Leech Striker, Corrupt Referee, and Goalkeeper Brute
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
 - [x] Direct-reference enemy rendering with state-driven attack/defense poses and a five-mesh silhouette budget for every ordinary archetype
+- [x] Replace ordinary enemy blocks with a bounded real-GLB character pool, seven shared animation actions, eleven equipment identities, and merged distance LODs
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow
@@ -260,6 +265,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Persistent volume, sensitivity, conventional/inverted vertical look, quality, render scale, frame-rate, and reduced-shake settings
 - [x] Count Goalkeeper final encounter with health phases, charges, contact attacks, boss HUD, and victory integration
 - [x] Count Goalkeeper desperation phase transforms into a winged second form with an animated blood cape, halo, crown, and phase light
+- [x] Rebuild Count Goalkeeper, both minibosses, barrels, beacons, barriers, and Momentum Gates with recognizable authored silhouettes and action poses
 - [x] Escalation and Blood Moon stadium transformations add an animated moon/corona, pitch runes, pylons, and phase lighting with owned-resource cleanup
 - [x] Six character archetypes have distinct procedural silhouette accessories and locomotion animation without external runtime assets
 - [x] Every secondary weapon and evolution can damage Count Goalkeeper through capped boss-only routing without granting ordinary kill rewards

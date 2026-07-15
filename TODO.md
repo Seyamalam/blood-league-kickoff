@@ -225,10 +225,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Lock the low-poly gothic visual palette.
 - [x] `P0` Generate original key art, itch cover, and menu background.
 - [x] `P0` Create readable original upgrade/evolution icons.
-- [ ] `P0` Create or source licensed character and enemy models.
+- [x] `P0` Source and integrate a licensed shared-rig character for the player and nearest ordinary enemies, with bounded crowd fallbacks.
 - [x] `P0` Record every current external/generated asset source, author/tool, license, and change.
 - [x] `P0` Add pinned browser-only glTF inspection, Khronos structural validation, and non-destructive optimization commands.
-- [ ] `P0` Replace critical placeholder models/materials.
+- [x] `P0` Replace critical player, enemy, ball, encounter, boss, goal, dugout, floodlight, board, and stadium placeholders with licensed or authored visuals.
 - [x] `P0` Add stadium banners, goals, crowd silhouettes, and match-stage atmosphere changes; decals remain polish.
 - [x] `P0` Add final kick, hit, recall, goal, evolution, boss, win, and loss audio.
 - [x] `P0` Add phase-based procedural music intensity.

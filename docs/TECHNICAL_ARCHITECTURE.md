@@ -83,6 +83,8 @@ Count Goalkeeper joins the generic secondary target list through a reserved nega
 - Pool short-lived effects and hide/reuse instances instead of allocating them.
 - Keep the aim guide to one persistent world-space object updated in place; never recreate its geometry or material per frame.
 
+Ordinary-enemy presentation uses three distance bands without changing simulation state. A nearest-only pool clones the audited Quaternius skinned GLB through `SkeletonUtils` and shares seven clips from the animation library; quality presets cap that pool at 8, 12, or 16 characters. Every archetype adds its own tint and equipment identity. Rounded articulated characters remain the asynchronous-loading and compatibility fallback, while merged mid/far silhouettes and throttled pose updates bound crowd cost. Bat Swarm retains a dedicated creature silhouette rather than entering the humanoid pool.
+
 Secondary weapon presentation uses five fixed `InstancedMesh` batches with capacities 24/3/8/6/4. Active simulation records are packed into reusable instance matrices each frame; the three ball-like families share one sphere geometry. All 45 visible objects therefore contribute at most five draw calls. Black-hole rotation derives from fixed-step zone age rather than render cadence, so 60 and 120 FPS produce the same animation speed.
 
 The renderer requests `powerPreference: "high-performance"`, but diagnostics must report the actual GPU path/fallback. Hardware acceleration is expected, never assumed without testing.
