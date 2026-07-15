@@ -5,16 +5,89 @@ export interface CharacterVariantVisual {
   readonly id: CharacterId;
   readonly bodyScale: readonly [number, number, number];
   readonly accessoryNames: readonly string[];
+  readonly headStyle:
+    'swept-crown' | 'speed-crest' | 'iron-crop' | 'widows-peak' | 'circuit-braid' | 'keeper-helm';
+  readonly hairColor: number;
+  readonly kitRoughness: number;
+  readonly kitMetalness: number;
+  readonly emissiveStrength: number;
 }
 
 export const CHARACTER_VARIANT_VISUALS: Readonly<Record<CharacterId, CharacterVariantVisual>> = Object.freeze(
   {
-    maestro: variant('maestro', [0.97, 1, 0.96], ['captain-armband', 'wrist-rune']),
-    breakaway: variant('breakaway', [0.93, 0.97, 0.92], ['calf-fin-left', 'calf-fin-right']),
-    tower: variant('tower', [1.08, 1.07, 1.1], ['shoulder-plate-left', 'shoulder-plate-right']),
-    finisher: variant('finisher', [1, 1.01, 0.98], ['fang-collar-left', 'fang-collar-right']),
-    engine: variant('engine', [0.96, 1.03, 0.94], ['wrist-wrap-left', 'wrist-wrap-right', 'shard-canister']),
-    guardian: variant('guardian', [1.07, 1.04, 1.08], ['forearm-guard-left', 'forearm-guard-right']),
+    maestro: variant(
+      'maestro',
+      [0.97, 1, 0.96],
+      ['captain-armband', 'wrist-rune', 'swept-crown', 'maestro-boot-left', 'maestro-boot-right'],
+      'swept-crown',
+      0x282039,
+      0.5,
+      0.14,
+      0.2,
+    ),
+    breakaway: variant(
+      'breakaway',
+      [0.9, 1.03, 0.9],
+      ['calf-fin-left', 'calf-fin-right', 'speed-crest', 'breakaway-boot-left', 'breakaway-boot-right'],
+      'speed-crest',
+      0x1558a3,
+      0.42,
+      0.12,
+      0.3,
+    ),
+    tower: variant(
+      'tower',
+      [1.1, 1.1, 1.12],
+      ['shoulder-plate-left', 'shoulder-plate-right', 'iron-crop', 'tower-boot-left', 'tower-boot-right'],
+      'iron-crop',
+      0x16141c,
+      0.64,
+      0.38,
+      0.14,
+    ),
+    finisher: variant(
+      'finisher',
+      [0.99, 1.02, 0.97],
+      ['fang-collar-left', 'fang-collar-right', 'widows-peak', 'finisher-boot-left', 'finisher-boot-right'],
+      'widows-peak',
+      0x4a1724,
+      0.46,
+      0.2,
+      0.34,
+    ),
+    engine: variant(
+      'engine',
+      [0.94, 1.06, 0.93],
+      [
+        'wrist-wrap-left',
+        'wrist-wrap-right',
+        'shard-canister',
+        'circuit-braid',
+        'engine-boot-left',
+        'engine-boot-right',
+      ],
+      'circuit-braid',
+      0x173b31,
+      0.52,
+      0.16,
+      0.42,
+    ),
+    guardian: variant(
+      'guardian',
+      [1.08, 1.05, 1.1],
+      [
+        'forearm-guard-left',
+        'forearm-guard-right',
+        'keeper-helm',
+        'guardian-boot-left',
+        'guardian-boot-right',
+      ],
+      'keeper-helm',
+      0x202a38,
+      0.7,
+      0.32,
+      0.12,
+    ),
   },
 );
 
@@ -43,7 +116,9 @@ export function createImportedCharacterVariantController(
     for (const accessoryName of CHARACTER_VARIANT_VISUALS[id].accessoryNames) {
       const object = model.getObjectByName(`character-accessory-${accessoryName}`);
       if (!object) continue;
-      object.userData.characterVariant = id;
+      object.traverse((child) => {
+        child.userData.characterVariant = id;
+      });
       ownedAccessories.add(object);
     }
   }
@@ -101,6 +176,18 @@ function addVariantAccessories(
     }),
     materials,
   );
+  const hair = ownMaterial(
+    new THREE.MeshStandardMaterial({
+      color: CHARACTER_VARIANT_VISUALS[id].hairColor,
+      roughness: id === 'guardian' ? 0.34 : 0.78,
+      metalness: id === 'guardian' ? 0.48 : 0.04,
+    }),
+    materials,
+  );
+
+  attachHeadIdentity(model, variantRoot, id, hair, accent, geometries);
+  attachBoot(model, variantRoot, 'foot_l', `${id}-boot-left`, -1, style.bootColor, geometries, materials);
+  attachBoot(model, variantRoot, 'foot_r', `${id}-boot-right`, 1, style.bootColor, geometries, materials);
 
   if (id === 'maestro') {
     attachRing(model, variantRoot, 'upperarm_l', 'captain-armband', 0.105, primary, geometries);
@@ -122,6 +209,77 @@ function addVariantAccessories(
     attachGuard(model, variantRoot, 'lowerarm_l', 'forearm-guard-left', -1, primary, geometries);
     attachGuard(model, variantRoot, 'lowerarm_r', 'forearm-guard-right', 1, primary, geometries);
   }
+}
+
+function attachHeadIdentity(
+  model: THREE.Group,
+  root: THREE.Group,
+  id: CharacterId,
+  hair: THREE.Material,
+  accent: THREE.Material,
+  geometries: Set<THREE.BufferGeometry>,
+): void {
+  const name = CHARACTER_VARIANT_VISUALS[id].headStyle;
+  const group = new THREE.Group();
+  group.name = `character-accessory-${name}`;
+  group.userData.characterVariant = id;
+  if (id === 'guardian') {
+    const helmet = accessory(
+      new THREE.SphereGeometry(0.13, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.58),
+      hair,
+      `${name}-shell`,
+      geometries,
+    );
+    helmet.scale.set(1.15, 0.92, 1.05);
+    group.add(helmet);
+    const visor = accessory(new THREE.BoxGeometry(0.22, 0.035, 0.035), accent, `${name}-visor`, geometries);
+    visor.position.set(0, -0.015, 0.12);
+    group.add(visor);
+  } else {
+    const cap = accessory(
+      new THREE.SphereGeometry(0.125, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.48),
+      hair,
+      `${name}-cap`,
+      geometries,
+    );
+    cap.scale.set(id === 'tower' ? 1.08 : 1, id === 'tower' ? 0.52 : 0.74, 1);
+    group.add(cap);
+    const crestCount = id === 'engine' ? 3 : id === 'tower' ? 1 : 2;
+    for (let index = 0; index < crestCount; index += 1) {
+      const crest = accessory(
+        new THREE.ConeGeometry(0.025, id === 'breakaway' ? 0.16 : 0.11, 5),
+        hair,
+        `${name}-crest-${index}`,
+        geometries,
+      );
+      crest.position.set((index - (crestCount - 1) / 2) * 0.045, 0.09, id === 'finisher' ? 0.08 : -0.015);
+      crest.rotation.z = id === 'maestro' ? -0.38 : id === 'breakaway' ? 0.52 : 0;
+      group.add(crest);
+    }
+  }
+  group.position.set(0, 0.1, 0);
+  attach(model, root, 'Head', group);
+}
+
+function attachBoot(
+  model: THREE.Group,
+  root: THREE.Group,
+  joint: string,
+  name: string,
+  side: number,
+  color: number,
+  geometries: Set<THREE.BufferGeometry>,
+  materials: Set<THREE.Material>,
+): void {
+  const surface = ownMaterial(
+    new THREE.MeshStandardMaterial({ color, roughness: 0.46, metalness: 0.12 }),
+    materials,
+  );
+  const mesh = accessory(new THREE.CapsuleGeometry(0.065, 0.13, 2, 6), surface, name, geometries);
+  mesh.position.set(side * 0.008, -0.04, 0.075);
+  mesh.rotation.x = Math.PI / 2;
+  mesh.scale.set(0.92, 1.28, 0.82);
+  attach(model, root, joint, mesh);
 }
 
 function attachRing(
@@ -211,7 +369,7 @@ function attachGuard(
   attach(model, root, joint, mesh);
 }
 
-function attach(model: THREE.Group, fallback: THREE.Group, jointName: string, mesh: THREE.Mesh): void {
+function attach(model: THREE.Group, fallback: THREE.Group, jointName: string, mesh: THREE.Object3D): void {
   const joint = model.getObjectByName(jointName);
   (joint ?? fallback).add(mesh);
 }
@@ -232,19 +390,24 @@ function accessory(
 
 function tintImportedMaterials(model: THREE.Group, id: CharacterId): void {
   const style = CHARACTER_DEFINITIONS[id].visualStyle;
+  const treatment = CHARACTER_VARIANT_VISUALS[id];
   model.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return;
     if (node.userData.characterVariant) return;
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     for (const material of materials) {
       if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+      material.roughness = treatment.kitRoughness;
+      material.metalness = treatment.kitMetalness;
       if (material.name.includes('Eyes')) {
         material.emissive.setHex(style.accentColor);
-        material.emissiveIntensity = 0.24;
+        material.emissiveIntensity = treatment.emissiveStrength + 0.18;
       } else if (material.name.includes('Hair')) {
-        material.color.setHex(0xd8d8e0).lerp(new THREE.Color(style.primaryColor), 0.18);
+        material.color.setHex(treatment.hairColor);
       } else {
-        material.color.setHex(0xffffff).lerp(new THREE.Color(style.primaryColor), 0.08);
+        material.color.setHex(style.primaryColor);
+        material.emissive.setHex(style.accentColor);
+        material.emissiveIntensity = treatment.emissiveStrength;
       }
     }
   });
@@ -259,11 +422,21 @@ function variant(
   id: CharacterId,
   bodyScale: readonly [number, number, number],
   accessoryNames: readonly string[],
+  headStyle: CharacterVariantVisual['headStyle'],
+  hairColor: number,
+  kitRoughness: number,
+  kitMetalness: number,
+  emissiveStrength: number,
 ): CharacterVariantVisual {
   const frozenBodyScale = Object.freeze([...bodyScale]) as readonly [number, number, number];
   return Object.freeze({
     id,
     bodyScale: frozenBodyScale,
     accessoryNames: Object.freeze([...accessoryNames]),
+    headStyle,
+    hairColor,
+    kitRoughness,
+    kitMetalness,
+    emissiveStrength,
   });
 }

@@ -39,6 +39,25 @@ interface ArchetypeStyle {
   readonly stance: 'normal' | 'fast' | 'heavy' | 'hunched';
 }
 
+export interface EnemyVisualIdentity {
+  readonly silhouette: string;
+  readonly signatureEquipment: string;
+}
+
+export const ENEMY_VISUAL_IDENTITIES: Readonly<Record<EnemyArchetype, EnemyVisualIdentity>> = Object.freeze({
+  bloodFan: { silhouette: 'scarved-supporter', signatureEquipment: 'club-scarf-and-cape' },
+  winger: { silhouette: 'razor-wing-runner', signatureEquipment: 'paired-razor-wings' },
+  defender: { silhouette: 'shield-wall', signatureEquipment: 'tower-shield' },
+  coach: { silhouette: 'long-coat-director', signatureEquipment: 'tactical-board' },
+  batSwarm: { silhouette: 'wide-wing-swarm', signatureEquipment: 'membrane-wings' },
+  leechStriker: { silhouette: 'hunched-drainer', signatureEquipment: 'circular-maw' },
+  corruptReferee: { silhouette: 'striped-official', signatureEquipment: 'gold-whistle' },
+  bloodArcher: { silhouette: 'hooded-bowman', signatureEquipment: 'crescent-bow' },
+  shadowRunner: { silhouette: 'veiled-sprinter', signatureEquipment: 'shadow-veil' },
+  corpseBomber: { silhouette: 'hunched-bomb-carrier', signatureEquipment: 'fuse-backpack' },
+  goalkeeperBrute: { silhouette: 'wide-glove-keeper', signatureEquipment: 'oversized-gloves' },
+});
+
 type EnemyCharacterBuilder = {
   -readonly [Key in keyof EnemyCharacterPresentation]?: EnemyCharacterPresentation[Key];
 };
@@ -87,6 +106,10 @@ const geometry = {
   specialRing: new THREE.RingGeometry(0.7, 0.85, 20),
   bomberRing: new THREE.RingGeometry(1.35, 1.5, 24),
   fuse: new THREE.TorusGeometry(0.16, 0.035, 4, 10, Math.PI * 1.25),
+  silhouetteWing: new THREE.ConeGeometry(0.24, 0.9, 3),
+  silhouetteCape: new THREE.ConeGeometry(0.5, 1.35, 7),
+  tacticalBoard: new THREE.BoxGeometry(0.36, 0.48, 0.07),
+  bombPack: new THREE.SphereGeometry(0.34, 7, 5),
 };
 
 const material = {
@@ -128,6 +151,8 @@ const material = {
 const kitMaterials = new Map<EnemyArchetype, THREE.MeshStandardMaterial>();
 const accentMaterials = new Map<EnemyArchetype, THREE.MeshStandardMaterial>();
 const farGeometries = new Map<EnemyArchetype, THREE.BufferGeometry>();
+const midBodyGeometries = new Map<EnemyArchetype, THREE.BufferGeometry>();
+const signatureGeometries = new Map<EnemyArchetype, THREE.BufferGeometry>();
 
 function kitMaterial(archetype: EnemyArchetype): THREE.MeshStandardMaterial {
   let result = kitMaterials.get(archetype);
@@ -158,32 +183,118 @@ function transformed(source: THREE.BufferGeometry, transform: THREE.Matrix4): TH
   return source.clone().applyMatrix4(transform);
 }
 
+function transformMatrix(
+  position: readonly [number, number, number],
+  rotation: readonly [number, number, number] = [0, 0, 0],
+  scale: readonly [number, number, number] = [1, 1, 1],
+): THREE.Matrix4 {
+  const object = new THREE.Object3D();
+  object.position.set(...position);
+  object.rotation.set(...rotation);
+  object.scale.set(...scale);
+  object.updateMatrix();
+  return object.matrix;
+}
+
+function baseSilhouettePieces(archetype: EnemyArchetype): THREE.BufferGeometry[] {
+  if (archetype === 'batSwarm') {
+    return [transformed(geometry.head, transformMatrix([0, 0.86, 0], [0, 0, 0], [1.15, 0.72, 1.25]))];
+  }
+  return [
+    transformed(geometry.torso, transformMatrix([0, 1.1, 0])),
+    transformed(geometry.head, transformMatrix([0, 1.93, 0])),
+    transformed(geometry.limb, transformMatrix([-0.43, 1.13, 0], [0, 0, 0.13])),
+    transformed(geometry.limb, transformMatrix([0.43, 1.13, 0], [0, 0, -0.13])),
+    transformed(geometry.limb, transformMatrix([-0.2, 0.38, 0])),
+    transformed(geometry.limb, transformMatrix([0.2, 0.38, 0])),
+  ];
+}
+
+function signatureSilhouettePieces(archetype: EnemyArchetype): THREE.BufferGeometry[] {
+  switch (archetype) {
+    case 'bloodFan':
+      return [transformed(geometry.silhouetteCape, transformMatrix([0, 0.9, -0.12]))];
+    case 'winger':
+      return [
+        transformed(geometry.silhouetteWing, transformMatrix([-0.55, 1.28, -0.08], [0, 0, -1.05])),
+        transformed(geometry.silhouetteWing, transformMatrix([0.55, 1.28, -0.08], [0, 0, 1.05])),
+      ];
+    case 'defender':
+      return [
+        transformed(geometry.shield, transformMatrix([0, 1.08, 0.38], [Math.PI / 2, 0, 0], [0.9, 0.9, 0.6])),
+      ];
+    case 'coach':
+      return [transformed(geometry.tacticalBoard, transformMatrix([0.46, 1.22, 0.25], [0, 0, -0.12]))];
+    case 'batSwarm':
+      return [
+        transformed(geometry.silhouetteWing, transformMatrix([-0.48, 0.88, 0], [0, 0, -1.2], [1.15, 1, 1])),
+        transformed(geometry.silhouetteWing, transformMatrix([0.48, 0.88, 0], [0, 0, 1.2], [1.15, 1, 1])),
+        transformed(geometry.fang, transformMatrix([-0.1, 1.12, 0])),
+        transformed(geometry.fang, transformMatrix([0.1, 1.12, 0])),
+      ];
+    case 'leechStriker':
+      return [
+        transformed(
+          geometry.mouth,
+          transformMatrix([0, 1.75, 0.23], [Math.PI / 2, 0, 0], [1.25, 1.25, 1.25]),
+        ),
+      ];
+    case 'corruptReferee':
+      return [
+        transformed(
+          geometry.whistle,
+          transformMatrix([0.16, 1.52, 0.26], [Math.PI / 2, 0, 0], [1.5, 1.5, 1.5]),
+        ),
+      ];
+    case 'bloodArcher':
+      return [transformed(geometry.bow, transformMatrix([0.48, 1.2, 0.12], [Math.PI / 2, 0, -0.15]))];
+    case 'shadowRunner':
+      return [transformed(geometry.veil, transformMatrix([0, 1.14, -0.06]))];
+    case 'corpseBomber':
+      return [
+        transformed(geometry.bombPack, transformMatrix([0, 1.15, -0.32])),
+        transformed(geometry.fuse, transformMatrix([0.18, 1.62, -0.2], [0, 0, -0.25])),
+      ];
+    case 'goalkeeperBrute':
+      return [
+        transformed(geometry.glove, transformMatrix([-0.62, 1.13, 0.16], [0, 0, 0], [1.2, 1.2, 1.2])),
+        transformed(geometry.glove, transformMatrix([0.62, 1.13, 0.16], [0, 0, 0], [1.2, 1.2, 1.2])),
+      ];
+  }
+}
+
+function mergeAndScale(pieces: THREE.BufferGeometry[], archetype: EnemyArchetype): THREE.BufferGeometry {
+  const style = STYLES[archetype];
+  const scale = new THREE.Matrix4().makeScale(style.scale[0], style.scale[1], style.scale[2]);
+  const result = mergeGeometries(pieces, false) ?? geometry.torso.clone();
+  result.applyMatrix4(scale);
+  for (const piece of pieces) piece.dispose();
+  return result;
+}
+
+function midBodyGeometry(archetype: EnemyArchetype): THREE.BufferGeometry {
+  let result = midBodyGeometries.get(archetype);
+  if (result) return result;
+  result = mergeAndScale(baseSilhouettePieces(archetype), archetype);
+  midBodyGeometries.set(archetype, result);
+  return result;
+}
+
+function signatureGeometry(archetype: EnemyArchetype): THREE.BufferGeometry {
+  let result = signatureGeometries.get(archetype);
+  if (result) return result;
+  result = mergeAndScale(signatureSilhouettePieces(archetype), archetype);
+  signatureGeometries.set(archetype, result);
+  return result;
+}
+
 function farGeometry(archetype: EnemyArchetype): THREE.BufferGeometry {
   let result = farGeometries.get(archetype);
   if (result) return result;
-  const style = STYLES[archetype];
-  const scale = new THREE.Matrix4().makeScale(style.scale[0], style.scale[1], style.scale[2]);
-  const pieces = [
-    transformed(geometry.torso, new THREE.Matrix4().makeTranslation(0, 1.1, 0)),
-    transformed(geometry.head, new THREE.Matrix4().makeTranslation(0, 1.93, 0)),
-    transformed(
-      geometry.limb,
-      new THREE.Matrix4()
-        .makeRotationZ(0.13)
-        .premultiply(new THREE.Matrix4().makeTranslation(-0.43, 1.13, 0)),
-    ),
-    transformed(
-      geometry.limb,
-      new THREE.Matrix4()
-        .makeRotationZ(-0.13)
-        .premultiply(new THREE.Matrix4().makeTranslation(0.43, 1.13, 0)),
-    ),
-    transformed(geometry.limb, new THREE.Matrix4().makeTranslation(-0.2, 0.38, 0)),
-    transformed(geometry.limb, new THREE.Matrix4().makeTranslation(0.2, 0.38, 0)),
-  ];
-  result = mergeGeometries(pieces, false) ?? geometry.torso.clone();
-  result.applyMatrix4(scale);
-  for (const piece of pieces) piece.dispose();
+  result = mergeAndScale(
+    [...baseSilhouettePieces(archetype), ...signatureSilhouettePieces(archetype)],
+    archetype,
+  );
   farGeometries.set(archetype, result);
   return result;
 }
@@ -306,9 +417,12 @@ function addArchetypeEquipment(
     result.shield = shield;
     near.add(shield);
   } else if (archetype === 'coach') {
+    const board = mesh(geometry.tacticalBoard, accentMaterial(archetype), 'coach-tactical-board');
+    board.position.set(0.46, 1.22, 0.25);
+    board.rotation.z = -0.12;
     const aura = cue(geometry.aura, material.aura, 'coach-aura', 0.035);
     result.aura = aura;
-    near.add(aura);
+    near.add(board, aura);
   } else if (archetype === 'leechStriker') {
     const mouth = mesh(geometry.mouth, material.pale, 'leech-mouth');
     mouth.position.set(0, 1.79, 0.25);
@@ -400,6 +514,8 @@ function cue(source: THREE.BufferGeometry, surface: THREE.Material, name: string
 export function createEnemyCharacterPresentation(archetype: EnemyArchetype): EnemyCharacterPresentation {
   const lodRoot = new THREE.Group();
   lodRoot.name = 'enemy-character-lods';
+  lodRoot.userData.enemySilhouette = ENEMY_VISUAL_IDENTITIES[archetype].silhouette;
+  lodRoot.userData.enemySignatureEquipment = ENEMY_VISUAL_IDENTITIES[archetype].signatureEquipment;
   const near = new THREE.Group();
   near.name = 'enemy-lod-near';
   const mid = new THREE.Group();
@@ -417,12 +533,18 @@ export function createEnemyCharacterPresentation(archetype: EnemyArchetype): Ene
   addArchetypeEquipment(archetype, near, result);
 
   const midMesh = mesh(
-    farGeometry(archetype),
+    midBodyGeometry(archetype),
     kitMaterial(archetype),
     `${prefixFor(archetype)}-mid-silhouette`,
   );
   midMesh.scale.set(1, 1, 0.9);
-  mid.add(midMesh);
+  const midSignature = mesh(
+    signatureGeometry(archetype),
+    accentMaterial(archetype),
+    `${prefixFor(archetype)}-mid-signature`,
+  );
+  midSignature.scale.set(1, 1, 0.9);
+  mid.add(midMesh, midSignature);
   const farMesh = mesh(
     farGeometry(archetype),
     kitMaterial(archetype),
@@ -499,4 +621,6 @@ export function disposeEnemyCharacterResources(): void {
   for (const value of kitMaterials.values()) value.dispose();
   for (const value of accentMaterials.values()) value.dispose();
   for (const value of farGeometries.values()) value.dispose();
+  for (const value of midBodyGeometries.values()) value.dispose();
+  for (const value of signatureGeometries.values()) value.dispose();
 }

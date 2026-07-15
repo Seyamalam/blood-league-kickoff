@@ -10,9 +10,20 @@ describe('shared-rig character variants', () => {
   it('defines six animation-safe silhouettes without skeleton overrides', () => {
     expect(Object.keys(CHARACTER_VARIANT_VISUALS)).toEqual([...CHARACTER_IDS]);
     for (const definition of Object.values(CHARACTER_VARIANT_VISUALS)) {
-      expect(definition.accessoryNames.length).toBeGreaterThan(0);
+      expect(definition.accessoryNames.length).toBeGreaterThanOrEqual(5);
       expect(definition.bodyScale.every((axis) => axis >= 0.9 && axis <= 1.12)).toBe(true);
+      expect(definition.accessoryNames).toContain(definition.headStyle);
+      expect(definition.accessoryNames).toContain(`${definition.id}-boot-left`);
+      expect(definition.accessoryNames).toContain(`${definition.id}-boot-right`);
+      expect(definition.kitRoughness).toBeGreaterThan(0.3);
+      expect(definition.kitMetalness).toBeLessThan(0.5);
     }
+    expect(
+      new Set(Object.values(CHARACTER_VARIANT_VISUALS).map((variant) => variant.headStyle)),
+    ).toHaveLength(6);
+    expect(
+      new Set(Object.values(CHARACTER_VARIANT_VISUALS).map((variant) => variant.bodyScale.join(','))),
+    ).toHaveLength(6);
   });
 
   it('attaches accessories to the shared joints and switches one variant at a time', () => {
@@ -29,6 +40,9 @@ describe('shared-rig character variants', () => {
       'pelvis',
       'lowerarm_l',
       'lowerarm_r',
+      'Head',
+      'foot_l',
+      'foot_r',
     ]) {
       const bone = new THREE.Bone();
       bone.name = joint;
@@ -42,6 +56,8 @@ describe('shared-rig character variants', () => {
     expect(model.getObjectByName('imported-character-variant-tower')?.visible).toBe(true);
     expect(model.getObjectByName('imported-character-variant-maestro')?.visible).toBe(false);
     expect(model.getObjectByName('character-accessory-shoulder-plate-left')).toBeDefined();
+    expect(model.getObjectByName('character-accessory-iron-crop')).toBeDefined();
+    expect(model.getObjectByName('character-accessory-tower-boot-left')).toBeDefined();
     expect(model.getObjectByName('character-accessory-shoulder-plate-left')?.visible).toBe(true);
     expect(model.getObjectByName('character-accessory-captain-armband')?.visible).toBe(false);
     controller.apply('maestro');

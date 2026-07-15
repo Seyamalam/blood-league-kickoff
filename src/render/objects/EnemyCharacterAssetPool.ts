@@ -29,7 +29,7 @@ interface ImportedEnemy {
   lastAttackState: EnemyAttackState;
 }
 
-function capacityFor(quality: RenderQuality): number {
+export function enemyImportedCharacterBudget(quality: RenderQuality): number {
   if (quality === 'performance') return 8;
   if (quality === 'quality') return 16;
   return 12;
@@ -121,7 +121,7 @@ export class EnemyCharacterAssetPool {
         [...this.tracked.values()]
           .filter((enemy) => enemy.archetype !== 'batSwarm' && enemy.distanceSquared <= NEAR_DISTANCE_SQUARED)
           .sort((left, right) => left.distanceSquared - right.distanceSquared || left.id - right.id)
-          .slice(0, capacityFor(quality))
+          .slice(0, enemyImportedCharacterBudget(quality))
           .map((enemy) => enemy.id),
       );
       for (const enemy of this.tracked.values()) {
@@ -176,10 +176,18 @@ export class EnemyCharacterAssetPool {
       if (!(node instanceof THREE.Mesh)) return;
       node.castShadow = true;
       node.receiveShadow = false;
-      const tint = tintFor(enemy.archetype);
+      const tint = enemyImportedCharacterTint(enemy.archetype);
       const cloneMaterial = (surface: THREE.Material): THREE.Material => {
         const copy = surface.clone();
-        if (copy instanceof THREE.MeshStandardMaterial) copy.color.multiply(new THREE.Color(tint));
+        if (copy instanceof THREE.MeshStandardMaterial) {
+          copy.color.multiply(new THREE.Color(tint));
+          copy.roughness = enemy.archetype === 'shadowRunner' ? 0.35 : 0.6;
+          copy.metalness =
+            enemy.archetype === 'defender' || enemy.archetype === 'goalkeeperBrute' ? 0.24 : 0.08;
+          copy.emissive.setHex(tint);
+          copy.emissiveIntensity =
+            enemy.archetype === 'coach' || enemy.archetype === 'corpseBomber' ? 0.22 : 0.08;
+        }
         ownedMaterials.push(copy);
         return copy;
       };
@@ -202,6 +210,8 @@ export class EnemyCharacterAssetPool {
       if (clip) actions.set(name, mixer.clipAction(clip));
     }
     enemy.presentation.near.add(root);
+    root.userData.enemyArchetype = enemy.archetype;
+    root.userData.enemyImportedIdentity = true;
     enemy.presentation.proceduralBody.visible = false;
     enemy.instance = { root, mixer, actions, ownedMaterials, activeClip: '', lastAttackState: 'chase' };
     this.play(enemy.instance, 'Idle_Loop', false);
@@ -230,7 +240,7 @@ export class EnemyCharacterAssetPool {
   }
 }
 
-function tintFor(archetype: EnemyArchetype): number {
+export function enemyImportedCharacterTint(archetype: EnemyArchetype): number {
   const colors: Readonly<Record<EnemyArchetype, number>> = {
     bloodFan: 0xa33b68,
     winger: 0xd6335e,
