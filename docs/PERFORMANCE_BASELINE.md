@@ -45,6 +45,12 @@ The full 24/3/8/6/4 pool set adds exactly five draw calls and approximately 5K t
 
 ## Remaining Acceptance Work
 
+Development builds expose an opt-in diagnostics route at `?diagnostics=1`. The HUD shows live counters and
+`window.__bloodLeagueDiagnostics()` returns a frozen snapshot with p50/p95/p99 frame times, 60/120 FPS budget
+miss rates, draw calls, triangles, GPU resource counts, renderer limits, and viewport details. Recording is
+allocation-free; percentile sorting happens only when the console hook is called. The hook cannot be enabled in
+production builds.
+
 - Re-run the 72-enemy sample in a production web build and Electron on macOS after the limiter fix.
 - Capture a moving/combat-heavy final-wave sample; the frozen scene isolates rendering but omits combat VFX and normal simulation work.
 - Record p95/p99 frame pacing, allocation/GC behavior, CPU profile, and GPU evidence.

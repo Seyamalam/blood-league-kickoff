@@ -11,6 +11,11 @@ import {
 } from './diagnostics/DenseWaveStress';
 import { PresentationFrameScheduler } from './diagnostics/PresentationFrameScheduler';
 import {
+  FrameTimeSampler,
+  installRuntimeDiagnosticsHook,
+  readRuntimeDiagnosticsMode,
+} from './diagnostics/RuntimeDiagnostics';
+import {
   createQaEvolutionFixture,
   createQaTerminalFixture,
   installQaSnapshotHook,
@@ -258,6 +263,7 @@ async function bootstrap(): Promise<void> {
   const physics = await PhysicsWorld.create();
   const state = createGameState();
   const denseWaveStress = readDenseWaveStressMode(window.location.search, import.meta.env.DEV);
+  const runtimeDiagnostics = readRuntimeDiagnosticsMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
   const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
   const qaEvolutionId = readQaEvolutionId(window.location.search, import.meta.env.DEV);
@@ -360,6 +366,7 @@ async function bootstrap(): Promise<void> {
   const tutorialTracker = new TutorialTracker(hasCompletedTutorial());
   const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
+  const frameTimeSampler = new FrameTimeSampler();
   const perfCounters = createPerformanceCounters();
   const uninstallDenseWavePerformanceHook = denseWaveStress
     ? installDenseWavePerformanceHook(window, () => ({
@@ -373,6 +380,29 @@ async function bootstrap(): Promise<void> {
         viewportHeight: window.innerHeight,
         pixelRatio: renderer.getPixelRatio(),
         secondaryPools: denseWaveStress.secondaryPools,
+      }))
+    : () => undefined;
+  const uninstallRuntimeDiagnosticsHook = runtimeDiagnostics
+    ? installRuntimeDiagnosticsHook(window, () => ({
+        frameTime: frameTimeSampler.snapshot(),
+        performance: perf.snapshot,
+        renderer: {
+          calls: renderer.info.render.calls,
+          triangles: renderer.info.render.triangles,
+          geometries: renderer.info.memory.geometries,
+          textures: renderer.info.memory.textures,
+          programs: renderer.info.programs?.length ?? 0,
+          pixelRatio: renderer.getPixelRatio(),
+          maxTextureSize: renderer.capabilities.maxTextureSize,
+          maxSamples: renderer.capabilities.maxSamples,
+          precision: renderer.capabilities.precision,
+          webgl2: renderer.capabilities.isWebGL2,
+        },
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          devicePixelRatio: window.devicePixelRatio,
+        },
       }))
     : () => undefined;
   const clock = new THREE.Clock();
@@ -2339,6 +2369,7 @@ async function bootstrap(): Promise<void> {
     perfCounters.blackHolePoolActive = countActivePoolItems(secondaryRenderState.blackHoleZones);
     perfCounters.blackHolePoolCapacity = secondaryRenderState.blackHoleZones.length;
     perf.update(frameTime, perfCounters);
+    if (runtimeDiagnostics) frameTimeSampler.record(perf.snapshot.currentFrameMs);
   });
 
   const onContextLost = (event: Event): void => {
@@ -2349,7 +2380,7 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
-  if (denseWaveStress || qaScenario) hud.start();
+  if (denseWaveStress || qaScenario || runtimeDiagnostics) hud.start();
 
   const dispose = (): void => {
     if (disposed) return;
@@ -2392,6 +2423,7 @@ async function bootstrap(): Promise<void> {
     tutorialPrompt.dispose();
     hud.dispose();
     uninstallDenseWavePerformanceHook();
+    uninstallRuntimeDiagnosticsHook();
     uninstallQaSnapshotHook();
     stadiumPhaseVisual.dispose();
     stadiumAmbience.dispose();
