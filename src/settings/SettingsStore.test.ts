@@ -32,6 +32,7 @@ describe('player settings sanitization', () => {
       damageNumbers: true,
       reducedFlashes: false,
       highContrastHud: false,
+      performanceOverlay: false,
       hudScale: 1,
       colorVisionMode: 'default',
       stadiumSelection: 'random',
@@ -179,6 +180,7 @@ describe('player settings sanitization', () => {
     first.update({
       aimAssistStrength: 'high',
       invertVerticalLook: true,
+      performanceOverlay: true,
       keyBindings: {
         ...first.value.keyBindings,
         dash: 'ShiftLeft',
@@ -190,9 +192,10 @@ describe('player settings sanitization', () => {
     const restored = new SettingsStore('test.settings').value;
     expect(restored.aimAssistStrength).toBe('high');
     expect(restored.invertVerticalLook).toBe(true);
+    expect(restored.performanceOverlay).toBe(true);
     expect(restored.keyBindings.dash).toBe('ShiftLeft');
     expect(restored.keyBindings.focusKick).toBe('KeyG');
     expect(restored.keyBindings.characterUltimate).toBe('KeyQ');
-    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 9 });
+    expect(JSON.parse(values.get('test.settings') ?? '{}')).toMatchObject({ version: 10 });
   });
 });

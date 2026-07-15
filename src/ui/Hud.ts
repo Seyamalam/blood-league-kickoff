@@ -4,6 +4,8 @@ import type { CountGoalkeeperState } from '../game/boss';
 import { totalXpRequiredForLevel, type ProgressionState } from '../game/progression';
 import type { BallState } from '../physics/PhysicsWorld';
 import type { PerformanceSnapshot } from '../diagnostics/PerfMeter';
+import type { FrameTimeDistribution } from '../diagnostics/RuntimeDiagnostics';
+import type { GpuIdentity } from '../diagnostics/GpuMetrics';
 import type { FocusKickState } from '../game/combat';
 import { CHARACTER_ULTIMATE_DEFINITIONS, type CharacterUltimateState } from '../game/combat';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
@@ -19,6 +21,11 @@ export class Hud {
   private readonly ball: HTMLElement;
   private readonly fps: HTMLElement;
   private readonly frameTime: HTMLElement;
+  private readonly p95FrameTime: HTMLElement;
+  private readonly p99FrameTime: HTMLElement;
+  private readonly gpuName: HTMLElement;
+  private readonly gpuMemory: HTMLElement;
+  private readonly gpuVendor: HTMLElement;
   private readonly renderStats: HTMLElement;
   private readonly poolStats: HTMLElement;
   private readonly splash: HTMLElement;
@@ -70,7 +77,17 @@ export class Hud {
         <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
         <div id="combo" class="combo"></div>
         <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS <b>Q</b> ULTIMATE</div>
-        <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
+        <aside class="perf" aria-label="Live performance monitor" aria-live="off">
+          <div class="perf__title"><span>PERFORMANCE</span><span id="gpu-vendor">WEBGL</span></div>
+          <div class="perf__metrics">
+            <span><small>FPS</small><strong id="fps">--</strong></span>
+            <span><small>FRAME</small><strong id="frame-time">-- MS</strong></span>
+            <span><small>P95</small><strong id="frame-p95">-- MS</strong></span>
+            <span><small>P99</small><strong id="frame-p99">-- MS</strong></span>
+          </div>
+          <div class="perf__gpu"><span id="gpu-name">GPU renderer unavailable</span><span id="gpu-memory">GAME GPU EST. -- MB · VRAM NOT EXPOSED</span></div>
+          <div class="perf__detail"><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
+        </aside>
         <button type="button" id="settings-button" class="settings-open" aria-label="Open settings" title="Open settings">${uiIcon('settings')}<span>SETTINGS</span></button>
       </div>
       <section id="splash" class="modal splash">
@@ -118,6 +135,11 @@ export class Hud {
     this.ball = required('ball-status');
     this.fps = required('fps');
     this.frameTime = required('frame-time');
+    this.p95FrameTime = required('frame-p95');
+    this.p99FrameTime = required('frame-p99');
+    this.gpuName = required('gpu-name');
+    this.gpuMemory = required('gpu-memory');
+    this.gpuVendor = required('gpu-vendor');
     this.renderStats = required('render-stats');
     this.poolStats = required('pool-stats');
     this.splash = required('splash');
@@ -200,7 +222,6 @@ export class Hud {
   update(
     state: GameState,
     ballState: BallState,
-    performance: Readonly<PerformanceSnapshot>,
     kickCharge: number,
     progression: Readonly<ProgressionState>,
     objective: Readonly<MatchObjective>,
@@ -262,12 +283,6 @@ export class Hud {
     if (this.objective.textContent !== objectiveLabel) this.objective.textContent = objectiveLabel;
     this.bossPanel.classList.toggle('hidden', !boss || boss.phase === 'defeated');
     if (boss) this.bossFill.style.width = `${Math.max(0, boss.health / boss.maxHealth) * 100}%`;
-    const fps = Math.round(performance.smoothedFps);
-    this.fps.textContent = fps > 0 ? `${fps} FPS` : '-- FPS';
-    this.frameTime.textContent =
-      performance.smoothedFrameMs > 0 ? `${performance.smoothedFrameMs.toFixed(1)} MS` : '-- MS';
-    this.renderStats.textContent = `${performance.rendererCalls} DC · ${formatCompact(performance.rendererTriangles)} TRI`;
-    this.poolStats.textContent = `${performance.pooledObjectsActive}/${performance.pooledObjectsCapacity} POOL`;
     this.combo.textContent = state.combo > 1 && state.comboTimer > 0 ? `${state.combo}× BLOOD COMBO` : '';
     this.combo.classList.toggle('visible', state.combo > 1 && state.comboTimer > 0);
 
@@ -281,6 +296,25 @@ export class Hud {
     if (won)
       required('victory-score').textContent =
         `Score ${state.score.toLocaleString()} · ${state.kills} vampires defeated`;
+  }
+
+  updatePerformance(
+    performance: Readonly<PerformanceSnapshot>,
+    distribution: Readonly<FrameTimeDistribution>,
+    gpu: Readonly<GpuIdentity>,
+    estimatedGpuBytes: number,
+  ): void {
+    const fps = Math.round(performance.smoothedFps);
+    this.fps.textContent = fps > 0 ? String(fps) : '--';
+    this.frameTime.textContent = formatFrameTime(performance.smoothedFrameMs);
+    this.p95FrameTime.textContent = formatFrameTime(distribution.p95Ms);
+    this.p99FrameTime.textContent = formatFrameTime(distribution.p99Ms);
+    this.gpuName.textContent = gpu.name;
+    this.gpuName.title = `${gpu.vendor} · ${gpu.name}`;
+    this.gpuVendor.textContent = gpu.vendor.toUpperCase();
+    this.gpuMemory.textContent = `GAME GPU EST. ${formatGpuMemory(estimatedGpuBytes)} · ${gpu.memoryLabel}`;
+    this.renderStats.textContent = `${performance.rendererCalls} DC · ${formatCompact(performance.rendererTriangles)} TRI`;
+    this.poolStats.textContent = `${performance.pooledObjectsActive}/${performance.pooledObjectsCapacity} POOL`;
   }
 
   start(): void {
@@ -355,4 +389,14 @@ function formatTime(seconds: number): string {
 function formatCompact(value: number): string {
   if (value < 1_000) return String(value);
   return `${(value / 1_000).toFixed(value < 10_000 ? 1 : 0)}K`;
+}
+
+function formatFrameTime(value: number): string {
+  return Number.isFinite(value) && value > 0 ? `${value.toFixed(1)} MS` : '-- MS';
+}
+
+function formatGpuMemory(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
+  const megabytes = bytes / (1024 * 1024);
+  return `${megabytes.toFixed(megabytes >= 100 ? 0 : 1)} MB`;
 }

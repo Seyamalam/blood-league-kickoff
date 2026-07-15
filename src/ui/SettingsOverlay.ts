@@ -31,6 +31,7 @@ export class SettingsOverlay {
   private readonly renderScale: HTMLInputElement;
   private readonly renderScaleValue: HTMLOutputElement;
   private readonly fpsLimit: HTMLSelectElement;
+  private readonly performanceOverlay: HTMLInputElement;
   private readonly aimAssistStrength: HTMLSelectElement;
   private readonly screenShakeIntensity: HTMLInputElement;
   private readonly screenShakeIntensityValue: HTMLOutputElement;
@@ -127,6 +128,10 @@ export class SettingsOverlay {
               <option value="unlimited">Unlimited</option>
             </select>
           </div>
+          <label class="settings-toggle" for="setting-performance-overlay">
+            <span><strong>Performance monitor</strong><small>Shows FPS, frame-time percentiles, GPU renderer, and estimated game GPU memory.</small></span>
+            <input id="setting-performance-overlay" type="checkbox">
+          </label>
           <div class="settings-field">
             <label for="setting-aim-assist">Aim assist</label>
             <select id="setting-aim-assist">
@@ -227,6 +232,7 @@ export class SettingsOverlay {
     this.renderScale = requiredInput(this.element, '#setting-render-scale');
     this.renderScaleValue = requiredOutput(this.element, '[for="setting-render-scale"]');
     this.fpsLimit = requiredSelect(this.element, '#setting-fps-limit');
+    this.performanceOverlay = requiredInput(this.element, '#setting-performance-overlay');
     this.aimAssistStrength = requiredSelect(this.element, '#setting-aim-assist');
     this.screenShakeIntensity = requiredInput(this.element, '#setting-shake-intensity');
     this.screenShakeIntensityValue = requiredOutput(this.element, '[for="setting-shake-intensity"]');
@@ -329,6 +335,7 @@ export class SettingsOverlay {
     this.renderScale.value = String(settings.renderScale);
     this.renderScaleValue.value = `${Math.round(settings.renderScale * 100)}%`;
     this.fpsLimit.value = String(settings.fpsLimit);
+    this.performanceOverlay.checked = settings.performanceOverlay;
     this.aimAssistStrength.value = settings.aimAssistStrength;
     this.screenShakeIntensity.value = String(settings.screenShakeIntensity);
     this.screenShakeIntensityValue.value = `${Math.round(settings.screenShakeIntensity * 100)}%`;
@@ -385,6 +392,8 @@ export class SettingsOverlay {
       patch = { stadiumSelection: this.stadiumSelection.value as StadiumSelection };
     else if (target === this.renderScale) patch = { renderScale: this.renderScale.valueAsNumber };
     else if (target === this.fpsLimit) patch = { fpsLimit: parseFpsLimit(this.fpsLimit.value) };
+    else if (target === this.performanceOverlay)
+      patch = { performanceOverlay: this.performanceOverlay.checked };
     else if (target === this.aimAssistStrength)
       patch = { aimAssistStrength: this.aimAssistStrength.value as AimAssistStrength };
     else if (target === this.screenShakeIntensity)

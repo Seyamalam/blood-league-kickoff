@@ -60,6 +60,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P0` Automate wall, corner, out-of-bounds, stall, recall, catch, reset, and curve recovery; retain goal/death cases for full-flow playtests.
 - [x] `P0` Add an FPS/enemy-count development readout in the HUD.
 - [x] `P0` Expand diagnostics with frame time, draw calls, triangles, fixed steps, enemies, and pool counts; isolate physics timing during profiling.
+- [x] `P1` Add a settings-controlled performance monitor with FPS, frame time, p95/p99, GPU renderer identity, and honest game-owned GPU-memory estimation.
 - [x] `P0` Produce and test browser and desktop builds.
 - [x] `P0` Update README/game docs with implemented controls and known issues.
 - [x] `P0` Commit and push coherent combat slices during implementation.

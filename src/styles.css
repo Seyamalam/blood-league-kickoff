@@ -342,18 +342,85 @@ select:focus-visible,
 .perf {
   position: absolute;
   right: 28px;
-  bottom: 28px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: 470px;
-  gap: 6px 12px;
-  color: #77727d;
+  top: 82px;
+  display: none;
+  width: min(292px, calc(100vw - 56px));
+  padding: 10px 11px;
+  color: #b6b0ba;
+  border: 1px solid rgba(233, 196, 111, 0.24);
+  border-radius: 3px;
+  background: linear-gradient(145deg, rgba(10, 8, 15, 0.88), rgba(21, 13, 25, 0.78));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.26);
   font:
-    9px Arial,
+    9px/1.25 Arial,
     sans-serif;
   letter-spacing: 0.12em;
   font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(6px);
+}
+.performance-overlay-enabled .perf {
+  display: block;
+}
+.perf__title,
+.perf__detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.perf__title {
+  color: #e9c46f;
+  font-weight: 800;
+}
+.perf__title span:last-child {
+  color: #77717d;
+  font-size: 8px;
+}
+.perf__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin: 8px 0;
+}
+.perf__metrics span {
+  display: grid;
+  gap: 2px;
+  padding: 6px 4px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+.perf__metrics small {
+  color: #77717d;
+  font-size: 7px;
+}
+.perf__metrics strong {
+  color: #f4f1e9;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.perf__gpu {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-bottom: 7px;
+}
+.perf__gpu span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perf__gpu span:first-child {
+  color: #d9d3db;
+  font-weight: 700;
+}
+.perf__gpu span:last-child,
+.perf__detail {
+  color: #77717d;
+  font-size: 8px;
+}
+.perf__detail {
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 .settings-open {
   position: absolute;
@@ -380,6 +447,11 @@ select:focus-visible,
   color: #fff;
   border-color: #d63255;
   outline: none;
+}
+@media (max-width: 1100px) {
+  .perf {
+    top: 116px;
+  }
 }
 .combo {
   position: absolute;
@@ -861,7 +933,11 @@ select:focus-visible,
     line-height: 1.8;
   }
   .perf {
-    display: none;
+    top: 108px;
+    right: 12px;
+    width: min(260px, calc(100vw - 24px));
+    transform: scale(0.86);
+    transform-origin: top right;
   }
   .modal.splash {
     background-position: 46% center;

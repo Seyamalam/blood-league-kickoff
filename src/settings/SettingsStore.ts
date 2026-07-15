@@ -26,6 +26,7 @@ export interface PlayerSettings {
   renderQuality: RenderQuality;
   renderScale: number;
   fpsLimit: FpsLimit;
+  performanceOverlay: boolean;
   aimAssistStrength: AimAssistStrength;
   reducedCameraShake: boolean;
   screenShakeIntensity: number;
@@ -43,7 +44,7 @@ export interface PlayerSettings {
 
 export type SettingsListener = (settings: Readonly<PlayerSettings>) => void;
 
-const SETTINGS_VERSION = 9;
+const SETTINGS_VERSION = 10;
 const DEFAULT_STORAGE_KEY = 'blood-league-kickoff.settings';
 
 export const DEFAULT_KEY_BINDINGS: Readonly<KeyBindings> = Object.freeze({
@@ -67,6 +68,7 @@ export const DEFAULT_PLAYER_SETTINGS: Readonly<PlayerSettings> = Object.freeze({
   renderQuality: 'balanced',
   renderScale: 1,
   fpsLimit: 120,
+  performanceOverlay: false,
   aimAssistStrength: 'low',
   reducedCameraShake: false,
   screenShakeIntensity: 1,
@@ -141,6 +143,7 @@ export class SettingsStore {
           version === 6 ||
           version === 7 ||
           version === 8 ||
+          version === 9 ||
           version === SETTINGS_VERSION) &&
         isRecord(parsed.settings)
           ? parsed.settings
@@ -191,6 +194,10 @@ export function sanitizePlayerSettings(value: unknown): PlayerSettings {
       : DEFAULT_PLAYER_SETTINGS.renderQuality,
     renderScale: boundedNumber(source.renderScale, 0.5, 1.25, DEFAULT_PLAYER_SETTINGS.renderScale),
     fpsLimit: isFpsLimit(source.fpsLimit) ? source.fpsLimit : DEFAULT_PLAYER_SETTINGS.fpsLimit,
+    performanceOverlay:
+      typeof source.performanceOverlay === 'boolean'
+        ? source.performanceOverlay
+        : DEFAULT_PLAYER_SETTINGS.performanceOverlay,
     aimAssistStrength: isAimAssistStrength(source.aimAssistStrength)
       ? source.aimAssistStrength
       : DEFAULT_PLAYER_SETTINGS.aimAssistStrength,
@@ -324,6 +331,7 @@ function settingsEqual(left: PlayerSettings, right: PlayerSettings): boolean {
     left.renderQuality === right.renderQuality &&
     left.renderScale === right.renderScale &&
     left.fpsLimit === right.fpsLimit &&
+    left.performanceOverlay === right.performanceOverlay &&
     left.aimAssistStrength === right.aimAssistStrength &&
     left.reducedCameraShake === right.reducedCameraShake &&
     left.screenShakeIntensity === right.screenShakeIntensity &&

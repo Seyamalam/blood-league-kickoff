@@ -288,6 +288,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
 - [x] Add a development-only browser diagnostics bridge with frame percentiles, 60/120 FPS misses, GPU limits, and resource counts
+- [x] Add a persistent top-right performance monitor with FPS, frame time, p95/p99, detected GPU, and estimated game GPU memory
 - [x] Five fixed secondary-weapon `InstancedMesh` batches replace 45 individual render meshes
 - [x] Full-pool diagnostics track all 45 visible secondary objects and prove a five-draw-call ceiling
 - [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans

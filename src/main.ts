@@ -15,6 +15,7 @@ import {
   installRuntimeDiagnosticsHook,
   readRuntimeDiagnosticsMode,
 } from './diagnostics/RuntimeDiagnostics';
+import { estimateSceneGpuBytes, readGpuIdentity } from './diagnostics/GpuMetrics';
 import {
   createQaEvolutionFixture,
   createQaTerminalFixture,
@@ -367,6 +368,11 @@ async function bootstrap(): Promise<void> {
   const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
   const frameTimeSampler = new FrameTimeSampler();
+  const gpuIdentity = readGpuIdentity(renderer);
+  let frameDistribution = frameTimeSampler.snapshot();
+  let estimatedGpuBytes = estimateSceneGpuBytes(scene);
+  let performanceOverlayRefresh = 0;
+  let gpuMemoryRefresh = 0;
   const perfCounters = createPerformanceCounters();
   const uninstallDenseWavePerformanceHook = denseWaveStress
     ? installDenseWavePerformanceHook(window, () => ({
@@ -825,6 +831,7 @@ async function bootstrap(): Promise<void> {
     root.classList.toggle('high-contrast-hud', settings.highContrastHud);
     root.classList.toggle('reduced-flashes', settings.reducedFlashes);
     root.classList.toggle('reduced-motion', settings.reducedMotion);
+    root.classList.toggle('performance-overlay-enabled', settings.performanceOverlay);
     root.dataset.damageNumbers = settings.damageNumbers ? 'visible' : 'hidden';
     renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
     resize();
@@ -2274,7 +2281,6 @@ async function bootstrap(): Promise<void> {
     hud.update(
       state,
       physics.ballState,
-      perf.snapshot,
       input.kickCharge,
       progression,
       getMatchObjective(match, activeMatchConfig),
@@ -2369,7 +2375,20 @@ async function bootstrap(): Promise<void> {
     perfCounters.blackHolePoolActive = countActivePoolItems(secondaryRenderState.blackHoleZones);
     perfCounters.blackHolePoolCapacity = secondaryRenderState.blackHoleZones.length;
     perf.update(frameTime, perfCounters);
-    if (runtimeDiagnostics) frameTimeSampler.record(perf.snapshot.currentFrameMs);
+    frameTimeSampler.record(perf.snapshot.currentFrameMs);
+    if (playerSettings.performanceOverlay) {
+      performanceOverlayRefresh += frameTime;
+      gpuMemoryRefresh += frameTime;
+      if (gpuMemoryRefresh >= 2) {
+        gpuMemoryRefresh %= 2;
+        estimatedGpuBytes = estimateSceneGpuBytes(scene);
+      }
+      if (performanceOverlayRefresh >= 0.25) {
+        performanceOverlayRefresh %= 0.25;
+        frameDistribution = frameTimeSampler.snapshot();
+        hud.updatePerformance(perf.snapshot, frameDistribution, gpuIdentity, estimatedGpuBytes);
+      }
+    }
   });
 
   const onContextLost = (event: Event): void => {

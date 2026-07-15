@@ -51,6 +51,13 @@ miss rates, draw calls, triangles, GPU resource counts, renderer limits, and vie
 allocation-free; percentile sorting happens only when the console hook is called. The hook cannot be enabled in
 production builds.
 
+Players can independently enable **Performance monitor** in Settings. The compact top-right panel samples the
+latest 600 presented frames and refreshes at 4 Hz with FPS, smoothed frame time, p95, p99, draw calls, triangles,
+pool use, and the most specific WebGL renderer name allowed by the browser. `GAME GPU EST.` counts scene-owned
+geometry buffers and texture storage conservatively; it is not total physical VRAM. Browsers do not expose a
+trustworthy VRAM total, and Apple silicon uses unified memory, so the panel labels those cases rather than
+inventing a hardware capacity.
+
 - Re-run the 72-enemy sample in a production web build and Electron on macOS after the limiter fix.
 - Capture a moving/combat-heavy final-wave sample; the frozen scene isolates rendering but omits combat VFX and normal simulation work.
 - Record p95/p99 frame pacing, allocation/GC behavior, CPU profile, and GPU evidence.
