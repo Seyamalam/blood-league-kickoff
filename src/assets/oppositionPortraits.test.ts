@@ -21,9 +21,6 @@ describe('opposition portraits', () => {
 
   it('ships authored portraits for named minibosses and both goalkeeper encounters', () => {
     expect(Object.keys(MINIBOSS_PORTRAIT_URLS).sort()).toEqual(Object.keys(MINIBOSS_CONFIGS).sort());
-    expect(Object.keys(FEATURED_BOSS_PORTRAIT_URLS).sort()).toEqual([
-      'countGoalkeeper',
-      'goalLineBlocker',
-    ]);
+    expect(Object.keys(FEATURED_BOSS_PORTRAIT_URLS).sort()).toEqual(['countGoalkeeper', 'goalLineBlocker']);
   });
 });

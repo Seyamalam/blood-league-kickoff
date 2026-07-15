@@ -152,8 +152,7 @@ export class RenderBridge {
         if (contact.state === 'slideTackle') this.groundBurst(contact.position, intensity);
         else this.bootContactBurst(contact.position, intensity);
       }
-    }
-    else animatePlayer(this.player, state.elapsed, previousPlayer, p);
+    } else animatePlayer(this.player, state.elapsed, previousPlayer, p);
     if (importedPlayerReady && state.phase !== this.previousMatchPhase) {
       if (state.phase === 'won') this.playerAsset.playOutcome('victory');
       if (state.phase === 'dead') this.playerAsset.playOutcome('defeat');
