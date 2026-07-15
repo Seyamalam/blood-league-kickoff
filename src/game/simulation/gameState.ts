@@ -8,6 +8,7 @@ import type {
 } from './types';
 import { getEnemyArchetypeDefinition } from './enemyArchetypes';
 import { EnemySpatialGrid } from './EnemySpatialGrid';
+import { buildEnemySquadBlackboard, resolveEnemySquadIntent } from './enemyIntelligence';
 import type { SecondaryDamageHit } from '../combat';
 import {
   inferSpawnDirectorInput,
@@ -175,6 +176,7 @@ export function updateEnemies(
     : 1;
   updateEnemyProjectiles(state, dt, safeDamageTakenMultiplier, damageReducer);
   enemySpatialGrid.rebuild(state.enemies);
+  const squadBlackboard = buildEnemySquadBlackboard(state.enemies, player);
   for (let enemyIndex = 0; enemyIndex < state.enemies.length; enemyIndex += 1) {
     const enemy = state.enemies[enemyIndex]!;
     copyVec3(enemy.previousPosition, enemy.position);
@@ -183,9 +185,13 @@ export function updateEnemies(
     enemy.lastBallHit = Math.max(0, enemy.lastBallHit - dt);
     enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
     enemy.slowTimer = Math.max(0, enemy.slowTimer - dt);
-    let dx = player.position.x - enemy.position.x;
-    let dz = player.position.z - enemy.position.z;
-    const distance = Math.max(0.001, Math.hypot(dx, dz));
+    const squadIntent = resolveEnemySquadIntent(squadBlackboard, enemy);
+    let dx = squadIntent.targetX - enemy.position.x;
+    let dz = squadIntent.targetZ - enemy.position.z;
+    const playerDx = player.position.x - enemy.position.x;
+    const playerDz = player.position.z - enemy.position.z;
+    const distance = Math.max(0.001, Math.hypot(playerDx, playerDz));
+    const targetDistance = Math.max(0.001, Math.hypot(dx, dz));
     const crowdSlow = distance < 1.45 ? 0.5 : 1;
     const refreshDecision = shouldRefreshEnemyDecision(enemy, distance, state.elapsed);
 
@@ -207,13 +213,15 @@ export function updateEnemies(
     const separationZ = refreshDecision ? enemySpatialGrid.separationZ : 0;
 
     const speedBuff = enemy.buffed ? 1.28 : 1;
-    const chaseX = dx / distance;
-    const chaseZ = dz / distance;
-    dx = chaseX + separationX * 1.35;
-    dz = chaseZ + separationZ * 1.35;
+    const chaseX = playerDx / distance;
+    const chaseZ = playerDz / distance;
+    const pursuitX = dx / targetDistance;
+    const pursuitZ = dz / targetDistance;
+    dx = pursuitX + separationX * 1.35;
+    dz = pursuitZ + separationZ * 1.35;
     const moveLength = Math.max(1, Math.hypot(dx, dz));
-    let movementX = (dx / moveLength) * enemy.speed * speedBuff * crowdSlow;
-    let movementZ = (dz / moveLength) * enemy.speed * speedBuff * crowdSlow;
+    let movementX = (dx / moveLength) * enemy.speed * speedBuff * crowdSlow * squadIntent.speedMultiplier;
+    let movementZ = (dz / moveLength) * enemy.speed * speedBuff * crowdSlow * squadIntent.speedMultiplier;
 
     if (enemy.archetype === 'batSwarm') {
       // Swarms cut across the direct pursuit line in a predictable wave. The
