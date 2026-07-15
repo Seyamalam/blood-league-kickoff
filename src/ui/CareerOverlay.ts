@@ -12,8 +12,9 @@ import { ELITE_MODIFIER_DEFINITIONS } from '../game/encounters';
 import { MINIBOSS_CONFIGS } from '../game/boss';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
 import { CHARACTER_PORTRAIT_URLS } from '../assets/characterPortraits';
-import { ENEMY_PORTRAIT_URLS } from '../assets/oppositionPortraits';
+import { ENEMY_PORTRAIT_URLS, RIVAL_PORTRAIT_URLS } from '../assets/oppositionPortraits';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
+import { RIVAL_TEAM_DEFINITIONS } from '../game/match/rivalTeams';
 import { LocalLeaderboardRepository } from '../leaderboard';
 import {
   accountLevelForXp,
@@ -103,7 +104,7 @@ export interface CodexEntryView {
   id: string;
   name: string;
   description: string;
-  category: 'character' | 'weapon' | 'evolution' | 'enemy' | 'curse';
+  category: 'character' | 'weapon' | 'evolution' | 'enemy' | 'rival' | 'curse';
   unlocked: boolean;
   discovered: boolean;
   iconUrl: string | null;
@@ -385,6 +386,7 @@ export class CareerOverlay {
       'weapon',
       'evolution',
       'enemy',
+      'rival',
       'curse',
     ];
     this.codex.replaceChildren(
@@ -552,6 +554,16 @@ export function createCodexViewModel(profile: Readonly<PlayerProfile>): readonly
       discovered: hasPlayed,
       iconUrl: null,
       unlockHint: 'Encounter an elite during a match',
+    })),
+    ...Object.values(RIVAL_TEAM_DEFINITIONS).map((definition) => ({
+      id: definition.id,
+      name: definition.name,
+      description: definition.identity,
+      category: 'rival' as const,
+      unlocked: true,
+      discovered: hasPlayed,
+      iconUrl: RIVAL_PORTRAIT_URLS[definition.id],
+      unlockHint: `Kick off against ${definition.name}`,
     })),
     ...CURSE_IDS.map((id) => {
       const unlocked = CURSE_UNLOCK_LEVELS[id] <= accountLevel;
