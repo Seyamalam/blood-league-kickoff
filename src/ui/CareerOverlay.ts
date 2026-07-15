@@ -11,6 +11,7 @@ import {
 import { ELITE_MODIFIER_DEFINITIONS } from '../game/encounters';
 import { MINIBOSS_CONFIGS } from '../game/boss';
 import { CHARACTER_ULTIMATE_ICON_URLS } from '../assets/ultimateIcons';
+import { CHARACTER_PORTRAIT_URLS } from '../assets/characterPortraits';
 import { dailyRunSeed, weeklyRunSeed } from '../game/runs';
 import { LocalLeaderboardRepository } from '../leaderboard';
 import {
@@ -34,10 +35,7 @@ import {
 } from '../profile';
 import { uiIcon } from './icons';
 import { CURSE_ICON_URLS, EVOLUTION_ICON_URLS, UPGRADE_ICON_URLS } from './progressionIcons';
-import {
-  CharacterCodexPreview,
-  isCodexPreviewState,
-} from './CharacterCodexPreview';
+import { CharacterCodexPreview, isCodexPreviewState } from './CharacterCodexPreview';
 
 export type CareerCharacterSelectedCallback = (characterId: CharacterId) => void;
 
@@ -59,6 +57,7 @@ export interface CareerCharacterView {
   ultimateName: string;
   ultimateDescription: string;
   ultimateIconUrl: string;
+  portraitUrl: string;
   matches: number;
   wins: number;
   bestScore: number;
@@ -330,6 +329,7 @@ export class CareerOverlay {
         article.classList.toggle('career-character--locked', !character.unlocked);
         article.classList.toggle('career-character--selected', character.selected);
         article.innerHTML = `
+          <div class="career-character__portrait"><img src="${character.portraitUrl}" alt="${character.name} original character portrait"><span>${character.role}</span></div>
           <header><div><small>${character.role}</small><h4>${character.name}</h4></div><span>${character.unlocked ? (character.selected ? 'SELECTED' : 'UNLOCKED') : `LEVEL ${character.unlockLevel}`}</span></header>
           <p><strong>TRAIT</strong> ${character.trait}</p>
           <p><strong>WEAKNESS</strong> ${character.weakness}</p>
@@ -494,7 +494,7 @@ export function createCodexViewModel(profile: Readonly<PlayerProfile>): readonly
     category: 'character',
     unlocked: profile.unlockedCharacterIds.includes(id),
     discovered: profile.unlockedCharacterIds.includes(id),
-    iconUrl: CHARACTER_ULTIMATE_ICON_URLS[CHARACTER_ULTIMATE_DEFINITIONS[id].id],
+    iconUrl: CHARACTER_PORTRAIT_URLS[id],
     unlockHint: `Unlock at account level ${CHARACTER_UNLOCK_LEVELS[id]}`,
   }));
   entries.push(
@@ -611,6 +611,7 @@ export function createCareerViewModel(
         ultimateName: ultimate.name,
         ultimateDescription: ultimate.description,
         ultimateIconUrl: CHARACTER_ULTIMATE_ICON_URLS[ultimate.id],
+        portraitUrl: CHARACTER_PORTRAIT_URLS[id],
         matches: mastery.matches,
         wins: mastery.wins,
         bestScore: mastery.bestScore,

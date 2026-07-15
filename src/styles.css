@@ -3076,9 +3076,43 @@ select:focus-visible,
   gap: 10px;
 }
 .career-character {
+  position: relative;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid #493343;
   background: rgba(34, 21, 34, 0.82);
+}
+.career-character__portrait {
+  position: relative;
+  height: 158px;
+  margin: -16px -16px 13px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(233, 196, 111, 0.22);
+  background: #080811;
+}
+.career-character__portrait::after {
+  content: '';
+  position: absolute;
+  inset: 45% 0 0;
+  background: linear-gradient(transparent, rgba(16, 9, 18, 0.92));
+}
+.career-character__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+}
+.career-character__portrait span {
+  position: absolute;
+  z-index: 1;
+  right: 10px;
+  bottom: 8px;
+  color: #e9c46f;
+  font:
+    800 8px Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .career-character--selected {
   border-color: #d6a632;
@@ -3228,12 +3262,16 @@ select:focus-visible,
 }
 .codex-character-preview__status strong {
   color: #e9c46f;
-  font: italic 900 17px Impact, sans-serif;
+  font:
+    italic 900 17px Impact,
+    sans-serif;
   letter-spacing: 0.08em;
 }
 .codex-character-preview__status span {
   color: #9f909d;
-  font: 700 8px Arial, sans-serif;
+  font:
+    700 8px Arial,
+    sans-serif;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -3265,7 +3303,9 @@ select:focus-visible,
   border: 1px solid rgba(233, 196, 111, 0.28);
   color: #d8ccd5;
   background: rgba(10, 7, 13, 0.82);
-  font: 800 8px Arial, sans-serif;
+  font:
+    800 8px Arial,
+    sans-serif;
   letter-spacing: 0.08em;
 }
 .codex-character-preview__controls button:hover,
