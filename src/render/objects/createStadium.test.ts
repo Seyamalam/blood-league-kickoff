@@ -74,6 +74,8 @@ describe('stadium readability geometry', () => {
       scene.getObjectByName('stadium-environment')?.getObjectByName('stadium-corner-flag'),
     ).toBeInstanceOf(THREE.Mesh);
     expect(scene.getObjectsByProperty('name', 'stadium-floodlight-lamp')).toHaveLength(24);
+    expect(scene.getObjectsByProperty('name', 'stadium-supporter-group')).toHaveLength(10);
+    expect(scene.getObjectsByProperty('name', 'stadium-supporter-flag')).toHaveLength(10);
     expect(scene.getObjectByName('home-technical-area')).toBeInstanceOf(THREE.Group);
     expect(scene.getObjectByName('opponent-technical-area')).toBeInstanceOf(THREE.Group);
     expect(scene.getObjectsByProperty('name', 'stadium-dugout-seat')).toHaveLength(10);

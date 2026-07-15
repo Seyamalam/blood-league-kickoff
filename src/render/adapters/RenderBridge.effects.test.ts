@@ -9,15 +9,19 @@ describe('RenderBridge presentation effects', () => {
 
     expect(scene.children.filter((child) => child.name.startsWith('pooled-impact-ring-'))).toHaveLength(6);
     expect(scene.children.filter((child) => child.name.startsWith('pooled-hit-burst-'))).toHaveLength(4);
+    expect(scene.children.filter((child) => child.name.startsWith('pooled-signature-vfx-'))).toHaveLength(6);
 
     for (let index = 0; index < 20; index += 1) {
       bridge.bootContactBurst({ x: index, y: 0.1, z: -index }, 1);
       bridge.groundBurst({ x: index, y: 0, z: index }, 0.8);
       bridge.goalBurst({ x: 0, y: 0.2, z: index }, 1.2);
+      bridge.healBurst({ x: 0, y: 0.2, z: index }, 0.8);
+      bridge.bossBurst({ x: 0, y: 0.2, z: index }, 1.3);
     }
 
     expect(scene.children.filter((child) => child.name.startsWith('pooled-impact-ring-'))).toHaveLength(6);
     expect(scene.children.filter((child) => child.name.startsWith('pooled-hit-burst-'))).toHaveLength(4);
+    expect(scene.children.filter((child) => child.name.startsWith('pooled-signature-vfx-'))).toHaveLength(6);
     bridge.dispose();
   });
 

@@ -14,6 +14,10 @@ import {
 } from '../objects/EnemyCharacterVisual';
 import { EnemyCharacterAssetPool } from '../objects/EnemyCharacterAssetPool';
 import { createFootballVisual } from '../objects/FootballVisual';
+import { CombatVfxPool } from '../objects/CombatVfxPool';
+import { PitchSurfaceEffects } from '../objects/PitchSurfaceEffects';
+import { GoalNetResponse } from '../objects/GoalNetResponse';
+import { CharacterReadabilityLight } from '../objects/CharacterReadabilityLight';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -69,12 +73,17 @@ export class RenderBridge {
   private readonly trailPositions: Float32Array;
   private readonly bursts: HitBurst[];
   private readonly impactRings: ImpactRing[];
+  private readonly signatureVfx: CombatVfxPool;
+  private readonly surfaceEffects: PitchSurfaceEffects;
+  private readonly goalNetResponse: GoalNetResponse;
+  private readonly readabilityLight: CharacterReadabilityLight;
   private readonly enemies = new Map<number, EnemyVisual>();
   private readonly enemyCharacterPool: EnemyCharacterAssetPool;
   private readonly liveEnemyIds = new Set<number>();
   private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
   private readonly liveEnemyProjectileIds = new Set<number>();
   private ballSpin = 0;
+  private ballDeformation = 0;
   private trailInitialized = false;
   private nextBurst = 0;
   private nextImpactRing = 0;
@@ -99,6 +108,10 @@ export class RenderBridge {
     this.ballLight = new THREE.PointLight(0xff315d, 0, 5.5, 2);
     this.bursts = Array.from({ length: BURST_POOL_SIZE }, (_, index) => createHitBurst(index));
     this.impactRings = Array.from({ length: RING_POOL_SIZE }, (_, index) => createImpactRing(index));
+    this.signatureVfx = new CombatVfxPool(scene);
+    this.surfaceEffects = new PitchSurfaceEffects(scene);
+    this.goalNetResponse = new GoalNetResponse(scene);
+    this.readabilityLight = new CharacterReadabilityLight(scene);
     scene.add(this.player, this.trail, this.ball, this.ballLight);
     for (const burst of this.bursts) scene.add(burst.points);
     for (const ring of this.impactRings) scene.add(ring.mesh);
@@ -141,9 +154,20 @@ export class RenderBridge {
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
     this.ball.rotation.set(this.ballSpin, this.ballSpin * 0.35, 0);
+    this.ballDeformation = Math.max(0, this.ballDeformation - dt * 4.8);
+    const flightStretch = THREE.MathUtils.clamp((ballSpeed - 8) / 35, 0, 0.12);
+    this.ball.scale.set(
+      1 + this.ballDeformation * 0.16 - flightStretch * 0.45,
+      1 - this.ballDeformation * 0.2 - flightStretch * 0.35,
+      1 + this.ballDeformation * 0.06 + flightStretch,
+    );
     this.updateBallEnergy(ballPosition, ballSpeed);
     this.updateBursts(dt);
     this.updateImpactRings(dt);
+    this.signatureVfx.update(dt);
+    this.surfaceEffects.sync(state.player, ballPosition, ballSpeed, dt);
+    this.goalNetResponse.update(dt);
+    this.readabilityLight.update(state.player.position);
 
     this.liveEnemyIds.clear();
     for (const enemy of state.enemies) {
@@ -235,6 +259,11 @@ export class RenderBridge {
     this.enemyProjectiles.clear();
     this.trailInitialized = false;
     this.trail.visible = false;
+    this.ballDeformation = 0;
+    this.ball.scale.setScalar(1);
+    this.signatureVfx.reset();
+    this.surfaceEffects.reset();
+    this.goalNetResponse.reset();
     for (const burst of this.bursts) {
       burst.age = burst.duration;
       burst.points.visible = false;
@@ -251,10 +280,14 @@ export class RenderBridge {
 
   setReducedFlashes(active: boolean): void {
     this.reducedFlashes = active;
+    this.signatureVfx.setReducedFlashes(active);
   }
 
   setRenderQuality(quality: RenderQuality): void {
     this.renderQuality = quality;
+    this.signatureVfx.setQuality(quality);
+    this.surfaceEffects.setQuality(quality);
+    this.readabilityLight.setQuality(quality);
   }
 
   playPlayerTechnique(technique: 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle'): void {
@@ -272,11 +305,13 @@ export class RenderBridge {
   /** Reuses a small particle pool; safe to call for every registered ball hit. */
   hitBurst(position: Vec3, intensity = 1): void {
     this.startBurst(position, intensity, 0xff315d);
+    this.signatureVfx.trigger('blood', position, intensity * 0.62);
   }
 
   /** Slightly brighter variant intended for a successful returning volley. */
   volleyBurst(position: Vec3, intensity = 1): void {
     this.startBurst(position, intensity * 1.25, 0xffd66b);
+    this.signatureVfx.trigger('volley', position, intensity);
   }
 
   lightningBurst(position: Vec3, intensity = 1): void {
@@ -295,6 +330,8 @@ export class RenderBridge {
   bootContactBurst(position: Vec3, intensity = 1): void {
     this.startBurst(position, intensity * 1.1, 0xffd66b);
     this.startImpactRing(position, intensity, 0xffd66b, 0.25, 1.75);
+    this.signatureVfx.trigger('kick', position, intensity);
+    this.ballDeformation = Math.max(this.ballDeformation, THREE.MathUtils.clamp(intensity * 0.42, 0.25, 0.8));
   }
 
   /** Low, earthy feedback for dashes, tackles and hard landings. */
@@ -305,6 +342,8 @@ export class RenderBridge {
       0xc99562,
     );
     this.startImpactRing(position, intensity * 0.8, 0x9f6d45, 0.4, 2.25);
+    this.signatureVfx.trigger('tackle', position, intensity);
+    this.surfaceEffects.markTackle(position, this.player.rotation.y, intensity);
   }
 
   /** Larger but still bounded celebration grammar for goals and terminal rewards. */
@@ -312,6 +351,23 @@ export class RenderBridge {
     this.startBurst(position, intensity * 1.35, 0xff315d);
     this.startImpactRing(position, intensity * 1.2, 0xff315d, 0.65, 3.8);
     if (this.renderQuality !== 'performance') this.startImpactRing(position, intensity, 0xffd66b, 0.3, 2.9);
+    this.signatureVfx.trigger('goal', position, intensity);
+    this.goalNetResponse.impact(position, intensity);
+    this.ballDeformation = Math.max(this.ballDeformation, THREE.MathUtils.clamp(intensity * 0.55, 0.45, 1));
+  }
+
+  /** Rising restorative grammar for healing and life-steal events. */
+  healBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 0.7, 0x74ffbb);
+    this.startImpactRing(position, intensity * 0.75, 0x74ffbb, 0.3, 2.1);
+    this.signatureVfx.trigger('heal', position, intensity);
+  }
+
+  /** Large bounded rune/beam accent for boss entrances, phases, and defeat. */
+  bossBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 1.45, 0xb66cff);
+    this.startImpactRing(position, intensity * 1.25, 0xb66cff, 0.75, 4.6);
+    this.signatureVfx.trigger('boss', position, intensity);
   }
 
   dispose(): void {
@@ -320,6 +376,10 @@ export class RenderBridge {
     this.reset();
     this.playerAsset.dispose();
     this.enemyCharacterPool.dispose();
+    this.signatureVfx.dispose();
+    this.surfaceEffects.dispose();
+    this.goalNetResponse.dispose();
+    this.readabilityLight.dispose();
     this.scene.remove(this.player, this.ball, this.trail, this.ballLight);
     this.ball.geometry.dispose();
     this.ballMaterial.dispose();

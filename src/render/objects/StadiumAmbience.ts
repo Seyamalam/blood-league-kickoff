@@ -43,6 +43,7 @@ export class StadiumAmbience {
   private rails: THREE.Mesh[] = [];
   private banners: THREE.Object3D[] = [];
   private flags: THREE.Object3D[] = [];
+  private supporterGroups: THREE.Object3D[] = [];
   private propPieces: PropPieceCache[] = [];
   private stadium: THREE.Object3D | null = null;
   private preset: StadiumAmbiencePreset = STADIUM_VARIANTS['blood-court'].ambience;
@@ -120,6 +121,10 @@ export class StadiumAmbience {
     this.propDamage = 0;
     this.propImpulse = 0;
     this.elapsed = 0;
+    for (const group of this.supporterGroups) {
+      group.position.y = 3.45;
+      group.rotation.z = 0;
+    }
     this.restoreReactiveProps();
     this.seedParticles();
   }
@@ -133,6 +138,7 @@ export class StadiumAmbience {
     this.rails.length = 0;
     this.banners.length = 0;
     this.flags.length = 0;
+    this.supporterGroups.length = 0;
     this.propPieces.length = 0;
     this.disposed = true;
   }
@@ -149,6 +155,7 @@ export class StadiumAmbience {
     this.rails = [];
     this.banners = [];
     this.flags = [];
+    this.supporterGroups = [];
     this.propPieces = [];
     for (const name of CROWD_NAMES) {
       const mesh = this.stadium?.getObjectByName(name);
@@ -165,7 +172,9 @@ export class StadiumAmbience {
     this.stadium?.traverse((object) => {
       if (object.name === 'arena-light-rail' && object instanceof THREE.Mesh) this.rails.push(object);
       else if (object.name === 'stadium-reactive-banner') this.banners.push(object);
-      else if (object.name === 'stadium-corner-flag') this.flags.push(object);
+      else if (object.name === 'stadium-corner-flag' || object.name === 'stadium-supporter-flag')
+        this.flags.push(object);
+      else if (object.name === 'stadium-supporter-group') this.supporterGroups.push(object);
       else if (object.parent?.name === 'stadium-reactive-prop') {
         this.propPieces.push({
           object,
@@ -247,7 +256,13 @@ export class StadiumAmbience {
       banner.rotation.y =
         Math.sin(this.elapsed * 1.8 + banner.position.x * 0.18) * (0.025 + this.cheer * 0.12);
     for (const flag of this.flags)
-      flag.rotation.z = Math.sin(this.elapsed * 3.1 + flag.position.z) * (0.045 + this.cheer * 0.1);
+      flag.rotation.z =
+        Math.sin(this.elapsed * (3.1 + this.cheer * 1.4) + flag.position.z) * (0.045 + this.cheer * 0.15);
+    for (const group of this.supporterGroups) {
+      const phase = Number(group.userData.reactionPhase ?? 0);
+      group.rotation.z = Math.sin(this.elapsed * 4.2 + phase) * this.cheer * 0.055;
+      group.position.y = 3.45 + Math.max(0, Math.sin(this.elapsed * 6.4 + phase)) * this.cheer * 0.18;
+    }
   }
 
   private updateReactiveProps(): void {

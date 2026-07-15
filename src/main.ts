@@ -506,7 +506,9 @@ async function bootstrap(): Promise<void> {
     const before = state.player.health;
     state.player.health = Math.min(state.player.maxHealth, state.player.health + amount);
     if (state.player.health > before) {
-      runTelemetry.recordHealing(state.player.health - before);
+      const restored = state.player.health - before;
+      runTelemetry.recordHealing(restored);
+      bridge.healBurst(state.player.position, Math.min(1.5, 0.55 + restored / 24));
       if (lifeSteal) audio.playLifeSteal();
       else audio.playHeal();
     }
@@ -1962,6 +1964,7 @@ async function bootstrap(): Promise<void> {
               });
               if (event.to === 'bloodRush' || event.to === 'desperation') audio.playBossPhase(event.to);
               else audio.playPhase(2);
+              bridge.bossBurst(boss.position, event.to === 'desperation' ? 1.65 : 1.05);
               if (event.to === 'desperation') {
                 audio.playBossTransformation();
                 audio.playCrowdRise(0.9);
@@ -2042,6 +2045,7 @@ async function bootstrap(): Promise<void> {
             }
             bossDefeatedThisStep = didDefeatCountGoalkeeper(damage.events);
             if (bossDefeatedThisStep) {
+              bridge.bossBurst(boss.position, 1.9);
               replayHighlights.record({
                 kind: 'boss-defeated',
                 matchTime: match.matchElapsed,
@@ -2113,6 +2117,7 @@ async function bootstrap(): Promise<void> {
             stadiumAmbience.setPhase(event.to);
             if (event.to === 'finalWave' && !boss) {
               boss = spawnCountGoalkeeper();
+              bridge.bossBurst(boss.position, 1.65);
               audio.playFinalWave();
               audio.playBossEntrance();
             }

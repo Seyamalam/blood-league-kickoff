@@ -731,6 +731,36 @@ function addCrowdSilhouettes(scene: THREE.Object3D, variant: StadiumVariant): vo
   if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
   if (heads.instanceColor) heads.instanceColor.needsUpdate = true;
   scene.add(bodies, heads);
+
+  const supporterFlagGeometry = new THREE.PlaneGeometry(0.9, 0.58, 3, 2);
+  const supporterFlagMaterial = new THREE.MeshBasicMaterial({
+    color: variant.accent,
+    transparent: true,
+    opacity: 0.82,
+    side: THREE.DoubleSide,
+  });
+  const supporterPoleGeometry = new THREE.CylinderGeometry(0.025, 0.025, 1.55, 5);
+  const supporterPoleMaterial = new THREE.MeshStandardMaterial({
+    color: variant.line,
+    metalness: 0.45,
+    roughness: 0.4,
+  });
+  for (let index = 0; index < 10; index += 1) {
+    const side = index % 2 === 0 ? -1 : 1;
+    const group = new THREE.Group();
+    group.name = 'stadium-supporter-group';
+    group.userData.reactionPhase = index * 0.73;
+    group.position.set(-31.5 + Math.floor(index / 2) * 15.7, 3.45, side * (ARENA_WALL_HALF_LENGTH + 2.25));
+    const pole = new THREE.Mesh(supporterPoleGeometry, supporterPoleMaterial);
+    pole.name = 'stadium-supporter-flag-pole';
+    pole.position.y = 0.65;
+    const flag = new THREE.Mesh(supporterFlagGeometry, supporterFlagMaterial);
+    flag.name = 'stadium-supporter-flag';
+    flag.position.set(0.46, 1.14, 0);
+    flag.rotation.y = side < 0 ? 0 : Math.PI;
+    group.add(pole, flag);
+    scene.add(group);
+  }
 }
 
 function addArchitecture(scene: THREE.Object3D, variant: StadiumVariant): void {

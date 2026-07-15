@@ -23,6 +23,8 @@ describe('stadium ambience presentation', () => {
     const scene = new THREE.Scene();
     createStadium(scene, 'royal-amethyst');
     const ambience = new StadiumAmbience(scene);
+    const supporter = scene.getObjectByName('stadium-supporter-group')!;
+    const supporterBaseY = supporter.position.y;
 
     ambience.setPhase('bloodMoon');
     ambience.celebrate(1.2);
@@ -31,6 +33,7 @@ describe('stadium ambience presentation', () => {
     expect(ambience.cheerLevel).toBeGreaterThan(1);
     const crowd = scene.getObjectByName('stadium-crowd-bodies') as THREE.InstancedMesh;
     expect(crowd.instanceMatrix.version).toBeGreaterThan(0);
+    expect(supporter.position.y).toBeGreaterThan(supporterBaseY);
     ambience.reset();
     expect(ambience.cheerLevel).toBe(0);
   });
