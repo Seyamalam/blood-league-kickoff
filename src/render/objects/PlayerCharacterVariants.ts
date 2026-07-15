@@ -113,6 +113,11 @@ export function createImportedCharacterVariantController(
     variantRoots.set(id, root);
     model.add(root);
     addVariantAccessories(id, model, root, ownedGeometries, ownedMaterials);
+    model.traverse((object) => {
+      if (!object.name.startsWith(`character-accessory-${id}-kit-`)) return;
+      object.userData.characterVariant = id;
+      ownedAccessories.add(object);
+    });
     for (const accessoryName of CHARACTER_VARIANT_VISUALS[id].accessoryNames) {
       const object = model.getObjectByName(`character-accessory-${accessoryName}`);
       if (!object) continue;
@@ -186,6 +191,7 @@ function addVariantAccessories(
   );
 
   attachHeadIdentity(model, variantRoot, id, hair, accent, geometries);
+  attachFootballKit(model, variantRoot, id, primary, accent, geometries);
   attachBoot(model, variantRoot, 'foot_l', `${id}-boot-left`, -1, style.bootColor, geometries, materials);
   attachBoot(model, variantRoot, 'foot_r', `${id}-boot-right`, 1, style.bootColor, geometries, materials);
 
@@ -208,6 +214,87 @@ function addVariantAccessories(
   } else {
     attachGuard(model, variantRoot, 'lowerarm_l', 'forearm-guard-left', -1, primary, geometries);
     attachGuard(model, variantRoot, 'lowerarm_r', 'forearm-guard-right', 1, primary, geometries);
+  }
+}
+
+/** Builds a readable football kit from joint-mounted pieces so it follows the shared rig without extra skinning. */
+function attachFootballKit(
+  model: THREE.Group,
+  root: THREE.Group,
+  id: CharacterId,
+  primary: THREE.Material,
+  accent: THREE.Material,
+  geometries: Set<THREE.BufferGeometry>,
+): void {
+  const jersey = accessory(
+    new THREE.CylinderGeometry(0.2, 0.18, 0.4, 12),
+    primary,
+    `${id}-kit-jersey`,
+    geometries,
+  );
+  jersey.scale.set(id === 'tower' || id === 'guardian' ? 1.32 : 1.2, 1, 0.74);
+  jersey.position.set(0, 0.045, 0);
+  attach(model, root, 'spine_02', jersey);
+
+  const chestStripe = accessory(
+    new THREE.BoxGeometry(id === 'tower' || id === 'guardian' ? 0.075 : 0.055, 0.3, 0.018),
+    accent,
+    `${id}-kit-chest-stripe`,
+    geometries,
+  );
+  chestStripe.position.set(0, 0.045, -0.151);
+  attach(model, root, 'spine_02', chestStripe);
+
+  const collar = accessory(
+    new THREE.TorusGeometry(0.085, 0.018, 6, 16),
+    accent,
+    `${id}-kit-collar`,
+    geometries,
+  );
+  collar.rotation.x = Math.PI / 2;
+  collar.position.set(0, 0.075, -0.035);
+  attach(model, root, 'spine_03', collar);
+
+  for (const [joint, side] of [
+    ['upperarm_l', -1],
+    ['upperarm_r', 1],
+  ] as const) {
+    const sleeve = accessory(
+      new THREE.CylinderGeometry(0.085, 0.1, 0.19, 10),
+      primary,
+      `${id}-kit-sleeve-${side < 0 ? 'left' : 'right'}`,
+      geometries,
+    );
+    sleeve.position.y = 0.075;
+    attach(model, root, joint, sleeve);
+  }
+
+  for (const [joint, side] of [
+    ['thigh_l', -1],
+    ['thigh_r', 1],
+  ] as const) {
+    const shorts = accessory(
+      new THREE.CylinderGeometry(0.115, 0.13, 0.23, 10),
+      accent,
+      `${id}-kit-shorts-${side < 0 ? 'left' : 'right'}`,
+      geometries,
+    );
+    shorts.position.y = 0.1;
+    attach(model, root, joint, shorts);
+  }
+
+  for (const [joint, side] of [
+    ['calf_l', -1],
+    ['calf_r', 1],
+  ] as const) {
+    const sock = accessory(
+      new THREE.CylinderGeometry(0.072, 0.085, 0.3, 10),
+      primary,
+      `${id}-kit-sock-${side < 0 ? 'left' : 'right'}`,
+      geometries,
+    );
+    sock.position.y = 0.16;
+    attach(model, root, joint, sock);
   }
 }
 

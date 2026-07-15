@@ -19,6 +19,8 @@ describe('CountGoalkeeperVisual', () => {
     expect(scene.getObjectByName('count-goalkeeper-blood-tendrils')?.visible).toBe(true);
     expect(scene.getObjectByName('count-goalkeeper-glove-left')).toBeInstanceOf(THREE.Group);
     expect(scene.getObjectByName('count-goalkeeper-glove-right')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('count-goalkeeper-leg-left')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('count-goalkeeper-leg-right')).toBeInstanceOf(THREE.Group);
     expect(scene.getObjectByName('count-goalkeeper-chest-armor')).toHaveProperty(
       'geometry.type',
       'ExtrudeGeometry',

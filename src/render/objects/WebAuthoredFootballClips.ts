@@ -11,6 +11,12 @@ interface MotionDefinition {
 
 const r = (x = 0, y = 0, z = 0): Rotation => [x, y, z];
 const frame = (time: number, pose: Pose): readonly [number, Pose] => [time, pose];
+const NATURAL_STANCE: Pose = Object.freeze({
+  upperarm_l: r(0.04, 0, -1.12),
+  upperarm_r: r(0.04, 0, 1.12),
+  lowerarm_l: r(-0.08),
+  lowerarm_r: r(-0.08),
+});
 
 /** Browser-authored in-place motions that use the canonical 65-joint shared skeleton. */
 export const WEB_AUTHORED_FOOTBALL_MOTIONS: readonly MotionDefinition[] = Object.freeze([
@@ -18,14 +24,14 @@ export const WEB_AUTHORED_FOOTBALL_MOTIONS: readonly MotionDefinition[] = Object
     name: 'Football_Idle_Loop',
     duration: 2.4,
     frames: [
-      frame(0, { spine_03: r(0.02), upperarm_l: r(0, 0, -0.12), upperarm_r: r(0, 0, 0.12) }),
+      frame(0, { spine_03: r(0.02), upperarm_l: r(0, 0, -1.12), upperarm_r: r(0, 0, 1.12) }),
       frame(0.5, {
         spine_03: r(-0.025),
         neck_01: r(0, 0.04),
-        upperarm_l: r(0, 0, -0.1),
-        upperarm_r: r(0, 0, 0.1),
+        upperarm_l: r(0, 0, -1.08),
+        upperarm_r: r(0, 0, 1.08),
       }),
-      frame(1, { spine_03: r(0.02), upperarm_l: r(0, 0, -0.12), upperarm_r: r(0, 0, 0.12) }),
+      frame(1, { spine_03: r(0.02), upperarm_l: r(0, 0, -1.12), upperarm_r: r(0, 0, 1.12) }),
     ],
   },
   {
@@ -37,24 +43,24 @@ export const WEB_AUTHORED_FOOTBALL_MOTIONS: readonly MotionDefinition[] = Object
         thigh_r: r(0.3),
         calf_l: r(0.22),
         calf_r: r(-0.15),
-        upperarm_l: r(0.3),
-        upperarm_r: r(-0.3),
+        upperarm_l: r(0.3, 0, -1.05),
+        upperarm_r: r(-0.3, 0, 1.05),
       }),
       frame(0.5, {
         thigh_l: r(0.3),
         thigh_r: r(-0.28),
         calf_l: r(-0.15),
         calf_r: r(0.22),
-        upperarm_l: r(-0.3),
-        upperarm_r: r(0.3),
+        upperarm_l: r(-0.3, 0, -1.05),
+        upperarm_r: r(0.3, 0, 1.05),
       }),
       frame(1, {
         thigh_l: r(-0.28),
         thigh_r: r(0.3),
         calf_l: r(0.22),
         calf_r: r(-0.15),
-        upperarm_l: r(0.3),
-        upperarm_r: r(-0.3),
+        upperarm_l: r(0.3, 0, -1.05),
+        upperarm_r: r(-0.3, 0, 1.05),
       }),
     ],
   },
@@ -358,7 +364,10 @@ export function createWebAuthoredFootballClips(root: THREE.Object3D): readonly T
 }
 
 function createClip(root: THREE.Object3D, motion: MotionDefinition): THREE.AnimationClip {
-  const boneNames = new Set(motion.frames.flatMap(([, pose]) => Object.keys(pose)));
+  const boneNames = new Set([
+    ...Object.keys(NATURAL_STANCE),
+    ...motion.frames.flatMap(([, pose]) => Object.keys(pose)),
+  ]);
   const tracks: THREE.QuaternionKeyframeTrack[] = [];
   for (const boneName of boneNames) {
     const bone = root.getObjectByName(boneName);
@@ -366,7 +375,7 @@ function createClip(root: THREE.Object3D, motion: MotionDefinition): THREE.Anima
     const times: number[] = [];
     const values: number[] = [];
     for (const [normalizedTime, pose] of motion.frames) {
-      const rotation = pose[boneName] ?? r();
+      const rotation = pose[boneName] ?? NATURAL_STANCE[boneName] ?? r();
       const offset = new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation, 'XYZ'));
       const value = bone.quaternion.clone().multiply(offset).normalize();
       times.push(normalizedTime * motion.duration);

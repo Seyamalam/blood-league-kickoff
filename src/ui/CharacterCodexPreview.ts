@@ -60,8 +60,8 @@ export class CharacterCodexPreview {
     this.renderer.domElement.setAttribute('aria-label', 'Animated 3D character preview');
     this.host.prepend(this.renderer.domElement);
 
-    this.camera.position.set(0, 1.28, 4.6);
-    this.camera.lookAt(0, 1.05, 0);
+    this.camera.position.set(0, 1.08, 5.45);
+    this.camera.lookAt(0, 0.98, 0);
     this.scene.add(this.stage);
     this.scene.add(new THREE.HemisphereLight(0xdde8ff, 0x170c20, 2.35));
     const key = new THREE.DirectionalLight(0xffd6bd, 4.2);

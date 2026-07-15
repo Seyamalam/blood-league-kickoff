@@ -53,6 +53,8 @@ export class CountGoalkeeperVisual {
   private readonly rightWing: THREE.Mesh;
   private readonly leftArm = new THREE.Group();
   private readonly rightArm = new THREE.Group();
+  private readonly leftLeg = new THREE.Group();
+  private readonly rightLeg = new THREE.Group();
   private readonly leftGlove: THREE.Group;
   private readonly rightGlove: THREE.Group;
   private readonly phaseMask: THREE.Mesh;
@@ -71,9 +73,12 @@ export class CountGoalkeeperVisual {
   constructor(scene: THREE.Scene) {
     this.group.name = 'count-goalkeeper-visual';
     this.group.userData.visualRole = 'vampire-goalkeeper-boss';
-    this.body = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.78, 1.28, 6, 10)), this.bodyMaterial);
+    this.body = new THREE.Mesh(
+      this.track(new THREE.CylinderGeometry(0.62, 0.74, 1.3, 12)),
+      this.bodyMaterial,
+    );
     this.body.name = 'count-goalkeeper-body';
-    this.body.position.y = 1.43;
+    this.body.position.y = 1.68;
 
     const chestArmor = new THREE.Mesh(this.track(createChestArmorGeometry()), this.armorMaterial);
     chestArmor.name = 'count-goalkeeper-chest-armor';
@@ -110,6 +115,13 @@ export class CountGoalkeeperVisual {
 
     this.leftGlove = this.createGoalkeeperArm(this.leftArm, -1);
     this.rightGlove = this.createGoalkeeperArm(this.rightArm, 1);
+    this.createGoalkeeperLeg(this.leftLeg, -1);
+    this.createGoalkeeperLeg(this.rightLeg, 1);
+
+    const belt = new THREE.Mesh(this.track(new THREE.TorusGeometry(0.66, 0.075, 6, 20)), this.armorMaterial);
+    belt.name = 'count-goalkeeper-belt';
+    belt.position.y = 1.08;
+    belt.rotation.x = Math.PI / 2;
 
     this.crown = new THREE.Mesh(this.track(createKeeperCrownGeometry()), this.armorMaterial);
     this.crown.name = 'count-goalkeeper-crown';
@@ -170,6 +182,9 @@ export class CountGoalkeeperVisual {
       rightPauldron,
       this.leftArm,
       this.rightArm,
+      this.leftLeg,
+      this.rightLeg,
+      belt,
       this.crown,
       this.actionRing,
       this.cape,
@@ -257,6 +272,9 @@ export class CountGoalkeeperVisual {
       1 + this.transformation * 0.18,
     );
     this.poseArms(state);
+    const stride = state.action === 'counterattack' ? Math.sin(state.actionElapsed * 18) * 0.34 : 0;
+    this.leftLeg.rotation.x = stride;
+    this.rightLeg.rotation.x = -stride;
     this.emitActionContactIfReady(state);
     this.phaseLight.intensity = this.transformation * (state.phase === 'desperation' ? 3.2 : 1.2);
     this.phaseLight.distance = 7 + this.transformation * 6;
@@ -273,6 +291,8 @@ export class CountGoalkeeperVisual {
       this.actionMaterial.color.setHex(0xff315f);
       this.leftArm.rotation.z = 1.25 - pose.progress * 1.05;
       this.rightArm.rotation.z = -1.25 + pose.progress * 1.05;
+      this.leftLeg.rotation.x = -0.12 + pose.progress * 0.12;
+      this.rightLeg.rotation.x = 0.12 - pose.progress * 0.12;
       this.group.userData.presentationState = 'entrance';
     } else {
       const phasePulse = Math.max(0, 1 - state.phaseElapsed / 0.72);
@@ -309,6 +329,8 @@ export class CountGoalkeeperVisual {
     this.tendrils.visible = false;
     this.leftArm.rotation.set(0, 0, 0);
     this.rightArm.rotation.set(0, 0, 0);
+    this.leftLeg.rotation.set(0, 0, 0);
+    this.rightLeg.rotation.set(0, 0, 0);
     this.phaseLight.intensity = 0;
     this.previousPhase = undefined;
     this.defeatElapsed = 0;
@@ -355,6 +377,20 @@ export class CountGoalkeeperVisual {
     glove.add(palm);
     arm.add(limb, glove);
     return glove;
+  }
+
+  private createGoalkeeperLeg(leg: THREE.Group, side: -1 | 1): void {
+    leg.name = side < 0 ? 'count-goalkeeper-leg-left' : 'count-goalkeeper-leg-right';
+    leg.position.set(side * 0.31, 1.08, 0);
+    const thigh = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.2, 0.48, 5, 8)), this.bodyMaterial);
+    thigh.name = `${leg.name}-thigh`;
+    thigh.position.y = -0.38;
+    const boot = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.19, 0.34, 5, 8)), this.armorMaterial);
+    boot.name = `${leg.name}-boot`;
+    boot.position.set(0, -0.92, 0.09);
+    boot.rotation.x = Math.PI / 2;
+    boot.scale.set(1, 1.32, 0.82);
+    leg.add(thigh, boot);
   }
 
   private createTendrils(): void {
