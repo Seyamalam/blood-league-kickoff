@@ -34,6 +34,10 @@ import {
 } from '../profile';
 import { uiIcon } from './icons';
 import { CURSE_ICON_URLS, EVOLUTION_ICON_URLS, UPGRADE_ICON_URLS } from './progressionIcons';
+import {
+  CharacterCodexPreview,
+  isCodexPreviewState,
+} from './CharacterCodexPreview';
 
 export type CareerCharacterSelectedCallback = (characterId: CharacterId) => void;
 
@@ -118,6 +122,7 @@ export class CareerOverlay {
   private readonly challengeList: HTMLElement;
   private readonly stadiumGrid: HTMLElement;
   private readonly codex: HTMLElement;
+  private readonly characterPreview: CharacterCodexPreview;
   private readonly recentRuns: HTMLElement;
   private readonly scoreBoard: HTMLElement;
   private readonly fastestVictoryBoard: HTMLElement;
@@ -171,6 +176,21 @@ export class CareerOverlay {
           </section>
           <section class="career-section career-codex" aria-labelledby="career-codex-title">
             <header><h3 id="career-codex-title">NIGHT LEAGUE CODEX</h3><p>Discover characters, armory, evolutions, opposition, and curse contracts.</p></header>
+            <div class="codex-character-preview">
+              <div class="codex-character-preview__status"><strong>3D KIT ROOM</strong><span>Loading shared-rig model…</span></div>
+              <div class="codex-character-preview__controls" aria-label="Character model preview controls">
+                <div class="codex-character-preview__characters">
+                  ${CHARACTER_IDS.map((id) => `<button type="button" data-preview-character="${id}">${CHARACTER_DEFINITIONS[id].name.replace('The ', '')}</button>`).join('')}
+                </div>
+                <div class="codex-character-preview__animations">
+                  <button type="button" data-preview-animation="idle">IDLE</button>
+                  <button type="button" data-preview-animation="dribble">DRIBBLE</button>
+                  <button type="button" data-preview-animation="shoot">SHOOT</button>
+                  <button type="button" data-preview-animation="slideTackle">TACKLE</button>
+                  <button type="button" data-preview-animation="victory">VICTORY</button>
+                </div>
+              </div>
+            </div>
             <div class="career-codex__groups"></div>
           </section>
           <section class="career-section" aria-labelledby="career-history-title">
@@ -202,6 +222,9 @@ export class CareerOverlay {
     this.challengeList = requiredElement(this.element, '.career-challenges');
     this.stadiumGrid = requiredElement(this.element, '.career-stadiums');
     this.codex = requiredElement(this.element, '.career-codex__groups');
+    this.characterPreview = new CharacterCodexPreview(
+      requiredElement(this.element, '.codex-character-preview'),
+    );
     this.recentRuns = requiredElement(this.element, '.career-runs');
     this.scoreBoard = requiredElement(this.element, '.career-score-board');
     this.fastestVictoryBoard = requiredElement(this.element, '.career-speed-board');
@@ -228,6 +251,7 @@ export class CareerOverlay {
     this.previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.element.hidden = false;
     this.element.classList.remove('hidden');
+    this.characterPreview.setActive(true);
     window.addEventListener('keydown', this.handleKeyDown, { capture: true });
     window.requestAnimationFrame(() => {
       if (this.open) this.closeButton.focus();
@@ -240,6 +264,7 @@ export class CareerOverlay {
     window.removeEventListener('keydown', this.handleKeyDown, { capture: true });
     this.element.classList.add('hidden');
     this.element.hidden = true;
+    this.characterPreview.setActive(false);
     if (this.previouslyFocused?.isConnected) this.previouslyFocused.focus();
     this.previouslyFocused = null;
   };
@@ -262,6 +287,7 @@ export class CareerOverlay {
   public dispose(): void {
     this.hide();
     this.unsubscribe();
+    this.characterPreview.dispose();
     this.closeButton.removeEventListener('click', this.hide);
     this.element.removeEventListener('click', this.handleClick);
     this.element.remove();
@@ -386,6 +412,24 @@ export class CareerOverlay {
   }
 
   private readonly handleClick = (event: MouseEvent): void => {
+    const previewCharacter =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('[data-preview-character]')
+        : null;
+    if (previewCharacter) {
+      const id = previewCharacter.dataset.previewCharacter;
+      if (isCharacterId(id)) this.characterPreview.setCharacter(id);
+      return;
+    }
+    const previewAnimation =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('[data-preview-animation]')
+        : null;
+    if (previewAnimation) {
+      const state = previewAnimation.dataset.previewAnimation;
+      if (isCodexPreviewState(state)) this.characterPreview.play(state);
+      return;
+    }
     const cosmeticButton =
       event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-cosmetic-id]') : null;
     if (cosmeticButton && !cosmeticButton.disabled) {

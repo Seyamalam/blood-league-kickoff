@@ -3193,6 +3193,87 @@ select:focus-visible,
   display: grid;
   gap: 8px;
 }
+.codex-character-preview {
+  position: relative;
+  min-height: 360px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid #513044;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(181, 18, 63, 0.23), transparent 34%),
+    linear-gradient(145deg, #160d19, #08070d 72%);
+}
+.codex-character-preview::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  pointer-events: none;
+  background: linear-gradient(transparent, rgba(4, 3, 8, 0.72));
+}
+.codex-character-preview__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.codex-character-preview__status {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  left: 16px;
+  display: grid;
+  gap: 4px;
+  pointer-events: none;
+}
+.codex-character-preview__status strong {
+  color: #e9c46f;
+  font: italic 900 17px Impact, sans-serif;
+  letter-spacing: 0.08em;
+}
+.codex-character-preview__status span {
+  color: #9f909d;
+  font: 700 8px Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.codex-character-preview--ready .codex-character-preview__status span {
+  color: #d9c9d4;
+  font-size: 0;
+}
+.codex-character-preview--ready .codex-character-preview__status span::after {
+  content: 'Shared rig · live animation · drag-free preview';
+  font-size: 8px;
+}
+.codex-character-preview__controls {
+  position: absolute;
+  z-index: 3;
+  inset: auto 12px 12px;
+  display: grid;
+  gap: 7px;
+}
+.codex-character-preview__characters,
+.codex-character-preview__animations {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+.codex-character-preview__controls button {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(233, 196, 111, 0.28);
+  color: #d8ccd5;
+  background: rgba(10, 7, 13, 0.82);
+  font: 800 8px Arial, sans-serif;
+  letter-spacing: 0.08em;
+}
+.codex-character-preview__controls button:hover,
+.codex-character-preview__controls button:focus-visible {
+  color: #fff3d1;
+  border-color: #e9c46f;
+  background: rgba(85, 23, 48, 0.9);
+}
 .codex-group {
   border: 1px solid #3c2b39;
   background: rgba(0, 0, 0, 0.2);
