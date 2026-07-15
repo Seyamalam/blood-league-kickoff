@@ -58,6 +58,14 @@ The production route is:
 
 The detailed measured baseline, football-animation gap matrix, six-variant compatibility rules, and reproducible commands are recorded in `CHARACTER_RIG_AUDIT.md`.
 
+## Browser-only animation presentation
+
+`CharacterAnimationController.ts` keeps animation decisions in the render layer. It provides priority-safe crossfades so locomotion cannot cancel techniques, damage, knockdowns, or terminal poses. One-shots recover from either Three.js `AnimationMixer` completion or a normalized presentation-time fallback; gameplay timing and movement remain simulation-owned.
+
+Additive overlays are opt-in and deliberately strict. Only clips exported with an `Additive_` prefix or `_Additive` suffix are converted with Three.js `AnimationUtils.makeClipAdditive`. The runtime rejects ordinary full-body clips as overlays to avoid applying locomotion or root transforms twice.
+
+Rig inspection is available without Blender in a development build by opening `/?rigDebug=1`. Code-driven tools can instead construct `PlayerCharacterAsset` with `{ showSkeleton: true }`, or call `setRigDiagnosticsEnabled(true)` after the GLB loads. This creates a render-only Three.js `SkeletonHelper`; it is disabled by default and is never part of production simulation or collision.
+
 ## Provenance gate
 
 Before adding a GLB, record its creator, generator or DCC tool, creation date, source file, complete license, modifications, prompts when generation was used, and any training/likeness restrictions in `ASSET_CREDITS.md`. Preserve the `.blend` source or a reproducible generation record outside the runtime package. Never label an asset “AI-generated” unless a specific generation tool actually produced it and the record is complete.

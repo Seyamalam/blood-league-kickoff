@@ -49,6 +49,7 @@ callback, and changing limits resets the schedule immediately.
 - **`main.ts`:** bootstrap, lifecycle/disposal, pointer-lock and menu events, fixed-step accumulator, match/combat orchestration, audio hooks, interpolation, HUD updates, and rendering.
 - **`InputController`:** DOM listeners, persistent rebindable actions, and input snapshots; gameplay never reads raw DOM events.
 - **`gameState.ts`:** authoritative player/enemy data, archetype behavior, spawn-request application, crowd queries, damage, death, score, and combo.
+- **`enemyIntelligence.ts`:** pure deterministic squad blackboard and movement intentions. Defenders screen supports, fast roles flank, and coach-led units encircle; simulation remains authoritative for positions, attacks, damage, and collision.
 - **`game/spawn`:** immutable per-stage population/cadence/roster definitions plus allocation-free fixed-step profile resolution and weighted selection.
 - **`PhysicsWorld`:** Rapier arena/player/ball bodies, charge, curve, recall, volley, speed control, fixed stepping, interpolation, and recovery fail-safes.
 - **`game/field`:** canonical 68×105 pitch/goal dimensions and swept whole-ball crossing logic shared by simulation and presentation.
@@ -57,6 +58,7 @@ callback, and changing limits resets the schedule immediately.
 - **`profile`:** schema-validated account XP, unlocks, mastery, ten challenges, lifetime statistics, personal bests, twenty-run history, and duplicate-run settlement guards.
 - **`leaderboard`:** local/offline score and fastest-victory queries over profile history, partitioned by exact build version and optional character.
 - **`CameraController`, `AimGuide`, and `RenderBridge`:** conventional/invertible third-person/Focus camera input, a reusable long red world-space aim line, and synchronized pooled/shared-resource presentation. Enemy visuals retain typed part references from spawn to removal, so per-frame poses never search the scene tree.
+- **`CharacterAnimationController`:** render-only priority arbitration, crossfades, mixer completion handling, deterministic recovery fallback, and explicitly named additive overlays. It never gates gameplay or applies root motion to simulation.
 - **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
 - **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings. Audio retains the 48-source cap, adds per-event retrigger protection, exposes football/goalkeeper/progression/match/UI cues, and blends drone/tension/pulse/choir/percussion-style layers without external samples.
 
@@ -124,6 +126,10 @@ Routine version tags run the verified web/macOS prerelease workflow. The cross-p
 | Recovery     | No unrecoverable ball or invalid run state                     |
 
 The live debug overlay exposes render FPS/frame time, enemy count, draw calls, triangles, fixed-step count, and aggregate shard/secondary-pool occupancy. The development stress snapshot additionally records viewport, pixel ratio, render scale, quality preset, and frame-rate cap. Physics and fixed-step duration require isolated profiling rather than being claimed as live counters. Optimize measured bottlenecks, not guesses.
+
+The opt-in development route `?diagnostics=1` also installs `window.__bloodLeagueDiagnostics()`. Its bounded,
+allocation-free recorder reports p50/p95/p99 frame times and 60/120 FPS budget misses; snapshots add renderer
+resource counts, GPU limits, and viewport data. The hook and rig-debug route cannot activate in production.
 
 During local development, open `http://localhost:5173/?stress=72` to boot directly into a frozen,
 deterministic mixed-archetype crowd. Normal and production builds ignore this query. Profiling automation can

@@ -223,6 +223,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add six shared-rig runtime silhouettes with distinct proportions, palettes, and bone-socketed equipment
 - [x] Add a fifteen-state semantic football animation contract with explicit dedicated/alias/unavailable status
 - [x] Drive semantic dribble/strafe/reaction/outcome animation states and add contact, recovery, and socket metadata
+- [x] Add priority-safe animation crossfades, completion recovery, strict additive overlays, and development-only web rig inspection
 - [x] Add deterministic pooled boot-contact, ground-impact, and goal-ring VFX with quality and reduced-flash scaling
 - [x] Add grass footsteps, body impacts, goalkeeper-save layers, UI navigation cues, and strict procedural voice limits
 - [x] Improve HUD ready-state feedback, menu icons/tooltips, keyboard focus, reduced motion, and short-viewport scrolling
@@ -249,6 +250,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Integrate audited ambientCG CC0 PBR turf maps
 - [x] Add ground/lob passes, enemy possession tackles, live goalkeeper shot prediction, and missed-dive punish windows
 - [x] Formalize eleven enemy combat roles with stable threat/silhouette metadata and stronger miniboss identities
+- [x] Add deterministic squad intelligence: support screening, opposite-side flanks, coach-led encirclement, and elite behavior-tree decisions
 - [x] Add a deterministic 24-minute production-run plan and serializable eight-club tournament bracket foundation
 - [x] Add bounded replay-highlight event recording for future match presentation
 - [x] Add shake intensity, reduced-motion, and damage-number visibility settings
@@ -285,6 +287,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Restrained mouse-intent kick curve with speed-cap and recall safeguards
 - [x] Stadium-boundary camera collision prevents orbit clipping through outer walls
 - [x] Live diagnostics report FPS/frame time, draw calls, triangles, fixed steps, enemies, and pooled-object use
+- [x] Add a development-only browser diagnostics bridge with frame percentiles, 60/120 FPS misses, GPU limits, and resource counts
 - [x] Five fixed secondary-weapon `InstancedMesh` batches replace 45 individual render meshes
 - [x] Full-pool diagnostics track all 45 visible secondary objects and prove a five-draw-call ceiling
 - [x] Typed-array spatial grid replaces full-crowd separation and Coach-aura scans
@@ -359,11 +362,19 @@ npm run typecheck
 npm run lint
 npm run format:check
 npm run check
+npm run assets:gltf:validate
+npm run assets:gltf:inspect
+npm run assets:gltf:optimize -- path/to/model.glb
 npm run deploy:itch:web
 npm run desktop
 npm run desktop:dev
 npm run package:mac
 ```
+
+Open `/?rigDebug=1` in a development build to inspect the live 65-joint skeleton. Open
+`/?diagnostics=1` and call `window.__bloodLeagueDiagnostics()` from the browser console for a frozen performance
+snapshot. Both routes are disabled in production builds. GLB optimization writes a candidate under the ignored
+`artifacts/asset-candidates/` directory and never replaces a canonical runtime asset.
 
 The web build is emitted to `dist/`. Copy `.env.example` to ignored `.env.local`, set `BUTLER_API_KEY`, and run `npm run deploy:itch:web` for a verified local upload. Pushes to `main` run the same full check and automatically update the `seyamalam/blood-league-kickoff:html5` itch.io channel through the encrypted GitHub secret. Manual dispatches are also restricted to `main`; pull requests never deploy. On itch.io, the project is configured as HTML and only the Butler-managed `html5` upload is marked playable in the browser.
 

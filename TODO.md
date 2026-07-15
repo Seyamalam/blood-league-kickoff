@@ -98,6 +98,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add a machine-readable 65-joint manifest and reproducible GLB geometry/skeleton/animation/texture validation gate.
 - [x] `P1` Add six runtime shared-rig silhouettes with bounded proportions and socketed equipment.
 - [x] `P1` Add semantic runtime routing for all requested football animation states and expose placeholder gaps honestly.
+- [x] `P1` Add priority-safe animation arbitration, additive overlays, deterministic one-shot recovery, and browser-only skeleton inspection.
 - [x] `P1` Add stadium-specific weather, reactive crowd presentation, animated banners/flags, rails, and floodlights.
 - [x] `P1` Add slide-tackle and bicycle-kick combat verbs with boss, telemetry, VFX, and knockback routing.
 - [x] `P1` Add four seeded rival vampire clubs with bounded match identities.
@@ -107,6 +108,8 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add ground/lob passes, contact possession loss, predictive goalkeeper dives, and missed-dive vulnerability.
 - [x] `P1` Add stable enemy combat-role/threat/silhouette metadata for all eleven archetypes.
 - [x] `P1` Add the deterministic production-match, tournament-bracket, and adaptive-audio foundations.
+- [x] `P1` Add deterministic squad screening, flanking, encirclement, and elite behavior-tree decisions without surrendering fixed-step authority.
+- [x] `P1` Add Khronos glTF validation and non-destructive glTF Transform candidate optimization without requiring Blender.
 - [x] `P1` Remove Photo Mode completely while retaining bounded replay-highlight events and expanded motion/feedback settings.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.

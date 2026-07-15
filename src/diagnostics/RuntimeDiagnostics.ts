@@ -1,6 +1,7 @@
 import type { PerformanceSnapshot } from './PerfMeter';
 
 export const RUNTIME_DIAGNOSTICS_HOOK = '__bloodLeagueDiagnostics';
+const FRAME_BUDGET_TOLERANCE_MS = 0.25;
 
 export interface FrameTimeDistribution {
   readonly samples: number;
@@ -78,8 +79,10 @@ export class FrameTimeSampler {
     let missed120 = 0;
     for (const frameMs of sorted) {
       total += frameMs;
-      if (frameMs > 1_000 / 60) missed60 += 1;
-      if (frameMs > 1_000 / 120) missed120 += 1;
+      // RAF timestamps commonly wobble by tenths of a millisecond around the
+      // refresh deadline. Treat that scheduling noise as on-budget.
+      if (frameMs > 1_000 / 60 + FRAME_BUDGET_TOLERANCE_MS) missed60 += 1;
+      if (frameMs > 1_000 / 120 + FRAME_BUDGET_TOLERANCE_MS) missed120 += 1;
     }
     return Object.freeze({
       samples: this.count,

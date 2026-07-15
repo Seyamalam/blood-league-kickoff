@@ -2380,7 +2380,7 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
-  if (denseWaveStress || qaScenario || runtimeDiagnostics) hud.start();
+  if (denseWaveStress || qaScenario) hud.start();
 
   const dispose = (): void => {
     if (disposed) return;
