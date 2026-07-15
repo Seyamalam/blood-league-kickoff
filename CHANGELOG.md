@@ -2,6 +2,22 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.16.0 — 2026-07-15
+
+- Added complete joint-mounted football kits, distinct proportions, heads/hair, boots, equipment, and material treatment for all six shared-rig heroes.
+- Authored fifteen browser-native football clips covering the full semantic motion contract, including passes, shots, heading, tackling, bicycle kicks, reactions, celebrations, and outcomes.
+- Synchronized foot/head contact presentation with immediate ball physics and expanded vampire, miniboss, Count entrance/phase/defeat, and enemy death presentation.
+- Added pooled combat/blood/healing/boss VFX, turf interaction, crowd reactions, animated net response, ball deformation, and bounded character readability lights.
+- Added original portrait art for six heroes, eleven ordinary enemies, four rival captains, both minibosses, the goal-line blocker, and Count Goalkeeper with full generation provenance.
+- Added a live WebGL character/animation kit room to the Career Codex and upgraded Count Goalkeeper with a tapered torso, belt, articulated legs, and boots.
+- Verified 496 automated tests, the full production build gate, scroll-safe Career bottom access, the 72-enemy visual route, and the final-boss route at 1440×810.
+
+## v0.15.0 — 2026-07-15
+
+- Replaced nearby ordinary-enemy placeholders with a bounded animated CC0 character pool and eleven role-specific equipment identities.
+- Rebuilt distant LODs, encounters, the football, goal structures, dugouts, floodlights, advertising boards, and five stadium designs as authored football-horror forms.
+- Preserved 8/12/16 real-GLB quality caps and deterministic dense-route profiling while removing anonymous block presentation from required gameplay landmarks.
+
 ## v0.14.0 — 2026-07-15
 
 - Connected existing skinned clips to semantic idle, dribble, strafe, damage, knockdown, celebration, victory, and defeat presentation states.

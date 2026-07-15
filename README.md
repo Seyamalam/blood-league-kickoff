@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Stable v0.15.0 authored-visual milestone     |
+| Status    | Stable v0.16.0 character-art milestone       |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -15,7 +15,7 @@
 
 ### Current title screen
 
-![Blood League: Kickoff v0.12 title screen](docs/screenshots/title-screen-v012.jpg)
+![Blood League: Kickoff v0.16 title screen](docs/screenshots/title-screen-v016.png)
 
 ### Production gameplay trailer
 
@@ -28,6 +28,8 @@ The opening kickoff of a cursed football match awakens a stadium full of vampire
 The ball is the player's main weapon, defensive tool, positional risk, and key to advancing the match. Kick, curve, rebound, recall, and volley it through the horde. Every goal begins another kickoff, mutates the enemy crowd, and pushes the player toward a final confrontation with Count Goalkeeper.
 
 ### Current gameplay
+
+![v0.16 production kickoff with the shared-rig football kit and live aim guide](docs/screenshots/production-gameplay-v016.png)
 
 ![Expanded Royal Amethyst stadium and detailed humanoid striker](docs/screenshots/expanded-stadium-humanoid.jpg)
 
@@ -66,6 +68,8 @@ The placeholder-replacement pass gives nearby ordinary enemies real skinned and 
 ![League difficulty and optional match modifiers](docs/screenshots/difficulty-rc.jpg)
 
 ![Unlockable character, weapon, evolution, enemy, and curse Codex](docs/screenshots/codex-rc.jpg)
+
+![Live shared-rig character preview and original portrait roster](docs/screenshots/character-codex-v016.png)
 
 ### Settings
 
@@ -115,7 +119,9 @@ The next replayability layer uses six original football-style archetypes. They d
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The player now uses an optimized, skinned Quaternius CC0 humanoid and compatible authored animation library for idle, jog, sprint, roll, tackles, and kick techniques. The 36-part original procedural humanoid remains an automatic fallback.
 
-All six selections now share that one validated 65-joint skeleton while receiving animation-safe proportions, palette accents, and socketed silhouette equipment: armband/rune, calf fins, shoulder plates, fang collar, wrist wraps/canister, or forearm guards. Ground passes, lob passes, shots, slide tackles, and bicycle kicks route through a stable fifteen-state football animation contract. Existing clips now drive semantic idle, dribble, directional strafe, damage, knockdown, celebration, victory, and defeat states. Every state exposes normalized contact/recovery timing and a root, foot, or head socket for synchronized presentation. The current general-purpose motions remain explicitly marked as aliases where dedicated football clips have not yet been authored.
+All six selections now share that one validated 65-joint skeleton while receiving animation-safe proportions, full joint-mounted football kits, unique hair/head forms, boots, palette accents, and socketed silhouette equipment: armband/rune, calf fins, shoulder plates, fang collar, wrist wraps/canister, or forearm guards. Fifteen browser-authored shared-skeleton clips cover idle, dribble, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, and defeat; the licensed library continues to supply its audited jog and sprint. Every semantic state exposes normalized contact/recovery timing and a root, foot, hand, or head socket so ball physics remain immediate while impact presentation lands on the visible contact frame.
+
+The Career Codex now includes an on-demand WebGL kit room using the shipping model and animations, plus 25 original generated portraits covering all six heroes, eleven ordinary enemies, four rival captains, two minibosses, the goal-line blocker, and Count Goalkeeper. Their generation briefs, preserved masters, crop history, and hashes are recorded in the [portrait generation record](docs/art/PORTRAIT_GENERATION_RECORD.md).
 
 The imported Quaternius character is human-authored and CC0, not AI-generated. Exact sources, bundled licenses, hashes, and optimization steps are in the [asset credits](docs/ASSET_CREDITS.md). The pinned Node-only asset workflow can validate, inspect, and conservatively optimize downloaded GLBs without Blender; `npm run assets:gltf:validate` checks both canonical assets with the Khronos validator. The [original hero visual bible](docs/HERO_VISUAL_BIBLE.md), [turnaround prompt](docs/HERO_CONCEPT_PROMPT.md), [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md), and [measured rig audit](docs/CHARACTER_RIG_AUDIT.md) define the original replacement without using a real-player likeness. A model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
 
@@ -232,7 +238,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add deterministic pooled boot-contact, ground-impact, and goal-ring VFX with quality and reduced-flash scaling
 - [x] Add grass footsteps, body impacts, goalkeeper-save layers, UI navigation cues, and strict procedural voice limits
 - [x] Improve HUD ready-state feedback, menu icons/tooltips, keyboard focus, reduced motion, and short-viewport scrolling
-- [ ] Add original character portraits/models
+- [x] Add original character portraits, six shared-rig kit variants, and a live model/animation Codex preview
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection
 - [x] Piercing Studs, Garlic Trail, Orbiting Spectral Ball, Blood Bomb, and Ghost Pass work in live combat
@@ -398,33 +404,34 @@ Development history is part of the jam submission, so changes are committed in s
 
 Planned release line:
 
-| Version           | Milestone                                                   |
-| ----------------- | ----------------------------------------------------------- |
-| `v0.1.0`          | Foundation scaffold                                         |
-| `v0.2.0`          | Player–ball combat prototype                                |
-| `v0.3.0`          | Three-minute vertical slice                                 |
-| `v0.5.0`          | Complete guaranteed run                                     |
-| `v0.6.0`          | First-run onboarding, curved kicks, and live diagnostics    |
-| `v0.7.0`          | Crowd scaling, recovery hardening, and phase music          |
-| `v0.7.1`          | macOS controls, audio mixing, and CI hardening              |
-| `v0.8.0-alpha.1`  | Target gameplay/content checkpoint                          |
-| `v0.8.0-alpha.2`  | Presentation, progression UI, and macOS QA checkpoint       |
-| `v0.8.0-alpha.3`  | Cross-platform packaging, pacing, and release hardening     |
-| `v0.8.0-alpha.4`  | Native release-pipeline correction                          |
-| `v0.8.0-alpha.5`  | Regulation field, scoring, goalkeeper, and aiming pass      |
-| `v0.8.0-alpha.8`  | Content, encounters, characters, and UI expansion           |
-| `v0.8.0`          | Content and presentation complete                           |
-| `v0.9.0-rc.1`     | Feature-complete release candidate                          |
-| `v0.10.0-alpha.1` | Larger fields, stadium variety, and humanoid presentation   |
-| `v0.11.0-alpha.1` | Animated striker, rival clubs, living arenas, and mastery   |
-| `v0.12.0-alpha.1` | Football systems, tournament foundation, and match polish   |
-| `v0.13.0-alpha.1` | Shared-rig variants and original-hero production foundation |
-| `v0.13.0-alpha.2` | Verified all-platform release checkpoint                    |
-| `v0.13.0`         | Stable all-platform character-visuals milestone             |
-| `v0.13.1`         | Live chase-camera and synchronized aiming repair            |
-| `v0.14.0`         | Animation, VFX, audio, UI, and performance telemetry        |
-| `v0.15.0`         | Authored enemies, encounters, football, and stadium visuals |
-| `v1.0.0`          | Jam submission freeze                                       |
+| Version           | Milestone                                                                      |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `v0.1.0`          | Foundation scaffold                                                            |
+| `v0.2.0`          | Player–ball combat prototype                                                   |
+| `v0.3.0`          | Three-minute vertical slice                                                    |
+| `v0.5.0`          | Complete guaranteed run                                                        |
+| `v0.6.0`          | First-run onboarding, curved kicks, and live diagnostics                       |
+| `v0.7.0`          | Crowd scaling, recovery hardening, and phase music                             |
+| `v0.7.1`          | macOS controls, audio mixing, and CI hardening                                 |
+| `v0.8.0-alpha.1`  | Target gameplay/content checkpoint                                             |
+| `v0.8.0-alpha.2`  | Presentation, progression UI, and macOS QA checkpoint                          |
+| `v0.8.0-alpha.3`  | Cross-platform packaging, pacing, and release hardening                        |
+| `v0.8.0-alpha.4`  | Native release-pipeline correction                                             |
+| `v0.8.0-alpha.5`  | Regulation field, scoring, goalkeeper, and aiming pass                         |
+| `v0.8.0-alpha.8`  | Content, encounters, characters, and UI expansion                              |
+| `v0.8.0`          | Content and presentation complete                                              |
+| `v0.9.0-rc.1`     | Feature-complete release candidate                                             |
+| `v0.10.0-alpha.1` | Larger fields, stadium variety, and humanoid presentation                      |
+| `v0.11.0-alpha.1` | Animated striker, rival clubs, living arenas, and mastery                      |
+| `v0.12.0-alpha.1` | Football systems, tournament foundation, and match polish                      |
+| `v0.13.0-alpha.1` | Shared-rig variants and original-hero production foundation                    |
+| `v0.13.0-alpha.2` | Verified all-platform release checkpoint                                       |
+| `v0.13.0`         | Stable all-platform character-visuals milestone                                |
+| `v0.13.1`         | Live chase-camera and synchronized aiming repair                               |
+| `v0.14.0`         | Animation, VFX, audio, UI, and performance telemetry                           |
+| `v0.15.0`         | Authored enemies, encounters, football, and stadium visuals                    |
+| `v0.16.0`         | Character kits, complete motion set, reactive VFX, and original portrait Codex |
+| `v1.0.0`          | Jam submission freeze                                                          |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.
 

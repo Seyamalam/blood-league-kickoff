@@ -59,6 +59,8 @@ callback, and changing limits resets the schedule immediately.
 - **`leaderboard`:** local/offline score and fastest-victory queries over profile history, partitioned by exact build version and optional character.
 - **`CameraController`, `AimGuide`, and `RenderBridge`:** conventional/invertible third-person/Focus camera input, a reusable long red world-space aim line, and synchronized pooled/shared-resource presentation. Enemy visuals retain typed part references from spawn to removal, so per-frame poses never search the scene tree.
 - **`CharacterAnimationController`:** render-only priority arbitration, crossfades, mixer completion handling, deterministic recovery fallback, and explicitly named additive overlays. It never gates gameplay or applies root motion to simulation.
+- **`WebAuthoredFootballClips` and contact presentation:** fifteen in-place quaternion clip definitions target the validated shared skeleton in the browser. Technique contact markers delay only VFX/audio presentation to the visible foot/head frame; simulation and ball response remain immediate.
+- **`CharacterCodexPreview`:** an on-demand secondary WebGL renderer loads the same shipping GLB, variants, and motion contract inside Career, suspending its animation loop whenever the overlay is closed.
 - **UI modules:** title, HUD, tutorial, pause, settings, halftime, upgrades, results, accessibility, and diagnostics.
 - **`AudioManager` and `SettingsStore`:** procedural effects/music and persistent schema-migrated player settings. Audio retains the 48-source cap, adds per-event retrigger protection, exposes football/goalkeeper/progression/match/UI cues, and blends drone/tension/pulse/choir/percussion-style layers without external samples.
 
@@ -84,6 +86,10 @@ Count Goalkeeper joins the generic secondary target list through a reserved nega
 - Keep the aim guide to one persistent world-space object updated in place; never recreate its geometry or material per frame.
 
 Ordinary-enemy presentation uses three distance bands without changing simulation state. A nearest-only pool clones the audited Quaternius skinned GLB through `SkeletonUtils` and shares seven clips from the animation library; quality presets cap that pool at 8, 12, or 16 characters. Every archetype adds its own tint and equipment identity. Rounded articulated characters remain the asynchronous-loading and compatibility fallback, while merged mid/far silhouettes and throttled pose updates bound crowd cost. Bat Swarm retains a dedicated creature silhouette rather than entering the humanoid pool.
+
+Character variants retain one 65-joint skeleton. Runtime-owned jersey, collar, sleeve, shorts, sock, boot, hair, and role-equipment pieces mount to stable joints, so six distinct kits and body proportions do not duplicate or reskin the source mesh. The generated Codex portraits are UI-only and never substitute for world models.
+
+Combat and stadium response use fixed-capacity pools for impact bursts, surface marks, slide trails, weather splashes, crowd reactions, and net deformation. Character readability lights are local and bounded. Goal nets and ball squash/stretch are presentation-only and cannot alter scoring or physics authority.
 
 Secondary weapon presentation uses five fixed `InstancedMesh` batches with capacities 24/3/8/6/4. Active simulation records are packed into reusable instance matrices each frame; the three ball-like families share one sphere geometry. All 45 visible objects therefore contribute at most five draw calls. Black-hole rotation derives from fixed-step zone age rather than render cadence, so 60 and 120 FPS produce the same animation speed.
 

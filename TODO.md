@@ -100,6 +100,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add six runtime shared-rig silhouettes with bounded proportions and socketed equipment.
 - [x] `P1` Add semantic runtime routing for all requested football animation states and expose placeholder gaps honestly.
 - [x] `P1` Add priority-safe animation arbitration, additive overlays, deterministic one-shot recovery, and browser-only skeleton inspection.
+- [x] `P1` Add full joint-mounted football kits, natural bind-pose correction, six original hero portraits, and a live Codex model/animation viewer.
+- [x] `P1` Add original portraits for all eleven enemy roles, four rival captains, two minibosses, the goal-line blocker, and Count Goalkeeper.
+- [x] `P1` Add pooled football/blood/healing/boss VFX, turf interaction, crowd reactions, net response, ball deformation, and character readability lights.
 - [x] `P1` Add stadium-specific weather, reactive crowd presentation, animated banners/flags, rails, and floodlights.
 - [x] `P1` Add slide-tackle and bicycle-kick combat verbs with boss, telemetry, VFX, and knockback routing.
 - [x] `P1` Add four seeded rival vampire clubs with bounded match identities.
@@ -114,7 +117,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Remove Photo Mode completely while retaining bounded replay-highlight events and expanded motion/feedback settings.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
-- [ ] `P1` Author the eleven remaining dedicated football motions on the canonical skeleton and replace every placeholder alias.
+- [x] `P1` Author the complete browser football motion set on the canonical skeleton and replace every unavailable football slot.
 - [ ] `P1` Connect tournament state to a persistent visible campaign screen and authored fixture flow.
 - [ ] `P1` Add commanded teammate formations/one-twos and full ghost-frame playback.
 - [ ] `P1` Add penalty shootouts, overtime, elemental pitch zones, and ordinary-enemy GLB/LOD families.
