@@ -1242,8 +1242,11 @@ async function bootstrap(): Promise<void> {
             },
           });
         }
-        bridge.playPlayerTechnique(result.perfectVolley ? 'bicycle' : result.kind);
-        bridge.bootContactBurst(physics.ballPosition, 0.75 + result.charge * 0.75);
+        bridge.playPlayerTechnique(
+          result.perfectVolley ? 'bicycle' : result.kind,
+          0.75 + result.charge * 0.75,
+          physics.ballPosition,
+        );
         lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
         lastKickWasVolley = result.perfectVolley;
         reboundsSinceKick = 0;
@@ -2280,7 +2283,9 @@ async function bootstrap(): Promise<void> {
       state.elapsed,
       alpha,
     );
-    bossVisual.sync(boss, alpha);
+    bossVisual.sync(boss, alpha, frameTime);
+    bossVisual.setVictoryPresentation(state.phase === 'dead');
+    for (const contact of bossVisual.drainContactEvents()) bridge.bossBurst(contact.position, 0.72);
     bloodShardRenderer.sync(bloodShards.state, alpha);
     secondaryRenderer.sync(secondaryRenderState);
     hud.update(
@@ -2290,6 +2295,7 @@ async function bootstrap(): Promise<void> {
       progression,
       getMatchObjective(match, activeMatchConfig),
       boss,
+      miniboss,
       focusKick,
       characterUltimate.state,
     );

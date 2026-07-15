@@ -64,11 +64,12 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["slot", "clip", "status"],
+        "required": ["slot", "clip", "status", "source"],
         "properties": {
           "slot": { "type": "string" },
           "clip": { "type": ["string", "null"] },
-          "status": { "enum": ["usable", "placeholder", "missing"] }
+          "status": { "enum": ["usable", "placeholder", "missing"] },
+          "source": { "enum": ["external-library", "runtime-web-authored"] }
         }
       }
     },

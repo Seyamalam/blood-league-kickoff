@@ -9,6 +9,7 @@ import {
   resolveFootballAnimationContract,
   type FootballAnimationState,
 } from '../render/objects/FootballAnimationContract';
+import { createWebAuthoredFootballClips } from '../render/objects/WebAuthoredFootballClips';
 
 const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
 const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
@@ -149,6 +150,7 @@ export class CharacterCodexPreview {
       this.variants.apply(this.selectedCharacter);
       this.mixer = new THREE.AnimationMixer(this.model);
       const clips = new Map(library.animations.map((clip) => [clip.name, clip]));
+      for (const clip of createWebAuthoredFootballClips(this.model)) clips.set(clip.name, clip);
       const contract = resolveFootballAnimationContract(clips.keys());
       for (const state of CODEX_PREVIEW_STATES) {
         const resolution = contract.get(state);

@@ -121,23 +121,63 @@
   },
   "runtimeRequiredClips": ["Idle_Loop", "Jog_Fwd_Loop", "Sprint_Loop", "Roll", "Punch_Cross"],
   "productionAnimationSlots": [
-    { "slot": "idle", "clip": "Idle_Loop", "status": "usable" },
-    { "slot": "jog", "clip": "Jog_Fwd_Loop", "status": "usable" },
-    { "slot": "sprint", "clip": "Sprint_Loop", "status": "usable" },
-    { "slot": "dribble", "clip": null, "status": "missing" },
-    { "slot": "strafeLeft", "clip": null, "status": "missing" },
-    { "slot": "strafeRight", "clip": null, "status": "missing" },
-    { "slot": "groundPass", "clip": null, "status": "missing" },
-    { "slot": "lobPass", "clip": null, "status": "missing" },
-    { "slot": "shoot", "clip": "Punch_Cross", "status": "placeholder" },
-    { "slot": "heading", "clip": null, "status": "missing" },
-    { "slot": "slideTackle", "clip": "Roll", "status": "placeholder" },
-    { "slot": "bicycleKick", "clip": "Roll", "status": "placeholder" },
-    { "slot": "damage", "clip": "Hit_Chest", "status": "usable" },
-    { "slot": "knockdown", "clip": "Death01", "status": "placeholder" },
-    { "slot": "celebration", "clip": "Dance_Loop", "status": "usable" },
-    { "slot": "victory", "clip": "Dance_Loop", "status": "placeholder" },
-    { "slot": "defeat", "clip": "Death01", "status": "usable" }
+    { "slot": "idle", "clip": "Football_Idle_Loop", "status": "usable", "source": "runtime-web-authored" },
+    { "slot": "jog", "clip": "Jog_Fwd_Loop", "status": "usable", "source": "external-library" },
+    { "slot": "sprint", "clip": "Sprint_Loop", "status": "usable", "source": "external-library" },
+    {
+      "slot": "dribble",
+      "clip": "Football_Dribble_Loop",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    {
+      "slot": "strafeLeft",
+      "clip": "Football_Strafe_Left_Loop",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    {
+      "slot": "strafeRight",
+      "clip": "Football_Strafe_Right_Loop",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    {
+      "slot": "groundPass",
+      "clip": "Football_Ground_Pass",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    { "slot": "lobPass", "clip": "Football_Lob_Pass", "status": "usable", "source": "runtime-web-authored" },
+    { "slot": "shoot", "clip": "Football_Shoot", "status": "usable", "source": "runtime-web-authored" },
+    { "slot": "heading", "clip": "Football_Header", "status": "usable", "source": "runtime-web-authored" },
+    {
+      "slot": "slideTackle",
+      "clip": "Football_Slide_Tackle",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    {
+      "slot": "bicycleKick",
+      "clip": "Football_Bicycle_Kick",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    { "slot": "damage", "clip": "Football_Damage", "status": "usable", "source": "runtime-web-authored" },
+    {
+      "slot": "knockdown",
+      "clip": "Football_Knockdown",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    {
+      "slot": "celebration",
+      "clip": "Football_Celebration",
+      "status": "usable",
+      "source": "runtime-web-authored"
+    },
+    { "slot": "victory", "clip": "Football_Victory", "status": "usable", "source": "runtime-web-authored" },
+    { "slot": "defeat", "clip": "Football_Defeat", "status": "usable", "source": "runtime-web-authored" }
   ],
   "variants": [
     {
@@ -193,6 +233,6 @@
     "jointOrderMayVary": false,
     "sceneRootTransformMayVary": false,
     "accessoriesMustBeSeparateMeshes": true,
-    "status": "contract-ready-assets-pending"
+    "status": "runtime-authored"
   }
 }

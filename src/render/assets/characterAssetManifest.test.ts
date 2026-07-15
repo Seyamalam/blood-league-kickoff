@@ -43,6 +43,10 @@ describe('character asset manifest', () => {
         'defeat',
       ]),
     );
+    expect(manifest.productionAnimationSlots.every((slot) => slot.status === 'usable')).toBe(true);
+    expect(
+      manifest.productionAnimationSlots.filter((slot) => slot.source === 'runtime-web-authored'),
+    ).toHaveLength(15);
   });
 
   it('passes the real GLB shipping gate', () => {

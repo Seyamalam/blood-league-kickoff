@@ -15,6 +15,7 @@ import {
   type FootballAnimationContactSocket,
 } from './FootballAnimationContract';
 import { CharacterAnimationController } from './CharacterAnimationController';
+import { createWebAuthoredFootballClips } from './WebAuthoredFootballClips';
 
 const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
 const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
@@ -125,6 +126,7 @@ export class PlayerCharacterAsset {
         this.variantController.apply(this.selectedCharacterId);
         this.mixer = new THREE.AnimationMixer(model);
         for (const clip of animationLibrary.animations) this.clips.set(clip.name, clip);
+        for (const clip of createWebAuthoredFootballClips(model)) this.clips.set(clip.name, clip);
         this.animationController = new CharacterAnimationController(this.mixer, this.clips.values());
         this.footballAnimations = resolveFootballAnimationContract(this.clips.keys());
         this.setRigDiagnosticsEnabled(

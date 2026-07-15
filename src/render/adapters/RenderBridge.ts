@@ -82,6 +82,7 @@ export class RenderBridge {
   private readonly liveEnemyIds = new Set<number>();
   private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
   private readonly liveEnemyProjectileIds = new Set<number>();
+  private readonly pendingTechniqueContacts: number[] = [];
   private ballSpin = 0;
   private ballDeformation = 0;
   private trailInitialized = false;
@@ -143,7 +144,15 @@ export class RenderBridge {
       (this.reducedFlashes ||
         !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0));
     const importedPlayerReady = this.playerAsset.ready;
-    if (importedPlayerReady) this.playerAsset.update(dt, state.player);
+    if (importedPlayerReady) {
+      this.playerAsset.update(dt, state.player);
+      for (const contact of this.playerAsset.drainContactEvents()) {
+        const intensity = this.pendingTechniqueContacts.shift();
+        if (intensity === undefined) continue;
+        if (contact.state === 'slideTackle') this.groundBurst(contact.position, intensity);
+        else this.bootContactBurst(contact.position, intensity);
+      }
+    }
     else animatePlayer(this.player, state.elapsed, previousPlayer, p);
     if (importedPlayerReady && state.phase !== this.previousMatchPhase) {
       if (state.phase === 'won') this.playerAsset.playOutcome('victory');
@@ -264,6 +273,7 @@ export class RenderBridge {
     this.signatureVfx.reset();
     this.surfaceEffects.reset();
     this.goalNetResponse.reset();
+    this.pendingTechniqueContacts.length = 0;
     for (const burst of this.bursts) {
       burst.age = burst.duration;
       burst.points.visible = false;
@@ -290,8 +300,18 @@ export class RenderBridge {
     this.readabilityLight.setQuality(quality);
   }
 
-  playPlayerTechnique(technique: 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle'): void {
+  playPlayerTechnique(
+    technique: 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle',
+    contactIntensity = 1,
+    fallbackPosition?: Vec3,
+  ): void {
     this.playerAsset.playTechnique(technique);
+    if (this.playerAsset.ready) {
+      this.pendingTechniqueContacts.push(contactIntensity);
+      if (this.pendingTechniqueContacts.length > 4) this.pendingTechniqueContacts.shift();
+    } else if (fallbackPosition) {
+      this.bootContactBurst(fallbackPosition, contactIntensity);
+    }
   }
 
   playPlayerReaction(reaction: 'damage' | 'knockdown'): void {

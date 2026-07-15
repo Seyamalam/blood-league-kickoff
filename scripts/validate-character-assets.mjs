@@ -267,7 +267,7 @@ function validateAnimations(asset, manifest, errors, warnings) {
   for (const clip of manifest.runtimeRequiredClips)
     if (!names.has(clip)) errors.push(`Runtime-required clip '${clip}' is missing.`);
   for (const slot of manifest.productionAnimationSlots) {
-    if (slot.clip && !names.has(slot.clip))
+    if (slot.source !== 'runtime-web-authored' && slot.clip && !names.has(slot.clip))
       errors.push(`Animation slot '${slot.slot}' references missing clip '${slot.clip}'.`);
   }
   const incomplete = manifest.productionAnimationSlots.filter((slot) => slot.status !== 'usable');
