@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Stable v0.14.0 presentation-polish milestone |
+| Status    | Stable v0.15.0 authored-visual milestone     |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -422,6 +422,8 @@ Planned release line:
 | `v0.13.0-alpha.2` | Verified all-platform release checkpoint                    |
 | `v0.13.0`         | Stable all-platform character-visuals milestone             |
 | `v0.13.1`         | Live chase-camera and synchronized aiming repair            |
+| `v0.14.0`         | Animation, VFX, audio, UI, and performance telemetry        |
+| `v0.15.0`         | Authored enemies, encounters, football, and stadium visuals |
 | `v1.0.0`          | Jam submission freeze                                       |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.
