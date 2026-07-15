@@ -17,15 +17,18 @@ describe('stadium readability geometry', () => {
     expect(pitch.geometry.parameters.height).toBe(PITCH_LENGTH);
     expect(PITCH_LENGTH).toBeGreaterThan(PITCH_WIDTH);
 
-    const boards = scene
-      .getObjectByName('stadium-environment')!
-      .children.filter((object) => object.name === 'arena-board');
+    const boards: THREE.Object3D[] = [];
+    scene.getObjectByName('stadium-environment')!.traverse((object) => {
+      if (object.name === 'arena-board') boards.push(object);
+    });
     expect(boards).toHaveLength(4);
     for (const board of boards) {
       expect(board).toBeInstanceOf(THREE.Mesh);
       const height = (board as THREE.Mesh<THREE.BoxGeometry>).geometry.parameters.height as number;
       expect(height).toBeLessThanOrEqual(1.35);
     }
+    expect(scene.getObjectsByProperty('name', 'stadium-advertising-board-run')).toHaveLength(4);
+    expect(scene.getObjectsByProperty('name', 'stadium-advertising-panel')).toHaveLength(60);
   });
 
   it('makes both goals spatially legible with depth, nets, and mouth markers', () => {
@@ -37,6 +40,9 @@ describe('stadium readability geometry', () => {
       expect(goal).toBeInstanceOf(THREE.Group);
       expect(goal?.getObjectByName('goal-net')).toBeInstanceOf(THREE.LineSegments);
       expect(goal?.getObjectByName('goal-mouth-marker')).toBeInstanceOf(THREE.Mesh);
+      expect(goal?.getObjectByName('goal-crossbar')).toBeInstanceOf(THREE.Mesh);
+      expect(goal?.getObjectByName('goal-gothic-crest')).toBeInstanceOf(THREE.Group);
+      expect(goal?.getObjectsByProperty('name', 'goal-ground-anchor')).toHaveLength(4);
       expect(goal?.children.length).toBeGreaterThanOrEqual(9);
       expect(goal?.children.some((child) => Math.abs(child.position.y - GOAL_HEIGHT) < 0.001)).toBe(true);
     }
@@ -67,11 +73,32 @@ describe('stadium readability geometry', () => {
     expect(
       scene.getObjectByName('stadium-environment')?.getObjectByName('stadium-corner-flag'),
     ).toBeInstanceOf(THREE.Mesh);
+    expect(scene.getObjectsByProperty('name', 'stadium-floodlight-lamp')).toHaveLength(24);
+    expect(scene.getObjectByName('home-technical-area')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectByName('opponent-technical-area')).toBeInstanceOf(THREE.Group);
+    expect(scene.getObjectsByProperty('name', 'stadium-dugout-seat')).toHaveLength(10);
+    expect(scene.getObjectsByProperty('name', 'stadium-equipment-coffin')).toHaveLength(2);
     const props = scene
       .getObjectByName('stadium-environment')!
       .children.filter((object) => object.name === 'stadium-reactive-prop');
     expect(props).toHaveLength(4);
     expect(props.every((prop) => prop.children.length >= 2)).toBe(true);
+  });
+
+  it.each([
+    ['blood-court', 'gothic'],
+    ['moonlit-classic', 'bowl'],
+    ['emerald-cathedral', 'cathedral'],
+    ['royal-amethyst', 'colosseum'],
+    ['frostbound-arena', 'fortress'],
+  ] as const)('keeps authored football architecture for %s', (selection, architecture) => {
+    const scene = new THREE.Scene();
+    const stadium = createStadium(scene, selection);
+
+    expect(stadium.userData.architecture).toBe(architecture);
+    expect(stadium.getObjectByName(`stadium-architecture-${architecture}`)).toBeInstanceOf(THREE.Group);
+    expect(stadium.getObjectByName('stadium-terraced-stands')).toBeInstanceOf(THREE.Group);
+    expect(stadium.getObjectByName('stadium-advertising-board-run')).toBeInstanceOf(THREE.Group);
   });
 
   it('builds distinct architecture and replaces the previous stadium cleanly', () => {
