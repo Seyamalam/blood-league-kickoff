@@ -73,7 +73,7 @@ export class SettingsOverlay {
       <div class="settings-panel">
         <header class="settings-panel__header">
           <div><p>TACTICAL CONFIGURATION</p><h2 id="settings-overlay-title">SETTINGS</h2></div>
-          <button type="button" class="settings-panel__close icon-button" aria-label="Close settings">${uiIcon('close')}</button>
+          <button type="button" class="settings-panel__close icon-button" aria-label="Close settings" title="Close settings">${uiIcon('close')}</button>
         </header>
         <div class="settings-panel__body">
           <div class="settings-field">

@@ -148,7 +148,7 @@ export class CareerOverlay {
             <p class="career-panel__eyebrow">BLOOD LEAGUE CAREER</p>
             <h2 id="career-overlay-title">PROGRESSION</h2>
           </div>
-          <button type="button" class="career-panel__close icon-button" data-action="close" aria-label="Close career">${uiIcon('close')}</button>
+          <button type="button" class="career-panel__close icon-button" data-action="close" aria-label="Close career" title="Close career">${uiIcon('close')}</button>
         </header>
         <div class="career-panel__body">
           <section class="career-account" aria-labelledby="career-account-title">

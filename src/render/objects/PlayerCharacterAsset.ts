@@ -9,6 +9,7 @@ import {
 } from './PlayerCharacterVariants';
 import {
   resolveFootballAnimationContract,
+  getFootballAnimationPresentation,
   type FootballAnimationResolution,
   type FootballAnimationState,
 } from './FootballAnimationContract';
@@ -17,6 +18,21 @@ const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
 const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
 
 export type PlayerTechnique = 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle';
+export type PlayerReaction = 'damage' | 'knockdown';
+export type PlayerOutcome = 'celebration' | 'victory' | 'defeat';
+
+/** Resolves movement relative to facing without ever affecting simulation movement. */
+export function locomotionStateFor(
+  speed: number,
+  forwardSpeed: number,
+  lateralSpeed: number,
+): Extract<FootballAnimationState, 'idle' | 'dribble' | 'strafeLeft' | 'strafeRight'> {
+  if (speed <= 0.15) return 'idle';
+  if (Math.abs(lateralSpeed) > Math.abs(forwardSpeed) * 1.15) {
+    return lateralSpeed < 0 ? 'strafeLeft' : 'strafeRight';
+  }
+  return 'dribble';
+}
 
 export function locomotionClipFor(speed: number, dashing: boolean): string {
   if (dashing) return 'Roll';
@@ -39,6 +55,8 @@ export class PlayerCharacterAsset {
   private activeClip = '';
   private oneShotRemaining = 0;
   private previousDashTime = 0;
+  private previousHealth?: number;
+  private terminalState?: Extract<FootballAnimationState, 'victory' | 'defeat'>;
   private disposed = false;
   private selectedCharacterId: CharacterId = 'maestro';
   private variantController?: ImportedCharacterVariantController;
@@ -89,12 +107,25 @@ export class PlayerCharacterAsset {
   update(dt: number, player: PlayerState): void {
     if (!this.mixer) return;
     const speed = Math.hypot(player.velocity.x, player.velocity.z);
+    const forwardSpeed =
+      player.velocity.x * Math.sin(player.facing) + player.velocity.z * Math.cos(player.facing);
+    const lateralSpeed =
+      player.velocity.x * Math.cos(player.facing) - player.velocity.z * Math.sin(player.facing);
     const dashStarted = player.dashTime > 0 && this.previousDashTime <= 0;
     this.previousDashTime = player.dashTime;
-    if (dashStarted) this.playFootballAnimation('slideTackle', 0.06);
+    const tookDamage = this.previousHealth !== undefined && player.health < this.previousHealth;
+    this.previousHealth = player.health;
+    if (!this.terminalState && tookDamage) {
+      this.playReaction(player.health <= 0 ? 'knockdown' : 'damage');
+    } else if (!this.terminalState && dashStarted) {
+      this.playFootballAnimation('slideTackle', 0.06);
+    }
     this.oneShotRemaining = Math.max(0, this.oneShotRemaining - dt);
-    if (this.oneShotRemaining === 0) {
-      this.transitionTo(locomotionClipFor(speed, false));
+    if (!this.terminalState && this.oneShotRemaining === 0) {
+      // Preserve the pack's authored sprint at high speed; use semantic states
+      // elsewhere so dedicated football clips are picked up automatically.
+      if (speed > 7.5) this.transitionTo(locomotionClipFor(speed, false));
+      else this.playFootballAnimation(locomotionStateFor(speed, forwardSpeed, lateralSpeed));
     }
     this.mixer.update(dt);
   }
@@ -116,6 +147,26 @@ export class PlayerCharacterAsset {
     this.variantController?.apply(id);
   }
 
+  playReaction(reaction: PlayerReaction): FootballAnimationResolution | undefined {
+    if (this.terminalState) return this.footballAnimations.get(reaction);
+    return this.playFootballAnimation(reaction, 0.06);
+  }
+
+  playOutcome(outcome: PlayerOutcome): FootballAnimationResolution | undefined {
+    const result = this.playFootballAnimation(outcome, 0.12);
+    if (result?.clipName && (outcome === 'victory' || outcome === 'defeat')) this.terminalState = outcome;
+    return result;
+  }
+
+  /** Clears terminal/one-shot presentation state when a match is restarted. */
+  resetPresentation(): void {
+    this.terminalState = undefined;
+    this.oneShotRemaining = 0;
+    this.previousHealth = undefined;
+    this.previousDashTime = 0;
+    this.playFootballAnimation('idle', 0.08);
+  }
+
   /** Plays a stable semantic state, resolving a dedicated clip or documented fallback alias. */
   playFootballAnimation(state: FootballAnimationState, fade = 0.1): FootballAnimationResolution | undefined {
     const resolution = this.footballAnimations.get(state);
@@ -130,7 +181,9 @@ export class PlayerCharacterAsset {
     if (!clip) return { ...resolution, clipName: undefined, source: 'unavailable' };
     this.transitionTo(resolution.clipName, fade, THREE.LoopOnce, true);
     this.oneShotRemaining =
-      resolution.playback === 'terminal' ? Number.POSITIVE_INFINITY : Math.max(0.12, clip.duration * 0.92);
+      resolution.playback === 'terminal'
+        ? Number.POSITIVE_INFINITY
+        : Math.max(0.12, clip.duration * getFootballAnimationPresentation(state).recoverAt);
     return resolution;
   }
 
@@ -147,6 +200,8 @@ export class PlayerCharacterAsset {
     this.mixer = undefined;
     this.clips.clear();
     this.footballAnimations = new Map();
+    this.previousHealth = undefined;
+    this.terminalState = undefined;
   }
 
   private transitionTo(

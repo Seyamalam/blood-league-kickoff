@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { locomotionClipFor } from './PlayerCharacterAsset';
+import { locomotionClipFor, locomotionStateFor } from './PlayerCharacterAsset';
 import {
   FOOTBALL_ANIMATION_STATES,
   resolveFootballAnimation,
   resolveFootballAnimationContract,
+  getFootballAnimationPresentation,
 } from './FootballAnimationContract';
 
 describe('locomotionClipFor', () => {
@@ -12,6 +13,15 @@ describe('locomotionClipFor', () => {
     expect(locomotionClipFor(4, false)).toBe('Jog_Fwd_Loop');
     expect(locomotionClipFor(9, false)).toBe('Sprint_Loop');
     expect(locomotionClipFor(0, true)).toBe('Roll');
+  });
+});
+
+describe('locomotionStateFor', () => {
+  it('selects semantic idle, dribble, and lateral movement states', () => {
+    expect(locomotionStateFor(0, 0, 0)).toBe('idle');
+    expect(locomotionStateFor(4, 4, 0.2)).toBe('dribble');
+    expect(locomotionStateFor(4, 0.2, -4)).toBe('strafeLeft');
+    expect(locomotionStateFor(4, 0.2, 4)).toBe('strafeRight');
   });
 });
 
@@ -78,5 +88,24 @@ describe('football animation contract', () => {
       source: 'unavailable',
       playback: 'once',
     });
+  });
+
+  it('provides normalized contact and recovery metadata without owning simulation timing', () => {
+    expect(getFootballAnimationPresentation('shoot')).toEqual({
+      contactAt: 0.43,
+      contactSocket: 'foot_r',
+      recoverAt: 0.88,
+    });
+    expect(getFootballAnimationPresentation('header').contactSocket).toBe('head');
+    expect(getFootballAnimationPresentation('idle')).toEqual({ recoverAt: 1 });
+    for (const state of FOOTBALL_ANIMATION_STATES) {
+      const presentation = getFootballAnimationPresentation(state);
+      expect(presentation.recoverAt).toBeGreaterThan(0);
+      expect(presentation.recoverAt).toBeLessThanOrEqual(1);
+      if (presentation.contactAt !== undefined) {
+        expect(presentation.contactAt).toBeGreaterThanOrEqual(0);
+        expect(presentation.contactAt).toBeLessThanOrEqual(presentation.recoverAt);
+      }
+    }
   });
 });

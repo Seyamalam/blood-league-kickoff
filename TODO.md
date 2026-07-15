@@ -107,7 +107,7 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Add ground/lob passes, contact possession loss, predictive goalkeeper dives, and missed-dive vulnerability.
 - [x] `P1` Add stable enemy combat-role/threat/silhouette metadata for all eleven archetypes.
 - [x] `P1` Add the deterministic production-match, tournament-bracket, and adaptive-audio foundations.
-- [x] `P1` Add integrated photo controls, PNG capture, bounded highlight events, and expanded motion/feedback settings.
+- [x] `P1` Remove Photo Mode completely while retaining bounded replay-highlight events and expanded motion/feedback settings.
 - [ ] `P1` Generate and license an original riggable 3D hero through an approved AI 3D service, then preserve prompt/task/source records.
 - [ ] `P1` Clean, retopologize, rig, animate, optimize, and validate the generated GLB before replacing the authored fallback.
 - [ ] `P1` Author the eleven remaining dedicated football motions on the canonical skeleton and replace every placeholder alias.
@@ -204,6 +204,19 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] Give Count Goalkeeper a clearly readable winged second-form transformation.
 - [x] Transform the stadium during escalation/Blood Moon with moon, corona, runes, pylons, and phase light.
 - [x] Strengthen boss/evolution/outcome presentation and add varied crowd, evolution-impact, and transformation audio layers.
+
+### Presentation polish after v0.13.1
+
+- [x] Route existing locomotion, damage, knockdown, celebration, victory, and defeat clips through semantic animation states.
+- [x] Add normalized animation contact/recovery markers and foot/head/root presentation sockets.
+- [x] Add deterministic fixed-pool boot-contact, tackle-ground, and goal-ring effects.
+- [x] Scale VFX density with graphics quality and preserve reduced-flash behavior.
+- [x] Add cadence-safe grass footsteps, body-impact layering, unified goalkeeper saves, and UI focus audio.
+- [x] Keep the procedural audio source pool strictly bounded during dense combat.
+- [x] Improve ready-state HUD feedback, inline icons, tooltips, focus visibility, and forced-color support.
+- [x] Trap and restore keyboard focus in long selection dialogs and expose visible scroll affordances.
+- [x] Expand reduced-motion coverage without weakening combat-state readability.
+- [ ] Conduct external feel and mix playtests before replacing placeholder football animations.
 
 - [x] `P0` Lock the low-poly gothic visual palette.
 - [x] `P0` Generate original key art, itch cover, and menu background.

@@ -38,6 +38,12 @@ class AudioSpy implements DynamicMatchAudioPort {
   playGoalkeeperDefeat(): void {
     this.calls.push('goalkeeperDefeat');
   }
+  playGoalkeeperSave(caught = false): void {
+    this.calls.push(caught ? 'goalkeeperCatch' : 'goalkeeperParry');
+  }
+  playGoalMissed(): void {
+    this.calls.push('goalMissed');
+  }
   playCrowdRise(value = 0.65): void {
     this.calls.push(`crowd:${value}`);
   }
@@ -122,5 +128,30 @@ describe('dynamic match audio', () => {
     state = updateDynamicMatchAudio(state, { dt: 0.25, phaseId: 'full-time', victory: true }, audio);
     expect(audio.calls.filter((call) => call === 'victory')).toHaveLength(1);
     expect(state.outcome).toBe('victory');
+  });
+
+  it('edge-triggers goal, save, miss, and goalkeeper defeat signals', () => {
+    const audio = new AudioSpy();
+    let state = createDynamicMatchAudioState();
+    const eventFrame = {
+      dt: 0.1,
+      phaseId: 'final-goalkeeper' as const,
+      goalScored: true,
+      goalkeeperDefeated: true,
+      goalkeeperSave: 'parry' as const,
+      goalMissed: true,
+    };
+    state = updateDynamicMatchAudio(state, eventFrame, audio);
+    state = updateDynamicMatchAudio(state, eventFrame, audio);
+
+    expect(audio.calls.filter((call) => call === 'goal')).toHaveLength(1);
+    expect(audio.calls.filter((call) => call === 'goalkeeperDefeat')).toHaveLength(1);
+    expect(audio.calls.filter((call) => call === 'goalkeeperParry')).toHaveLength(1);
+    expect(audio.calls.filter((call) => call === 'goalMissed')).toHaveLength(1);
+
+    state = updateDynamicMatchAudio(state, { dt: 0.1, phaseId: 'final-goalkeeper' }, audio);
+    updateDynamicMatchAudio(state, eventFrame, audio);
+    expect(audio.calls.filter((call) => call === 'goal')).toHaveLength(2);
+    expect(audio.calls.filter((call) => call === 'goalkeeperParry')).toHaveLength(2);
   });
 });

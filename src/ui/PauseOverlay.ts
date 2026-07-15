@@ -77,7 +77,7 @@ export class PauseOverlay {
         </div>
         <section class="pause-stats hidden" aria-labelledby="pause-stats-title">
           <header>
-            <button type="button" data-action="stats-back" class="pause-stats__back" aria-label="Back to pause menu">${uiIcon('back')}</button>
+            <button type="button" data-action="stats-back" class="pause-stats__back" aria-label="Back to pause menu" title="Back to pause menu">${uiIcon('back')}</button>
             <div><p class="pause-panel__eyebrow">CURRENT MATCH</p><h3 id="pause-stats-title">LIVE RUN STATS</h3></div>
           </header>
           <div class="pause-stats__scroll">

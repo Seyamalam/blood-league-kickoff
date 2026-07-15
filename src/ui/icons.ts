@@ -14,7 +14,10 @@ export type UiIconName =
   | 'back'
   | 'ball'
   | 'heal'
-  | 'shield';
+  | 'shield'
+  | 'power'
+  | 'bolt'
+  | 'target';
 
 const ICON_PATHS: Readonly<Record<UiIconName, string>> = Object.freeze({
   play: '<path d="m8 5 11 7-11 7Z"/>',
@@ -34,6 +37,10 @@ const ICON_PATHS: Readonly<Record<UiIconName, string>> = Object.freeze({
   ball: '<circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-2 5h-4l-2-5Zm-7 2 3 1m8 0 3-1m-9 6-2 4m6-4 2 4"/>',
   heal: '<path d="M12 21S4 17 4 10a4 4 0 0 1 7-3 4 4 0 0 1 7 3c0 7-6 11-6 11Z"/><path d="M9 12h6m-3-3v6"/>',
   shield: '<path d="m12 3 7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z"/>',
+  power: '<path d="M12 2v10m5.7-6.7a9 9 0 1 1-11.4 0"/>',
+  bolt: '<path d="m13 2-8 12h7l-1 8 8-12h-7Z"/>',
+  target:
+    '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>',
 });
 
 export function uiIcon(name: UiIconName): string {

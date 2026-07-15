@@ -444,6 +444,7 @@ async function bootstrap(): Promise<void> {
   let recallSpeedMultiplier = 1;
   let volleyWindowBonus = 0;
   let fixedStepsThisFrame = 0;
+  let footstepTravel = 0;
   let ultimateRequested = false;
   let activeUltimateEffects: Readonly<CharacterUltimateEffects> = NEUTRAL_ULTIMATE_EFFECTS;
   let disposed = false;
@@ -498,6 +499,7 @@ async function bootstrap(): Promise<void> {
     state.player.invulnerability = 0.68;
     runTelemetry.recordDamageTaken(damage);
     audio.playPlayerHurt();
+    bridge.hitBurst(state.player.position, Math.min(1.5, 0.55 + damage / 24));
     input.rumble(0.72, 145);
     cameraController.addImpulse(0.3);
     combatFeedback.addImpact({ kind: 'player-hit', damage });
@@ -787,6 +789,7 @@ async function bootstrap(): Promise<void> {
     input.setGamepadSettings(settings.gamepadLookSensitivity, settings.gamepadVibration);
     hud.setControlBindings(settings.keyBindings);
     bridge.setReducedFlashes(settings.reducedFlashes);
+    bridge.setRenderQuality(settings.renderQuality);
     root.style.setProperty('--hud-scale', String(settings.hudScale));
     root.dataset.colorVision = settings.colorVisionMode;
     root.classList.toggle('high-contrast-hud', settings.highContrastHud);
@@ -1075,6 +1078,11 @@ async function bootstrap(): Promise<void> {
     if (event.key === 'Escape' && !pauseOverlay.isVisible) showPause();
   };
   window.addEventListener('keydown', onGlobalKeyDown);
+  const onUiFocus = (event: FocusEvent): void => {
+    if (event.target instanceof HTMLElement && event.target.matches('button, input, select, [tabindex]'))
+      audio.playUiNavigate();
+  };
+  root.addEventListener('focusin', onUiFocus);
   const onFocusLoss = (): void => showPause();
   const onVisibilityChange = (): void => {
     if (document.hidden) showPause();
@@ -1196,6 +1204,7 @@ async function bootstrap(): Promise<void> {
           });
         }
         bridge.playPlayerTechnique(result.perfectVolley ? 'bicycle' : result.kind);
+        bridge.bootContactBurst(physics.ballPosition, 0.75 + result.charge * 0.75);
         lastKickOrigin = { x: state.player.position.x, z: state.player.position.z };
         lastKickWasVolley = result.perfectVolley;
         reboundsSinceKick = 0;
@@ -1348,9 +1357,25 @@ async function bootstrap(): Promise<void> {
             activeUltimateEffects.movementSpeedMultiplier,
           progression.modifiers.dashCooldownMultiplier * activeUltimateEffects.dashCooldownMultiplier,
         );
+        const stepDistance = Math.hypot(
+          state.player.position.x - state.player.previousPosition.x,
+          state.player.position.z - state.player.previousPosition.z,
+        );
+        if (stepDistance > 0.001) {
+          footstepTravel += stepDistance;
+          const stride = state.player.dashTime > 0 ? 1.75 : 1.15;
+          if (footstepTravel >= stride) {
+            footstepTravel %= stride;
+            audio.playFootstep(
+              'grass',
+              Math.min(1, Math.hypot(state.player.velocity.x, state.player.velocity.z) / 12),
+            );
+          }
+        } else footstepTravel = 0;
         const dashStarted = !dashWasActive && state.player.dashTime > 0;
         if (dashStarted) {
           footballArmory.triggerSlideTackle(state.player.position, state.player.dashDirection);
+          bridge.groundBurst(state.player.position, 0.9);
           runTelemetry.recordDash();
           audio.playDash();
           input.rumble(0.32, 70);
@@ -1457,6 +1482,7 @@ async function bootstrap(): Promise<void> {
             }
           }
           audio.playPlayerHurt();
+          bridge.hitBurst(state.player.position, 0.9);
           input.rumble(0.7, 130);
           cameraController.addImpulse(0.24);
         }
@@ -1510,8 +1536,7 @@ async function bootstrap(): Promise<void> {
           physics.applyBallRebound(primaryDamage.rebound.normal, primaryDamage.rebound.velocityMultiplier);
         }
         if (primaryDamage.blockedHits > 0) {
-          if (physics.ballSpeed > 17) audio.playGoalkeeperParry();
-          else audio.playGoalkeeperCatch();
+          audio.playGoalkeeperSave(physics.ballSpeed <= 17);
         }
         if (hits > 0) {
           chargeFocusKick('enemy-hit', hits);
@@ -1711,6 +1736,7 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'boot-cyclone') bridge.voidBurst(event.position, 0.9);
           if (event.type === 'slide-tackle') {
             bridge.hitBurst(event.position, event.targetsHit > 0 ? 1.15 : 0.7);
+            if (event.targetsHit > 0) audio.playBodyImpact(Math.min(1, 0.55 + event.targetsHit * 0.12));
             cameraController.hitImpulse(event.targetsHit > 0 ? 0.65 : 0.25);
           }
           if (event.type === 'bicycle-kick') {
@@ -2071,6 +2097,8 @@ async function bootstrap(): Promise<void> {
             audio.playGoal();
             audio.playNetImpact();
             audio.playCrowdRise(0.7);
+            bridge.goalBurst(physics.ballPosition, event.goal === 'final' ? 1.65 : 1.25);
+            bridge.playPlayerOutcome('celebration');
             stadiumAmbience.celebrate(event.goal === 'final' ? 1.5 : 1.15);
             stadiumAmbience.burstProps(event.goal === 'final' ? 1.45 : 1);
             announcement.show(
@@ -2134,6 +2162,7 @@ async function bootstrap(): Promise<void> {
           if (event.type === 'victory') {
             state.phase = 'won';
             audio.playVictory();
+            bridge.goalBurst(state.player.position, 1.8);
             announcement.show('finalWhistle', 'COUNT GOALKEEPER HAS FALLEN');
             stadiumAmbience.celebrate(1.5);
             stadiumAmbience.burstProps(1.5);
@@ -2331,6 +2360,7 @@ async function bootstrap(): Promise<void> {
     window.removeEventListener('keydown', onGlobalKeyDown);
     window.removeEventListener('blur', onFocusLoss);
     document.removeEventListener('visibilitychange', onVisibilityChange);
+    root.removeEventListener('focusin', onUiFocus);
     kickoffButton.removeEventListener('click', begin);
     restartButton.removeEventListener('click', restart);
     victoryRestartButton.removeEventListener('click', restart);

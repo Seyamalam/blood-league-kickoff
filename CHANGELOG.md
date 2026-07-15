@@ -2,6 +2,16 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.14.0 — 2026-07-15
+
+- Connected existing skinned clips to semantic idle, dribble, strafe, damage, knockdown, celebration, victory, and defeat presentation states.
+- Added normalized animation contact/recovery markers and root, foot, and head socket metadata while keeping simulation movement authoritative.
+- Added deterministic pooled boot-contact, ground-impact, and goal-ring VFX with graphics-quality density and reduced-flash variants.
+- Expanded procedural audio with grass footsteps, body impacts, unified goalkeeper saves, UI navigation, deterministic variation, event latching, and a strict 48-voice limit.
+- Improved HUD ready feedback, menu icons and tooltips, visible scroll affordances, keyboard focus traps/restoration, forced-color focus, and reduced-motion coverage.
+- Fixed the results dialog opening at the focused action and clipping its title on shorter viewports.
+- Verified the production title, live match, and results states in-browser alongside the complete automated gate of 442 tests.
+
 ## v0.13.1 — 2026-07-15
 
 - Removed the complete Photo Mode camera/UI/capture surface after its hidden bootstrap state was found to override the live chase camera.

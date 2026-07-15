@@ -46,7 +46,7 @@ export class Hud {
       'beforeend',
       `
       <div class="vignette"></div>
-      <div class="hud" aria-live="polite">
+      <div class="hud">
         <header class="topbar">
           <div class="brand"><span class="brand-kicker">BLOOD LEAGUE</span><strong>KICKOFF</strong></div>
           <div class="timer"><small>SURVIVAL</small><span id="timer">00:00</span></div>
@@ -58,20 +58,20 @@ export class Hud {
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>KICK POWER</span><span id="charge-label">TAP / HOLD</span></div>
           <div class="health-track" style="margin-top:4px"><div id="charge-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#d6a632,#fff0a6);box-shadow:0 0 14px rgba(255,214,90,.45);transition:none"></div></div>
           <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status" class="ball-state" data-state="possessed">POSSESSED · READY</span></div>
-          <div class="status-row" style="margin-top:6px"><span>MOBILITY</span><span id="dash-status">DASH READY</span></div>
-          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>FOCUS KICK</span><span id="focus-status">0%</span></div>
+          <div class="status-row" style="margin-top:6px"><span>${uiIcon('bolt')} MOBILITY</span><span id="dash-status">DASH READY</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span class="hud-meter-label">${uiIcon('target')} FOCUS KICK</span><span id="focus-status">0%</span></div>
           <div class="health-track" style="margin-top:4px"><div id="focus-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#b89526,#fff0a6);box-shadow:0 0 14px rgba(255,207,64,.4)"></div></div>
           <div class="ultimate-status-row"><span><img id="ultimate-icon" alt="">CHARACTER ULTIMATE</span><span id="ultimate-status">0%</span></div>
           <div class="health-track" style="margin-top:4px"><div id="ultimate-fill" class="health-fill ultimate-fill" style="width:0%"></div></div>
           <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>BLOOD LEVEL</span><span id="level-value">1</span></div>
           <div class="health-track" style="margin-top:4px"><div id="xp-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#6f1f91,#d95eff);box-shadow:0 0 14px rgba(190,74,255,.42)"></div></div>
         </div>
-        <div id="objective" class="objective">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
+        <div id="objective" class="objective" role="status" aria-live="polite" aria-atomic="true">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
         <div id="boss-panel" class="boss-panel hidden"><span>COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
         <div id="combo" class="combo"></div>
         <div id="controls-hint" class="controls-hint"><b>WASD</b> MOVE <b>SPACE</b> DASH <b>MOUSE</b> AIM <b>HOLD LMB</b> KICK <b>RMB / E</b> RECALL <b>F</b> FOCUS <b>Q</b> ULTIMATE</div>
         <div class="perf" aria-label="Live performance diagnostics"><span id="fps">-- FPS</span><span id="frame-time">-- MS</span><span id="render-stats">-- DC · -- TRI</span><span id="pool-stats">--/-- POOL</span></div>
-        <button type="button" id="settings-button" class="settings-open" aria-label="Open settings">⚙ SETTINGS</button>
+        <button type="button" id="settings-button" class="settings-open" aria-label="Open settings" title="Open settings">${uiIcon('settings')}<span>SETTINGS</span></button>
       </div>
       <section id="splash" class="modal splash">
         <div class="crest">BL</div>
@@ -91,21 +91,21 @@ export class Hud {
         </div>
         <button type="button" id="title-career-button" class="title-settings">${uiIcon('career')}<span>CAREER & CHARACTERS</span></button>
         <button type="button" id="title-settings-button" class="title-settings">${uiIcon('settings')}<span>SETTINGS</span></button>
-        <button type="button" id="title-quit-button" class="title-settings title-quit">QUIT GAME</button>
+        <button type="button" id="title-quit-button" class="title-settings title-quit">${uiIcon('power')}<span>QUIT GAME</span></button>
         <small>Click to lock the cursor · Headphones recommended</small>
       </section>
       <section id="death" class="modal death hidden">
         <p class="eyebrow">FULL TIME</p>
         <h2>THE NIGHT<br>CLAIMS ANOTHER</h2>
         <p id="final-score"></p>
-        <button type="button" id="restart-button">KICK OFF AGAIN</button>
+        <button type="button" id="restart-button">${uiIcon('restart')}<span>KICK OFF AGAIN</span></button>
         <small>or press R</small>
       </section>
       <section id="victory" class="modal death hidden">
         <p class="eyebrow">FULL TIME</p>
         <h2>THE LEAGUE<br>IS BROKEN</h2>
         <p id="victory-score"></p>
-        <button type="button" id="victory-restart-button">PLAY ANOTHER MATCH</button>
+        <button type="button" id="victory-restart-button">${uiIcon('restart')}<span>PLAY ANOTHER MATCH</span></button>
         <small>or press R</small>
       </section>
     `,
@@ -224,6 +224,7 @@ export class Hud {
     const dashReady = state.player.dashCooldown <= 0;
     this.dashStatus.textContent = dashReady ? 'DASH READY' : `DASH ${state.player.dashCooldown.toFixed(1)}s`;
     this.dashStatus.classList.toggle('warn', !dashReady);
+    this.dashStatus.classList.toggle('status-ready', dashReady);
     const focusPercent = Math.round(Math.max(0, Math.min(100, focusKick.charge)));
     this.focusFill.style.width = `${focusKick.phase === 'ready' ? 100 : focusPercent}%`;
     this.focusStatus.textContent =
@@ -235,6 +236,7 @@ export class Hud {
             ? `COOLDOWN ${focusKick.cooldownRemaining.toFixed(1)}s`
             : `${focusPercent}%`;
     this.focusStatus.classList.toggle('warn', focusKick.phase === 'aiming');
+    this.focusStatus.classList.toggle('status-ready', focusKick.phase === 'ready');
     const ultimateDefinition = CHARACTER_ULTIMATE_DEFINITIONS[characterUltimate.characterId];
     const ultimatePercent = Math.round(
       Math.max(0, Math.min(1, characterUltimate.charge / characterUltimate.chargeRequired)) * 100,
@@ -247,6 +249,7 @@ export class Hud {
           ? `Q · ${ultimateDefinition.callout}`
           : `${ultimatePercent}%`;
     this.ultimateStatus.classList.toggle('warn', characterUltimate.ready);
+    this.ultimateStatus.classList.toggle('status-ready', characterUltimate.ready);
     this.ultimateIcon.src = CHARACTER_ULTIMATE_ICON_URLS[characterUltimate.ultimateId];
     this.ultimateIcon.alt = `${ultimateDefinition.name} icon`;
     const currentLevelXp = totalXpRequiredForLevel(progression.level);
@@ -255,7 +258,8 @@ export class Hud {
       (progression.totalBloodXp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp);
     this.xpFill.style.width = `${Math.max(0, Math.min(1, xpProgress)) * 100}%`;
     this.levelValue.textContent = String(progression.level);
-    this.objective.textContent = `${objective.title} · ${objective.detail}`.toUpperCase();
+    const objectiveLabel = `${objective.title} · ${objective.detail}`.toUpperCase();
+    if (this.objective.textContent !== objectiveLabel) this.objective.textContent = objectiveLabel;
     this.bossPanel.classList.toggle('hidden', !boss || boss.phase === 'defeated');
     if (boss) this.bossFill.style.width = `${Math.max(0, boss.health / boss.maxHealth) * 100}%`;
     const fps = Math.round(performance.smoothedFps);

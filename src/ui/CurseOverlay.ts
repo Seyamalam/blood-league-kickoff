@@ -15,6 +15,7 @@ export class CurseOverlay {
   private readonly selected = new Set<CurseId>();
   private available = new Set<CurseId>(CURSE_IDS);
   private callback: CurseSelectionCallback | null = null;
+  private previouslyFocused: HTMLElement | null = null;
   private open = false;
 
   constructor(root: HTMLElement) {
@@ -26,7 +27,7 @@ export class CurseOverlay {
     this.element.setAttribute('aria-labelledby', 'curse-overlay-title');
     this.element.innerHTML = `
       <div class="curse-panel">
-        <header><div><p>OPTIONAL RUN CONTRACTS</p><h2 id="curse-overlay-title">CHOOSE YOUR CURSE</h2></div><button type="button" class="icon-button" data-action="close" aria-label="Close curse selection">${uiIcon('close')}</button></header>
+        <header><div><p>OPTIONAL RUN CONTRACTS</p><h2 id="curse-overlay-title">CHOOSE YOUR CURSE</h2></div><button type="button" class="icon-button" data-action="close" aria-label="Close curse selection" title="Close curse selection">${uiIcon('close')}</button></header>
         <div class="curse-panel__intro"><p>Combine up to three benefits and drawbacks. Greater danger produces a greater career reward.</p><strong>0 / 3 SELECTED</strong></div>
         <div class="curse-grid"></div>
         <footer><button type="button" data-action="start">${uiIcon('play')}<span>BEGIN CURSED RUN</span></button></footer>
@@ -52,6 +53,7 @@ export class CurseOverlay {
     this.render();
     this.refreshSelection();
     this.open = true;
+    this.previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.element.hidden = false;
     this.element.classList.remove('hidden');
     window.addEventListener('keydown', this.handleKeyDown, { capture: true });
@@ -64,6 +66,8 @@ export class CurseOverlay {
     this.element.hidden = true;
     this.element.classList.add('hidden');
     window.removeEventListener('keydown', this.handleKeyDown, { capture: true });
+    if (this.previouslyFocused?.isConnected) this.previouslyFocused.focus();
+    this.previouslyFocused = null;
   }
 
   reset(): void {
@@ -131,9 +135,30 @@ export class CurseOverlay {
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    this.hide();
+    if (!this.open) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.hide();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...this.element.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (!first || !last) return;
+    if (!(document.activeElement instanceof Element) || !this.element.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 }
 

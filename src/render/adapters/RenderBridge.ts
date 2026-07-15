@@ -4,10 +4,12 @@ import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 import { getEnemyArchetypeDefinition } from '../../game/simulation/enemyArchetypes';
 import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
 import { PlayerCharacterAsset } from '../objects/PlayerCharacterAsset';
+import type { RenderQuality } from '../../settings/SettingsStore';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
 const BURST_PARTICLES = 14;
+const RING_POOL_SIZE = 6;
 let activeBridgeCount = 0;
 
 interface HitBurst {
@@ -16,6 +18,14 @@ interface HitBurst {
   velocities: Float32Array;
   age: number;
   duration: number;
+}
+
+interface ImpactRing {
+  mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  age: number;
+  duration: number;
+  startScale: number;
+  endScale: number;
 }
 
 interface EnemyVisual {
@@ -48,6 +58,7 @@ export class RenderBridge {
   private readonly trail: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
   private readonly trailPositions: Float32Array;
   private readonly bursts: HitBurst[];
+  private readonly impactRings: ImpactRing[];
   private readonly enemies = new Map<number, EnemyVisual>();
   private readonly liveEnemyIds = new Set<number>();
   private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
@@ -55,9 +66,13 @@ export class RenderBridge {
   private ballSpin = 0;
   private trailInitialized = false;
   private nextBurst = 0;
+  private nextImpactRing = 0;
+  private burstSeed = 0x4b1d;
+  private renderQuality: RenderQuality = 'balanced';
   private firstPerson = false;
   private reducedFlashes = false;
   private disposed = false;
+  private previousMatchPhase?: GameState['phase'];
 
   constructor(private readonly scene: THREE.Scene) {
     activeBridgeCount += 1;
@@ -71,8 +86,10 @@ export class RenderBridge {
     this.trailPositions = trail.positions;
     this.ballLight = new THREE.PointLight(0xff315d, 0, 5.5, 2);
     this.bursts = Array.from({ length: BURST_POOL_SIZE }, (_, index) => createHitBurst(index));
+    this.impactRings = Array.from({ length: RING_POOL_SIZE }, (_, index) => createImpactRing(index));
     scene.add(this.player, this.trail, this.ball, this.ballLight);
     for (const burst of this.bursts) scene.add(burst.points);
+    for (const ring of this.impactRings) scene.add(ring.mesh);
   }
 
   public setCharacter(characterId: CharacterId): void {
@@ -100,14 +117,21 @@ export class RenderBridge {
       !this.firstPerson &&
       (this.reducedFlashes ||
         !(state.player.invulnerability > 0 && Math.floor(state.player.invulnerability * 18) % 2 === 0));
-    if (this.playerAsset.ready) this.playerAsset.update(dt, state.player);
+    const importedPlayerReady = this.playerAsset.ready;
+    if (importedPlayerReady) this.playerAsset.update(dt, state.player);
     else animatePlayer(this.player, state.elapsed, previousPlayer, p);
+    if (importedPlayerReady && state.phase !== this.previousMatchPhase) {
+      if (state.phase === 'won') this.playerAsset.playOutcome('victory');
+      if (state.phase === 'dead') this.playerAsset.playOutcome('defeat');
+      this.previousMatchPhase = state.phase;
+    }
 
     this.ball.position.set(ballPosition.x, ballPosition.y, ballPosition.z);
     this.ballSpin += ballSpeed * dt * 1.6;
     this.ball.rotation.set(this.ballSpin, this.ballSpin * 0.35, 0);
     this.updateBallEnergy(ballPosition, ballSpeed);
     this.updateBursts(dt);
+    this.updateImpactRings(dt);
 
     this.liveEnemyIds.clear();
     for (const enemy of state.enemies) {
@@ -173,6 +197,8 @@ export class RenderBridge {
   }
 
   reset(): void {
+    this.previousMatchPhase = undefined;
+    this.playerAsset.resetPresentation();
     for (const visual of this.enemies.values()) {
       this.scene.remove(visual.group);
     }
@@ -185,6 +211,10 @@ export class RenderBridge {
       burst.age = burst.duration;
       burst.points.visible = false;
     }
+    for (const ring of this.impactRings) {
+      ring.age = ring.duration;
+      ring.mesh.visible = false;
+    }
   }
 
   setFirstPerson(active: boolean): void {
@@ -195,8 +225,20 @@ export class RenderBridge {
     this.reducedFlashes = active;
   }
 
+  setRenderQuality(quality: RenderQuality): void {
+    this.renderQuality = quality;
+  }
+
   playPlayerTechnique(technique: 'kick' | 'ground-pass' | 'lob-pass' | 'bicycle'): void {
     this.playerAsset.playTechnique(technique);
+  }
+
+  playPlayerReaction(reaction: 'damage' | 'knockdown'): void {
+    this.playerAsset.playReaction(reaction);
+  }
+
+  playPlayerOutcome(outcome: 'celebration' | 'victory' | 'defeat'): void {
+    this.playerAsset.playOutcome(outcome);
   }
 
   /** Reuses a small particle pool; safe to call for every registered ball hit. */
@@ -221,6 +263,29 @@ export class RenderBridge {
     this.startBurst(position, intensity, 0xb66cff);
   }
 
+  /** Football-specific boot/ball contact accent with an accessible reduced-flash variant. */
+  bootContactBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 1.1, 0xffd66b);
+    this.startImpactRing(position, intensity, 0xffd66b, 0.25, 1.75);
+  }
+
+  /** Low, earthy feedback for dashes, tackles and hard landings. */
+  groundBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(
+      { x: position.x, y: Math.max(0.04, position.y), z: position.z },
+      intensity * 0.72,
+      0xc99562,
+    );
+    this.startImpactRing(position, intensity * 0.8, 0x9f6d45, 0.4, 2.25);
+  }
+
+  /** Larger but still bounded celebration grammar for goals and terminal rewards. */
+  goalBurst(position: Vec3, intensity = 1): void {
+    this.startBurst(position, intensity * 1.35, 0xff315d);
+    this.startImpactRing(position, intensity * 1.2, 0xff315d, 0.65, 3.8);
+    if (this.renderQuality !== 'performance') this.startImpactRing(position, intensity, 0xffd66b, 0.3, 2.9);
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -235,6 +300,11 @@ export class RenderBridge {
       this.scene.remove(burst.points);
       burst.points.geometry.dispose();
       burst.points.material.dispose();
+    }
+    for (const ring of this.impactRings) {
+      this.scene.remove(ring.mesh);
+      ring.mesh.geometry.dispose();
+      ring.mesh.material.dispose();
     }
     activeBridgeCount = Math.max(0, activeBridgeCount - 1);
     if (activeBridgeCount === 0) disposeSharedRenderResources();
@@ -278,11 +348,14 @@ export class RenderBridge {
     burst.points.material.opacity = this.reducedFlashes ? 0.45 : 0.9;
     burst.points.material.size = 0.13 + strength * 0.045;
     burst.points.visible = true;
-    for (let index = 0; index < BURST_PARTICLES; index += 1) {
+    const particleCount =
+      this.renderQuality === 'performance' ? 8 : this.renderQuality === 'quality' ? 14 : 11;
+    burst.points.geometry.setDrawRange(0, particleCount);
+    for (let index = 0; index < particleCount; index += 1) {
       const offset = index * 3;
-      const angle = (index / BURST_PARTICLES) * Math.PI * 2 + Math.random() * 0.28;
-      const lift = 0.2 + Math.random() * 0.75;
-      const speed = (2.6 + Math.random() * 3.6) * strength;
+      const angle = (index / particleCount) * Math.PI * 2 + this.nextRandom() * 0.28;
+      const lift = 0.2 + this.nextRandom() * 0.75;
+      const speed = (2.6 + this.nextRandom() * 3.6) * strength;
       burst.positions[offset] = 0;
       burst.positions[offset + 1] = 0;
       burst.positions[offset + 2] = 0;
@@ -291,6 +364,47 @@ export class RenderBridge {
       burst.velocities[offset + 2] = Math.sin(angle) * speed;
     }
     burst.points.geometry.attributes.position!.needsUpdate = true;
+  }
+
+  private startImpactRing(
+    position: Vec3,
+    intensity: number,
+    color: number,
+    startScale: number,
+    endScale: number,
+  ): void {
+    const ring = this.impactRings[this.nextImpactRing]!;
+    this.nextImpactRing = (this.nextImpactRing + 1) % this.impactRings.length;
+    const strength = Number.isFinite(intensity) ? THREE.MathUtils.clamp(intensity, 0.25, 2) : 1;
+    ring.age = 0;
+    ring.duration = this.reducedFlashes ? 0.12 : 0.24 + strength * 0.06;
+    ring.startScale = startScale * strength;
+    ring.endScale = endScale * strength;
+    ring.mesh.position.set(position.x, Math.max(0.05, position.y), position.z);
+    ring.mesh.scale.setScalar(ring.startScale);
+    ring.mesh.material.color.setHex(color);
+    ring.mesh.material.opacity = this.reducedFlashes ? 0.3 : 0.78;
+    ring.mesh.visible = true;
+  }
+
+  private updateImpactRings(dt: number): void {
+    for (const ring of this.impactRings) {
+      if (!ring.mesh.visible) continue;
+      ring.age += dt;
+      if (ring.age >= ring.duration) {
+        ring.mesh.visible = false;
+        continue;
+      }
+      const progress = ring.age / ring.duration;
+      const scale = THREE.MathUtils.lerp(ring.startScale, ring.endScale, 1 - (1 - progress) ** 3);
+      ring.mesh.scale.setScalar(scale);
+      ring.mesh.material.opacity = (this.reducedFlashes ? 0.3 : 0.78) * (1 - progress);
+    }
+  }
+
+  private nextRandom(): number {
+    this.burstSeed = (Math.imul(this.burstSeed, 1664525) + 1013904223) >>> 0;
+    return this.burstSeed / 0x1_0000_0000;
   }
 
   private updateBursts(dt: number): void {
@@ -360,6 +474,24 @@ function createHitBurst(index: number): HitBurst {
   points.frustumCulled = false;
   points.visible = false;
   return { points, positions, velocities, age: 1, duration: 1 };
+}
+
+function createImpactRing(index: number): ImpactRing {
+  const geometry = new THREE.RingGeometry(0.78, 1, 36);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff315d,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = `pooled-impact-ring-${index}`;
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.renderOrder = 2;
+  mesh.visible = false;
+  return { mesh, age: 1, duration: 1, startScale: 1, endScale: 1 };
 }
 
 const playerGeometry = {

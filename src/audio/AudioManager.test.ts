@@ -59,6 +59,10 @@ describe('AudioManager event cues', () => {
 
     expect(() => {
       audio.playDash();
+      audio.playFootstep('grass', 0.35);
+      audio.playFootstep('turf', 0.7);
+      audio.playFootstep('concrete', 1);
+      audio.playBodyImpact(0.8);
       audio.playHeal();
       audio.playLifeSteal();
       audio.playPickup();
@@ -75,12 +79,15 @@ describe('AudioManager event cues', () => {
       audio.playGoalkeeperParry();
       audio.playGoalkeeperGuardBreak();
       audio.playGoalkeeperDefeat();
+      audio.playGoalkeeperSave(true);
+      audio.playGoalkeeperSave(false);
       audio.playKickoff();
       audio.playGoalMissed();
       audio.playHalftime();
       audio.playBloodMoon();
       audio.playFinalWave();
       audio.playUiSelect();
+      audio.playUiNavigate();
       audio.playUiBack();
       audio.playUiError();
     }).not.toThrow();

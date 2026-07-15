@@ -17,6 +17,9 @@ export type MatchMusicIntensity = MatchStage | 'menu' | 'paused' | number;
 /** Escalating Count Goalkeeper combat phases supported by the boss cue. */
 export type BossAudioPhase = 'bloodRush' | 'desperation' | number;
 
+/** Material below the player, used to keep movement feedback readable. */
+export type FootstepSurface = 'grass' | 'turf' | 'concrete';
+
 type ToneOptions = {
   frequency: number;
   endFrequency?: number;
@@ -51,6 +54,45 @@ type ProceduralMusicGraph = {
   sources: OscillatorNode[];
   nodes: AudioNode[];
 };
+
+const FOOTSTEP_PROFILES: Readonly<
+  Record<
+    FootstepSurface,
+    {
+      duration: number;
+      gain: number;
+      filterFrequency: number;
+      filterEndFrequency: number;
+      filterType: BiquadFilterType;
+      thumpFrequency: number;
+    }
+  >
+> = Object.freeze({
+  grass: {
+    duration: 0.075,
+    gain: 0.045,
+    filterFrequency: 1_150,
+    filterEndFrequency: 360,
+    filterType: 'lowpass',
+    thumpFrequency: 82,
+  },
+  turf: {
+    duration: 0.06,
+    gain: 0.04,
+    filterFrequency: 1_650,
+    filterEndFrequency: 520,
+    filterType: 'bandpass',
+    thumpFrequency: 94,
+  },
+  concrete: {
+    duration: 0.045,
+    gain: 0.052,
+    filterFrequency: 2_600,
+    filterEndFrequency: 820,
+    filterType: 'highpass',
+    thumpFrequency: 116,
+  },
+});
 
 const DEFAULT_VOLUME = 0.42;
 const MAX_ACTIVE_SOURCES = 48;
@@ -164,11 +206,12 @@ export class AudioManager {
   /** Low impact plus a metallic snap. Charge is normalized to 0–1. */
   public playKick(charge = 1): void {
     const amount = clamp01(charge);
-    const now = this.now();
+    const now = this.eventNow('kick', 0.028);
     if (now === null) return;
+    const variation = this.nextCueVariation();
 
     this.tone({
-      frequency: 105 + amount * 35,
+      frequency: (105 + amount * 35) * variation,
       endFrequency: 46 + amount * 12,
       duration: 0.12 + amount * 0.06,
       gain: 0.16 + amount * 0.15,
@@ -183,7 +226,7 @@ export class AudioManager {
       filterType: 'bandpass',
     });
     this.tone({
-      frequency: 430 + amount * 160,
+      frequency: (430 + amount * 160) * variation,
       endFrequency: 270,
       duration: 0.055,
       gain: 0.035 + amount * 0.045,
@@ -218,8 +261,9 @@ export class AudioManager {
   /** Ball-on-enemy feedback. Intensity is normalized to 0–1. */
   public playHit(intensity = 0.5): void {
     const amount = clamp01(intensity);
-    const now = this.now();
+    const now = this.eventNow('enemy-hit', 0.025);
     if (now === null) return;
+    const variation = this.nextCueVariation();
     this.noise({
       duration: 0.025 + amount * 0.05,
       gain: 0.055 + amount * 0.12,
@@ -228,12 +272,63 @@ export class AudioManager {
       filterType: 'lowpass',
     });
     this.tone({
-      frequency: 125 + amount * 40,
+      frequency: (125 + amount * 40) * variation,
       endFrequency: 72,
       duration: 0.07 + amount * 0.04,
       gain: 0.07 + amount * 0.09,
       start: now,
       type: 'square',
+    });
+  }
+
+  /**
+   * Cadence-safe movement cue. Call only on planted-foot events rather than
+   * every frame; the internal guard still protects against duplicate markers.
+   */
+  public playFootstep(surface: FootstepSurface = 'grass', intensity = 0.5): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('footstep', 0.075);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    const profile = FOOTSTEP_PROFILES[surface];
+    this.noise({
+      duration: profile.duration + amount * 0.025,
+      gain: profile.gain + amount * 0.035,
+      start: now,
+      filterFrequency: profile.filterFrequency * variation,
+      filterEndFrequency: profile.filterEndFrequency * variation,
+      filterType: profile.filterType,
+    });
+    this.tone({
+      frequency: profile.thumpFrequency * variation,
+      endFrequency: Math.max(32, profile.thumpFrequency * 0.62),
+      duration: 0.055 + amount * 0.025,
+      gain: 0.025 + amount * 0.035,
+      start: now,
+      type: 'sine',
+    });
+  }
+
+  /** Heavier player/enemy collision layer, distinct from ball-on-enemy hits. */
+  public playBodyImpact(intensity = 0.5): void {
+    const amount = clamp01(intensity);
+    const now = this.eventNow('body-impact', 0.055);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    this.noise({
+      duration: 0.07 + amount * 0.09,
+      gain: 0.07 + amount * 0.1,
+      start: now,
+      filterFrequency: (720 - amount * 280) * variation,
+      filterType: 'lowpass',
+    });
+    this.tone({
+      frequency: (92 + amount * 34) * variation,
+      endFrequency: 44,
+      duration: 0.12 + amount * 0.08,
+      gain: 0.08 + amount * 0.08,
+      start: now,
+      type: 'triangle',
     });
   }
 
@@ -504,6 +599,13 @@ export class AudioManager {
     this.tone({ frequency: 96, endFrequency: 58, duration: 0.18, gain: 0.11, start: now, type: 'sine' });
   }
 
+  /** Crowd response to a save, kept shorter than a goal celebration. */
+  public playGoalkeeperSave(caught = false): void {
+    if (caught) this.playGoalkeeperCatch();
+    else this.playGoalkeeperParry();
+    this.playCrowdRise(caught ? 0.38 : 0.52);
+  }
+
   /** Sharp angled rejection for a goalkeeper parry. */
   public playGoalkeeperParry(): void {
     const now = this.eventNow('goalkeeper-parry', 0.11);
@@ -646,6 +748,21 @@ export class AudioManager {
     const now = this.eventNow('ui-select', 0.035);
     if (now === null) return;
     this.tone({ frequency: 440, endFrequency: 620, duration: 0.055, gain: 0.04, start: now, type: 'sine' });
+  }
+
+  /** Soft navigation tick for focus movement; confirmation remains playUiSelect. */
+  public playUiNavigate(): void {
+    const now = this.eventNow('ui-navigate', 0.025);
+    if (now === null) return;
+    const variation = this.nextCueVariation();
+    this.tone({
+      frequency: 340 * variation,
+      endFrequency: 390 * variation,
+      duration: 0.035,
+      gain: 0.025,
+      start: now,
+      type: 'sine',
+    });
   }
 
   /** Descending UI navigation cue. */
@@ -1341,6 +1458,9 @@ export class AudioManager {
     if (this.activeSources.size >= MAX_ACTIVE_SOURCES) {
       const oldest = this.activeSources.values().next().value as AudioScheduledSourceNode | undefined;
       if (oldest) {
+        // Remove synchronously so a burst cannot grow bookkeeping beyond the
+        // cap while Web Audio waits to dispatch the stopped node's onended.
+        this.activeSources.delete(oldest);
         try {
           oldest.stop();
         } catch {

@@ -54,6 +54,7 @@ const NOOP_CALLBACKS: ResultsOverlayCallbacks = {
 /** Final run summary for both victory and defeat outcomes. */
 export class ResultsOverlay {
   private readonly element: HTMLElement;
+  private readonly panel: HTMLElement;
   private readonly eyebrow: HTMLElement;
   private readonly title: HTMLElement;
   private readonly summary: HTMLElement;
@@ -111,6 +112,7 @@ export class ResultsOverlay {
       </div>
     `;
     this.eyebrow = requiredElement(this.element, '.results-panel__eyebrow');
+    this.panel = requiredElement(this.element, '.results-panel');
     this.title = requiredElement(this.element, '#results-overlay-title');
     this.summary = requiredElement(this.element, '#results-overlay-summary');
     this.outcomeMark = requiredElement(this.element, '.results-panel__outcome');
@@ -141,7 +143,10 @@ export class ResultsOverlay {
     this.element.classList.remove('hidden');
     window.addEventListener('keydown', this.handleKeyDown, { capture: true });
     window.requestAnimationFrame(() => {
-      if (this.open) this.restartButton.focus();
+      if (!this.open) return;
+      this.element.scrollTop = 0;
+      this.panel.scrollTop = 0;
+      this.restartButton.focus({ preventScroll: true });
     });
   }
 

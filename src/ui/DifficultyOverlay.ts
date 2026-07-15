@@ -23,6 +23,7 @@ export class DifficultyOverlay {
   private readonly selectedModifiers = new Set<ChallengeModifierId>();
   private accountLevel = 1;
   private callback: DifficultySelectionCallback | null = null;
+  private previouslyFocused: HTMLElement | null = null;
   private open = false;
 
   public constructor(root: HTMLElement) {
@@ -33,7 +34,7 @@ export class DifficultyOverlay {
     this.element.setAttribute('aria-modal', 'true');
     this.element.setAttribute('aria-labelledby', 'difficulty-overlay-title');
     this.element.innerHTML = `<div class="difficulty-panel">
-      <header><div><p>LEAGUE RULES</p><h2 id="difficulty-overlay-title">CHOOSE THE PRESSURE</h2></div><button type="button" class="icon-button" data-action="close" aria-label="Close difficulty selection">${uiIcon('close')}</button></header>
+      <header><div><p>LEAGUE RULES</p><h2 id="difficulty-overlay-title">CHOOSE THE PRESSURE</h2></div><button type="button" class="icon-button" data-action="close" aria-label="Close difficulty selection" title="Close difficulty selection">${uiIcon('close')}</button></header>
       <div class="difficulty-panel__body">
         <section><h3>DIFFICULTY TIER</h3><p>Higher leagues multiply career rewards as well as enemy pressure.</p><div class="difficulty-tiers"></div></section>
         <section><h3>CHALLENGE MODIFIERS</h3><p>Combine up to three optional rules for a larger reward multiplier.</p><div class="difficulty-modifiers"></div></section>
@@ -58,6 +59,7 @@ export class DifficultyOverlay {
       this.selectedDifficulty = 'professional';
     this.render();
     this.open = true;
+    this.previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.element.hidden = false;
     this.element.classList.remove('hidden');
     window.addEventListener('keydown', this.handleKeyDown, { capture: true });
@@ -72,6 +74,8 @@ export class DifficultyOverlay {
     this.element.hidden = true;
     this.element.classList.add('hidden');
     window.removeEventListener('keydown', this.handleKeyDown, { capture: true });
+    if (this.previouslyFocused?.isConnected) this.previouslyFocused.focus();
+    this.previouslyFocused = null;
   };
 
   public reset(): void {
@@ -128,6 +132,7 @@ export class DifficultyOverlay {
     if (tier && !tier.disabled) {
       this.selectedDifficulty = tier.dataset.difficultyId as DifficultyId;
       this.render();
+      this.focusAfterRender(`[data-difficulty-id="${this.selectedDifficulty}"]`);
       return;
     }
     const modifier = target?.closest<HTMLButtonElement>('[data-modifier-id]');
@@ -136,13 +141,43 @@ export class DifficultyOverlay {
     if (this.selectedModifiers.has(id)) this.selectedModifiers.delete(id);
     else if (this.selectedModifiers.size < 3) this.selectedModifiers.add(id);
     this.render();
+    this.focusAfterRender(`[data-modifier-id="${id}"]`);
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    this.hide();
+    if (!this.open) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.hide();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    trapDialogFocus(this.element, event);
   };
+
+  private focusAfterRender(selector: string): void {
+    window.requestAnimationFrame(() => this.element.querySelector<HTMLButtonElement>(selector)?.focus());
+  }
+}
+
+function trapDialogFocus(root: HTMLElement, event: KeyboardEvent): void {
+  const focusable = [...root.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (!first || !last) return;
+  if (!(document.activeElement instanceof Element) || !root.contains(document.activeElement)) {
+    event.preventDefault();
+    first.focus();
+    return;
+  }
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 export function createDifficultySelectionView(

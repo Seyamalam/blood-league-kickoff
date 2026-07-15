@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Stable v0.13.1 camera and aiming patch       |
+| Status    | Stable v0.14.0 presentation-polish milestone |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -111,7 +111,7 @@ The next replayability layer uses six original football-style archetypes. They d
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The player now uses an optimized, skinned Quaternius CC0 humanoid and compatible authored animation library for idle, jog, sprint, roll, tackles, and kick techniques. The 36-part original procedural humanoid remains an automatic fallback.
 
-All six selections now share that one validated 65-joint skeleton while receiving animation-safe proportions, palette accents, and socketed silhouette equipment: armband/rune, calf fins, shoulder plates, fang collar, wrist wraps/canister, or forearm guards. Ground passes, lob passes, shots, slide tackles, and bicycle kicks route through a stable fifteen-state football animation contract. The current general-purpose motions are explicitly marked as aliases where dedicated football clips have not yet been authored.
+All six selections now share that one validated 65-joint skeleton while receiving animation-safe proportions, palette accents, and socketed silhouette equipment: armband/rune, calf fins, shoulder plates, fang collar, wrist wraps/canister, or forearm guards. Ground passes, lob passes, shots, slide tackles, and bicycle kicks route through a stable fifteen-state football animation contract. Existing clips now drive semantic idle, dribble, directional strafe, damage, knockdown, celebration, victory, and defeat states. Every state exposes normalized contact/recovery timing and a root, foot, or head socket for synchronized presentation. The current general-purpose motions remain explicitly marked as aliases where dedicated football clips have not yet been authored.
 
 The imported Quaternius character is human-authored and CC0, not AI-generated. Exact sources, bundled licenses, hashes, and optimization steps are in the [asset credits](docs/ASSET_CREDITS.md). The [original hero visual bible](docs/HERO_VISUAL_BIBLE.md), [turnaround prompt](docs/HERO_CONCEPT_PROMPT.md), [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md), and [measured rig audit](docs/CHARACTER_RIG_AUDIT.md) define the original replacement without using a real-player likeness. A model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
 
@@ -198,7 +198,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 
 ## Development
 
-### Current progress — July 14, 2026
+### Current progress — July 15, 2026
 
 - [x] Game concept, theme interpretation, scope gates, and architecture selected
 - [x] Git repository initialized from the jam's empty starting point
@@ -222,6 +222,10 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add a no-likeness hero visual bible, production turnaround prompt, exact shared-skeleton manifest, and reproducible GLB validator
 - [x] Add six shared-rig runtime silhouettes with distinct proportions, palettes, and bone-socketed equipment
 - [x] Add a fifteen-state semantic football animation contract with explicit dedicated/alias/unavailable status
+- [x] Drive semantic dribble/strafe/reaction/outcome animation states and add contact, recovery, and socket metadata
+- [x] Add deterministic pooled boot-contact, ground-impact, and goal-ring VFX with quality and reduced-flash scaling
+- [x] Add grass footsteps, body impacts, goalkeeper-save layers, UI navigation cues, and strict procedural voice limits
+- [x] Improve HUD ready-state feedback, menu icons/tooltips, keyboard focus, reduced motion, and short-viewport scrolling
 - [ ] Add original character portraits/models
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection

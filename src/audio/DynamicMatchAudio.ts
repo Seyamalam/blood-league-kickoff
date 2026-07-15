@@ -14,6 +14,8 @@ export interface DynamicMatchAudioPort {
   playBossEntrance(): void;
   playBossPhase(phase: 'bloodRush' | 'desperation' | number): void;
   playGoalkeeperDefeat(): void;
+  playGoalkeeperSave(caught?: boolean): void;
+  playGoalMissed(): void;
   playCrowdRise(intensity?: number): void;
   playGoal(): void;
   playVictory(): void;
@@ -31,6 +33,9 @@ export interface DynamicMatchAudioInput {
   readonly paused?: boolean;
   readonly goalScored?: boolean;
   readonly goalkeeperDefeated?: boolean;
+  /** Transient save signal. Held values are edge-triggered by this module. */
+  readonly goalkeeperSave?: 'catch' | 'parry' | null;
+  readonly goalMissed?: boolean;
   readonly victory?: boolean;
   readonly defeat?: boolean;
 }
@@ -43,6 +48,11 @@ export interface DynamicMatchAudioState {
   /** 0 outside the boss, then 1/2/3 as its health thresholds fall. */
   readonly bossTier: 0 | 1 | 2 | 3;
   readonly outcome: MatchOutcomeAudioState;
+  /** Event latches prevent frame-held simulation signals from spamming cues. */
+  readonly goalSignal: boolean;
+  readonly goalkeeperDefeatSignal: boolean;
+  readonly goalkeeperSaveSignal: 'catch' | 'parry' | null;
+  readonly goalMissedSignal: boolean;
 }
 
 const PHASE_INTENSITY: Readonly<Record<ProductionMatchPhaseId, number>> = Object.freeze({
@@ -66,6 +76,10 @@ export function createDynamicMatchAudioState(): DynamicMatchAudioState {
     crowdTier: 0,
     bossTier: 0,
     outcome: 'active',
+    goalSignal: false,
+    goalkeeperDefeatSignal: false,
+    goalkeeperSaveSignal: null,
+    goalMissedSignal: false,
   });
 }
 
@@ -109,15 +123,26 @@ export function updateDynamicMatchAudio(
   );
   const crowdTier = crowdTierFor(crowdIntensity);
   const bossTier = bossTierFor(input.phaseId, input.bossHealthRatio);
+  const goalSignal = input.goalScored === true;
+  const goalkeeperDefeatSignal = input.goalkeeperDefeated === true;
+  const goalkeeperSaveSignal = input.goalkeeperSave ?? null;
+  const goalMissedSignal = input.goalMissed === true;
 
   audio.setMatchIntensity(input.paused ? 'paused' : scoreIntensity);
   if (phaseChanged && outcome === 'active') playPhaseCue(input.phaseId, audio);
   if (crowdTier > previous.crowdTier && crowdTier >= 2) audio.playCrowdRise(crowdIntensity);
-  if (input.goalScored) {
+  if (goalSignal && !previous.goalSignal) {
     audio.playGoal();
     audio.playCrowdRise(1);
   }
-  if (input.goalkeeperDefeated) audio.playGoalkeeperDefeat();
+  if (goalkeeperDefeatSignal && !previous.goalkeeperDefeatSignal) audio.playGoalkeeperDefeat();
+  if (goalkeeperSaveSignal !== null && goalkeeperSaveSignal !== previous.goalkeeperSaveSignal) {
+    audio.playGoalkeeperSave(goalkeeperSaveSignal === 'catch');
+  }
+  if (goalMissedSignal && !previous.goalMissedSignal) {
+    audio.playGoalMissed();
+    audio.playCrowdRise(0.3);
+  }
   if (bossTier > previous.bossTier && bossTier >= 2) {
     audio.playBossPhase(bossTier === 2 ? 'bloodRush' : 'desperation');
   }
@@ -137,6 +162,10 @@ export function updateDynamicMatchAudio(
     crowdTier,
     bossTier,
     outcome,
+    goalSignal,
+    goalkeeperDefeatSignal,
+    goalkeeperSaveSignal,
+    goalMissedSignal,
   });
 }
 

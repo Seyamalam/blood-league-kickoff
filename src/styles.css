@@ -53,6 +53,13 @@ canvas {
 button {
   font: inherit;
 }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #f8d777;
+  outline-offset: 3px;
+}
 .boot-error {
   min-height: 100%;
   padding: 40px;
@@ -224,6 +231,21 @@ button {
 .status-row .warn {
   color: #ffcc6c;
 }
+.status-row > span:first-child,
+.hud-meter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-row .ui-icon,
+.hud-meter-label .ui-icon {
+  width: 13px;
+  height: 13px;
+}
+.status-ready {
+  color: #8de3b9 !important;
+  text-shadow: 0 0 10px rgba(86, 223, 158, 0.48);
+}
 .ball-state {
   display: inline-flex;
   align-items: center;
@@ -348,6 +370,10 @@ button {
     sans-serif;
   letter-spacing: 0.12em;
   cursor: pointer;
+}
+.settings-open .ui-icon {
+  width: 13px;
+  height: 13px;
 }
 .settings-open:hover,
 .settings-open:focus-visible {
@@ -541,6 +567,11 @@ button {
 .modal button:hover {
   filter: brightness(1.18);
 }
+.modal button:focus-visible {
+  outline: 3px solid #f8d777;
+  outline-offset: 4px;
+  filter: brightness(1.12);
+}
 .modal .title-settings {
   min-width: 150px;
   margin-top: 10px;
@@ -589,6 +620,9 @@ button {
     sans-serif;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+.title-seed-run input:focus-visible {
+  border-color: #f8d777;
 }
 .modal .title-seed-run .title-settings {
   min-width: 72px;
@@ -694,6 +728,12 @@ button {
 .curse-card--selected {
   border-color: #e65080;
   box-shadow: inset 0 0 28px rgba(214, 45, 88, 0.13);
+}
+.curse-card:focus-visible,
+.curse-panel .icon-button:focus-visible,
+.curse-panel footer button:focus-visible {
+  outline: 3px solid #f8d777;
+  outline-offset: 3px;
 }
 .curse-card--locked {
   filter: grayscale(0.8);
@@ -1443,6 +1483,13 @@ button {
   border-color: #d6a632;
   background: rgba(214, 166, 50, 0.1);
   box-shadow: inset 0 0 24px rgba(214, 166, 50, 0.08);
+}
+.difficulty-tiers button:focus-visible,
+.difficulty-modifiers button:focus-visible,
+.difficulty-panel .icon-button:focus-visible,
+.difficulty-panel > footer button:focus-visible {
+  outline: 3px solid #f8d777;
+  outline-offset: 3px;
 }
 .difficulty-tiers button:disabled,
 .difficulty-modifiers button:disabled {
@@ -3277,5 +3324,50 @@ button {
   .pause-panel button {
     min-height: 39px;
     padding-block: 7px;
+  }
+}
+
+/* Compact, visible scroll affordances for every long-form game menu. */
+.modal.splash,
+.upgrade-overlay,
+.curse-grid,
+.difficulty-panel__body,
+.settings-panel__body,
+.pause-panel,
+.results-panel,
+.halftime-overlay,
+.career-panel__body {
+  scrollbar-color: rgba(241, 59, 96, 0.72) rgba(255, 255, 255, 0.06);
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud *,
+  .modal *,
+  .curse-overlay *,
+  .difficulty-overlay *,
+  .settings-overlay *,
+  .pause-overlay *,
+  .results-overlay *,
+  .halftime-overlay *,
+  .career-overlay * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid Highlight;
+  }
+  .status-ready {
+    color: HighlightText !important;
+    background: Highlight;
+    text-shadow: none;
   }
 }
