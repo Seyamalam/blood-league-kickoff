@@ -10,6 +10,7 @@ release/
 coverage/
 playwright-report/
 test-results/
+artifacts/asset-candidates/
 
 # Local environment
 .env

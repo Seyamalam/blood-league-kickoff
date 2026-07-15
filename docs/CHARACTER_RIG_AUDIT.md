@@ -56,17 +56,17 @@ For every new hero or variant GLB:
 5. Inspect and validate before optimization:
 
    ```sh
-   npx --yes @gltf-transform/cli@4.2.1 inspect input.glb
-   npx --yes @gltf-transform/cli@4.2.1 validate input.glb
+   npm run assets:gltf:inspect -- input.glb
+   npm run assets:gltf:validate -- input.glb
    ```
 
 6. Work on a copy, then apply deliberate cleanup. Never overwrite the source export:
 
    ```sh
-   npx --yes @gltf-transform/cli@4.2.1 optimize input.glb candidate.glb --compress meshopt --texture-compress ktx2
+   npm run assets:gltf:optimize -- input.glb --meshopt --ktx2
    ```
 
-7. Replace the candidate in the manifest path and run:
+7. Review the candidate under `artifacts/asset-candidates/`, deliberately replace the manifest asset, and run:
 
    ```sh
    npm run assets:character:validate

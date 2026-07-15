@@ -6,6 +6,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { formatGltfSpecIssue, validateGltfSpec } from './lib/gltf-spec-validation.mjs';
+
 const GLB_MAGIC = 0x46546c67;
 const JSON_CHUNK = 0x4e4f534a;
 const BIN_CHUNK = 0x004e4942;
@@ -20,8 +22,8 @@ export async function validateCharacterAssets(manifestPath = DEFAULT_MANIFEST) {
   const errors = [];
   const warnings = [];
 
-  validateDocument('character', character, errors);
-  validateDocument('animation library', animations, errors);
+  validateDocument('character', character, errors, warnings);
+  validateDocument('animation library', animations, errors, warnings);
   validateSkeleton(character, animations, manifest, errors);
   validateCharacter(character, manifest, errors, warnings);
   validateAnimations(animations, manifest, errors, warnings);
@@ -60,6 +62,7 @@ export async function validateCharacterAssets(manifestPath = DEFAULT_MANIFEST) {
 
 async function inspectGlb(filePath) {
   const bytes = await readFile(filePath);
+  const spec = await validateGltfSpec(filePath);
   if (bytes.length < 20 || bytes.readUInt32LE(0) !== GLB_MAGIC) throw new Error(`${filePath} is not a GLB.`);
   if (bytes.readUInt32LE(4) !== 2) throw new Error(`${filePath} is not glTF 2.0.`);
   if (bytes.readUInt32LE(8) !== bytes.length) throw new Error(`${filePath} has an invalid declared length.`);
@@ -107,6 +110,7 @@ async function inspectGlb(filePath) {
     images,
     gpuTextureBytes,
     clips,
+    spec,
   };
 }
 
@@ -173,9 +177,14 @@ function unionPositionBounds(json, primitives) {
   return { min, max, height: max[1] - min[1] };
 }
 
-function validateDocument(label, asset, errors) {
+function validateDocument(label, asset, errors, warnings) {
   if (asset.json.asset?.version !== '2.0') errors.push(`${label}: glTF asset.version must be 2.0.`);
   if ((asset.json.scenes?.length ?? 0) !== 1) errors.push(`${label}: exactly one scene is required.`);
+  for (const issue of asset.spec.issues) {
+    const message = `${label} glTF ${issue.severityLabel}: ${formatGltfSpecIssue(issue)}`;
+    if (issue.severity === 0) errors.push(message);
+    else if (issue.severity === 1) warnings.push(message);
+  }
 }
 
 function validateSkeleton(character, animations, manifest, errors) {
@@ -293,6 +302,13 @@ function summarize(asset) {
     bounds: asset.positionBounds,
     skins: asset.skins.map((skin) => ({ name: skin.name, joints: skin.joints.length })),
     clips: asset.clips,
+    spec: {
+      validatorVersion: asset.spec.validatorVersion,
+      errors: asset.spec.errors,
+      warnings: asset.spec.warnings,
+      infos: asset.spec.infos,
+      hints: asset.spec.hints,
+    },
   };
 }
 

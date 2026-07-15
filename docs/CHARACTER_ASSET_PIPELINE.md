@@ -10,7 +10,28 @@ The original 36-part procedural model remains the safe fallback. It protects sta
 
 ## Audited tool route
 
-The repository's runtime supports Three.js `GLTFLoader`, and the checked-in GLBs now have a reproducible Node-based shipping gate. Run `npm run assets:character:validate` after every character or animation change. For deeper inspection and optimization, use the pinned glTF Transform CLI commands in `CHARACTER_RIG_AUDIT.md`. Blender is still required for topology, weight painting, bind-pose, and authored-animation changes.
+The repository's runtime supports Three.js `GLTFLoader`, and the checked-in GLBs now have a reproducible Node-based shipping gate. Run `npm run assets:character:validate` after every character or animation change. That gate now combines the Khronos glTF Validator's structural checks with the project's skeleton, animation, and resource-budget contract. Blender is still required for topology, weight painting, bind-pose, and authored-animation changes, but inspection, validation, and conservative optimization run entirely from Node.js.
+
+The pinned browser-asset commands are:
+
+```sh
+# Validate or inspect both canonical character assets.
+npm run assets:gltf:validate
+npm run assets:gltf:inspect
+
+# Validate or inspect any downloaded GLB before it enters public/assets.
+npm run assets:gltf:validate -- path/to/download.glb
+npm run assets:gltf:inspect -- path/to/download.glb
+
+# Create an uncompressed conservative candidate under artifacts/asset-candidates/.
+npm run assets:gltf:optimize -- path/to/input.glb
+
+# Explicit compression experiments; runtime decoder support must be added before shipping these.
+npm run assets:gltf:optimize -- path/to/input.glb --meshopt
+npm run assets:gltf:optimize -- path/to/input.glb --meshopt --ktx2
+```
+
+Optimization never writes to a canonical runtime path. It disables topology- and hierarchy-changing defaults for rig safety, writes a disposable candidate, and validates that result against the glTF specification. Promotion into `public/assets` remains a deliberate reviewed step followed by the character shipping gate and visual playtest.
 
 The production route is:
 
