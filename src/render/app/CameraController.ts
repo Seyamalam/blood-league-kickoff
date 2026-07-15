@@ -20,21 +20,9 @@ export class CameraController {
   private invertVerticalLook = false;
   private shakeScale = 1;
   private focusMode = false;
-  private photoMode: { yaw: number; pitch: number; distance: number; fov: number } | null = null;
 
   setFocusMode(active: boolean): void {
     this.focusMode = active;
-  }
-
-  setPhotoMode(state: { yaw: number; pitch: number; distance: number; fov: number } | null): void {
-    this.photoMode = state
-      ? {
-          yaw: Number.isFinite(state.yaw) ? state.yaw : 0,
-          pitch: THREE.MathUtils.clamp(state.pitch, -1.25, 1.25),
-          distance: THREE.MathUtils.clamp(state.distance, 2, 24),
-          fov: THREE.MathUtils.clamp(state.fov, 24, 90),
-        }
-      : null;
   }
 
   setSensitivity(value: number): void {
@@ -81,22 +69,6 @@ export class CameraController {
   }
 
   update(player: Vec3, dt: number): void {
-    if (this.photoMode) {
-      const horizontal = Math.cos(this.photoMode.pitch) * this.photoMode.distance;
-      this.target.set(player.x, player.y + 1.05, player.z);
-      this.desired.set(
-        player.x + Math.sin(this.photoMode.yaw) * horizontal,
-        player.y + 1.05 + Math.sin(this.photoMode.pitch) * this.photoMode.distance,
-        player.z + Math.cos(this.photoMode.yaw) * horizontal,
-      );
-      this.camera.position.lerp(this.desired, 1 - Math.exp(-18 * dt));
-      this.camera.lookAt(this.target);
-      if (Math.abs(this.camera.fov - this.photoMode.fov) > 0.01) {
-        this.camera.fov = this.photoMode.fov;
-        this.camera.updateProjectionMatrix();
-      }
-      return;
-    }
     if (this.focusMode) {
       const forwardX = -Math.sin(this.yaw) * Math.cos(this.pitch);
       const forwardZ = -Math.cos(this.yaw) * Math.cos(this.pitch);
@@ -160,7 +132,8 @@ export class CameraController {
   }
 
   aimDirection(): Vec3 {
-    this.camera.getWorldDirection(this.aim);
+    const horizontal = Math.cos(this.pitch);
+    this.aim.set(-Math.sin(this.yaw) * horizontal, -Math.sin(this.pitch), -Math.cos(this.yaw) * horizontal);
     this.aim.y = THREE.MathUtils.clamp(this.aim.y, -0.08, 0.2);
     this.aim.normalize();
     return { x: this.aim.x, y: this.aim.y, z: this.aim.z };

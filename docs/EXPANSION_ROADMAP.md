@@ -32,7 +32,7 @@ The larger field and stadium-variety pass creates room for deeper systems. These
 17. Add a branching campaign map with rival clubs, transfer choices, injuries, sponsors, and cup finals.
 18. Add ghost replays and asynchronous local challenge ghosts before attempting verified online competition.
 19. Add cosmetic kit, boot, trail, goal-explosion, banner, and stadium-theme unlocks.
-20. Add a replay/photo mode with free camera, slow motion, match highlights, and exportable clips.
+20. Turn the bounded highlight event buffer into automatic post-match highlight clips without changing the live gameplay camera.
 
 ## Implemented expansion slices
 

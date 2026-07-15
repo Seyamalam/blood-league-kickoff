@@ -6,6 +6,7 @@ export { WeaponExpansionSystem } from './WeaponExpansionSystem';
 export { FootballArmorySystem } from './FootballArmorySystem';
 export { MAX_SECONDARY_BOSS_DAMAGE_PER_STEP, sumSecondaryBossDamage } from './secondaryBossDamage';
 export { selectAimAssistTarget, steerAimDirection } from './aimAssist';
+export { resolvePlayerAim, type PlayerAimSnapshot } from './playerAim';
 export type { AimAssistCandidate, AimAssistTarget, AimVector } from './aimAssist';
 export {
   activateFocusKick,

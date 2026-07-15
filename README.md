@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Stable v0.13 character-visuals release       |
+| Status    | Stable v0.13.1 camera and aiming patch       |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -66,10 +66,6 @@ The playable pitch is now 136×88 world metres—roughly 68% more surface than t
 ### Settings
 
 ![Persistent graphics, frame-rate, audio, motion, accessibility, and camera settings](docs/screenshots/settings-v012.jpg)
-
-### Photo mode
-
-![Photo mode with orbit, zoom, exposure, filters, and clean capture](docs/screenshots/photo-mode-v012.jpg)
 
 ### Career
 
@@ -146,7 +142,6 @@ Each stadium now has four mastery objectives—debut, victories, goals, and enem
 | Focus Kick ultimate   | `F`                                                                                            | Implemented with first-person slow-time aiming            |
 | Character ultimate    | `Q`                                                                                            | Unique signature ability for each of six characters       |
 | Pause                 | `Esc`                                                                                          | Implemented; also activates when the game loses focus     |
-| Photo mode            | Pause → `PHOTO MODE`; arrows orbit, wheel zooms, `H` hides controls                            | Implemented with PNG capture                              |
 | Settings              | Title-screen or in-game `⚙ SETTINGS` button                                                    | Implemented and persistent                                |
 | Gamepad               | Sticks move/aim, `RT` kick, `B` pass, right-stick click lob, `LT` recall, `A` dash, Menu pause | Implemented with sensitivity and vibration settings       |
 
@@ -251,7 +246,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add ground/lob passes, enemy possession tackles, live goalkeeper shot prediction, and missed-dive punish windows
 - [x] Formalize eleven enemy combat roles with stable threat/silhouette metadata and stronger miniboss identities
 - [x] Add a deterministic 24-minute production-run plan and serializable eight-club tournament bracket foundation
-- [x] Add replay-highlight recording and an integrated photo mode with camera/exposure/filter/capture controls
+- [x] Add bounded replay-highlight event recording for future match presentation
 - [x] Add shake intensity, reduced-motion, and damage-number visibility settings
 - [x] Swept whole-ball goal detection prevents tunneling and requires the complete ball to cross the goal line inside the physical frame
 - [x] Special goalkeeper blocker protects the active scoring goal with dedicated state, elite presentation, and interception behavior
@@ -400,10 +395,11 @@ Planned release line:
 | `v0.9.0-rc.1`     | Feature-complete release candidate                          |
 | `v0.10.0-alpha.1` | Larger fields, stadium variety, and humanoid presentation   |
 | `v0.11.0-alpha.1` | Animated striker, rival clubs, living arenas, and mastery   |
-| `v0.12.0-alpha.1` | Football systems, tournament foundation, and photo mode     |
+| `v0.12.0-alpha.1` | Football systems, tournament foundation, and match polish   |
 | `v0.13.0-alpha.1` | Shared-rig variants and original-hero production foundation |
 | `v0.13.0-alpha.2` | Verified all-platform release checkpoint                    |
 | `v0.13.0`         | Stable all-platform character-visuals milestone             |
+| `v0.13.1`         | Live chase-camera and synchronized aiming repair            |
 | `v1.0.0`          | Jam submission freeze                                       |
 
 Releases are snapshots, not permission to skip validation. The final source and itch.io artifacts must correspond to the frozen submission revision.

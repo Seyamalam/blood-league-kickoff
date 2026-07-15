@@ -47,9 +47,8 @@ import {
   CharacterUltimateSystem,
   CombatFeedbackSystem,
   FootballArmorySystem,
-  selectAimAssistTarget,
   sumSecondaryBossDamage,
-  steerAimDirection,
+  resolvePlayerAim,
   stepFocusKick,
   type FocusKickCombatAction,
   type CombatTarget,
@@ -161,7 +160,6 @@ import { SettingsOverlay } from './ui/SettingsOverlay';
 import { TutorialPrompt } from './ui/TutorialPrompt';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 import { DifficultyOverlay } from './ui/DifficultyOverlay';
-import { PhotoModeOverlay } from './ui/PhotoModeOverlay';
 import { ReplayHighlightBuffer } from './game/replay';
 
 const FIXED_STEP = 1 / 60;
@@ -355,32 +353,6 @@ async function bootstrap(): Promise<void> {
   });
   const pauseOverlay = new PauseOverlay(root);
   const replayHighlights = new ReplayHighlightBuffer();
-  const photoModeOverlay = new PhotoModeOverlay(root, undefined, {
-    onStateChange: (photo) => {
-      cameraController.setPhotoMode(photo);
-      renderer.toneMappingExposure = photo.exposure;
-      root.dataset.photoFilter = photo.filter;
-      root.classList.toggle('photo-clean-capture', photo.hideUi);
-    },
-    onCapture: () => {
-      renderer.render(scene, cameraController.camera);
-      renderer.domElement.toBlob((blob) => {
-        if (!blob) return;
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `blood-league-highlight-${Date.now()}.png`;
-        link.click();
-        window.setTimeout(() => URL.revokeObjectURL(link.href), 1_000);
-      }, 'image/png');
-    },
-    onExit: () => {
-      cameraController.setPhotoMode(null);
-      renderer.toneMappingExposure = 1;
-      root.dataset.photoFilter = 'none';
-      root.classList.remove('photo-clean-capture');
-      pauseOverlay.show();
-    },
-  });
   const resultsOverlay = new ResultsOverlay(root);
   const halftimeOverlay = new HalftimeOverlay(root);
   const announcement = new MatchAnnouncement(root);
@@ -896,7 +868,6 @@ async function bootstrap(): Promise<void> {
     careerOverlay.hide();
     curseOverlay.reset();
     pauseOverlay.hide();
-    photoModeOverlay.hide();
     replayHighlights.clear();
     resultsOverlay.reset();
     hud.reset();
@@ -1047,7 +1018,6 @@ async function bootstrap(): Promise<void> {
     curseOverlay.reset();
     difficultyOverlay.reset();
     pauseOverlay.hide();
-    photoModeOverlay.hide();
     replayHighlights.clear();
     state.phase = 'ready';
     selectedCharacterId = profileStore.value.selectedCharacterId;
@@ -1095,11 +1065,6 @@ async function bootstrap(): Promise<void> {
         input.requestPointerLock();
       },
       onSettings: openSettings,
-      onPhotoMode: () => {
-        pauseOverlay.hide();
-        photoModeOverlay.controller.update({ yaw: cameraController.yaw, pitch: cameraController.pitch });
-        photoModeOverlay.show();
-      },
       getTelemetry: () => runTelemetry.snapshot(),
       onRestart: restart,
       onMainMenu: returnToMenu,
@@ -1139,7 +1104,7 @@ async function bootstrap(): Promise<void> {
       if (pauseOverlay.isVisible) pauseOverlay.toggle();
       else showPause();
     }
-    if (!photoModeOverlay.isVisible) cameraController.applyMouseDelta(mouse.x, mouse.y);
+    cameraController.applyMouseDelta(mouse.x, mouse.y);
     focusKick = stepFocusKick(focusKick, frameTime);
     if (
       input.consumeFocusKick() &&
@@ -1174,6 +1139,13 @@ async function bootstrap(): Promise<void> {
       !settingsOverlay.isVisible
     )
       restart();
+    refreshCombatTargets();
+    const playerAim = resolvePlayerAim(
+      state.player.position,
+      cameraController.aimDirection(),
+      secondaryTargets,
+      playerSettings.aimAssistStrength,
+    );
     const kick = input.consumeKick();
     if (
       state.phase === 'playing' &&
@@ -1181,28 +1153,11 @@ async function bootstrap(): Promise<void> {
       !settingsOverlay.isVisible &&
       !careerOverlay.isVisible &&
       !pauseOverlay.isVisible &&
-      !photoModeOverlay.isVisible &&
       !halftimeOverlay.isVisible &&
       kick
     ) {
-      const rawAim = cameraController.aimDirection();
-      refreshCombatTargets();
-      const aimTarget = selectAimAssistTarget(
-        state.player.position,
-        rawAim,
-        secondaryTargets,
-        playerSettings.aimAssistStrength,
-      );
-      const assistedHorizontal = aimTarget
-        ? steerAimDirection(rawAim, aimTarget.direction, playerSettings.aimAssistStrength)
-        : { x: rawAim.x, z: rawAim.z };
-      const horizontalScale = Math.sqrt(Math.max(0, 1 - rawAim.y * rawAim.y));
       const focusShot = consumeFocusKickShot(focusKick);
-      const aimDirection = {
-        x: assistedHorizontal.x * horizontalScale,
-        y: rawAim.y,
-        z: assistedHorizontal.z * horizontalScale,
-      };
+      const aimDirection = playerAim.direction;
       const result =
         kick.technique === 'shot'
           ? physics.kick(
@@ -1225,7 +1180,7 @@ async function bootstrap(): Promise<void> {
         if (matchModifierEffects.multiballActive) {
           secondaryWeapons.triggerMultiBall({
             origin: state.player.position,
-            direction: rawAim,
+            direction: aimDirection,
             baseDamage: 1 + result.charge,
             modifiers: {
               ...progression.modifiers,
@@ -1248,13 +1203,13 @@ async function bootstrap(): Promise<void> {
         combatFeedback.addImpact({
           kind: 'kick',
           damage: result.charge * 20,
-          direction: rawAim,
+          direction: aimDirection,
           perfect: result.perfectVolley,
         });
         runTelemetry.recordKick();
         if (result.charge >= 0.72) {
           weaponExpansion.triggerHolyPenaltyZone(state.player.position, progression.modifiers);
-          footballArmory.triggerHeader(state.player.position, rawAim, progression.modifiers);
+          footballArmory.triggerHeader(state.player.position, aimDirection, progression.modifiers);
         }
         if (focusShot.empowered) {
           focusKick = focusShot.state;
@@ -1271,7 +1226,7 @@ async function bootstrap(): Promise<void> {
             label: 'Perfect bicycle volley',
             focus: physics.ballPosition,
           });
-          footballArmory.triggerBicycleKick(state.player.position, rawAim, result.charge);
+          footballArmory.triggerBicycleKick(state.player.position, aimDirection, result.charge);
           runTelemetry.recordPerfectVolley();
           audio.playVolley();
           bridge.volleyBurst(physics.ballPosition, 1 + result.charge * 0.4);
@@ -1305,18 +1260,16 @@ async function bootstrap(): Promise<void> {
         !upgradeOverlay.isVisible &&
         !settingsOverlay.isVisible &&
         !pauseOverlay.isVisible &&
-        !photoModeOverlay.isVisible &&
         !halftimeOverlay.isVisible;
       let ultimateBossDamageThisStep = 0;
       let ultimateMinibossDamageThisStep = 0;
       if (simulationActive) {
         const healthBeforeUpdate = state.player.health;
         refreshCombatTargets();
-        const aim = cameraController.aimDirection();
         const ultimateStep = characterUltimate.step({
           dt: FIXED_STEP,
           playerPosition: state.player.position,
-          facingDirection: aim,
+          facingDirection: playerAim.direction,
           targets: ultimateTargets,
           activate: ultimateRequested,
         });
@@ -1387,7 +1340,7 @@ async function bootstrap(): Promise<void> {
         updatePlayer(
           state,
           movement,
-          cameraController.yaw,
+          playerAim.facingYaw,
           FIXED_STEP,
           movementSpeedMultiplier *
             momentumSpeedMultiplier *
@@ -2240,7 +2193,7 @@ async function bootstrap(): Promise<void> {
     root.style.setProperty('--combat-pulse', feedbackState.chromaticPulse.toFixed(3));
     aimGuide.sync(
       renderPlayerPosition,
-      cameraController.aimDirection(),
+      playerAim.direction,
       state.phase === 'playing' &&
         !upgradeOverlay.isVisible &&
         !settingsOverlay.isVisible &&
@@ -2399,7 +2352,6 @@ async function bootstrap(): Promise<void> {
     upgradeOverlay.dispose();
     settingsOverlay.dispose();
     pauseOverlay.dispose();
-    photoModeOverlay.dispose();
     resultsOverlay.dispose();
     careerOverlay.dispose();
     curseOverlay.dispose();

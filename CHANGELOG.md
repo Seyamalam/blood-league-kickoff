@@ -2,6 +2,11 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.13.1 — 2026-07-15
+
+- Removed the complete Photo Mode camera/UI/capture surface after its hidden bootstrap state was found to override the live chase camera.
+- Unified character facing, the world-space red aim guide, kicks, passes, and directional abilities around one live assisted aim direction.
+
 ## v0.13.0 — 2026-07-15
 
 - Promoted the verified character-visuals milestone to the stable release channel so GitHub's Latest Release points to the current game instead of `v0.7.1`.
@@ -30,7 +35,7 @@ Notable project changes are recorded here. Versions follow semantic milestone nu
 - Formalized all eleven ordinary enemies as readable combat roles with threat ratings and stable silhouette signatures; strengthened both miniboss silhouettes.
 - Added a deterministic 24-minute production-match plan and a serializable eight-club tournament bracket foundation without replacing the current faster standard-run pacing.
 - Added adaptive procedural match-audio state for pressure, crowd momentum, boss phases, pausing, goals, and outcomes.
-- Added Pause-menu Photo Mode with orbit, zoom, FOV, exposure, color filters, clean captures, and a bounded replay-highlight event buffer.
+- Added a bounded replay-highlight event buffer for future match presentation.
 - Added screen-shake intensity, reduced-motion, and damage-number visibility settings with schema migration and responsive UI.
 
 ## v0.11.0-alpha.1 — 2026-07-14
