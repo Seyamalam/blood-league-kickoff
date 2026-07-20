@@ -22,6 +22,9 @@ describe('voxel player variants', () => {
     expect(rig.root.getObjectByName('player-variant-tower-shoulder-left')).toBeInstanceOf(THREE.Mesh);
     expect(rig.root.getObjectByName('player-variant-engine-shard-canister')).toBeInstanceOf(THREE.Mesh);
     expect(rig.root.getObjectByName('player-variant-guardian-keeper-helm')).toBeInstanceOf(THREE.Mesh);
+    expect(rig.root.getObjectByName('player-variant-maestro-swept-crown')?.parent?.parent).toBe(rig.head);
+    expect(rig.root.getObjectByName('player-variant-maestro-scarf')?.parent?.parent).toBe(rig.torso);
+    expect(rig.root.getObjectByName('player-variant-guardian-keeper-helm')?.parent?.parent).toBe(rig.head);
     variants.dispose();
     rig.dispose();
   });

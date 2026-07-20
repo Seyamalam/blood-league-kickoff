@@ -58,7 +58,8 @@ const STATE_DEFINITIONS: Readonly<Record<VoxelAnimationState, StateDefinition>> 
   strafeLeft: { priority: 11, duration: 0.68, oneShot: false },
   strafeRight: { priority: 11, duration: 0.68, oneShot: false },
   chase: { priority: 12, duration: 0.58, oneShot: false },
-  celebration: { priority: 35, duration: 1.4, oneShot: true },
+  // Goal outcomes must replace the technique that produced the goal.
+  celebration: { priority: 70, duration: 1.4, oneShot: true },
   attack: { priority: 45, duration: 0.52, oneShot: true },
   groundPass: { priority: 50, duration: 0.56, oneShot: true },
   lobPass: { priority: 52, duration: 0.72, oneShot: true },

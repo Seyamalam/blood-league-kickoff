@@ -193,11 +193,14 @@ export class PlayerCharacterAsset {
 
   playFootballAnimation(state: FootballAnimationState): FootballAnimationResolution | undefined {
     if (this.disposed) return undefined;
+    const previousState = this.animationController.activeState;
     const played = this.animationController.play(state as VoxelAnimationState);
     const resolution = voxelResolution(state);
     if (!played) return resolution;
+    if (previousState !== state) this.pendingContacts.length = 0;
     const presentation = getFootballAnimationPresentation(state);
     if (presentation.contactAt !== undefined && presentation.contactSocket !== undefined) {
+      if (this.pendingContacts.some((pending) => pending.state === state)) return resolution;
       const duration = VOXEL_STATE_DURATION[state] ?? 0.7;
       this.pendingContacts.push({
         state,
@@ -229,6 +232,10 @@ export class PlayerCharacterAsset {
   private updateContactEvents(dt: number): void {
     for (let index = this.pendingContacts.length - 1; index >= 0; index -= 1) {
       const pending = this.pendingContacts[index]!;
+      if (this.animationController.activeState !== pending.state) {
+        this.pendingContacts.splice(index, 1);
+        continue;
+      }
       pending.remaining -= Math.max(0, dt);
       if (pending.remaining > 0) continue;
       this.pendingContacts.splice(index, 1);

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PlayerCharacterAsset,
   locomotionClipFor,
   locomotionStateFor,
   rigDiagnosticsRequested,
   techniqueAnimationFor,
 } from './PlayerCharacterAsset';
+import { createVoxelHumanoid } from './VoxelHumanoid';
 import {
   FOOTBALL_ANIMATION_STATES,
   resolveFootballAnimation,
@@ -47,6 +49,32 @@ describe('football technique presentation', () => {
     expect(techniqueAnimationFor('header')).toBe('header');
     expect(techniqueAnimationFor('slide-tackle')).toBe('slideTackle');
     expect(techniqueAnimationFor('bicycle')).toBe('bicycleKick');
+  });
+});
+
+describe('voxel contact lifecycle', () => {
+  it('cancels a technique contact when a stronger state interrupts it', () => {
+    const rig = createVoxelHumanoid();
+    const asset = new PlayerCharacterAsset(rig);
+    asset.load();
+
+    asset.playTechnique('kick');
+    asset.playReaction('damage');
+    asset.update(0.5, {
+      position: { x: 0, y: 0, z: 0 },
+      previousPosition: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0, z: 0 },
+      facing: 0,
+      health: 100,
+      maxHealth: 100,
+      invulnerability: 0,
+      dashCooldown: 0,
+      dashTime: 0,
+      dashDirection: { x: 0, y: 0, z: 0 },
+    });
+
+    expect(asset.drainContactEvents()).toEqual([]);
+    asset.dispose();
   });
 });
 

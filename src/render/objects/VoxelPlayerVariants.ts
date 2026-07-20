@@ -87,14 +87,15 @@ function addVariantIdentity(
   const dark = material(CHARACTER_VARIANT_VISUALS[id].hairColor, resources, 0.82);
 
   if (id === 'maestro') {
-    block(root, 'maestro-swept-crown', [0.38, 0.12, 0.34], dark, resources, [-0.08, 2.48, 0]);
-    block(
+    attachBlock(rig.head, root, 'maestro-swept-crown', [0.38, 0.12, 0.34], dark, resources, [-0.08, 0.46, 0]);
+    attachBlock(
+      rig.torso,
       root,
       'maestro-scarf',
       [0.12, 0.58, 0.08],
       accent,
       resources,
-      [-0.28, 1.72, -0.15],
+      [-0.28, 0.36, -0.15],
       [0.18, 0, 0.24],
     );
     attachBlock(
@@ -107,13 +108,14 @@ function addVariantIdentity(
       [0, -0.2, 0],
     );
   } else if (id === 'breakaway') {
-    block(
+    attachBlock(
+      rig.head,
       root,
       'breakaway-speed-crest',
       [0.12, 0.3, 0.34],
       accent,
       resources,
-      [0, 2.58, -0.02],
+      [0, 0.56, -0.02],
       [0, 0, -0.28],
     );
     attachBlock(
@@ -153,33 +155,36 @@ function addVariantIdentity(
       resources,
       [0, -0.06, 0],
     );
-    block(root, 'tower-iron-crop', [0.42, 0.13, 0.36], dark, resources, [0, 2.48, 0]);
+    attachBlock(rig.head, root, 'tower-iron-crop', [0.42, 0.13, 0.36], dark, resources, [0, 0.46, 0]);
   } else if (id === 'finisher') {
-    block(
+    attachBlock(
+      rig.head,
       root,
       'finisher-widows-peak',
       [0.26, 0.16, 0.36],
       dark,
       resources,
-      [0, 2.49, 0.02],
+      [0, 0.47, 0.02],
       [0, 0, Math.PI / 4],
     );
-    block(
+    attachBlock(
+      rig.torso,
       root,
       'finisher-collar-left',
       [0.1, 0.3, 0.12],
       accent,
       resources,
-      [-0.18, 1.95, 0.03],
+      [-0.18, 0.59, 0.03],
       [0, 0, -0.42],
     );
-    block(
+    attachBlock(
+      rig.torso,
       root,
       'finisher-collar-right',
       [0.1, 0.3, 0.12],
       accent,
       resources,
-      [0.18, 1.95, 0.03],
+      [0.18, 0.59, 0.03],
       [0, 0, 0.42],
     );
   } else if (id === 'engine') {
@@ -211,7 +216,15 @@ function addVariantIdentity(
       [0, -0.34, 0],
     );
   } else {
-    block(root, 'guardian-keeper-helm', [0.54, 0.3, 0.5], primary, resources, [0, 2.42, -0.02]);
+    attachBlock(
+      rig.head,
+      root,
+      'guardian-keeper-helm',
+      [0.54, 0.3, 0.5],
+      primary,
+      resources,
+      [0, 0.4, -0.02],
+    );
     attachBlock(
       rig.leftLowerArm,
       root,
@@ -241,6 +254,7 @@ function attachBlock(
   surface: THREE.Material,
   resources: OwnedVariantResources,
   position: readonly [number, number, number],
+  rotation: readonly [number, number, number] = [0, 0, 0],
 ): void {
   const anchor = new THREE.Group();
   anchor.name = `player-variant-anchor-${name}`;
@@ -248,7 +262,7 @@ function attachBlock(
   anchor.visible = false;
   joint.add(anchor);
   resources.jointAnchors.add(anchor);
-  const piece = block(anchor, name, size, surface, resources, position);
+  const piece = block(anchor, name, size, surface, resources, position, rotation);
   piece.userData.characterVariant = variantRoot.userData.characterVariant;
   piece.userData.jointMounted = true;
 }

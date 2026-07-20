@@ -53,6 +53,14 @@ describe('VoxelAnimationController', () => {
     expect(controller.state).toBe('damage');
   });
 
+  it('lets a goal celebration replace the scoring technique', () => {
+    const controller = new VoxelAnimationController(makeRig());
+
+    expect(controller.play('bicycleKick')).toBe(true);
+    expect(controller.play('celebration')).toBe(true);
+    expect(controller.state).toBe('celebration');
+  });
+
   it('recovers from a completed one-shot into unlocked idle motion', () => {
     const rig = makeRig();
     const controller = new VoxelAnimationController(rig);
