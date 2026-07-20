@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import {
   TUTORIAL_COMPLETION_CELEBRATION,
   TUTORIAL_RUN_TIME_LIMIT,
+  capTutorialDamage,
   createTutorialRunState,
   tutorialAssistsFor,
   updateTutorialRun,
 } from './tutorialRun';
 
 describe('guided tutorial run', () => {
+  it('prevents damage from reducing training health below the safety floor', () => {
+    expect(capTutorialDamage(100, 12)).toBe(12);
+    expect(capTutorialDamage(35, 12)).toBe(5);
+    expect(capTutorialDamage(30, 12)).toBe(0);
+  });
+
   it('maps lesson completions to bounded assists', () => {
     expect(tutorialAssistsFor(['movement', 'dash', 'ultimate'])).toEqual([
       'prepare-ultimate',

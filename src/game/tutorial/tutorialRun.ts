@@ -2,6 +2,11 @@ import type { TutorialStepId } from './types';
 
 export const TUTORIAL_RUN_TIME_LIMIT = 180;
 export const TUTORIAL_COMPLETION_CELEBRATION = 2.4;
+export const TUTORIAL_MINIMUM_HEALTH = 30;
+
+export function capTutorialDamage(currentHealth: number, incomingDamage: number): number {
+  return Math.max(0, Math.min(incomingDamage, currentHealth - TUTORIAL_MINIMUM_HEALTH));
+}
 
 export type TutorialAssist = 'prepare-ultimate' | 'spawn-progression-shards';
 export type TutorialRunOutcome = 'active' | 'completed' | 'time-expired';

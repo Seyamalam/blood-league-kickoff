@@ -14,6 +14,9 @@ app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('high-dpi-support', '1');
 
 if (process.platform === 'win32') {
+  // Request the discrete adapter on hybrid-GPU laptops before Chromium starts.
+  // WebGL also requests powerPreference: 'high-performance' in the renderer.
+  app.commandLine.appendSwitch('force_high_performance_gpu');
   app.setAppUserModelId('games.bloodleague.kickoff');
 }
 

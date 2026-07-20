@@ -130,6 +130,7 @@ import {
 } from './game/encounters';
 import { GoalComboSystem } from './game/scoring';
 import {
+  capTutorialDamage,
   createTutorialRunState,
   tutorialAssistsFor,
   TutorialTracker,
@@ -542,7 +543,9 @@ async function bootstrap(): Promise<void> {
       bridge.volleyBurst(state.player.position, 1.15);
       input.rumble(0.42, 95);
     }
-    return barrier.remainingDamage;
+    return selectedRunMode === 'tutorial'
+      ? capTutorialDamage(state.player.health, barrier.remainingDamage)
+      : barrier.remainingDamage;
   };
   const damagePlayerFromEncounter = (rawDamage: number): void => {
     if (rawDamage <= 0 || state.player.invulnerability > 0) return;
@@ -1538,7 +1541,6 @@ async function bootstrap(): Promise<void> {
         );
         if (selectedRunMode === 'tutorial') {
           state.player.health = Math.max(30, state.player.health);
-          state.player.invulnerability = Math.max(0.12, state.player.invulnerability);
         }
         for (const enemy of state.enemies) {
           if (difficultyAdjustedEnemyIds.has(enemy.id)) continue;
