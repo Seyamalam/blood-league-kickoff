@@ -2,15 +2,25 @@
 
 ## Current shipping character
 
-The preferred runtime player is now the CC0 Quaternius Universal Base Characters superhero-male mesh paired with the compatible CC0 Universal Animation Library. `PlayerCharacterAsset.ts` asynchronously loads the optimized skinned GLBs, plays idle/jog/sprint/roll/technique clips, and never owns gameplay position or collision.
+The shipping player is an original articulated voxel athlete authored entirely in TypeScript and Three.js. `VoxelHumanoid.ts` builds the shared joint hierarchy, block anatomy, face, kit, boots, and attachment sockets from cached box geometry. `VoxelPlayerVariants.ts` adds six animation-safe identity silhouettes, while `VoxelAnimationController.ts` supplies deterministic locomotion, football techniques, reactions, outcomes, and enemy-compatible actions.
 
-This imported character is **not AI-generated** and is not presented as a real footballer or club identity. Its author, source downloads, included licenses, transformations, and hashes are recorded in `ASSET_CREDITS.md`.
+The runtime character is project-created, is not presented as a real footballer or club identity, and does not copy Minecraft textures, proportions, characters, or branding. It uses an original block-football palette and equipment vocabulary specific to Blood League.
 
-The original 36-part procedural model remains the safe fallback. It protects startup and keeps the game playable if a GLB fails validation or loading.
+Character creation is synchronous and requires no network/model load, animation retargeting, skinning, or DCC application. Simulation remains authoritative for position, facing, collision, damage, and ball contact. The render rig only owns local joint presentation.
 
-## Audited tool route
+## Current voxel workflow
 
-The repository's runtime supports Three.js `GLTFLoader`, and the checked-in GLBs now have a reproducible Node-based shipping gate. Run `npm run assets:character:validate` after every character or animation change. That gate now combines the Khronos glTF Validator's structural checks with the project's skeleton, animation, and resource-budget contract. Blender is still required for topology, weight painting, bind-pose, and authored-animation changes, but inspection, validation, and conservative optimization run entirely from Node.js.
+1. Adjust shared anatomy and sockets in `VoxelHumanoid.ts`.
+2. Keep pivot groups at anatomical attachment points; meshes remain children offset from those pivots.
+3. Add character-specific block equipment in `VoxelPlayerVariants.ts` and mount moving pieces to rig joints.
+4. Add or tune semantic poses in `VoxelAnimationController.ts` without translating the world-space root.
+5. Preserve `FootballAnimationContract.ts` contact/recovery metadata so presentation never delays gameplay.
+6. Run the focused rig, animation, variant, player, enemy, and RenderBridge tests.
+7. Run a production WebGL playtest and inspect the Career Codex preview before publishing.
+
+## Optional audited GLB route
+
+The previously integrated Quaternius files remain checked in with a reproducible Node-based shipping gate, but the player, Career preview, and ordinary enemies do not load them. Run `npm run assets:character:validate` when changing those reference assets or evaluating a future GLB replacement. The gate combines the Khronos glTF Validator with the repository's skeleton, animation, and resource-budget contract.
 
 The pinned browser-asset commands are:
 
@@ -47,24 +57,24 @@ The production route is:
 ## Runtime contract for a future GLB
 
 - Canonical machine-readable contract: `src/render/assets/character-asset-manifest.json`
-- Current character: `public/assets/vendor/quaternius/night-striker.glb`
-- Current animations: `public/assets/vendor/quaternius/universal-animation-library.glb`
+- Audited reference character: `public/assets/vendor/quaternius/night-striker.glb`
+- Audited reference animations: `public/assets/vendor/quaternius/universal-animation-library.glb`
 - Required runtime clips: `Idle_Loop`, `Jog_Fwd_Loop`, `Sprint_Loop`, `Roll`, `Punch_Cross`
 - Scene root: `Armature`; exact 65-joint names and socket mappings are defined by the manifest.
 - Character colorways must use shared material slots rather than six duplicated models.
 - Collision remains simulation-owned; imported render meshes never become authoritative colliders.
-- Loading must be asynchronous and swap only after validation. The current procedural humanoid remains visible until a valid model is ready.
-- A load or validation failure must log once, retain the fallback, and never block kickoff.
+- Any future loading must be asynchronous and swap only after validation. The current voxel humanoid remains visible until a valid model is ready.
+- A load or validation failure must log once, retain the voxel character, and never block kickoff.
 
 The detailed measured baseline, football-animation gap matrix, six-variant compatibility rules, and reproducible commands are recorded in `CHARACTER_RIG_AUDIT.md`.
 
 ## Browser-only animation presentation
 
-`CharacterAnimationController.ts` keeps animation decisions in the render layer. It provides priority-safe crossfades so locomotion cannot cancel techniques, damage, knockdowns, or terminal poses. One-shots recover from either Three.js `AnimationMixer` completion or a normalized presentation-time fallback; gameplay timing and movement remain simulation-owned.
+`VoxelAnimationController.ts` keeps animation decisions in the render layer. It applies deterministic local joint poses and priority locks so locomotion cannot cancel techniques, damage, knockdowns, or terminal poses. One-shots recover on bounded presentation timers; gameplay timing and movement remain simulation-owned.
 
-Additive overlays are opt-in and deliberately strict. Only clips exported with an `Additive_` prefix or `_Additive` suffix are converted with Three.js `AnimationUtils.makeClipAdditive`. The runtime rejects ordinary full-body clips as overlays to avoid applying locomotion or root transforms twice.
+The current voxel controller deliberately rejects imported additive clip names. New overlays should be authored as explicit bounded joint offsets rather than full-body animation layers that could double-transform the character.
 
-Rig inspection is available without Blender in a development build by opening `/?rigDebug=1`. Code-driven tools can instead construct `PlayerCharacterAsset` with `{ showSkeleton: true }`, or call `setRigDiagnosticsEnabled(true)` after the GLB loads. This creates a render-only Three.js `SkeletonHelper`; it is disabled by default and is never part of production simulation or collision.
+Rig inspection is available without Blender in a development build by opening `/?rigDebug=1`. Code-driven tools can instead construct `PlayerCharacterAsset` with `{ showSkeleton: true }`, or call `setRigDiagnosticsEnabled(true)`. This creates render-only joint bounds; it is disabled by default and is never part of production simulation or collision.
 
 ## Provenance gate
 

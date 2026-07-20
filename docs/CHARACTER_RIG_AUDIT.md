@@ -5,7 +5,9 @@ Gate: `npm run assets:character:validate`
 
 ## Result
 
-The current Quaternius character and animation library **pass the runtime shipping gate** and use an identical 65-joint skeleton. They are safe as a licensed visual baseline and fallback-compatible rig. They are not yet the final original six-character art set.
+Current runtime note (2026-07-20): the shipping player, Career preview, and ordinary enemies now use the original code-authored voxel rig. The Quaternius character and animation library audited below are retained as non-runtime reference assets for provenance and future GLB evaluation.
+
+The Quaternius character and animation library **pass the archived GLB shipping gate** and use an identical 65-joint skeleton. They remain safe as a licensed visual baseline, but they are not the active character renderer.
 
 | Measurement            |         Current character |        Shipping gate |       Production target | Result                   |
 | ---------------------- | ------------------------: | -------------------: | ----------------------: | ------------------------ |

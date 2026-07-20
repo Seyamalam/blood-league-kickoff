@@ -85,7 +85,7 @@ The roster expresses recognizable football play styles without using a real play
 | The Engine    | Relentless Runner   | Pickup range and pitch coverage | Lower starting damage    |
 | The Guardian  | Defensive Anchor    | Damage resistance               | Lower kick power         |
 
-Definitions, affinities, safe modifiers, selection, unlock presentation, and selected-character run startup are implemented and test covered. Original models/portraits remain visual polish.
+Definitions, affinities, safe modifiers, selection, unlock presentation, and selected-character run startup are implemented and test covered. One original articulated voxel skeleton now drives all six hero silhouettes and the live Career preview; code-driven poses cover locomotion, football techniques, reactions, and outcomes without changing simulation state.
 
 ## Enemies
 

@@ -93,6 +93,9 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Rebuild stadium presentation safely at runtime with complete geometry/material disposal.
 - [x] `P1` Add Momentum Gates and a wide-field Blood Moon formation so the larger pitch changes play.
 - [x] `P1` Replace the crude player placeholder with a detailed articulated original humanoid and six character variants.
+- [x] `P1` Replace the smooth runtime player with an original modular voxel rig and remove GLB loading from gameplay and the Career preview.
+- [x] `P1` Convert ordinary-enemy near/mid/far anatomy to the same block-built visual language and retire the imported nearest-enemy pool.
+- [x] `P1` Add nineteen deterministic voxel animation states with priority locks, contact sockets, one-shot recovery, and terminal poses.
 - [x] `P1` Define the production GLB/rig/animation/LOD/provenance acceptance contract.
 - [x] `P1` Import and optimize an audited CC0 skinned humanoid and compatible authored animation library while preserving the procedural fallback.
 - [x] `P1` Define the original no-likeness hero turnaround, kit, palette, face, equipment, modular-mesh, and shared-rig production package.

@@ -97,7 +97,7 @@ The passive definitions, modifier calculations, mixed offers, four original icon
 | The Engine    | Relentless Runner   | Pickup range and movement      | Lower starting damage    |
 | The Guardian  | Defensive Anchor    | Damage resistance              | Lower kick power         |
 
-These are original gameplay archetypes, not representations of real footballers. Typed immutable definitions, safe modifier bounds, persistent selection, unlock/profile presentation, and live-run startup are implemented; original models/portraits remain future polish.
+These are original gameplay archetypes, not representations of real footballers. Typed immutable definitions, safe modifier bounds, persistent selection, unlock/profile presentation, and live-run startup are implemented. All six now share an original articulated voxel skeleton with distinct block-built kits, head/equipment silhouettes, palettes, and deterministic code-driven football animation.
 
 Target paths include lightning, frost, black hole, multiball, holy zones, dash shockwaves, and goalkeeper shields.
 

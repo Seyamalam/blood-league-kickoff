@@ -1,57 +1,76 @@
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { CHARACTER_IDS } from '../../game/characters';
 import { RenderBridge } from './RenderBridge';
 
-function playerMeshes(scene: THREE.Scene): THREE.Mesh[] {
+function playerRoot(scene: THREE.Scene): THREE.Group {
   const player = scene.getObjectByName('player-striker');
   expect(player).toBeInstanceOf(THREE.Group);
-  return player!.children.filter((child): child is THREE.Mesh => child instanceof THREE.Mesh);
+  return player as THREE.Group;
+}
+
+function playerMeshes(scene: THREE.Scene): THREE.Mesh[] {
+  const result: THREE.Mesh[] = [];
+  playerRoot(scene).traverse((child) => {
+    if (child instanceof THREE.Mesh && child.name !== 'elite-marker') result.push(child);
+  });
+  return result;
 }
 
 describe('RenderBridge player visual', () => {
-  it('builds a detailed forward-readable stylized striker with bounded shared resources', () => {
+  it('builds an articulated original voxel athlete with six shared-rig identities', () => {
+    const scene = new THREE.Scene();
+    const bridge = new RenderBridge(scene);
+    const player = playerRoot(scene);
+    const meshes = playerMeshes(scene);
+
+    expect(player.userData.visualStyle).toBe('original-block-football');
+    expect(player.userData.rigType).toBe('voxel-humanoid-v1');
+    expect(player.getObjectByName('player-root')?.userData.sharedSkeleton).toBe(true);
+    for (const joint of [
+      'player-pelvis',
+      'player-torso',
+      'player-head',
+      'player-left-upper-arm',
+      'player-right-lower-arm',
+      'player-left-upper-leg',
+      'player-right-lower-leg',
+      'player-left-foot',
+      'player-right-foot',
+    ]) {
+      expect(player.getObjectByName(joint), `${joint} should exist`).toBeInstanceOf(THREE.Group);
+    }
+
+    const anatomy = meshes.filter((mesh) => mesh.name.startsWith('player-'));
+    expect(anatomy.length).toBeGreaterThanOrEqual(24);
+    expect(anatomy.every((mesh) => mesh.geometry instanceof THREE.BoxGeometry)).toBe(true);
+    for (const id of CHARACTER_IDS) {
+      expect(player.getObjectByName(`player-accessory-${id}`)).toBeInstanceOf(THREE.Group);
+    }
+
+    bridge.setCharacter('tower');
+    expect(player.getObjectByName('player-accessory-tower')?.visible).toBe(true);
+    expect(player.getObjectByName('player-accessory-maestro')?.visible).toBe(false);
+    expect(player.getObjectByName('player-variant-tower-shoulder-left')).toBeInstanceOf(THREE.Mesh);
+    expect(player.getObjectByName('player-root')!.scale.x).toBeGreaterThan(1);
+    bridge.dispose();
+  });
+
+  it('keeps two player rigs visually independent while sharing cached box geometry', () => {
     const firstScene = new THREE.Scene();
     const secondScene = new THREE.Scene();
     const firstBridge = new RenderBridge(firstScene);
     const secondBridge = new RenderBridge(secondScene);
-    const firstMeshes = playerMeshes(firstScene);
-    const secondMeshes = playerMeshes(secondScene);
+    const firstTorso = firstScene.getObjectByName('player-torso-mesh') as THREE.Mesh;
+    const secondTorso = secondScene.getObjectByName('player-torso-mesh') as THREE.Mesh;
 
-    expect(firstMeshes).toHaveLength(36);
-    expect(new Set(firstMeshes.map((mesh) => mesh.geometry)).size).toBeLessThanOrEqual(25);
-    expect(new Set(firstMeshes.map((mesh) => mesh.material)).size).toBeLessThanOrEqual(8);
-    expect(firstScene.getObjectByName('player-hair')).toBeInstanceOf(THREE.Mesh);
-    expect(firstScene.getObjectByName('player-club-badge')).toBeInstanceOf(THREE.Mesh);
-    expect(firstScene.getObjectByName('player-hand-left')).toBeInstanceOf(THREE.Mesh);
-    expect(firstScene.getObjectByName('player-support-sock')).toBeInstanceOf(THREE.Mesh);
-    expect(firstScene.getObjectByName('player-boot-stud-4')).toBeInstanceOf(THREE.Mesh);
-
-    const torso = firstScene.getObjectByName('player-torso')!;
-    const boot = firstScene.getObjectByName('player-crimson-boot') as THREE.Mesh;
-    const toe = firstScene.getObjectByName('player-crimson-boot-toe')!;
-    expect(boot.material).toBeInstanceOf(THREE.MeshStandardMaterial);
-    expect((boot.material as THREE.MeshStandardMaterial).color.getHex()).toBe(0xb5123f);
-    expect(toe.position.z).toBeLessThan(boot.position.z);
-    expect(boot.position.z).toBeLessThan(torso.position.z);
-
-    firstBridge.setCharacter('tower');
-    expect(firstScene.getObjectByName('player-accessory-tower')?.visible).toBe(true);
-    expect(firstScene.getObjectByName('player-accessory-maestro')?.visible).toBe(false);
-
-    for (let index = 0; index < firstMeshes.length; index += 1) {
-      expect(secondMeshes[index]!.geometry).toBe(firstMeshes[index]!.geometry);
-      expect(secondMeshes[index]!.material).toBe(firstMeshes[index]!.material);
-    }
-
-    const sharedGeometries = [...new Set(firstMeshes.map((mesh) => mesh.geometry))];
-    const sharedMaterials = [...new Set(firstMeshes.map((mesh) => mesh.material as THREE.Material))];
-    const geometryDisposals = sharedGeometries.map((geometry) => vi.spyOn(geometry, 'dispose'));
-    const materialDisposals = sharedMaterials.map((material) => vi.spyOn(material, 'dispose'));
+    expect(firstTorso.geometry).toBe(secondTorso.geometry);
+    expect(firstTorso.material).toBe(secondTorso.material);
+    firstBridge.setCharacter('breakaway');
+    expect((firstTorso.material as THREE.MeshStandardMaterial).color.getHex()).toBe(0xd9e4ef);
+    expect((secondTorso.material as THREE.MeshStandardMaterial).color.getHex()).not.toBe(0xd9e4ef);
 
     firstBridge.dispose();
-    for (const spy of [...geometryDisposals, ...materialDisposals]) expect(spy).not.toHaveBeenCalled();
-
     secondBridge.dispose();
-    for (const spy of [...geometryDisposals, ...materialDisposals]) expect(spy).toHaveBeenCalledOnce();
   });
 });

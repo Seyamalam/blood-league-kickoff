@@ -77,13 +77,15 @@ const STYLES: Readonly<Record<EnemyArchetype, ArchetypeStyle>> = {
 };
 
 const geometry = {
-  torso: new THREE.CapsuleGeometry(0.34, 0.62, 3, 7),
-  head: new THREE.SphereGeometry(0.245, 9, 7),
-  eyes: new THREE.SphereGeometry(0.045, 6, 4),
-  limb: new THREE.CapsuleGeometry(0.105, 0.48, 2, 6),
-  heavyLimb: new THREE.CapsuleGeometry(0.145, 0.5, 2, 6),
-  boot: new THREE.CapsuleGeometry(0.13, 0.22, 2, 6),
-  fang: new THREE.ConeGeometry(0.035, 0.11, 5),
+  // Shared cuboid anatomy keeps every articulated enemy on the same lightweight
+  // voxel language. Archetype equipment remains free to use stronger silhouettes.
+  torso: new THREE.BoxGeometry(0.68, 1.12, 0.52),
+  head: new THREE.BoxGeometry(0.5, 0.5, 0.5),
+  eyes: new THREE.BoxGeometry(0.07, 0.07, 0.035),
+  limb: new THREE.BoxGeometry(0.2, 0.7, 0.22),
+  heavyLimb: new THREE.BoxGeometry(0.28, 0.74, 0.3),
+  boot: new THREE.BoxGeometry(0.28, 0.22, 0.42),
+  fang: new THREE.BoxGeometry(0.055, 0.11, 0.045),
   scarf: new THREE.TorusGeometry(0.3, 0.055, 5, 12, Math.PI * 1.5),
   wing: new THREE.BufferGeometry()
     .setFromPoints([
@@ -99,7 +101,7 @@ const geometry = {
   drainRing: new THREE.TorusGeometry(0.62, 0.045, 5, 18),
   whistle: new THREE.CapsuleGeometry(0.045, 0.12, 2, 5),
   whistleRing: new THREE.TorusGeometry(0.74, 0.055, 5, 20),
-  glove: new THREE.SphereGeometry(0.25, 8, 6),
+  glove: new THREE.BoxGeometry(0.5, 0.5, 0.42),
   catchRing: new THREE.TorusGeometry(1.02, 0.07, 6, 24),
   bow: new THREE.TorusGeometry(0.52, 0.045, 5, 16, Math.PI * 1.35),
   veil: new THREE.ConeGeometry(0.48, 1.18, 8, 1, true),
@@ -268,6 +270,8 @@ function mergeAndScale(pieces: THREE.BufferGeometry[], archetype: EnemyArchetype
   const scale = new THREE.Matrix4().makeScale(style.scale[0], style.scale[1], style.scale[2]);
   const result = mergeGeometries(pieces, false) ?? geometry.torso.clone();
   result.applyMatrix4(scale);
+  result.userData.visualStyle = 'voxel-block-built';
+  result.userData.bodyPrimitive = 'box';
   for (const piece of pieces) piece.dispose();
   return result;
 }
@@ -302,15 +306,18 @@ function farGeometry(archetype: EnemyArchetype): THREE.BufferGeometry {
 function addFace(near: THREE.Group, archetype: EnemyArchetype): void {
   const head = mesh(geometry.head, material.skin, `${prefixFor(archetype)}-head`);
   head.position.y = 1.92;
+  head.userData.anatomyPrimitive = 'box';
   near.add(head);
   for (const side of [-1, 1]) {
     const eye = mesh(geometry.eyes, material.eyes, `${prefixFor(archetype)}-eye`);
     eye.position.set(side * 0.09, 1.96, 0.225);
     eye.castShadow = false;
+    eye.userData.anatomyPrimitive = 'box';
     near.add(eye);
     const fang = mesh(geometry.fang, material.pale, `${prefixFor(archetype)}-fang`);
     fang.position.set(side * 0.065, 1.82, 0.235);
     fang.rotation.x = Math.PI;
+    fang.userData.anatomyPrimitive = 'box';
     near.add(fang);
   }
 }
@@ -348,6 +355,7 @@ function createHumanoid(
   if (archetype === 'bloodFan') torso.name = 'blood-fan-cloak';
   torso.position.y = 1.12;
   torso.scale.set(1.08, 1, 0.84);
+  torso.userData.anatomyPrimitive = 'box';
   near.add(torso);
   addFace(near, archetype);
 
@@ -379,6 +387,7 @@ function limbPivot(
   pivot.rotation.z = roll;
   const limb = mesh(source, surface, `enemy-limb-${name}`);
   limb.position.y = -0.32;
+  limb.userData.anatomyPrimitive = 'box';
   pivot.add(limb);
   return pivot;
 }
@@ -387,6 +396,7 @@ function boot(y: number): THREE.Mesh {
   const result = mesh(geometry.boot, material.dark, 'enemy-boot');
   result.position.set(0, y, 0.08);
   result.rotation.x = Math.PI / 2;
+  result.userData.anatomyPrimitive = 'box';
   return result;
 }
 
@@ -486,6 +496,7 @@ function createBatSwarm(near: THREE.Group, result: EnemyCharacterBuilder): void 
   const body = mesh(geometry.head, kitMaterial('batSwarm'), 'bat-body');
   body.position.y = 0.82;
   body.scale.set(1.2, 0.72, 1.3);
+  body.userData.anatomyPrimitive = 'box';
   const left = mesh(geometry.wing, material.wing, 'bat-wing-left');
   const right = mesh(geometry.wing, material.wing, 'bat-wing-right');
   left.position.set(-0.14, 0.88, 0);
@@ -496,6 +507,7 @@ function createBatSwarm(near: THREE.Group, result: EnemyCharacterBuilder): void 
   for (const side of [-1, 1]) {
     const ear = mesh(geometry.fang, kitMaterial('batSwarm'), 'bat-ear');
     ear.position.set(side * 0.1, 1.08, 0);
+    ear.userData.anatomyPrimitive = 'box';
     ears.add(ear);
   }
   result.leftWing = left;
@@ -525,6 +537,7 @@ export function createEnemyCharacterPresentation(archetype: EnemyArchetype): Ene
   lodRoot.add(near, mid, far);
   const proceduralBody = new THREE.Group();
   proceduralBody.name = 'enemy-procedural-body';
+  proceduralBody.userData.visualStyle = 'voxel-block-built';
   near.add(proceduralBody);
 
   const result: EnemyCharacterBuilder = {};
