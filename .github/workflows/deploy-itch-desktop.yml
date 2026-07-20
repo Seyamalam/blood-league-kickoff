@@ -1,0 +1,100 @@
+name: Deploy Desktop Downloads to itch.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag containing the verified desktop packages
+        required: true
+        type: string
+        default: v0.18.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-itch-desktop
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish verified desktop downloads
+    if: github.repository == 'Seyamalam/blood-league-kickoff'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: '[[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]'
+
+      - name: Download verified release packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          mkdir -p release-downloads
+          gh release download "$RELEASE_TAG" \
+            --pattern '*-Windows-Portable-x64.exe' \
+            --pattern '*-macOS-arm64.dmg' \
+            --pattern '*-macOS-x64.dmg' \
+            --pattern '*-Linux-x86_64.AppImage' \
+            --dir release-downloads
+
+      - name: Verify package matrix
+        run: |
+          test "$(find release-downloads -maxdepth 1 -type f | wc -l | tr -d ' ')" = "4"
+          test -f release-downloads/*-Windows-Portable-x64.exe
+          test -f release-downloads/*-macOS-arm64.dmg
+          test -f release-downloads/*-macOS-x64.dmg
+          test -f release-downloads/*-Linux-x86_64.AppImage
+
+      - name: Install official itch.io butler
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --connect-timeout 15 \
+            https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default \
+            -o "$RUNNER_TEMP/butler.zip"
+          unzip -tq "$RUNNER_TEMP/butler.zip"
+          mkdir -p "$RUNNER_TEMP/butler"
+          unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          "$RUNNER_TEMP/butler/butler" version
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+
+      - name: Publish Windows portable executable
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          butler push release-downloads/*-Windows-Portable-x64.exe \
+            seyamalam/blood-league-kickoff:windows-x64 \
+            --userversion "${RELEASE_TAG#v}"
+
+      - name: Publish macOS Apple silicon disk image
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          butler push release-downloads/*-macOS-arm64.dmg \
+            seyamalam/blood-league-kickoff:osx-arm64 \
+            --userversion "${RELEASE_TAG#v}"
+
+      - name: Publish macOS Intel disk image
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          butler push release-downloads/*-macOS-x64.dmg \
+            seyamalam/blood-league-kickoff:osx-x64 \
+            --userversion "${RELEASE_TAG#v}"
+
+      - name: Publish Linux AppImage
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          butler push release-downloads/*-Linux-x86_64.AppImage \
+            seyamalam/blood-league-kickoff:linux-x64 \
+            --userversion "${RELEASE_TAG#v}"
