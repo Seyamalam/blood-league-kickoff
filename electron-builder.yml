@@ -20,6 +20,9 @@ win:
   executableName: BloodLeagueKickoff
   artifactName: 'Blood-League-Kickoff-${version}-Windows-${arch}.${ext}'
   target:
+    - target: nsis
+      arch:
+        - x64
     - target: portable
       arch:
         - x64
@@ -31,6 +34,14 @@ win:
 portable:
   artifactName: 'Blood-League-Kickoff-${version}-Windows-Portable-${arch}.${ext}'
   requestExecutionLevel: user
+
+nsis:
+  artifactName: 'Blood-League-Kickoff-${version}-Windows-Setup-${arch}.${ext}'
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: false
 
 mac:
   icon: build/icon.icns
