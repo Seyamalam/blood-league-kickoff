@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Guided tutorial, HUD, and graphics milestone |
+| Status    | v0.18.1 frozen GameJam build                 |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -15,7 +15,7 @@
 
 ### Current title screen
 
-![Blood League: Kickoff v0.18 title screen](docs/screenshots/title-screen-v018.png)
+![Blood League: Kickoff v0.18.1 title screen](docs/screenshots/showcase-01-title-v0181.jpg)
 
 ## The Game
 
@@ -25,9 +25,7 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Selectable Guided Kickoff with the low-chrome HUD](docs/screenshots/tutorial-hud-v018.png)
-
-![Current 72-enemy voxel-roster acceptance scene](docs/screenshots/dense-roster-voxel.png)
+![Current v0.18.1 third-person football combat](docs/screenshots/showcase-02-gameplay-v0181.jpg)
 
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
@@ -37,13 +35,15 @@ The character overhaul now uses an original block-football visual language built
 
 First-time players receive a clearly marked but optional **Guided Kickoff** entry on the title screen. It is a separate deterministic training match capped at three minutes and teaches movement, charged kicks, recall, dash invulnerability, the selected character's ultimate, blood-shard progression, upgrade selection, and scoring. Training uses reduced enemy health/damage/spawn pressure, prevents accidental early defeat, prepares the ultimate after the movement fundamentals, and releases enough blood shards to guarantee the progression lesson. It never grants Career XP, mastery, challenge, leaderboard, or stadium rewards and remains replayable after completion.
 
+![Current v0.18.1 Guided Kickoff onboarding](docs/screenshots/showcase-04-guided-kickoff-v0181.jpg)
+
 ### Cleaner HUD and arena presentation
 
 The normal playfield now uses one compact combat cluster instead of a tall stack of equal-weight meters. Vitality, possession, hostile count, dash, kick charge, Focus Kick, character ultimate, and blood level share a single bottom-left surface; match time and score sit in one small top-right readout; objectives and onboarding remain contextual. The center and lower-middle field stay clear. A quality-scalable presentation layer adds a stadium-colored pitch rim, deterministic night sky, moon halo, subtle accent lighting, and optional quality-mode light shafts without changing simulation or collision state.
 
 ### Create your player
 
-![Persistent live custom-player creator](docs/screenshots/character-creator-v017.png)
+![Current v0.18.1 live custom-player creator](docs/screenshots/showcase-03-character-creator-v0181.jpg)
 
 Create an original Night Striker without using a real-player likeness. Choose one of six animation-compatible silhouettes, agile/balanced/powerful proportions, four voxel kit patterns, an optional crimson/violet/gold aura, and separate skin, kit, accent, shorts, socks, boots, hair, and eye colors. The live WebGL preview supports idle, dribble, shot, and victory animations. The design is saved locally and follows the player into future matches, while the selected Career hero continues to control gameplay traits and balance.
 
@@ -51,51 +51,15 @@ Create an original Night Striker without using a real-player likeness. Choose on
 
 Three original offline soundtrack files cover the title/menu, standard match, and Count Goalkeeper/final-wave states. The runtime crossfades between them through the existing adaptive mix and retains procedural layers and procedural fallbacks. Seven bundled Kenney UI Audio samples add confirmation, navigation, opening, closing, toggling, selection, and error feedback. Music and effects remain independently adjustable in Settings, and the release never contacts an AI or audio service at runtime.
 
-### Cursed contracts and live telemetry
-
-![Current cursed-contract selection with authored curse icons](docs/screenshots/cursed-contract-v016.png)
-
-![Current live run statistics available from pause](docs/screenshots/live-run-stats-v016.png)
-
 ### Goalkeeper showdown
 
-![Current special goalkeeper blocker guarding the regulation-size goal](docs/screenshots/goalkeeper-v016.png)
-
-![Current articulated Count Goalkeeper final encounter](docs/screenshots/count-goalkeeper-v016.png)
-
-### Secondary weapon spectacle
-
-![Current five instanced secondary-weapon pools active in the dense stadium scene](docs/screenshots/secondary-weapons-v016.png)
-
-### Progression
-
-![Current weighted upgrade draft with reroll, banish, skip, rarity, and evolution preview](docs/screenshots/upgrade-v016.png)
-
-![Current Moon Breaker evolution unlock presentation](docs/screenshots/evolution-v016.png)
+![Current v0.18.1 Count Goalkeeper final encounter](docs/screenshots/showcase-06-count-goalkeeper-v0181.jpg)
 
 ### Difficulty and Codex
 
-![Current league difficulty and optional match modifiers](docs/screenshots/difficulty-v016.png)
-
-![Interactive voxel kit room with expressive face, hero identity, difficulty, and signature actions](docs/screenshots/character-kit-room-polish.png)
+![Current v0.18.1 Career progression and original hero roster](docs/screenshots/showcase-05-career-roster-v0181.jpg)
 
 The kit room now resets every selected hero to a readable front-facing introduction, supports drag and button turntable controls, and exposes signature actions alongside concise trait, play-style, and difficulty guidance. Narrow layouts reposition the 3D stage so the identity card does not cover the character.
-
-### Voxel armory and opposition
-
-![Voxel football weapons and all eleven enemy silhouettes in the 72-enemy acceptance scene](docs/screenshots/voxel-armory-stress.png)
-
-### Settings
-
-![Current persistent graphics, frame-rate, audio, motion, accessibility, and camera settings](docs/screenshots/settings-v016.png)
-
-### Career
-
-![Current Career progression and original character portrait roster](docs/screenshots/career-v016.png)
-
-### Results
-
-![Current victory results with run grade and build metadata](docs/screenshots/results-v016.png)
 
 ## Design Pillars
 

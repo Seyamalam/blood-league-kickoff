@@ -280,6 +280,8 @@ async function bootstrap(): Promise<void> {
   const runtimeDiagnostics = readRuntimeDiagnosticsMode(window.location.search, import.meta.env.DEV);
   if (denseWaveStress) applyDenseWaveStressFormation(state);
   const qaScenario = readQaScenario(window.location.search, import.meta.env.DEV);
+  const trailerMode = new URLSearchParams(window.location.search).get('trailer') === '1';
+  root.classList.toggle('trailer-mode', trailerMode);
   const qaEvolutionId = readQaEvolutionId(window.location.search, import.meta.env.DEV);
   const qaEvolutionFixture = qaEvolutionId ? createQaEvolutionFixture(qaEvolutionId) : null;
   const qaTerminalFixture =
@@ -873,7 +875,7 @@ async function bootstrap(): Promise<void> {
     root.classList.toggle('high-contrast-hud', settings.highContrastHud);
     root.classList.toggle('reduced-flashes', settings.reducedFlashes);
     root.classList.toggle('reduced-motion', settings.reducedMotion);
-    root.classList.toggle('performance-overlay-enabled', settings.performanceOverlay);
+    root.classList.toggle('performance-overlay-enabled', settings.performanceOverlay && !trailerMode);
     root.dataset.damageNumbers = settings.damageNumbers ? 'visible' : 'hidden';
     renderer.shadowMap.enabled = settings.renderQuality !== 'performance';
     resize();
@@ -2534,7 +2536,6 @@ async function bootstrap(): Promise<void> {
   renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
   if (denseWaveStress || qaScenario) hud.start();
-
   const dispose = (): void => {
     if (disposed) return;
     disposed = true;

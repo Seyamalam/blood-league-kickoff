@@ -6,6 +6,7 @@ const DEV_URL = process.env.ELECTRON_DEV_URL;
 const IS_DEV = Boolean(DEV_URL);
 const DIST_PATH = path.join(__dirname, '..', 'dist');
 const APP_URL_ROOT = pathToFileURL(`${DIST_PATH}${path.sep}`).href;
+const TRAILER_MODE = process.argv.includes('--trailer');
 
 // Electron enables hardware acceleration by default. These hints opt into the
 // fastest Chromium rendering paths where the installed GPU driver supports it.
@@ -163,7 +164,9 @@ function createWindow() {
   if (IS_DEV) {
     void mainWindow.loadURL(DEV_URL);
   } else {
-    void mainWindow.loadFile(path.join(DIST_PATH, 'index.html'));
+    void mainWindow.loadFile(path.join(DIST_PATH, 'index.html'), {
+      search: TRAILER_MODE ? 'trailer=1' : '',
+    });
   }
 }
 
