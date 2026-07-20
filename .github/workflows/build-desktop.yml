@@ -46,7 +46,7 @@ jobs:
         shell: pwsh
         run: |
           Get-ChildItem release/desktop -File |
-            Where-Object { $_.Extension -in '.exe', '.zip' } |
+            Where-Object { $_.Name -like '*-Windows-Portable-x64.exe' } |
             Sort-Object Name |
             Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash.ToLower()) *$(Split-Path $_.Path -Leaf)" } |
@@ -57,8 +57,7 @@ jobs:
         with:
           name: Blood-League-Kickoff-Windows-x64
           path: |
-            release/desktop/*.exe
-            release/desktop/*.zip
+            release/desktop/*-Windows-Portable-x64.exe
             release/desktop/SHA256SUMS-Windows.txt
           if-no-files-found: error
           retention-days: 14
