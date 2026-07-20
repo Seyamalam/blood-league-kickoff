@@ -5,6 +5,7 @@ import { CHARACTER_DEFINITIONS, type CharacterId } from '../game/characters';
 import type { ChallengeId } from '../profile';
 import { uiIcon } from './icons';
 import type { RunTelemetrySnapshot } from '../game/stats';
+import type { RunMode } from '../game/runs';
 
 export type GameResultOutcome = 'victory' | 'defeat';
 
@@ -28,7 +29,8 @@ export interface GameResultStats {
   unlockedCharacterIds?: readonly CharacterId[];
   completedChallengeIds?: readonly ChallengeId[];
   masteryRewardIds?: readonly string[];
-  runMode?: 'standard' | 'daily' | 'weekly' | 'custom';
+  runMode?: RunMode;
+  tutorialCompleted?: boolean;
   seedCode?: string;
   telemetry?: RunTelemetrySnapshot;
 }
@@ -177,13 +179,31 @@ export class ResultsOverlay {
 
   private render(stats: Readonly<GameResultStats>): void {
     const victory = stats.outcome === 'victory';
+    const tutorial = stats.runMode === 'tutorial';
+    const tutorialCompleted = stats.tutorialCompleted !== false;
     this.element.classList.toggle('results-overlay--victory', victory);
     this.element.classList.toggle('results-overlay--defeat', !victory);
-    this.eyebrow.textContent = victory ? 'FINAL WHISTLE · VICTORY' : 'FULL TIME · DEFEAT';
-    this.title.textContent = victory ? 'THE CURSE IS BROKEN' : 'THE NIGHT CLAIMS YOU';
-    this.summary.textContent = victory
-      ? 'Count Goalkeeper has fallen. The stadium belongs to the living.'
-      : 'The match ends here, but every new run begins with another kickoff.';
+    this.eyebrow.textContent = tutorial
+      ? tutorialCompleted
+        ? 'TRAINING WHISTLE · COMPLETE'
+        : 'TRAINING WHISTLE · TIME'
+      : victory
+        ? 'FINAL WHISTLE · VICTORY'
+        : 'FULL TIME · DEFEAT';
+    this.title.textContent = tutorial
+      ? tutorialCompleted
+        ? 'READY FOR THE LEAGUE'
+        : 'KEEP TRAINING'
+      : victory
+        ? 'THE CURSE IS BROKEN'
+        : 'THE NIGHT CLAIMS YOU';
+    this.summary.textContent = tutorial
+      ? tutorialCompleted
+        ? 'Your guided kickoff is complete. Replay training at any time or enter a full match.'
+        : 'Training time expired. Replay Guided Kickoff to finish every lesson before entering the league.'
+      : victory
+        ? 'Count Goalkeeper has fallen. The stadium belongs to the living.'
+        : 'The match ends here, but every new run begins with another kickoff.';
     this.outcomeMark.textContent = victory ? '✦' : '×';
     const grade = calculateRunGrade(stats);
     this.gradeLetter.textContent = grade.letter;

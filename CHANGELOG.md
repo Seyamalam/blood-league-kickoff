@@ -2,6 +2,14 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.18.0 — 2026-07-20
+
+- Added a selectable three-minute Guided Kickoff training run with a deterministic seed, seven mechanic lessons, Rookie pressure, protected health, assisted ultimate charge, guaranteed progression shards, a guided goal, and no Career or leaderboard rewards.
+- Rebuilt the live HUD around one compact bottom-left combat cluster, one small match readout, contextual objective/tutorial prompts, an icon-only settings control, and improved narrow-viewport behavior.
+- Added a quality-scalable arena presentation layer with a moon and halo, deterministic star field, stadium-colored pitch rim, optional light shafts, and accent lighting.
+- Reduced tutorial enemy pressure, disabled disruptive pitch events/minibosses during training, and added tutorial-specific results messaging.
+- Refreshed the title and gameplay screenshots for the tutorial/HUD milestone.
+
 ## v0.17.0 — 2026-07-20
 
 - Added a persistent custom-player creator with a live animated voxel preview, six base silhouettes, three body builds, four kit patterns, four aura treatments, eight color channels, named presets, randomization, and saved match integration.

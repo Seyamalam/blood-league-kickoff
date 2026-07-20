@@ -1,4 +1,4 @@
-export { FULL_MATCH_CONFIG, PROTOTYPE_MATCH_CONFIG } from './config';
+export { FULL_MATCH_CONFIG, PROTOTYPE_MATCH_CONFIG, TUTORIAL_MATCH_CONFIG } from './config';
 export { createMatchDirectorState, getMatchObjective, updateMatchDirector } from './matchDirector';
 export { createMatchModifierState, getMatchModifierEffects, updateMatchModifiers } from './matchModifiers';
 export { RIVAL_TEAM_DEFINITIONS, RIVAL_TEAM_IDS, selectRivalTeam } from './rivalTeams';

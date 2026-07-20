@@ -68,6 +68,8 @@ The README retains the supporting v0.16 release capture set and adds direct 1728
 
 | Path                                          | State/source                                    | SHA-256                                                            |
 | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| `docs/screenshots/title-screen-v018.png`      | v0.18 title with selectable Guided Kickoff      | `94298df934222ed4835f37b0979a8ee93c1a4ab364bac0a48d48d23473b1549a` |
+| `docs/screenshots/tutorial-hud-v018.png`      | Guided training, low-chrome HUD, and arena pass | `79c7f73fcddd8662963c3d05cdb5717781c8ff843a0ccebb8703cad03f4e2be3` |
 | `docs/screenshots/title-screen-v017.png`      | v0.17 production title and creator entry point  | `0386ab107ae0dbc28490edcf082c56bab57e713ac4060b3876a300b00142e111` |
 | `docs/screenshots/character-creator-v017.png` | Live creator with Crimson Comet preview         | `6897dd986ac140de58e56b45bc0db2aff087da9699ef46809a918e62dea1f26c` |
 | `docs/screenshots/gameplay-v017.png`          | Saved custom striker in a production match      | `de6de32faa2bbc2934330732a6e151e9077cf19c6a6f94bae21c70ec07ab06fd` |

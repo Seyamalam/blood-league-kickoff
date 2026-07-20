@@ -3,7 +3,7 @@ import { SeededRandom, deriveSeed, hashSeed, normalizeSeed, type RandomSource } 
 export const RUN_RANDOM_STREAM_NAMES = ['spawn', 'upgrades', 'events', 'loot', 'boss', 'cosmetic'] as const;
 
 export type RunRandomStreamName = (typeof RUN_RANDOM_STREAM_NAMES)[number];
-export type RunMode = 'standard' | 'daily' | 'weekly' | 'custom';
+export type RunMode = 'standard' | 'tutorial' | 'daily' | 'weekly' | 'custom';
 
 export interface RunDescriptor {
   readonly seed: number;
@@ -33,7 +33,10 @@ export function createRunDescriptor(options: CreateRunDescriptorOptions = {}): R
   const mode = options.mode ?? 'standard';
   const scheduled =
     mode === 'daily' ? dailyRunSeed(options.now) : mode === 'weekly' ? weeklyRunSeed(options.now) : null;
-  const rawSeed = scheduled?.seed ?? options.seed ?? entropySeed(options.entropy ?? Math.random);
+  const rawSeed =
+    scheduled?.seed ??
+    options.seed ??
+    (mode === 'tutorial' ? 'blood-league-guided-kickoff' : entropySeed(options.entropy ?? Math.random));
   const seed = normalizeSeed(typeof rawSeed === 'string' ? hashSeed(rawSeed.trim()) : rawSeed);
   return Object.freeze({
     seed,

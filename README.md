@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Custom-player and original-audio milestone   |
+| Status    | Guided tutorial, HUD, and graphics milestone |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -15,7 +15,7 @@
 
 ### Current title screen
 
-![Blood League: Kickoff v0.17 title screen](docs/screenshots/title-screen-v017.png)
+![Blood League: Kickoff v0.18 title screen](docs/screenshots/title-screen-v018.png)
 
 ## The Game
 
@@ -25,13 +25,21 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Current kickoff with a custom voxel football hero and live aim guide](docs/screenshots/gameplay-v017.png)
+![Selectable Guided Kickoff with the low-chrome HUD](docs/screenshots/tutorial-hud-v018.png)
 
 ![Current 72-enemy voxel-roster acceptance scene](docs/screenshots/dense-roster-voxel.png)
 
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
 The character overhaul now uses an original block-football visual language built entirely in TypeScript and Three.js. The player has a reusable articulated voxel skeleton with segmented arms and legs, readable face, layered kit, boots, sockets, and six distinct hero silhouettes. Ordinary enemies use matching block anatomy from near view through merged crowd LODs while retaining archetype-specific shields, wings, scarves, bows, gloves, and supernatural cues. No runtime character download is required. The football keeps its one-draw-call ivory, charcoal, and crimson panel treatment, while goals, nets, dugouts, floodlights, advertising boards, minibosses, and Count Goalkeeper retain their authored football-horror forms.
+
+### Guided Kickoff tutorial
+
+First-time players receive a clearly marked but optional **Guided Kickoff** entry on the title screen. It is a separate deterministic training match capped at three minutes and teaches movement, charged kicks, recall, dash invulnerability, the selected character's ultimate, blood-shard progression, upgrade selection, and scoring. Training uses reduced enemy health/damage/spawn pressure, prevents accidental early defeat, prepares the ultimate after the movement fundamentals, and releases enough blood shards to guarantee the progression lesson. It never grants Career XP, mastery, challenge, leaderboard, or stadium rewards and remains replayable after completion.
+
+### Cleaner HUD and arena presentation
+
+The normal playfield now uses one compact combat cluster instead of a tall stack of equal-weight meters. Vitality, possession, hostile count, dash, kick charge, Focus Kick, character ultimate, and blood level share a single bottom-left surface; match time and score sit in one small top-right readout; objectives and onboarding remain contextual. The center and lower-middle field stay clear. A quality-scalable presentation layer adds a stadium-colored pitch rim, deterministic night sky, moon halo, subtle accent lighting, and optional quality-mode light shafts without changing simulation or collision state.
 
 ### Create your player
 

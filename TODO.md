@@ -334,6 +334,11 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## Testing
 
+- [x] `P0` Add a selectable deterministic Guided Kickoff training run with bounded assists and no progression rewards.
+- [x] `P0` Replace the dense stacked HUD with a low-chrome combat cluster and contextual tutorial surface.
+- [x] `P1` Add a quality-scalable arena moon, stars, pitch rim, accent lighting, and optional light shafts.
+- [x] `P0` Verify the new HUD at 1440×810, 900×540, and 650×700 production-browser viewports.
+
 - [ ] `P0` Test fresh browser cache and first desktop launch.
 - [x] `P0` Test Chrome/Chromium web build and production Electron shell on macOS.
 - [ ] `P0` Test 1080p and one lower resolution/aspect ratio.

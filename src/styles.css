@@ -3244,6 +3244,301 @@ select:focus-visible,
   }
 }
 
+/* Low-chrome match HUD: one primary combat cluster, one compact match readout. */
+.topbar {
+  padding: 20px 24px;
+}
+.brand {
+  width: auto;
+  padding: 8px 11px 9px;
+  border-left: 2px solid #d73255;
+  background: linear-gradient(90deg, rgba(7, 6, 12, 0.72), transparent);
+  filter: drop-shadow(0 4px 12px #000);
+}
+.brand-kicker {
+  font-size: 8px;
+}
+.brand strong {
+  font-size: 20px;
+}
+.match-readout {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 226px;
+  padding: 8px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(233, 196, 111, 0.42);
+  border-radius: 3px;
+  background: linear-gradient(135deg, rgba(8, 7, 13, 0.88), rgba(22, 13, 23, 0.7));
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(7px);
+}
+.match-readout .timer,
+.match-readout .score {
+  position: static;
+  min-width: 0;
+  margin: 0;
+  transform: none;
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+.match-readout .timer {
+  flex: 1;
+}
+.match-readout .score {
+  text-align: right;
+}
+.match-readout .timer small,
+.match-readout .score small {
+  font:
+    800 7px Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+}
+.match-readout .timer span,
+.match-readout .score span {
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+.match-readout__divider {
+  width: 1px;
+  height: 29px;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+.status-panel {
+  left: 24px;
+  bottom: 24px;
+  width: min(430px, calc(100vw - 48px));
+  padding: 13px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 2px solid rgba(241, 59, 96, 0.74);
+  border-radius: 4px;
+  background: linear-gradient(120deg, rgba(7, 7, 12, 0.9), rgba(20, 12, 22, 0.7));
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(8px);
+}
+.vitality-row,
+.combat-strip,
+.ability-meter > div:first-child,
+.blood-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vitality-row {
+  margin-bottom: 6px;
+  color: #b7b0ba;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+.vitality-row strong {
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.health-track--vitality {
+  height: 11px;
+}
+.combat-strip {
+  gap: 10px;
+  min-height: 29px;
+  margin: 9px 0 8px;
+  padding: 5px 7px;
+  color: #a8a1ad;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+  font:
+    800 8px Arial,
+    sans-serif;
+  letter-spacing: 0.09em;
+}
+.combat-strip > span {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.combat-strip__dash {
+  color: #8de3b9;
+}
+.ability-deck {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 1.25fr;
+  gap: 7px;
+}
+.ability-meter {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+.ability-meter > div:first-child {
+  gap: 5px;
+  margin-bottom: 5px;
+  color: #8f8994;
+  font:
+    800 7px Arial,
+    sans-serif;
+  letter-spacing: 0.09em;
+}
+.ability-meter span,
+.ability-meter span:first-child {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ability-meter strong {
+  overflow: hidden;
+  color: #ded8e0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 7px;
+}
+.ability-meter img,
+.ability-meter .ui-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+.ability-meter .health-track {
+  height: 7px;
+}
+.ability-meter--kick .health-fill {
+  width: 0;
+  background: linear-gradient(90deg, #d6a632, #fff0a6);
+  box-shadow: 0 0 11px rgba(255, 214, 90, 0.4);
+  transition: none;
+}
+.ability-meter--focus .health-fill {
+  width: 0;
+  background: linear-gradient(90deg, #b89526, #fff0a6);
+  box-shadow: 0 0 11px rgba(255, 207, 64, 0.35);
+}
+.blood-progress {
+  gap: 9px;
+  margin-top: 8px;
+  color: #968f9c;
+  font:
+    800 8px Arial,
+    sans-serif;
+  letter-spacing: 0.12em;
+}
+.blood-progress .health-track {
+  flex: 1;
+  height: 6px;
+}
+.blood-progress .health-fill {
+  width: 0;
+  background: linear-gradient(90deg, #6f1f91, #d95eff);
+  box-shadow: 0 0 12px rgba(190, 74, 255, 0.4);
+}
+.controls-hint.faded {
+  opacity: 0;
+  visibility: hidden;
+}
+.objective {
+  top: 22px;
+  max-width: min(560px, calc(100vw - 540px));
+  border-color: rgba(233, 196, 111, 0.2);
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(7, 7, 12, 0.3), rgba(7, 7, 12, 0.82), rgba(7, 7, 12, 0.3));
+}
+.boss-panel {
+  top: 66px;
+}
+.settings-open span {
+  display: none;
+}
+.settings-open {
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+}
+.title-tutorial {
+  position: relative;
+  min-height: 47px;
+  flex-wrap: wrap;
+  border-color: rgba(233, 196, 111, 0.42) !important;
+  background: linear-gradient(120deg, rgba(117, 79, 22, 0.3), rgba(39, 24, 18, 0.5)) !important;
+}
+.title-tutorial small {
+  width: 100%;
+  margin: -5px 0 0 27px;
+  color: #93866c;
+  font-size: 7px;
+  letter-spacing: 0.14em;
+}
+.title-tutorial.recommended::after {
+  content: 'RECOMMENDED';
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  padding: 3px 5px;
+  color: #17100a;
+  background: #e9c46f;
+  font:
+    900 6px Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+.tutorial-run-active .objective {
+  border-color: rgba(233, 196, 111, 0.44);
+  color: #f6df9a;
+}
+
+@media (max-width: 900px) {
+  .objective {
+    top: 76px;
+    max-width: calc(100vw - 32px);
+  }
+  .boss-panel {
+    top: 112px;
+  }
+}
+
+@media (max-width: 650px) {
+  .match-readout {
+    min-width: 180px;
+  }
+  .brand {
+    display: none;
+  }
+  .status-panel {
+    left: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    transform: scale(var(--hud-scale));
+    scale: none;
+  }
+  .ability-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .combat-strip {
+    gap: 5px;
+    font-size: 7px;
+  }
+  .ball-state {
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tutorial-prompt {
+    right: 12px;
+    bottom: 190px;
+  }
+  .settings-open {
+    inset: 16px auto auto 14px;
+  }
+}
+
 .career-overlay {
   position: fixed;
   inset: 0;

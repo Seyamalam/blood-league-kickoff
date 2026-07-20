@@ -166,6 +166,8 @@ Daily/weekly or remote rankings require one run-wide deterministic seed, version
 
 ## Match Flow
 
+First-time onboarding is a selectable **Guided Kickoff** rather than a forced interruption. It runs for at most three minutes on a deterministic, reward-free training ruleset. Seven contextual lessons teach movement, aiming, kicking, recall, dashing, Focus Kick, and collecting Blood XP. Safety assists prevent an unlucky death, prepare the ultimate when its lesson begins, and seed progression shards for the final lesson. Completion is stored locally, but training remains replayable from the title screen.
+
 1. Opening Kickoff teaches movement, kick, recall, and collection.
 2. First Half introduces crowd pressure and early upgrades.
 3. First Goal recenters play and escalates enemies/stadium state.
@@ -185,6 +187,12 @@ Scoring clears the active crowd, recenters the striker and ball, preserves healt
 Every secondary damage source can hit Count Goalkeeper once its entrance ends. Successful boss kicks trigger the same impact weapons as ordinary hits plus Blood Bomb, so specialized builds do not depend on a nearby minion. Secondary damage is reduced to 40% and capped at 12 raw damage per fixed step so automatic and evolved builds remain useful without erasing the kick-focused climax. Primary and secondary hits have independent short cooldowns, with primary contact resolved first for readable impact. Secondary slows and pulls remain boss-immune, and boss damage never awards ordinary enemy score, combo, kills, or Blood XP.
 
 During scoring opportunities, the special goalkeeper blocker is separate from Count Goalkeeper and ordinary crowd roles. It protects the physical goal opening without changing the match director's whole-ball scoring requirement.
+
+## HUD and Arena Presentation
+
+The shipping match HUD uses one compact bottom-left status cluster, one small top-right time/score capsule, and a contextual objective prompt. Health, barrier, ball charge, Focus Kick, dash, and XP remain visible without framing the entire screen in permanent panels. Long-form controls fade after kickoff, while the tutorial coach card advances only when the player performs the requested action. Settings can expose optional performance telemetry without adding it to the default play view.
+
+The arena presentation layers deterministic stars, a Blood Moon, stadium-accent pitch edging, restrained quality-scaled light shafts, fog, embers, and stage lighting around the readable football field. Reduced-motion and quality settings disable decorative movement or expensive accents while preserving gameplay silhouettes and aim readability.
 
 ## Feedback Priorities
 
