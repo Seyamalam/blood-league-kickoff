@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.1
+
+- Fixed Guided Kickoff permanently hiding the player while tutorial damage protection was active.
+- Windows desktop builds now request the high-performance GPU on hybrid NVIDIA/AMD systems.
+
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
 ## v0.18.0 — 2026-07-20

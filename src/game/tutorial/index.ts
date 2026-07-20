@@ -16,7 +16,9 @@ export type {
 } from './types';
 export {
   TUTORIAL_COMPLETION_CELEBRATION,
+  TUTORIAL_MINIMUM_HEALTH,
   TUTORIAL_RUN_TIME_LIMIT,
+  capTutorialDamage,
   createTutorialRunState,
   tutorialAssistsFor,
   updateTutorialRun,
