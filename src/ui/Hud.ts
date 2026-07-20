@@ -108,6 +108,7 @@ export class Hud {
           <div><input id="custom-seed-input" maxlength="32" autocomplete="off" placeholder="ENTER SEED"><button type="button" id="custom-seed-button" class="title-settings">${uiIcon('seed')}<span>PLAY</span></button></div>
         </div>
         <button type="button" id="title-career-button" class="title-settings">${uiIcon('career')}<span>CAREER & CHARACTERS</span></button>
+        <button type="button" id="title-character-creator-button" class="title-settings">${uiIcon('loadout')}<span>CREATE YOUR PLAYER</span></button>
         <button type="button" id="title-settings-button" class="title-settings">${uiIcon('settings')}<span>SETTINGS</span></button>
         <button type="button" id="title-quit-button" class="title-settings title-quit">${uiIcon('power')}<span>QUIT GAME</span></button>
         <small>Click to lock the cursor · Headphones recommended</small>
@@ -215,6 +216,10 @@ export class Hud {
 
   get titleCareerButton(): HTMLElement {
     return required('title-career-button');
+  }
+
+  get titleCharacterCreatorButton(): HTMLElement {
+    return required('title-character-creator-button');
   }
 
   get titleQuitButton(): HTMLElement {

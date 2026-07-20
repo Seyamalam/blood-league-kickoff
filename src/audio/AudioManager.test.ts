@@ -20,6 +20,19 @@ describe('AudioManager match intensity', () => {
     expect(audio.currentMatchIntensity).toBe(0);
     audio.setMatchIntensity('dead');
     expect(audio.currentMatchIntensity).toBe(0);
+    expect(audio.currentSoundtrack).toBeNull();
+  });
+
+  it('routes authored menu, match, and boss score layers before unlock', () => {
+    const audio = new AudioManager();
+    audio.setMatchIntensity('menu');
+    expect(audio.currentSoundtrack).toBe('menu');
+    audio.setMatchIntensity('opening');
+    expect(audio.currentSoundtrack).toBe('match');
+    audio.setMatchIntensity('finalWave');
+    expect(audio.currentSoundtrack).toBe('boss');
+    audio.setMatchIntensity(0.93);
+    expect(audio.currentSoundtrack).toBe('boss');
   });
 
   it('tracks independently clamped music and effects levels before unlock', () => {
@@ -90,6 +103,11 @@ describe('AudioManager event cues', () => {
       audio.playUiNavigate();
       audio.playUiBack();
       audio.playUiError();
+      audio.playUiOpen();
+      audio.playUiClose();
+      audio.playUiToggle(true);
+      audio.playUiToggle(false);
+      audio.playUiConfirm();
     }).not.toThrow();
   });
 

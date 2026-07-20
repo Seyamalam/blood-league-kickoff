@@ -12,6 +12,11 @@ import {
 import { VoxelAnimationController, type VoxelAnimationState } from './VoxelAnimationController';
 import type { VoxelHumanoid } from './VoxelHumanoid';
 import { createVoxelPlayerVariantController, type VoxelPlayerVariantController } from './VoxelPlayerVariants';
+import type { CustomCharacterAppearance } from '../../profile/CharacterCustomizationStore';
+import {
+  createCustomVoxelAppearanceController,
+  type CustomVoxelAppearanceController,
+} from './CustomVoxelAppearance';
 
 export type PlayerTechnique = 'kick' | 'ground-pass' | 'lob-pass' | 'header' | 'slide-tackle' | 'bicycle';
 export type PlayerReaction = 'damage' | 'knockdown';
@@ -84,11 +89,14 @@ export function locomotionClipFor(speed: number, dashing: boolean): string {
 export class PlayerCharacterAsset {
   private readonly animationController: VoxelAnimationController;
   private readonly variants: VoxelPlayerVariantController;
+  private readonly customAppearance: CustomVoxelAppearanceController;
   private readonly contactEvents: FootballAnimationContactEvent[] = [];
   private readonly pendingContacts: PendingContact[] = [];
   private readonly diagnosticHelpers: THREE.BoxHelper[] = [];
   private previousDashTime = 0;
   private previousHealth?: number;
+  private selectedCharacter: CharacterId = 'maestro';
+  private customization?: Readonly<CustomCharacterAppearance>;
   private terminalState?: Extract<FootballAnimationState, 'victory' | 'defeat'>;
   private disposed = false;
 
@@ -100,6 +108,7 @@ export class PlayerCharacterAsset {
     this.animationController.setPersonality('maestro');
     this.animationController.setGrounding(0, 0);
     this.variants = createVoxelPlayerVariantController(rig);
+    this.customAppearance = createCustomVoxelAppearanceController(rig);
     this.variants.apply('maestro');
   }
 
@@ -119,6 +128,7 @@ export class PlayerCharacterAsset {
   update(dt: number, player: PlayerState): void {
     if (this.disposed) return;
     this.animationController.update(dt);
+    this.customAppearance.update(dt);
     this.updateContactEvents(dt);
     const speed = Math.hypot(player.velocity.x, player.velocity.z);
     const forwardSpeed =
@@ -145,8 +155,14 @@ export class PlayerCharacterAsset {
   }
 
   setCharacter(id: CharacterId): void {
-    this.variants.apply(id);
+    this.selectedCharacter = id;
     this.animationController.setPersonality(id);
+    this.applyVisualIdentity();
+  }
+
+  setCustomization(customization: Readonly<CustomCharacterAppearance>): void {
+    this.customization = { ...customization };
+    this.applyVisualIdentity();
   }
 
   playReaction(reaction: PlayerReaction): FootballAnimationResolution | undefined {
@@ -217,6 +233,7 @@ export class PlayerCharacterAsset {
     if (this.disposed) return;
     this.disposed = true;
     this.animationController.dispose();
+    this.customAppearance.dispose();
     this.variants.dispose();
     for (const helper of this.diagnosticHelpers) {
       helper.removeFromParent();
@@ -264,6 +281,27 @@ export class PlayerCharacterAsset {
       socket: pending.socket,
       position: { x: position.x, y: position.y, z: position.z },
     });
+  }
+
+  private applyVisualIdentity(): void {
+    const appearance = this.customization;
+    const visualCharacter =
+      appearance?.enabled === true ? appearance.baseCharacterId : this.selectedCharacter;
+    this.variants.apply(visualCharacter);
+    if (appearance) this.customAppearance.apply(appearance);
+    if (!appearance?.enabled) return;
+    this.rig.setPalette({
+      skin: appearance.skin,
+      primary: appearance.primary,
+      secondary: appearance.secondary,
+      accent: appearance.secondary,
+      shorts: appearance.shorts,
+      socks: appearance.socks,
+      boots: appearance.boots,
+      hair: appearance.hair,
+      eyes: appearance.eyes,
+    });
+    this.rig.root.userData.customCharacterName = appearance.displayName;
   }
 }
 

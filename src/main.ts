@@ -151,6 +151,7 @@ import {
   masteryLevelForXp,
   masteryModifierBonusFor,
   ProfileStore,
+  CharacterCustomizationStore,
   type ProfileStadiumId,
   type RunSettlement,
 } from './profile';
@@ -167,6 +168,7 @@ import { TutorialPrompt } from './ui/TutorialPrompt';
 import { UpgradeOverlay } from './ui/UpgradeOverlay';
 import { DifficultyOverlay } from './ui/DifficultyOverlay';
 import { ReplayHighlightBuffer } from './game/replay';
+import { CharacterCreatorOverlay } from './ui/CharacterCreatorOverlay';
 
 const FIXED_STEP = 1 / 60;
 const MAX_FRAME_TIME = 0.1;
@@ -204,6 +206,7 @@ async function bootstrap(): Promise<void> {
 
   const settingsStore = new SettingsStore();
   const profileStore = new ProfileStore();
+  const characterCustomizationStore = new CharacterCustomizationStore();
   const createUpgradeDraft = () =>
     new UpgradeDraftSession({
       ...DEFAULT_UPGRADE_DRAFT_RULES,
@@ -300,6 +303,7 @@ async function bootstrap(): Promise<void> {
   }
   const bridge = new RenderBridge(scene);
   bridge.setCharacter(selectedCharacterId);
+  bridge.setCharacterCustomization(characterCustomizationStore.value);
   const aimGuide = new AimGuide(scene);
   const goalBeacon = new GoalBeacon(scene);
   const bossVisual = new CountGoalkeeperVisual(scene);
@@ -350,6 +354,10 @@ async function bootstrap(): Promise<void> {
       applyProgressionHealth(state.player.maxHealth);
     }
     audio.playUiSelect();
+  });
+  const characterCreatorOverlay = new CharacterCreatorOverlay(root, characterCustomizationStore, audio);
+  const unsubscribeCharacterCustomization = characterCustomizationStore.subscribe((appearance) => {
+    bridge.setCharacterCustomization(appearance);
   });
   const curseOverlay = new CurseOverlay(root);
   const difficultyOverlay = new DifficultyOverlay(root);
@@ -908,6 +916,7 @@ async function bootstrap(): Promise<void> {
     upgradeOverlay.reset();
     settingsOverlay.hide();
     careerOverlay.hide();
+    characterCreatorOverlay.hide(false);
     curseOverlay.reset();
     pauseOverlay.hide();
     replayHighlights.clear();
@@ -1017,19 +1026,27 @@ async function bootstrap(): Promise<void> {
   const openSettings = (): void => {
     if (input.isLocked) void document.exitPointerLock();
     settingsOverlay.show();
+    audio.playUiOpen();
   };
   const openCareer = (): void => {
     if (input.isLocked) void document.exitPointerLock();
     careerOverlay.show();
-    audio.playUiSelect();
+    audio.playUiOpen();
+  };
+  const openCharacterCreator = (): void => {
+    void audio.unlock();
+    if (input.isLocked) void document.exitPointerLock();
+    characterCreatorOverlay.show();
   };
   const settingsButton = hud.settingsButton;
   const titleSettingsButton = hud.titleSettingsButton;
   const titleCareerButton = hud.titleCareerButton;
+  const titleCharacterCreatorButton = hud.titleCharacterCreatorButton;
   const titleQuitButton = hud.titleQuitButton;
   settingsButton.addEventListener('click', openSettings);
   titleSettingsButton.addEventListener('click', openSettings);
   titleCareerButton.addEventListener('click', openCareer);
+  titleCharacterCreatorButton.addEventListener('click', openCharacterCreator);
   const quitGame = (): void => {
     void window.desktopRuntime?.window.quit();
   };
@@ -1057,6 +1074,7 @@ async function bootstrap(): Promise<void> {
     halftimeOverlay.reset();
     resultsOverlay.reset();
     careerOverlay.hide();
+    characterCreatorOverlay.hide(false);
     curseOverlay.reset();
     difficultyOverlay.reset();
     pauseOverlay.hide();
@@ -1097,6 +1115,7 @@ async function bootstrap(): Promise<void> {
       state.phase !== 'playing' ||
       upgradeOverlay.isVisible ||
       settingsOverlay.isVisible ||
+      characterCreatorOverlay.isVisible ||
       halftimeOverlay.isVisible
     )
       return;
@@ -1111,6 +1130,7 @@ async function bootstrap(): Promise<void> {
       onRestart: restart,
       onMainMenu: returnToMenu,
     });
+    audio.playUiOpen();
     audio.setMatchIntensity('paused');
   };
   const onGlobalKeyDown = (event: KeyboardEvent): void => {
@@ -1122,6 +1142,26 @@ async function bootstrap(): Promise<void> {
       audio.playUiNavigate();
   };
   root.addEventListener('focusin', onUiFocus);
+  const onFirstAudioGesture = (): void => {
+    root.removeEventListener('pointerdown', onFirstAudioGesture);
+    void audio.unlock();
+  };
+  const onUiActivation = (event: MouseEvent): void => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest('button')) return;
+    audio.playUiSelect();
+  };
+  const onUiControlChange = (event: Event): void => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      audio.playUiToggle(target.checked);
+    } else if (target instanceof HTMLSelectElement) {
+      audio.playUiToggle(true);
+    }
+  };
+  root.addEventListener('pointerdown', onFirstAudioGesture);
+  root.addEventListener('click', onUiActivation);
+  root.addEventListener('change', onUiControlChange);
   const onFocusLoss = (): void => showPause();
   const onVisibilityChange = (): void => {
     if (document.hidden) showPause();
@@ -1135,6 +1175,7 @@ async function bootstrap(): Promise<void> {
       !input.isLocked &&
       !settingsOverlay.isVisible &&
       !careerOverlay.isVisible &&
+      !characterCreatorOverlay.isVisible &&
       !pauseOverlay.isVisible &&
       !halftimeOverlay.isVisible
     )
@@ -2422,12 +2463,16 @@ async function bootstrap(): Promise<void> {
     window.removeEventListener('blur', onFocusLoss);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     root.removeEventListener('focusin', onUiFocus);
+    root.removeEventListener('pointerdown', onFirstAudioGesture);
+    root.removeEventListener('click', onUiActivation);
+    root.removeEventListener('change', onUiControlChange);
     kickoffButton.removeEventListener('click', begin);
     restartButton.removeEventListener('click', restart);
     victoryRestartButton.removeEventListener('click', restart);
     settingsButton.removeEventListener('click', openSettings);
     titleSettingsButton.removeEventListener('click', openSettings);
     titleCareerButton.removeEventListener('click', openCareer);
+    titleCharacterCreatorButton.removeEventListener('click', openCharacterCreator);
     titleQuitButton.removeEventListener('click', quitGame);
     renderer.domElement.removeEventListener('click', onCanvasClick);
     renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
@@ -2445,6 +2490,8 @@ async function bootstrap(): Promise<void> {
     pauseOverlay.dispose();
     resultsOverlay.dispose();
     careerOverlay.dispose();
+    characterCreatorOverlay.dispose();
+    unsubscribeCharacterCustomization();
     curseOverlay.dispose();
     difficultyOverlay.dispose();
     halftimeOverlay.dispose();

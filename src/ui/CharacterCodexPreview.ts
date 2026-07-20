@@ -11,6 +11,11 @@ import {
 } from '../render/objects/VoxelPlayerVariants';
 import type { FootballAnimationState } from '../render/objects/FootballAnimationContract';
 import { CHARACTER_SELECTION_PRESENTATIONS } from '../render/objects/VoxelCharacterPresentation';
+import type { CustomCharacterAppearance } from '../profile/CharacterCustomizationStore';
+import {
+  createCustomVoxelAppearanceController,
+  type CustomVoxelAppearanceController,
+} from '../render/objects/CustomVoxelAppearance';
 
 export const CODEX_PREVIEW_STATES = Object.freeze([
   'idle',
@@ -42,6 +47,7 @@ export class CharacterCodexPreview {
   private readonly rig: VoxelHumanoid;
   private readonly animations: VoxelAnimationController;
   private readonly variants: VoxelPlayerVariantController;
+  private readonly customAppearance: CustomVoxelAppearanceController;
   private selectedCharacter: CharacterId = 'maestro';
   private active = false;
   private disposed = false;
@@ -92,6 +98,7 @@ export class CharacterCodexPreview {
     this.rig.root.name = 'codex-preview-character';
     this.stage.add(this.rig.root);
     this.variants = createVoxelPlayerVariantController(this.rig);
+    this.customAppearance = createCustomVoxelAppearanceController(this.rig);
     this.variants.apply(this.selectedCharacter);
     this.animations = new VoxelAnimationController(this.rig);
     this.animations.setPersonality(this.selectedCharacter);
@@ -131,6 +138,23 @@ export class CharacterCodexPreview {
     this.stage.userData.previewAnimation = CHARACTER_SELECTION_PRESENTATIONS[id].introductionState;
   }
 
+  public setAppearance(appearance: Readonly<CustomCharacterAppearance>): void {
+    this.setCharacter(appearance.baseCharacterId);
+    this.rig.setPalette({
+      skin: appearance.skin,
+      primary: appearance.primary,
+      secondary: appearance.secondary,
+      accent: appearance.secondary,
+      shorts: appearance.shorts,
+      socks: appearance.socks,
+      boots: appearance.boots,
+      hair: appearance.hair,
+      eyes: appearance.eyes,
+    });
+    this.customAppearance.apply(appearance);
+    this.stage.userData.customCharacterName = appearance.displayName;
+  }
+
   public play(state: CodexPreviewState): boolean {
     // Preview controls are direct scrubbing commands, not gameplay arbitration.
     // Reset first so a held victory pose cannot trap the kit-room controls.
@@ -168,6 +192,7 @@ export class CharacterCodexPreview {
     this.renderer.domElement.removeEventListener('pointerup', this.handlePointerUp);
     this.renderer.domElement.removeEventListener('pointercancel', this.handlePointerUp);
     this.animations.dispose();
+    this.customAppearance.dispose();
     this.variants.dispose();
     this.rig.dispose();
     this.rig.root.removeFromParent();
@@ -180,6 +205,7 @@ export class CharacterCodexPreview {
     if (!this.active || this.disposed) return;
     const dt = Math.min(0.05, this.clock.getDelta());
     this.animations.update(dt);
+    this.customAppearance.update(dt);
     if (this.autoRotate && !this.dragging) this.turntableVelocity += dt * 0.34;
     this.turntableAngle += this.turntableVelocity * dt;
     this.turntableVelocity *= Math.pow(0.08, dt);

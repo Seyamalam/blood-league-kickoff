@@ -5,9 +5,9 @@ This is the submission-facing inventory of player-visible and player-audible ass
 Inventory status as of 2026-07-20:
 
 - Most gameplay visuals are generated at runtime; the shipping player and ordinary enemies now use original articulated voxel geometry and code-driven animation.
-- All current music and sound effects are synthesized at runtime with the Web Audio API.
+- Three original MP3 soundtracks and seven CC0 OGG menu samples are bundled for offline playback; procedural Web Audio remains the football/combat layer and fallback.
 - The repository contains fifty authored SVG files, historical/current browser screenshots, one 15-second production gameplay capture, five generated source masters, two optimized key-art derivatives, and twenty-five generated portrait crops.
-- One optimized imported character GLB and one compatible animation-library GLB remain as audited reference assets but are not loaded by the current character renderer. No recorded audio or bundled font is currently present.
+- One optimized imported character GLB and one compatible animation-library GLB remain as audited reference assets but are not loaded by the current character renderer. No bundled font is present.
 
 ## Field Definitions
 
@@ -47,27 +47,30 @@ These assets do not exist as standalone image or model files. Their geometry and
 | BL favicon                                                                    | Inline SVG data URL in `index.html`   | Authored SVG path and CSS color values | Project-created code                      | Embedded at build time; not stored as a separate image file                                                                                                                          |
 | Typography                                                                    | CSS system stacks in `src/styles.css` | Host operating-system fonts            | No font file redistributed by the project | Uses fallbacks including Impact/Haettenschweiler/Arial; appearance can vary by platform and must be checked on the target macOS build                                                |
 
-## Procedural Audio Assets
+## Audio Assets
 
-There are no `.wav`, `.mp3`, `.ogg`, MIDI, impulse-response, or sample-library files in the repository.
-
-| Category                 | Source                      | Tool                                                              | License/ownership    | Changes/current state                                                                                                                                         |
-| ------------------------ | --------------------------- | ----------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Adaptive match score     | `src/audio/AudioManager.ts` | TypeScript, browser Web Audio oscillators/filters/gain/LFO        | Project-created code | Drone, tension, pulse, choir, and percussion-style layers respond to match intensity; synthesized at runtime                                                  |
-| Football and combat cues | `src/audio/AudioManager.ts` | Web Audio oscillators, generated noise buffer, envelopes, filters | Project-created code | Kick, volley, hit, kill, hurt, recall/catch, dash, heal/life-steal, wall/post/crossbar/net, and goalkeeper cues; no samples                                   |
-| Progression and UI cues  | `src/audio/AudioManager.ts` | Web Audio procedural synthesis                                    | Project-created code | Pickup, level, upgrade, evolution, unlock, record, UI select/back/error, and boss phase cues with rapid-retrigger protection; no samples                      |
-| Match and outcome cues   | `src/audio/AudioManager.ts` | Web Audio procedural synthesis                                    | Project-created code | Kickoff, goal/miss, halftime, Blood Moon, final wave, victory, and defeat cues; no samples; newly exposed cues still require complete runtime/UI event wiring |
+| Category                 | Source                            | Tool                                                              | License/ownership                 | Changes/current state                                                                                                                                         |
+| ------------------------ | --------------------------------- | ----------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adaptive match score     | `src/audio/AudioManager.ts`       | TypeScript, browser Web Audio oscillators/filters/gain/LFO        | Project-created code              | Drone, tension, pulse, choir, and percussion-style layers respond to match intensity; synthesized at runtime                                                  |
+| Football and combat cues | `src/audio/AudioManager.ts`       | Web Audio oscillators, generated noise buffer, envelopes, filters | Project-created code              | Kick, volley, hit, kill, hurt, recall/catch, dash, heal/life-steal, wall/post/crossbar/net, and goalkeeper cues; no samples                                   |
+| Progression and UI cues  | `src/audio/AudioManager.ts`       | Web Audio procedural synthesis                                    | Project-created code              | Pickup, level, upgrade, evolution, unlock, record, UI select/back/error, and boss phase cues with rapid-retrigger protection; no samples                      |
+| Match and outcome cues   | `src/audio/AudioManager.ts`       | Web Audio procedural synthesis                                    | Project-created code              | Kickoff, goal/miss, halftime, Blood Moon, final wave, victory, and defeat cues; no samples; newly exposed cues still require complete runtime/UI event wiring |
+| Original soundtrack      | `public/assets/audio/music/*.mp3` | Gemini/Lyria 3 MP3 exports                                        | Team-directed AI-generated assets | Three offline 30.8-second instrumentals route to menu, match, and boss states with adaptive crossfades                                                        |
+| Menu interaction samples | `public/assets/audio/ui/*.ogg`    | Kenney UI Audio OGG files                                         | CC0 1.0; bundled license          | Seven selected samples reinforce confirm, select, navigate, open, close, toggle, and error actions                                                            |
 
 The generated noise buffer is computed during runtime and is not an authored or downloaded recording.
 
 ## Repository Screenshots and Capture
 
-The README retains the coherent v0.16 release capture set produced at 1440×810 on 2026-07-15 and replaces the three character-dependent views with direct 1440×900 captures of the voxel renderer from 2026-07-20. Deterministic development routes provide repeatable goal, boss, upgrade, evolution, victory, and 72-enemy states. No crop, color correction, compositing, or post-processing was applied.
+The README retains the supporting v0.16 release capture set and adds direct 1728×851 production captures of the v0.17 title, creator, and customized kickoff from 2026-07-20. Deterministic development routes provide repeatable goal, boss, upgrade, evolution, victory, and 72-enemy states. No crop, color correction, compositing, or post-processing was applied.
 
 ### Current README capture set
 
 | Path                                          | State/source                                    | SHA-256                                                            |
 | --------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| `docs/screenshots/title-screen-v017.png`      | v0.17 production title and creator entry point  | `0386ab107ae0dbc28490edcf082c56bab57e713ac4060b3876a300b00142e111` |
+| `docs/screenshots/character-creator-v017.png` | Live creator with Crimson Comet preview         | `6897dd986ac140de58e56b45bc0db2aff087da9699ef46809a918e62dea1f26c` |
+| `docs/screenshots/gameplay-v017.png`          | Saved custom striker in a production match      | `de6de32faa2bbc2934330732a6e151e9077cf19c6a6f94bae21c70ec07ab06fd` |
 | `docs/screenshots/gameplay-voxel.png`         | Current original voxel hero kickoff             | `f76a390e2b15884daed98a06158adfa8933af09cda7d6f5b34c2edbeb974767e` |
 | `docs/screenshots/dense-roster-voxel.png`     | Current deterministic 72-enemy voxel roster     | `0cb38d4046f61b8c52d01fb7e9b90e389931950212dda65c1f545f3c447ba0ec` |
 | `docs/screenshots/character-codex-voxel.png`  | Current live voxel-rig viewer and portrait set  | `f2e2d0df789ff02b394d6fd24a666e1592e632063a35745f7e0152b1c3d55a01` |
@@ -134,7 +137,7 @@ The capture method is recorded at the level verified by the repository history. 
 | Application packaging artwork                         | `build/icon.svg`; `build/icon.png`; `build/icon.icns`; `build/icon.ico`                                                        | Huntrix-authored SVG crest converted locally for Electron packaging; PNG SHA-256 `0334e1749cef47b63a056b01bae6e96d5262ee7653a9bb8513345980eccd9be6`; project-created.                                                                   |
 | External textures or sprites                          | `public/assets/vendor/ambientcg/grass007/color.jpg`; `normal-gl.jpg`; `roughness.jpg`                                          | ambientCG Grass 007 1K-JPG, CC0 1.0; bundled license and exact provenance are recorded in `ASSET_CREDITS.md`.                                                                                                                           |
 | Imported 3D models (`.glb`, `.gltf`, or source scene) | `public/assets/vendor/quaternius/night-striker.glb`; `public/assets/vendor/quaternius/universal-animation-library.glb`         | Quaternius Universal Base Characters and Universal Animation Library, free Standard editions, CC0 1.0. Optimized with glTF Transform; exact provenance, hashes, modifications, and bundled licenses are recorded in `ASSET_CREDITS.md`. |
-| Recorded or generated audio files                     | _None_                                                                                                                         | Procedural Web Audio code is listed above; any future rendered file needs generator/recording source and editing history.                                                                                                               |
+| Recorded or generated audio files                     | Three `public/assets/audio/music/*.mp3` tracks; seven `public/assets/audio/ui/*.ogg` samples                                   | Gemini/Lyria soundtrack provenance is recorded in `docs/art/AUDIO_GENERATION_RECORD.md`; Kenney UI Audio is CC0 1.0 with bundled license and exact source in `ASSET_CREDITS.md`.                                                        |
 | Bundled font files                                    | _None_                                                                                                                         | Record foundry, source URL, license file, subset/conversion, and uses when added.                                                                                                                                                       |
 | Third-party logos or character art                    | _None_                                                                                                                         | Do not add without documented permission compatible with redistribution.                                                                                                                                                                |
 

@@ -315,6 +315,10 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 
 ## CI, packaging, and releases
 
+- [x] `P0` Add original offline menu, match, and boss soundtracks with adaptive crossfades.
+- [x] `P0` Add licensed CC0 menu samples, bundled license text, offline loading, and procedural fallbacks.
+- [x] `P0` Add a persistent custom-player creator with live animation preview and match integration.
+- [x] `P0` Refresh the title, creator, and custom-gameplay screenshots for v0.17.
 - [x] `P0` Pin the Node/package-manager version used by local and CI builds.
 - [x] `P0` Make clean installs reproducible from the lockfile.
 - [x] `P0` Run format/lint/tests/type-check/web build on pushes to main and pull requests.
