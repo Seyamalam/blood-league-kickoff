@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Stable v0.16.0 character-art milestone       |
+| Status    | Voxel animation and visual-polish milestone  |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -59,7 +59,13 @@ The character overhaul now uses an original block-football visual language built
 
 ![Current league difficulty and optional match modifiers](docs/screenshots/difficulty-v016.png)
 
-![Current live voxel-rig character preview and original portrait roster](docs/screenshots/character-codex-voxel.png)
+![Interactive voxel kit room with expressive face, hero identity, difficulty, and signature actions](docs/screenshots/character-kit-room-polish.png)
+
+The kit room now resets every selected hero to a readable front-facing introduction, supports drag and button turntable controls, and exposes signature actions alongside concise trait, play-style, and difficulty guidance. Narrow layouts reposition the 3D stage so the identity card does not cover the character.
+
+### Voxel armory and opposition
+
+![Voxel football weapons and all eleven enemy silhouettes in the 72-enemy acceptance scene](docs/screenshots/voxel-armory-stress.png)
 
 ### Settings
 
@@ -107,7 +113,9 @@ The next replayability layer uses six original football-style archetypes. They d
 
 Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The shipping player is now a lightweight original voxel athlete generated locally at startup—there is no model fetch, skinning dependency, or loading fallback during kickoff.
 
-All six selections share one articulated voxel skeleton while receiving animation-safe proportions, full football kits, unique block-built head and equipment silhouettes, boots, and palette accents: captain band and scarf, speed crest and calf fins, shoulder armor, fang collar, wrist wraps and canister, or keeper helm and forearm guards. Nineteen deterministic code-driven states cover idle, dribble, sprint, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, defeat, and enemy chase/attack/hit motion. Priority locks prevent locomotion from cancelling techniques or reactions. Semantic contact timing and root, foot, hand, and head sockets keep ball physics immediate while impact presentation lands on the visible contact frame.
+All six selections share one articulated voxel skeleton while receiving animation-safe proportions, full football kits, unique block-built head and equipment silhouettes, boots, and palette accents: captain band and scarf, speed crest and calf fins, shoulder armor, fang collar, wrist wraps and canister, or keeper helm and forearm guards. Nineteen deterministic code-driven states cover idle, dribble, sprint, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, defeat, and enemy chase/attack/hit motion. Transitions now blend instead of snapping, compatible techniques layer over continuing locomotion, upper-body aim remains independent from the legs, and render-only ground samples plant each foot against slopes. Six motion profiles give Maestro controlled elegance, Breakaway explosive cadence, Tower deliberate weight, Finisher aggression, Engine endurance, and Guardian stability. Brows, mouths, fangs, eye squint, reactions, celebrations, and deterministic blinking follow the active state.
+
+The visual armory replaces plain combat primitives with cached compound voxel footballs, blood bolts, blood shards, cleated boots, spectral whistles, cursed goal frames, cards, trophies, and banners. Secondary-weapon families use authored per-model scale and orientation so they remain identifiable without becoming giant blocks. Ordinary opponents, both minibosses, and Count Goalkeeper now share the block-built anatomy language while preserving distinct equipment, posture, cadence, attack cues, and distance LODs.
 
 The Career Codex now includes an on-demand WebGL kit room using the shipping model and animations, plus 25 original generated portraits covering all six heroes, eleven ordinary enemies, four rival captains, two minibosses, the goal-line blocker, and Count Goalkeeper. Their generation briefs, preserved masters, crop history, and hashes are recorded in the [portrait generation record](docs/art/PORTRAIT_GENERATION_RECORD.md).
 
@@ -196,7 +204,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 
 ## Development
 
-### Current progress — July 15, 2026
+### Current progress — July 20, 2026
 
 - [x] Game concept, theme interpretation, scope gates, and architecture selected
 - [x] Git repository initialized from the jam's empty starting point

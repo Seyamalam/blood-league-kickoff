@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 export type VoxelFacialStyle = 'focused' | 'fierce' | 'calm' | 'masked';
 export type VoxelHairStyle = 'none' | 'crop' | 'swept' | 'crest';
+export type VoxelExpression = 'neutral' | 'focused' | 'attack' | 'hurt' | 'celebrate' | 'defeated';
 
 export interface VoxelHumanoidColors {
   readonly skin: THREE.ColorRepresentation;
@@ -114,6 +115,11 @@ export default interface VoxelHumanoid {
   readonly rightLowerLeg: THREE.Group;
   readonly rightFoot: THREE.Group;
   readonly sockets: VoxelHumanoidSockets;
+  readonly expression: VoxelExpression;
+  /** Changes brows, mouth, eyes, and fangs without replacing face geometry. */
+  readonly setExpression: (expression: VoxelExpression) => void;
+  /** Advances deterministic blinking and small facial motion. */
+  readonly updateFace: (dt: number) => void;
   /** Recolors this athlete without rebuilding its hierarchy or affecting shared instances. */
   readonly setPalette: (palette: VoxelHumanoidPaletteUpdate) => void;
   /** Releases this instance's references to shared geometries and materials. */
@@ -257,6 +263,12 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
   const castShadow = options.castShadow ?? true;
   const releases: (() => void)[] = [];
   const materialReleases = new Map<THREE.Mesh, () => void>();
+  const faceParts: {
+    eyes: THREE.Mesh[];
+    brows: THREE.Mesh[];
+    mouth?: THREE.Mesh;
+    fangs: THREE.Mesh[];
+  } = { eyes: [], brows: [], fangs: [] };
 
   const root = namedGroup(prefix, 'root');
   root.userData.visualRole = 'voxel-humanoid';
@@ -326,16 +338,26 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
   const eyeY = p.headSize * 0.59;
   const eyeTilt = facialStyle === 'fierce' ? 0.035 : facialStyle === 'calm' ? -0.015 : 0;
   const eyeHeight = facialStyle === 'masked' ? 0.075 : 0.045;
-  createBox(head, 'left-eye', [0.065, eyeHeight, 0.018], colors.eyes, [
+  const leftEye = createBox(head, 'left-eye', [0.065, eyeHeight, 0.018], colors.eyes, [
     -p.headSize * 0.19,
     eyeY + eyeTilt,
     faceZ,
   ]);
-  createBox(head, 'right-eye', [0.065, eyeHeight, 0.018], colors.eyes, [
+  const rightEye = createBox(head, 'right-eye', [0.065, eyeHeight, 0.018], colors.eyes, [
     p.headSize * 0.19,
     eyeY - eyeTilt,
     faceZ,
   ]);
+  faceParts.eyes.push(leftEye, rightEye);
+  for (const side of [-1, 1] as const) {
+    const brow = createBox(head, side < 0 ? 'left-brow' : 'right-brow', [0.105, 0.028, 0.02], colors.hair, [
+      side * p.headSize * 0.19,
+      eyeY + 0.105,
+      faceZ + 0.006,
+    ]);
+    brow.rotation.z = side * (facialStyle === 'fierce' ? 0.24 : 0.08);
+    faceParts.brows.push(brow);
+  }
   if (facialStyle === 'masked') {
     createBox(head, 'face-mask', [p.headSize * 0.76, p.headSize * 0.18, 0.02], colors.accent, [
       0,
@@ -344,7 +366,20 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
     ]);
   } else {
     const mouthWidth = facialStyle === 'fierce' ? p.headSize * 0.25 : p.headSize * 0.18;
-    createBox(head, 'mouth', [mouthWidth, 0.025, 0.018], colors.eyes, [0, p.headSize * 0.32, faceZ]);
+    faceParts.mouth = createBox(head, 'mouth', [mouthWidth, 0.025, 0.018], colors.eyes, [
+      0,
+      p.headSize * 0.32,
+      faceZ,
+    ]);
+    for (const side of [-1, 1] as const) {
+      const fang = createBox(head, side < 0 ? 'left-fang' : 'right-fang', [0.035, 0.075, 0.022], 0xf1e8d7, [
+        side * p.headSize * 0.1,
+        p.headSize * 0.31,
+        faceZ + 0.008,
+      ]);
+      fang.visible = facialStyle === 'fierce';
+      faceParts.fangs.push(fang);
+    }
   }
 
   if (accessories.hair !== 'none') {
@@ -529,6 +564,47 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
   };
 
   let disposed = false;
+  let expression: VoxelExpression = facialStyle === 'fierce' ? 'focused' : 'neutral';
+  let faceElapsed = 0;
+  let blinkElapsed = 0.9 + hashPrefix(prefix) * 1.4;
+  const setExpression = (next: VoxelExpression) => {
+    if (disposed) return;
+    expression = next;
+    root.userData.expression = next;
+    const intensity =
+      next === 'attack' || next === 'hurt' ? 1 : next === 'focused' ? 0.65 : next === 'celebrate' ? -0.5 : 0;
+    for (let index = 0; index < faceParts.brows.length; index += 1) {
+      const side = index === 0 ? -1 : 1;
+      faceParts.brows[index]!.rotation.z = side * (0.08 + intensity * 0.3);
+      faceParts.brows[index]!.position.y = eyeY + 0.105 + (next === 'hurt' ? 0.025 : 0);
+    }
+    if (faceParts.mouth) {
+      faceParts.mouth.scale.set(
+        next === 'celebrate' ? 1.35 : next === 'attack' || next === 'hurt' ? 0.72 : 1,
+        next === 'attack' || next === 'hurt' ? 3.2 : next === 'defeated' ? 1.8 : 1,
+        1,
+      );
+      faceParts.mouth.rotation.z = next === 'defeated' ? 0.12 : 0;
+    }
+    for (const fang of faceParts.fangs) {
+      fang.visible = next === 'attack' || next === 'celebrate' || facialStyle === 'fierce';
+      fang.scale.y = next === 'attack' ? 1.35 : 1;
+    }
+  };
+  const updateFace = (dt: number) => {
+    if (disposed) return;
+    const step = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 0.1)) : 0;
+    faceElapsed += step;
+    blinkElapsed -= step;
+    const blinking = blinkElapsed <= 0 && blinkElapsed > -0.12;
+    if (blinkElapsed <= -0.12) blinkElapsed = 2.3 + hashPrefix(`${prefix}:${Math.floor(faceElapsed)}`) * 2.4;
+    const expressionSquint = expression === 'attack' ? 0.62 : expression === 'hurt' ? 0.42 : 1;
+    for (const eye of faceParts.eyes) eye.scale.y = blinking ? 0.08 : expressionSquint;
+    if (faceParts.mouth && expression === 'celebrate') {
+      faceParts.mouth.position.y = p.headSize * 0.32 + Math.sin(faceElapsed * 8) * 0.006;
+    }
+  };
+  setExpression(expression);
   const dispose = () => {
     if (disposed) return;
     disposed = true;
@@ -564,6 +640,11 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
       leftFoot: leftLeg.socket,
       rightFoot: rightLeg.socket,
     },
+    get expression() {
+      return expression;
+    },
+    setExpression,
+    updateFace,
     setPalette,
     dispose,
   };
@@ -572,6 +653,7 @@ export function createVoxelHumanoid(options: VoxelHumanoidOptions = {}): VoxelHu
 function paletteRoleForPart(role: string): keyof VoxelHumanoidColors {
   if (role === 'hair') return 'hair';
   if (role.includes('eye') || role === 'mouth') return 'eyes';
+  if (role.includes('brow')) return 'hair';
   if (role === 'face-mask' || role.includes('shoulder-pad') || role.includes('wristband')) {
     return 'accent';
   }
@@ -581,4 +663,13 @@ function paletteRoleForPart(role: string): keyof VoxelHumanoidColors {
   if (role.includes('lower-leg')) return 'socks';
   if (role.includes('foot')) return 'boots';
   return 'kitPrimary';
+}
+
+function hashPrefix(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 0xffffffff;
 }

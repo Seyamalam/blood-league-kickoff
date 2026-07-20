@@ -43,6 +43,7 @@ import {
 import { uiIcon } from './icons';
 import { CURSE_ICON_URLS, EVOLUTION_ICON_URLS, UPGRADE_ICON_URLS } from './progressionIcons';
 import { CharacterCodexPreview, isCodexPreviewState } from './CharacterCodexPreview';
+import { CHARACTER_SELECTION_PRESENTATIONS } from '../render/objects/VoxelCharacterPresentation';
 
 export type CareerCharacterSelectedCallback = (characterId: CharacterId) => void;
 
@@ -68,6 +69,10 @@ export interface CareerCharacterView {
   matches: number;
   wins: number;
   bestScore: number;
+  difficulty: number;
+  difficultyLabel: string;
+  tagline: string;
+  playStyle: string;
 }
 
 export interface CareerChallengeView {
@@ -129,6 +134,7 @@ export class CareerOverlay {
   private readonly stadiumGrid: HTMLElement;
   private readonly codex: HTMLElement;
   private readonly characterPreview: CharacterCodexPreview;
+  private readonly characterPreviewDetails: HTMLElement;
   private readonly recentRuns: HTMLElement;
   private readonly scoreBoard: HTMLElement;
   private readonly fastestVictoryBoard: HTMLElement;
@@ -183,12 +189,19 @@ export class CareerOverlay {
           <section class="career-section career-codex" aria-labelledby="career-codex-title">
             <header><h3 id="career-codex-title">NIGHT LEAGUE CODEX</h3><p>Discover characters, armory, evolutions, opposition, and curse contracts.</p></header>
             <div class="codex-character-preview">
-              <div class="codex-character-preview__status"><strong>3D KIT ROOM</strong><span>Loading shared-rig model…</span></div>
+              <div class="codex-character-preview__status"><strong>VOXEL KIT ROOM</strong><span>Loading articulated athlete…</span></div>
+              <aside class="codex-character-preview__details" aria-live="polite">
+                ${characterPreviewDetails('maestro')}
+              </aside>
               <div class="codex-character-preview__controls" aria-label="Character model preview controls">
                 <div class="codex-character-preview__characters">
                   ${CHARACTER_IDS.map((id) => `<button type="button" data-preview-character="${id}">${CHARACTER_DEFINITIONS[id].name.replace('The ', '')}</button>`).join('')}
                 </div>
                 <div class="codex-character-preview__animations">
+                  <button type="button" data-preview-turn="-1" aria-label="Rotate character left">↶</button>
+                  <button type="button" data-preview-turn="1" aria-label="Rotate character right">↷</button>
+                  <button type="button" data-preview-auto="true">AUTO TURN</button>
+                  <button type="button" data-preview-signature="true">SIGNATURE</button>
                   <button type="button" data-preview-animation="idle">IDLE</button>
                   <button type="button" data-preview-animation="dribble">DRIBBLE</button>
                   <button type="button" data-preview-animation="shoot">SHOOT</button>
@@ -231,6 +244,7 @@ export class CareerOverlay {
     this.characterPreview = new CharacterCodexPreview(
       requiredElement(this.element, '.codex-character-preview'),
     );
+    this.characterPreviewDetails = requiredElement(this.element, '.codex-character-preview__details');
     this.recentRuns = requiredElement(this.element, '.career-runs');
     this.scoreBoard = requiredElement(this.element, '.career-score-board');
     this.fastestVictoryBoard = requiredElement(this.element, '.career-speed-board');
@@ -338,6 +352,9 @@ export class CareerOverlay {
         article.innerHTML = `
           <div class="career-character__portrait"><img src="${character.portraitUrl}" alt="${character.name} original character portrait"><span>${character.role}</span></div>
           <header><div><small>${character.role}</small><h4>${character.name}</h4></div><span>${character.unlocked ? (character.selected ? 'SELECTED' : 'UNLOCKED') : `LEVEL ${character.unlockLevel}`}</span></header>
+          <blockquote>${character.tagline}</blockquote>
+          <div class="career-character__difficulty"><strong>${character.difficultyLabel}</strong><span aria-label="${character.difficulty} out of 5 difficulty">${'◆'.repeat(character.difficulty)}${'◇'.repeat(5 - character.difficulty)}</span></div>
+          <p class="career-character__playstyle">${character.playStyle}</p>
           <p><strong>TRAIT</strong> ${character.trait}</p>
           <p><strong>WEAKNESS</strong> ${character.weakness}</p>
           <dl><div><dt>Mastery</dt><dd>LV ${character.masteryLevel}</dd></div><div><dt>Mastery XP</dt><dd>${character.masteryXp.toLocaleString()}</dd></div><div><dt>Matches</dt><dd>${character.matches}</dd></div><div><dt>Wins</dt><dd>${character.wins}</dd></div><div><dt>Best score</dt><dd>${character.bestScore.toLocaleString()}</dd></div></dl>
@@ -426,7 +443,35 @@ export class CareerOverlay {
         : null;
     if (previewCharacter) {
       const id = previewCharacter.dataset.previewCharacter;
-      if (isCharacterId(id)) this.characterPreview.setCharacter(id);
+      if (isCharacterId(id)) {
+        this.characterPreview.setCharacter(id);
+        this.characterPreviewDetails.innerHTML = characterPreviewDetails(id);
+        this.element
+          .querySelectorAll('[data-preview-character]')
+          .forEach((button) => button.toggleAttribute('aria-current', button === previewCharacter));
+      }
+      return;
+    }
+    const previewTurn =
+      event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-preview-turn]') : null;
+    if (previewTurn) {
+      this.characterPreview.rotate(previewTurn.dataset.previewTurn === '-1' ? -1 : 1);
+      return;
+    }
+    const previewAuto =
+      event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-preview-auto]') : null;
+    if (previewAuto) {
+      const enabled = this.characterPreview.toggleAutoRotate();
+      previewAuto.classList.toggle('is-active', enabled);
+      previewAuto.setAttribute('aria-pressed', String(enabled));
+      return;
+    }
+    const previewSignature =
+      event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('[data-preview-signature]')
+        : null;
+    if (previewSignature) {
+      this.characterPreview.playSignature();
       return;
     }
     const previewAnimation =
@@ -624,6 +669,7 @@ export function createCareerViewModel(
     levelXpTarget: nextLevel - levelFloor,
     characters: CHARACTER_IDS.map((id) => {
       const definition = CHARACTER_DEFINITIONS[id];
+      const presentation = CHARACTER_SELECTION_PRESENTATIONS[id];
       const mastery = profile.characterMastery[id];
       const masteryLevel = masteryLevelForXp(mastery.xp);
       const nextMasteryReward = masteryRewardsFor(id).find((reward) => reward.level > masteryLevel);
@@ -653,6 +699,10 @@ export function createCareerViewModel(
         matches: mastery.matches,
         wins: mastery.wins,
         bestScore: mastery.bestScore,
+        difficulty: presentation.difficulty,
+        difficultyLabel: presentation.difficultyLabel,
+        tagline: presentation.tagline,
+        playStyle: presentation.playStyle,
       };
     }),
     challenges: Object.values(CHALLENGE_DEFINITIONS).map((definition) => {
@@ -714,6 +764,18 @@ export function createCareerViewModel(
       })
       .map((entry) => cloneRun(entry.run)),
   };
+}
+
+function characterPreviewDetails(id: CharacterId): string {
+  const definition = CHARACTER_DEFINITIONS[id];
+  const presentation = CHARACTER_SELECTION_PRESENTATIONS[id];
+  return `
+    <small>${definition.role}</small>
+    <h4>${definition.name}</h4>
+    <p>${presentation.tagline}</p>
+    <div><strong>${presentation.difficultyLabel}</strong><span>${'◆'.repeat(presentation.difficulty)}${'◇'.repeat(5 - presentation.difficulty)}</span></div>
+    <em>${presentation.playStyle}</em>
+  `;
 }
 
 function stadiumName(id: (typeof PROFILE_STADIUM_IDS)[number]): string {

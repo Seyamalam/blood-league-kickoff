@@ -36,10 +36,61 @@ describe('VoxelAnimationController', () => {
     expect(controller.play('sprint')).toBe(true);
     controller.update(0.135);
 
-    expect(rig.joints.leftUpperLeg.rotation.x).toBeCloseTo(0.92, 5);
-    expect(rig.joints.rightUpperLeg.rotation.x).toBeCloseTo(-0.92, 5);
-    expect(rig.joints.leftUpperArm.rotation.x).toBeCloseTo(-0.92 * 0.72, 5);
+    expect(rig.joints.leftUpperLeg.rotation.x).toBeGreaterThan(0.7);
+    expect(rig.joints.rightUpperLeg.rotation.x).toBeLessThan(-0.7);
+    expect(rig.joints.leftUpperArm.rotation.x).toBeLessThan(-0.4);
     expect(rigRoot.position).toEqual(rootPosition);
+  });
+
+  it('layers upper-body attacks over locomotion and preserves aim separation', () => {
+    const rig = makeRig();
+    const controller = new VoxelAnimationController(rig);
+
+    controller.setLocomotion('sprint');
+    controller.update(0.12);
+    controller.play('attack');
+    controller.setAimYaw(0.55);
+    controller.update(0.2);
+
+    expect(Math.abs(rig.joints.leftUpperLeg.rotation.x)).toBeGreaterThan(0.1);
+    expect(rig.joints.rightUpperArm.rotation.x).toBeLessThan(-0.4);
+    expect(rig.joints.torso.rotation.y).toBeGreaterThan(0.05);
+    expect(rig.joints.head.rotation.y).toBeGreaterThan(0.05);
+  });
+
+  it('plants both feet against independently sampled slope heights', () => {
+    const rig = makeRig();
+    const controller = new VoxelAnimationController(rig);
+
+    controller.setGrounding(0.12, 0.24, { x: 0.15, y: 0.98, z: -0.1 });
+    controller.play('idle');
+    controller.update(0.2);
+
+    expect(rig.joints.leftFoot.position.y).toBeCloseTo(0.12);
+    expect(rig.joints.rightFoot.position.y).toBeCloseTo(0.24);
+    expect(Math.abs(rig.joints.leftFoot.rotation.x)).toBeGreaterThan(0.05);
+    expect(Math.abs(rig.joints.rightFoot.rotation.z)).toBeGreaterThan(0.05);
+  });
+
+  it('gives heavy and explosive heroes visibly different stride personalities', () => {
+    const towerRig = makeRig();
+    const breakawayRig = makeRig();
+    const tower = new VoxelAnimationController(towerRig);
+    const breakaway = new VoxelAnimationController(breakawayRig);
+
+    tower.setPersonality('tower');
+    breakaway.setPersonality('breakaway');
+    tower.play('sprint');
+    breakaway.play('sprint');
+    tower.update(0.135);
+    breakaway.update(0.135);
+
+    expect(Math.abs(breakawayRig.joints.leftUpperLeg.rotation.x)).toBeGreaterThan(
+      Math.abs(towerRig.joints.leftUpperLeg.rotation.x),
+    );
+    expect(Math.abs(breakawayRig.joints.leftUpperArm.rotation.x)).toBeGreaterThan(
+      Math.abs(towerRig.joints.leftUpperArm.rotation.x),
+    );
   });
 
   it('locks one-shots against lower-priority locomotion and permits stronger reactions', () => {

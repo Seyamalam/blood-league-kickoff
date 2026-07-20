@@ -3135,6 +3135,33 @@ select:focus-visible,
 .career-character p strong {
   color: #d6a632;
 }
+.career-character blockquote {
+  min-height: 38px;
+  margin: 10px 0;
+  color: #f0dca5;
+  font:
+    italic 15px/1.3 Georgia,
+    serif;
+}
+.career-character__difficulty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #d6a632;
+  font:
+    800 9px Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+.career-character__difficulty span {
+  color: #d74b73;
+  letter-spacing: 0.16em;
+}
+.career-character .career-character__playstyle {
+  min-height: 42px;
+  color: #9f93a0;
+}
 .career-character__identity {
   display: grid;
   gap: 8px;
@@ -3250,6 +3277,11 @@ select:focus-visible,
   inset: 0;
   width: 100%;
   height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.codex-character-preview__canvas:active {
+  cursor: grabbing;
 }
 .codex-character-preview__status {
   position: absolute;
@@ -3280,8 +3312,56 @@ select:focus-visible,
   font-size: 0;
 }
 .codex-character-preview--ready .codex-character-preview__status span::after {
-  content: 'Shared rig · live animation · drag-free preview';
+  content: 'Shared rig · live animation · drag to rotate';
   font-size: 8px;
+}
+.codex-character-preview__details {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  right: 16px;
+  width: min(280px, 38%);
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid rgba(233, 196, 111, 0.18);
+  background: rgba(9, 6, 12, 0.72);
+  pointer-events: none;
+}
+.codex-character-preview__details small,
+.codex-character-preview__details strong {
+  color: #d6a632;
+  font:
+    800 8px Arial,
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.codex-character-preview__details h4 {
+  margin: 0;
+  color: #f6edf2;
+  font:
+    italic 24px Impact,
+    sans-serif;
+  letter-spacing: 0.06em;
+}
+.codex-character-preview__details p,
+.codex-character-preview__details em {
+  margin: 0;
+  color: #cbbdc8;
+  font:
+    10px/1.4 Arial,
+    sans-serif;
+}
+.codex-character-preview__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.codex-character-preview__details div span {
+  color: #d74b73;
+  font-size: 9px;
+  letter-spacing: 0.12em;
 }
 .codex-character-preview__controls {
   position: absolute;
@@ -3309,7 +3389,9 @@ select:focus-visible,
   letter-spacing: 0.08em;
 }
 .codex-character-preview__controls button:hover,
-.codex-character-preview__controls button:focus-visible {
+.codex-character-preview__controls button:focus-visible,
+.codex-character-preview__controls button.is-active,
+.codex-character-preview__controls button[aria-current='true'] {
   color: #fff3d1;
   border-color: #e9c46f;
   background: rgba(85, 23, 48, 0.9);
@@ -3444,6 +3526,21 @@ select:focus-visible,
   .career-characters,
   .career-leaderboards__grid {
     grid-template-columns: 1fr;
+  }
+  .codex-character-preview__details {
+    width: 52%;
+    top: 48px;
+    right: 10px;
+    padding: 10px;
+  }
+  .codex-character-preview__details h4 {
+    font-size: 20px;
+  }
+  .codex-character-preview__details em {
+    display: none;
+  }
+  .codex-character-preview__status {
+    display: none;
   }
   .career-account__stats,
   .career-account__bests {

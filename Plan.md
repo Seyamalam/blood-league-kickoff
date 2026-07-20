@@ -13,7 +13,7 @@ Create a polished third-person 3D horde-survival roguelite in which football is 
 - **Special camera:** Brief first-person Focus Kick ultimate only
 - **Platforms:** Web and macOS throughout alpha development; Windows x64 and Linux x64 only after the game is finished
 - **Session:** 8–10 minutes guaranteed; up to 12 minutes only after the scope gates pass
-- **Art direction:** Stylized low-poly gothic stadium, moonlit blue environment, crimson vampire effects, and gold holy weapons
+- **Art direction:** Original voxel football athletes and enemies inside a stylized gothic stadium, with crimson vampire effects, gold holy weapons, and authored compound voxel props
 
 This code-first stack lets the team iterate, test, profile, and build without a proprietary editor. Electron provides a self-contained desktop game while WebGL 2 uses the player's GPU. Actual 120 FPS depends on hardware and quality settings; stable 60 FPS is the guaranteed baseline.
 

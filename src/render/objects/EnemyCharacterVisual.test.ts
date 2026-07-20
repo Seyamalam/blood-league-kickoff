@@ -5,6 +5,7 @@ import {
   chooseEnemyVisualLod,
   createEnemyCharacterPresentation,
   ENEMY_VISUAL_IDENTITIES,
+  updateEnemyCharacterPose,
 } from './EnemyCharacterVisual';
 
 const ARCHETYPES = Object.keys(ENEMY_VISUAL_IDENTITIES) as EnemyArchetype[];
@@ -111,5 +112,19 @@ describe('enemy character visual identities', () => {
     expect(chooseEnemyVisualLod(17 * 17, 'quality')).toBe('near');
     expect(chooseEnemyVisualLod(30 * 30, 'quality')).toBe('mid');
     expect(chooseEnemyVisualLod(40 * 40, 'quality')).toBe('far');
+  });
+
+  it('gives fast, heavy, and hunched archetypes distinct authored movement postures', () => {
+    const winger = createEnemyCharacterPresentation('winger');
+    const defender = createEnemyCharacterPresentation('defender');
+    const leech = createEnemyCharacterPresentation('leechStriker');
+
+    updateEnemyCharacterPose(winger, 0.12, 1, true, 'chase', false);
+    updateEnemyCharacterPose(defender, 0.12, 1, true, 'chase', false);
+    updateEnemyCharacterPose(leech, 0.12, 1, true, 'chase', false);
+
+    expect(Math.abs(winger.leftLeg!.rotation.x)).toBeGreaterThan(Math.abs(defender.leftLeg!.rotation.x));
+    expect(leech.proceduralBody.rotation.x).toBeLessThan(-0.2);
+    expect(defender.proceduralBody.rotation.x).toBeGreaterThan(0);
   });
 });

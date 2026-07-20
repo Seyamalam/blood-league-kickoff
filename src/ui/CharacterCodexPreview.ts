@@ -10,12 +10,18 @@ import {
   type VoxelPlayerVariantController,
 } from '../render/objects/VoxelPlayerVariants';
 import type { FootballAnimationState } from '../render/objects/FootballAnimationContract';
+import { CHARACTER_SELECTION_PRESENTATIONS } from '../render/objects/VoxelCharacterPresentation';
 
 export const CODEX_PREVIEW_STATES = Object.freeze([
   'idle',
   'dribble',
+  'groundPass',
+  'lobPass',
   'shoot',
+  'header',
   'slideTackle',
+  'bicycleKick',
+  'celebration',
   'victory',
 ] satisfies readonly FootballAnimationState[]);
 
@@ -40,6 +46,11 @@ export class CharacterCodexPreview {
   private active = false;
   private disposed = false;
   private frame = 0;
+  private turntableAngle = 0;
+  private turntableVelocity = 0;
+  private autoRotate = true;
+  private dragging = false;
+  private dragX = 0;
 
   public constructor(private readonly host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({
@@ -83,10 +94,15 @@ export class CharacterCodexPreview {
     this.variants = createVoxelPlayerVariantController(this.rig);
     this.variants.apply(this.selectedCharacter);
     this.animations = new VoxelAnimationController(this.rig);
-    this.animations.play('idle');
+    this.animations.setPersonality(this.selectedCharacter);
+    this.animations.play(CHARACTER_SELECTION_PRESENTATIONS[this.selectedCharacter].introductionState);
     this.stage.userData.previewCharacter = this.selectedCharacter;
     this.stage.userData.previewAnimation = 'idle';
     this.host.classList.add('codex-character-preview--ready');
+    this.renderer.domElement.addEventListener('pointerdown', this.handlePointerDown);
+    this.renderer.domElement.addEventListener('pointermove', this.handlePointerMove);
+    this.renderer.domElement.addEventListener('pointerup', this.handlePointerUp);
+    this.renderer.domElement.addEventListener('pointercancel', this.handlePointerUp);
 
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -105,8 +121,14 @@ export class CharacterCodexPreview {
 
   public setCharacter(id: CharacterId): void {
     this.selectedCharacter = id;
+    this.turntableAngle = 0;
+    this.turntableVelocity = 0;
     this.variants.apply(id);
+    this.animations.setPersonality(id);
+    this.animations.reset();
+    this.animations.play(CHARACTER_SELECTION_PRESENTATIONS[id].introductionState);
     this.stage.userData.previewCharacter = id;
+    this.stage.userData.previewAnimation = CHARACTER_SELECTION_PRESENTATIONS[id].introductionState;
   }
 
   public play(state: CodexPreviewState): boolean {
@@ -118,11 +140,33 @@ export class CharacterCodexPreview {
     return played;
   }
 
+  public playSignature(): boolean {
+    const state = CHARACTER_SELECTION_PRESENTATIONS[this.selectedCharacter].signatureState;
+    this.animations.reset();
+    const played = this.animations.play(state);
+    if (played) this.stage.userData.previewAnimation = state;
+    return played;
+  }
+
+  public rotate(direction: -1 | 1): void {
+    this.autoRotate = false;
+    this.turntableVelocity += direction * 1.8;
+  }
+
+  public toggleAutoRotate(): boolean {
+    this.autoRotate = !this.autoRotate;
+    return this.autoRotate;
+  }
+
   public dispose(): void {
     if (this.disposed) return;
     this.setActive(false);
     this.disposed = true;
     this.resizeObserver?.disconnect();
+    this.renderer.domElement.removeEventListener('pointerdown', this.handlePointerDown);
+    this.renderer.domElement.removeEventListener('pointermove', this.handlePointerMove);
+    this.renderer.domElement.removeEventListener('pointerup', this.handlePointerUp);
+    this.renderer.domElement.removeEventListener('pointercancel', this.handlePointerUp);
     this.animations.dispose();
     this.variants.dispose();
     this.rig.dispose();
@@ -136,14 +180,40 @@ export class CharacterCodexPreview {
     if (!this.active || this.disposed) return;
     const dt = Math.min(0.05, this.clock.getDelta());
     this.animations.update(dt);
-    this.stage.rotation.y = Math.sin(performance.now() * 0.00032) * 0.16;
+    if (this.autoRotate && !this.dragging) this.turntableVelocity += dt * 0.34;
+    this.turntableAngle += this.turntableVelocity * dt;
+    this.turntableVelocity *= Math.pow(0.08, dt);
+    this.stage.rotation.y = this.turntableAngle;
     this.renderer.render(this.scene, this.camera);
     this.frame = window.requestAnimationFrame(this.render);
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.dragging = true;
+    this.autoRotate = false;
+    this.dragX = event.clientX;
+    this.renderer.domElement.setPointerCapture(event.pointerId);
+  };
+
+  private readonly handlePointerMove = (event: PointerEvent): void => {
+    if (!this.dragging) return;
+    const delta = event.clientX - this.dragX;
+    this.dragX = event.clientX;
+    this.turntableAngle += delta * 0.012;
+    this.turntableVelocity = delta * 0.08;
+  };
+
+  private readonly handlePointerUp = (event: PointerEvent): void => {
+    this.dragging = false;
+    if (this.renderer.domElement.hasPointerCapture(event.pointerId)) {
+      this.renderer.domElement.releasePointerCapture(event.pointerId);
+    }
   };
 
   private resize(): void {
     const width = Math.max(240, this.host.clientWidth || 420);
     const height = Math.max(240, Math.min(430, this.host.clientHeight || 360));
+    this.stage.position.x = width < 500 ? -0.58 : 0;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;

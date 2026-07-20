@@ -7,6 +7,7 @@ import {
 } from '../../game/encounters';
 import type { EnemyState } from '../../game/simulation/types';
 import { defeatPose, enemyDeathPose, minibossEntrancePose } from './VampirePresentation';
+import { voxelFootballPropGeometry } from './VoxelFootballProps';
 
 interface EliteVisual {
   readonly mesh: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>;
@@ -325,6 +326,7 @@ function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
   group.name = `miniboss-${kind}`;
   group.userData.minibossRole = kind === 'crimsonCaptain' ? 'juggernaut' : 'summoner';
   group.userData.minibossSignature = kind === 'crimsonCaptain' ? 'armored-captain' : 'orbital-playmaker';
+  group.userData.visualStyle = 'articulated-voxel-miniboss';
   group.visible = false;
   const primary = new THREE.MeshStandardMaterial({
     color: kind === 'crimsonCaptain' ? 0x8e1238 : 0x45226f,
@@ -335,23 +337,29 @@ function createMinibossVisual(kind: MinibossState['kind']): THREE.Group {
   const armor = new THREE.MeshStandardMaterial({ color: 0x17131d, metalness: 0.62, roughness: 0.3 });
   const bone = new THREE.MeshStandardMaterial({ color: 0xc8b99f, roughness: 0.72 });
   const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(
-      kind === 'crimsonCaptain' ? 0.68 : 0.48,
-      kind === 'crimsonCaptain' ? 1.18 : 1.35,
-      5,
-      8,
+    new THREE.BoxGeometry(
+      kind === 'crimsonCaptain' ? 1.25 : 0.9,
+      kind === 'crimsonCaptain' ? 1.7 : 1.82,
+      0.72,
     ),
     primary,
   );
   body.name = kind === 'crimsonCaptain' ? 'captain-armored-body' : 'playmaker-body';
   body.position.y = 1.18;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(kind === 'crimsonCaptain' ? 0.48 : 0.4, 10, 7), bone);
+  const head = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      kind === 'crimsonCaptain' ? 0.82 : 0.7,
+      kind === 'crimsonCaptain' ? 0.82 : 0.74,
+      0.68,
+    ),
+    bone,
+  );
   head.name = kind === 'crimsonCaptain' ? 'captain-vampire-head' : 'playmaker-vampire-head';
   head.position.y = 2.22;
   const mask = new THREE.Mesh(createMaskGeometry(), armor);
   mask.name = `${kind}-face-mask`;
   mask.position.set(0, 2.22, 0.39);
-  const leftPauldron = new THREE.Mesh(new THREE.SphereGeometry(0.42, 9, 6, 0, Math.PI), armor);
+  const leftPauldron = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.3, 0.66), armor);
   leftPauldron.name = kind === 'crimsonCaptain' ? 'captain-shoulder-armor' : 'playmaker-shoulder-charm';
   leftPauldron.position.set(-0.66, 1.76, 0);
   leftPauldron.scale.set(1.25, 0.62, 0.92);
@@ -710,14 +718,14 @@ function createChevronGeometry(): THREE.ShapeGeometry {
 
 function createCursedFootball(panelMaterial: THREE.Material, seamMaterial: THREE.Material): THREE.Group {
   const ball = new THREE.Group();
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 7), panelMaterial);
+  const shell = new THREE.Mesh(voxelFootballPropGeometry('bloodBall').clone(), panelMaterial);
   shell.name = 'cursed-football-shell';
+  shell.scale.setScalar(0.78);
   ball.add(shell);
-  for (const rotation of [0, Math.PI / 3, -Math.PI / 3]) {
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.009, 4, 14), seamMaterial);
-    seam.rotation.set(Math.PI / 2, rotation, 0);
-    ball.add(seam);
-  }
+  const seam = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.08), seamMaterial);
+  seam.name = 'cursed-football-voxel-seam';
+  seam.position.z = 0.22;
+  ball.add(seam);
   return ball;
 }
 

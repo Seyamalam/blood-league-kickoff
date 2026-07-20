@@ -18,6 +18,7 @@ import { PitchSurfaceEffects } from '../objects/PitchSurfaceEffects';
 import { GoalNetResponse } from '../objects/GoalNetResponse';
 import { CharacterReadabilityLight } from '../objects/CharacterReadabilityLight';
 import { createVoxelHumanoid, type VoxelHumanoid } from '../objects/VoxelHumanoid';
+import { voxelFootballPropGeometry } from '../objects/VoxelFootballProps';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -783,7 +784,7 @@ function updateEnemyVisual(
 }
 
 const enemyGeometry = {
-  projectile: new THREE.OctahedronGeometry(0.22, 0),
+  projectile: voxelFootballPropGeometry('bloodBolt').clone(),
   threatMarker: new THREE.OctahedronGeometry(0.16, 0),
   eliteMarker: new THREE.TorusGeometry(0.72, 0.055, 5, 20),
 };

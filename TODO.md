@@ -96,6 +96,12 @@ Complete tasks in milestone order. `P0` is required, `P1` is target scope, and `
 - [x] `P1` Replace the smooth runtime player with an original modular voxel rig and remove GLB loading from gameplay and the Career preview.
 - [x] `P1` Convert ordinary-enemy near/mid/far anatomy to the same block-built visual language and retire the imported nearest-enemy pool.
 - [x] `P1` Add nineteen deterministic voxel animation states with priority locks, contact sockets, one-shot recovery, and terminal poses.
+- [x] `P1` Blend voxel animation transitions and layer compatible upper-body techniques over continuing locomotion.
+- [x] `P1` Add slope-aware render-only foot planting, independent upper-body aim, and six hero motion personalities.
+- [x] `P1` Add expressive voxel brows, mouths, fangs, squint, blinking, damage, celebration, and defeat reactions.
+- [x] `P1` Rebuild the kit room with front-facing introductions, drag/button turntable controls, signature poses, traits, play styles, and difficulty ratings.
+- [x] `P1` Replace plain projectile, pickup, secondary-weapon, goal-beacon, miniboss, and goalkeeper primitives with authored voxel-football silhouettes.
+- [x] `P1` Give all eleven ordinary enemies distinct cadence, posture, equipment, and near/mid/far silhouette identity.
 - [x] `P1` Define the production GLB/rig/animation/LOD/provenance acceptance contract.
 - [x] `P1` Import and optimize an audited CC0 skinned humanoid and compatible authored animation library while preserving the procedural fallback.
 - [x] `P1` Define the original no-likeness hero turnaround, kit, palette, face, equipment, modular-mesh, and shared-rig production package.
