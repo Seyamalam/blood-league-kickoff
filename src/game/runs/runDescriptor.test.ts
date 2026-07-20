@@ -25,6 +25,14 @@ describe('run descriptors', () => {
     expect(dailyRunSeed(new Date('2026-07-15T00:00:00.000Z')).seed).not.toBe(morning.seed);
   });
 
+  it('keeps the guided tutorial deterministic and isolated from scheduled challenges', () => {
+    const first = createRunDescriptor({ mode: 'tutorial', rulesetVersion: '0.18.0' });
+    const second = createRunDescriptor({ mode: 'tutorial', rulesetVersion: '0.18.0' });
+    expect(first).toEqual(second);
+    expect(first.challengeKey).toBeNull();
+    expect(first.mode).toBe('tutorial');
+  });
+
   it('handles ISO week-year boundaries', () => {
     expect(weeklyRunSeed(new Date('2026-12-31T12:00:00.000Z')).challengeKey).toBe('weekly:2026-W53');
     expect(weeklyRunSeed(new Date('2027-01-01T12:00:00.000Z')).challengeKey).toBe('weekly:2026-W53');

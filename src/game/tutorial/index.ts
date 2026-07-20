@@ -14,3 +14,11 @@ export type {
   TutorialStepId,
   TutorialUpdate,
 } from './types';
+export {
+  TUTORIAL_COMPLETION_CELEBRATION,
+  TUTORIAL_RUN_TIME_LIMIT,
+  createTutorialRunState,
+  tutorialAssistsFor,
+  updateTutorialRun,
+} from './tutorialRun';
+export type { TutorialAssist, TutorialRunOutcome, TutorialRunState } from './tutorialRun';

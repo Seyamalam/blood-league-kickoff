@@ -66,6 +66,7 @@ import {
   createMatchDirectorState,
   createMatchModifierState,
   FULL_MATCH_CONFIG,
+  TUTORIAL_MATCH_CONFIG,
   getMatchModifierEffects,
   getMatchObjective,
   selectRivalTeam,
@@ -128,7 +129,14 @@ import {
   type EnvironmentInteractionState,
 } from './game/encounters';
 import { GoalComboSystem } from './game/scoring';
-import { TutorialTracker, type TutorialSignal } from './game/tutorial';
+import {
+  createTutorialRunState,
+  tutorialAssistsFor,
+  TutorialTracker,
+  updateTutorialRun,
+  type TutorialRunState,
+  type TutorialSignal,
+} from './game/tutorial';
 import { RunTelemetry } from './game/stats';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { RenderBridge } from './render/adapters/RenderBridge';
@@ -144,6 +152,7 @@ import { PhaseAtmosphere } from './render/objects/PhaseAtmosphere';
 import { EncounterRenderer } from './render/objects/EncounterRenderer';
 import { StadiumPhaseVisual } from './render/objects/StadiumPhaseVisual';
 import { StadiumAmbience } from './render/objects/StadiumAmbience';
+import { ArenaBeautyPass } from './render/objects/ArenaBeautyPass';
 import { SettingsStore, type PlayerSettings } from './settings/SettingsStore';
 import {
   accountLevelForXp,
@@ -343,7 +352,9 @@ async function bootstrap(): Promise<void> {
   const atmosphere = new PhaseAtmosphere(scene);
   const stadiumPhaseVisual = new StadiumPhaseVisual(scene);
   const stadiumAmbience = new StadiumAmbience(scene);
+  const arenaBeauty = new ArenaBeautyPass(scene);
   const hud = new Hud(root);
+  hud.setTutorialRecommended(!hasCompletedTutorial());
   const careerOverlay = new CareerOverlay(root, profileStore, BUILD_METADATA.version, (characterId) => {
     selectedCharacterId = characterId;
     bridge.setCharacter(characterId);
@@ -372,7 +383,7 @@ async function bootstrap(): Promise<void> {
   const halftimeOverlay = new HalftimeOverlay(root);
   const announcement = new MatchAnnouncement(root);
   const evolutionToast = new EvolutionToast(root);
-  const tutorialTracker = new TutorialTracker(hasCompletedTutorial());
+  const tutorialTracker = new TutorialTracker(true);
   const tutorialPrompt = new TutorialPrompt(root);
   const perf = new PerfMeter();
   const frameTimeSampler = new FrameTimeSampler();
@@ -477,6 +488,7 @@ async function bootstrap(): Promise<void> {
   let lastEnvironmentHitId: number | null = null;
   if (qaScenario === 'goal') spawnGoalkeeperGuard(state);
   let resultsShown = false;
+  let tutorialRunState: TutorialRunState = createTutorialRunState();
   let runId = createRunId();
   let pendingHalftimeChoice: HalftimeChoice | undefined;
   let halftimeDeadline = 0;
@@ -744,7 +756,22 @@ async function bootstrap(): Promise<void> {
     tutorialSignals.add(signal);
     const update = tutorialTracker.signal(signal);
     tutorialPrompt.update(update.state);
-    if (update.tutorialCompleted) persistTutorialCompletion();
+    if (selectedRunMode === 'tutorial') {
+      for (const assist of tutorialAssistsFor(update.completedNow)) {
+        if (assist === 'prepare-ultimate') {
+          characterUltimate.reset(characterUltimate.state.chargeRequired);
+          announcement.show('kickoff', 'ULTIMATE READY · PRESS Q', 1.8);
+          audio.playUnlock();
+        } else {
+          bloodShards.spawnOnKill({ ...state.player.position }, totalXpRequiredForLevel(2) + 12, 8);
+          announcement.show('kickoff', 'BLOOD SHARDS RELEASED · COLLECT THEM', 1.8);
+        }
+      }
+    }
+    if (update.tutorialCompleted) {
+      persistTutorialCompletion();
+      hud.setTutorialRecommended(false);
+    }
   };
 
   const offerUpgrade = (): void => {
@@ -836,6 +863,8 @@ async function bootstrap(): Promise<void> {
     hud.setControlBindings(settings.keyBindings);
     bridge.setReducedFlashes(settings.reducedFlashes);
     bridge.setRenderQuality(settings.renderQuality);
+    arenaBeauty.setQuality(settings.renderQuality);
+    arenaBeauty.setReducedMotion(settings.reducedMotion);
     root.style.setProperty('--hud-scale', String(settings.hudScale));
     root.dataset.colorVision = settings.colorVisionMode;
     root.classList.toggle('high-contrast-hud', settings.highContrastHud);
@@ -862,6 +891,7 @@ async function bootstrap(): Promise<void> {
       'kickoff',
       `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
     );
+    hud.setTutorialMode(selectedRunMode === 'tutorial');
     tutorialPrompt.update(tutorialTracker.state);
     hud.start();
     input.requestPointerLock();
@@ -878,6 +908,24 @@ async function bootstrap(): Promise<void> {
     prepareProgressionForRun();
     begin();
     announcement.show('kickoff', `${mode.toUpperCase()} CHALLENGE · SEED ${runDescriptor.seedCode}`);
+  };
+  const beginTutorialRun = (): void => {
+    selectedCurses = [];
+    activeDifficultyRuleset = {
+      ...createDifficultyRuleset('rookie'),
+      enemyHealthMultiplier: 0.64,
+      enemyDamageMultiplier: 0.36,
+      spawnRateMultiplier: 0.48,
+      rewardMultiplier: 0,
+    };
+    activeMatchConfig = TUTORIAL_MATCH_CONFIG;
+    prepareRun('tutorial');
+    prepareProgressionForRun();
+    tutorialSignals.clear();
+    tutorialTracker.reset(false);
+    tutorialRunState = createTutorialRunState();
+    begin();
+    announcement.show('kickoff', 'GUIDED KICKOFF · FOLLOW THE COACH', 2.4);
   };
   const resetEncounterState = (): void => {
     miniboss = null;
@@ -935,7 +983,8 @@ async function bootstrap(): Promise<void> {
     runId = createRunId();
     perf.reset();
     tutorialSignals.clear();
-    tutorialTracker.reset(hasCompletedTutorial());
+    tutorialTracker.reset(selectedRunMode !== 'tutorial');
+    tutorialRunState = createTutorialRunState();
     tutorialPrompt.reset();
     pendingHalftimeChoice = undefined;
     movementSpeedMultiplier = 1;
@@ -955,10 +1004,12 @@ async function bootstrap(): Promise<void> {
       'kickoff',
       `${CHARACTER_DEFINITIONS[selectedCharacterId].name.toUpperCase()} VS ${activeRivalTeam.name.toUpperCase()}`,
     );
+    hud.setTutorialMode(selectedRunMode === 'tutorial');
     tutorialPrompt.update(tutorialTracker.state);
     input.requestPointerLock();
   };
   const kickoffButton = hud.kickoffButton;
+  const tutorialRunButton = hud.tutorialRunButton;
   const dailyRunButton = hud.dailyRunButton;
   const weeklyRunButton = hud.weeklyRunButton;
   const customSeedButton = hud.customSeedButton;
@@ -975,6 +1026,7 @@ async function bootstrap(): Promise<void> {
     prepareProgressionForRun();
     begin();
   });
+  tutorialRunButton.addEventListener('click', beginTutorialRun);
   dailyRunButton.addEventListener('click', () => beginChallengeRun('daily'));
   weeklyRunButton.addEventListener('click', () => beginChallengeRun('weekly'));
   const beginCustomSeedRun = (): void => {
@@ -1097,7 +1149,8 @@ async function bootstrap(): Promise<void> {
     runId = createRunId();
     perf.reset();
     tutorialSignals.clear();
-    tutorialTracker.reset(hasCompletedTutorial());
+    tutorialTracker.reset(true);
+    tutorialRunState = createTutorialRunState();
     tutorialPrompt.reset();
     audio.setMatchIntensity('menu');
     pendingHalftimeChoice = undefined;
@@ -1483,6 +1536,10 @@ async function bootstrap(): Promise<void> {
             activeUltimateEffects.damageTakenMultiplier,
           absorbIncomingDamage,
         );
+        if (selectedRunMode === 'tutorial') {
+          state.player.health = Math.max(30, state.player.health);
+          state.player.invulnerability = Math.max(0.12, state.player.invulnerability);
+        }
         for (const enemy of state.enemies) {
           if (difficultyAdjustedEnemyIds.has(enemy.id)) continue;
           difficultyAdjustedEnemyIds.add(enemy.id);
@@ -1515,14 +1572,17 @@ async function bootstrap(): Promise<void> {
             audio.playHit(event.damage > 0 ? 1 : 0.6);
           }
         }
-        const pitchEvent = updatePitchEventDirector(pitchEventDirector, state, match.stage);
+        const pitchEvent =
+          selectedRunMode === 'tutorial'
+            ? null
+            : updatePitchEventDirector(pitchEventDirector, state, match.stage);
         if (pitchEvent) {
           eliteModifierBindings.push(...pitchEvent.eliteBindings);
           announcement.show('kickoff', pitchEvent.announcement, 1.55);
           audio.playBossPhase('bloodRush');
           bridge.voidBurst(pitchEvent.formation.enemies[0]?.position ?? state.player.position, 1.2);
         }
-        if (!miniboss || miniboss.phase === 'defeated') {
+        if (selectedRunMode !== 'tutorial' && (!miniboss || miniboss.phase === 'defeated')) {
           const scheduledEncounter = MINIBOSS_ENCOUNTER_SCHEDULE.find(
             (definition) =>
               !spawnedMinibossKinds.has(definition.kind) &&
@@ -2259,6 +2319,23 @@ async function bootstrap(): Promise<void> {
             stadiumAmbience.celebrate(0.28);
           }
         }
+        if (selectedRunMode === 'tutorial' && tutorialRunState.outcome === 'active') {
+          tutorialRunState = updateTutorialRun(tutorialRunState, FIXED_STEP, tutorialTracker.complete);
+          if (tutorialRunState.outcome !== 'active') {
+            state.phase = 'won';
+            audio.playVictory();
+            bridge.playPlayerOutcome('victory');
+            bridge.goalBurst(state.player.position, 1.35);
+            stadiumAmbience.celebrate(1.2);
+            announcement.show(
+              'finalWhistle',
+              tutorialRunState.outcome === 'completed'
+                ? 'TRAINING COMPLETE · READY FOR THE LEAGUE'
+                : 'TRAINING WINDOW COMPLETE · REPLAY TO FINISH EVERY LESSON',
+              3,
+            );
+          }
+        }
       }
       const recallStarted =
         (physics.ballState === 'recalling' || physics.ballState === 'recovering') &&
@@ -2286,6 +2363,7 @@ async function bootstrap(): Promise<void> {
     atmosphere.update(frameTime);
     stadiumPhaseVisual.update(frameTime);
     stadiumAmbience.update(frameTime);
+    arenaBeauty.update(frameTime);
     if (halftimeOverlay.isVisible) {
       const remaining = Math.max(0, (halftimeDeadline - performance.now()) / 1_000);
       halftimeOverlay.updateCountdown(remaining);
@@ -2352,7 +2430,7 @@ async function bootstrap(): Promise<void> {
       }
       if (state.phase === 'dead') audio.playDefeat();
       let settlement: RunSettlement | null = null;
-      if (!qaScenario) {
+      if (!qaScenario && runDescriptor.mode !== 'tutorial') {
         const previousBestScore = profileStore.value.personalBests.score;
         settlement = profileStore.recordRun({
           id: runId,
@@ -2402,6 +2480,8 @@ async function bootstrap(): Promise<void> {
           completedChallengeIds: settlement?.completedChallengeIds,
           masteryRewardIds: settlement?.newlyUnlockedMasteryRewardIds,
           runMode: runDescriptor.mode,
+          tutorialCompleted:
+            runDescriptor.mode === 'tutorial' ? tutorialRunState.outcome === 'completed' : undefined,
           seedCode: runDescriptor.seedCode,
           telemetry: runTelemetry.snapshot(),
         },
@@ -2467,6 +2547,7 @@ async function bootstrap(): Promise<void> {
     root.removeEventListener('click', onUiActivation);
     root.removeEventListener('change', onUiControlChange);
     kickoffButton.removeEventListener('click', begin);
+    tutorialRunButton.removeEventListener('click', beginTutorialRun);
     restartButton.removeEventListener('click', restart);
     victoryRestartButton.removeEventListener('click', restart);
     settingsButton.removeEventListener('click', openSettings);
@@ -2504,6 +2585,7 @@ async function bootstrap(): Promise<void> {
     uninstallQaSnapshotHook();
     stadiumPhaseVisual.dispose();
     stadiumAmbience.dispose();
+    arenaBeauty.dispose();
     atmosphere.dispose();
     bridge.dispose();
     aimGuide.dispose();

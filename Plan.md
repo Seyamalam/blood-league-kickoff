@@ -229,6 +229,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
 - `CharacterCustomizationStore` / `CharacterCreatorOverlay`: versioned local custom-player appearance with a live animated preview and match integration
 - `AudioAssets` / `AudioManager`: offline menu/match/boss soundtrack routing, CC0 UI samples, adaptive crossfades, and procedural fallbacks
+- `TutorialTracker` / `tutorialRun`: seven guided mechanic gates, deterministic three-minute training state, and bounded learning assists
+- `ArenaBeautyPass`: render-only, quality-scalable moon, stars, pitch-rim, light-shaft, and accent-light presentation
 - `desktopRuntime`: fixed-channel Electron IPC for window state, safe size presets, fullscreen, and explicit quit
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, eight director-selected archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
@@ -306,7 +308,7 @@ Audio priority is kick impact, ball flight/recall, player danger, goalkeeper res
 
 Persistent HUD: health, blood XP/level, clock/phase, ball state, ultimate charge, current objective, and boss health when relevant.
 
-Modal surfaces: custom-player creation, upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, persisted vertical-look inversion, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Desktop Quit belongs only on the title screen. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
+Normal play uses one compact combat cluster, one match readout, one objective chip, and transient contextual prompts. Modal surfaces are custom-player creation, upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, persisted vertical-look inversion, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Desktop Quit belongs only on the title screen. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
 
 ## 11. Build and Release Strategy
 

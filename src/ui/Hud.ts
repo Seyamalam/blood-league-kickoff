@@ -16,6 +16,7 @@ export class Hud {
   private readonly healthFill: HTMLElement;
   private readonly healthValue: HTMLElement;
   private readonly timer: HTMLElement;
+  private readonly timerLabel: HTMLElement;
   private readonly score: HTMLElement;
   private readonly enemies: HTMLElement;
   private readonly ball: HTMLElement;
@@ -49,7 +50,7 @@ export class Hud {
   private readonly bossFill: HTMLElement;
   private hintFadeTimeout: number | null = null;
 
-  constructor(root: HTMLElement) {
+  constructor(private readonly root: HTMLElement) {
     root.insertAdjacentHTML(
       'beforeend',
       `
@@ -57,22 +58,26 @@ export class Hud {
       <div class="hud">
         <header class="topbar">
           <div class="brand"><span class="brand-kicker">BLOOD LEAGUE</span><strong>KICKOFF</strong></div>
-          <div class="timer"><small>SURVIVAL</small><span id="timer">00:00</span></div>
-          <div class="score"><small>SCORE</small><span id="score">000000</span></div>
+          <div class="match-readout">
+            <div class="timer"><small id="timer-label">MATCH</small><span id="timer">00:00</span></div>
+            <span class="match-readout__divider" aria-hidden="true"></span>
+            <div class="score"><small>SCORE</small><span id="score">000000</span></div>
+          </div>
         </header>
         <div class="status-panel">
-          <div class="status-label"><span>VITALITY</span><span id="health-value">100</span></div>
-          <div class="health-track"><div id="health-fill" class="health-fill"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>KICK POWER</span><span id="charge-label">TAP / HOLD</span></div>
-          <div class="health-track" style="margin-top:4px"><div id="charge-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#d6a632,#fff0a6);box-shadow:0 0 14px rgba(255,214,90,.45);transition:none"></div></div>
-          <div class="status-row"><span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span><span id="ball-status" class="ball-state" data-state="possessed">POSSESSED · READY</span></div>
-          <div class="status-row" style="margin-top:6px"><span>${uiIcon('bolt')} MOBILITY</span><span id="dash-status">DASH READY</span></div>
-          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span class="hud-meter-label">${uiIcon('target')} FOCUS KICK</span><span id="focus-status">0%</span></div>
-          <div class="health-track" style="margin-top:4px"><div id="focus-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#b89526,#fff0a6);box-shadow:0 0 14px rgba(255,207,64,.4)"></div></div>
-          <div class="ultimate-status-row"><span><img id="ultimate-icon" alt="">CHARACTER ULTIMATE</span><span id="ultimate-status">0%</span></div>
-          <div class="health-track" style="margin-top:4px"><div id="ultimate-fill" class="health-fill ultimate-fill" style="width:0%"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:9px;color:#aaa5ad;font-size:9px;letter-spacing:.15em"><span>BLOOD LEVEL</span><span id="level-value">1</span></div>
-          <div class="health-track" style="margin-top:4px"><div id="xp-fill" class="health-fill" style="width:0%;background:linear-gradient(90deg,#6f1f91,#d95eff);box-shadow:0 0 14px rgba(190,74,255,.42)"></div></div>
+          <div class="vitality-row"><span>VITALITY</span><strong id="health-value">100 / 100</strong></div>
+          <div class="health-track health-track--vitality"><div id="health-fill" class="health-fill"></div></div>
+          <div class="combat-strip">
+            <span id="ball-status" class="ball-state" data-state="possessed">POSSESSED · READY</span>
+            <span><i class="dot crimson"></i><b id="enemies">0</b> HOSTILES</span>
+            <span id="dash-status" class="combat-strip__dash">DASH READY</span>
+          </div>
+          <div class="ability-deck">
+            <div class="ability-meter ability-meter--kick"><div><span>KICK</span><strong id="charge-label">READY</strong></div><div class="health-track"><div id="charge-fill" class="health-fill"></div></div></div>
+            <div class="ability-meter ability-meter--focus"><div><span>${uiIcon('target')} FOCUS</span><strong id="focus-status">0%</strong></div><div class="health-track"><div id="focus-fill" class="health-fill"></div></div></div>
+            <div class="ability-meter ability-meter--ultimate"><div><span><img id="ultimate-icon" alt="">ULTIMATE</span><strong id="ultimate-status">0%</strong></div><div class="health-track"><div id="ultimate-fill" class="health-fill ultimate-fill"></div></div></div>
+          </div>
+          <div class="blood-progress"><span>LV <strong id="level-value">1</strong></span><div class="health-track"><div id="xp-fill" class="health-fill"></div></div></div>
         </div>
         <div id="objective" class="objective" role="status" aria-live="polite" aria-atomic="true">KICKOFF · BREAK THROUGH THE OPENING RUSH</div>
         <div id="boss-panel" class="boss-panel hidden"><span id="boss-label">COUNT GOALKEEPER</span><div class="boss-track"><div id="boss-fill"></div></div></div>
@@ -97,6 +102,7 @@ export class Hud {
         <h1>BLOOD LEAGUE<br><em>KICKOFF</em></h1>
         <p>Survive the cursed stadium. Your ball is your weapon.<br>Kick it hard. Call it home.</p>
         <button type="button" id="kickoff-button">${uiIcon('play')}<span>ENTER THE PITCH</span></button>
+        <button type="button" id="tutorial-run-button" class="title-settings title-tutorial">${uiIcon('target')}<span>GUIDED KICKOFF</span><small>3-MINUTE TRAINING</small></button>
         <div class="title-challenge-runs" aria-label="Seeded challenge runs">
           <button type="button" id="daily-run-button" class="title-settings">${uiIcon('calendar')}<span>DAILY RUN</span></button>
           <button type="button" id="weekly-run-button" class="title-settings">${uiIcon('trophy')}<span>WEEKLY RUN</span></button>
@@ -132,6 +138,7 @@ export class Hud {
     this.healthFill = required('health-fill');
     this.healthValue = required('health-value');
     this.timer = required('timer');
+    this.timerLabel = required('timer-label');
     this.score = required('score');
     this.enemies = required('enemies');
     this.ball = required('ball-status');
@@ -178,6 +185,10 @@ export class Hud {
 
   get dailyRunButton(): HTMLElement {
     return required('daily-run-button');
+  }
+
+  get tutorialRunButton(): HTMLElement {
+    return required('tutorial-run-button');
   }
 
   get weeklyRunButton(): HTMLElement {
@@ -342,7 +353,22 @@ export class Hud {
     }, 6500);
   }
 
+  setTutorialMode(enabled: boolean): void {
+    this.root.classList.toggle('tutorial-run-active', enabled);
+    this.timerLabel.textContent = enabled ? 'TRAINING' : 'MATCH';
+    this.hint.classList.toggle('faded', enabled);
+  }
+
+  setTutorialRecommended(recommended: boolean): void {
+    this.tutorialRunButton.classList.toggle('recommended', recommended);
+    this.tutorialRunButton.setAttribute(
+      'aria-label',
+      recommended ? 'Guided Kickoff, recommended for first-time players' : 'Guided Kickoff training',
+    );
+  }
+
   showMenu(): void {
+    this.setTutorialMode(false);
     this.splash.classList.remove('hidden');
     this.death.classList.add('hidden');
     this.victory.classList.add('hidden');
