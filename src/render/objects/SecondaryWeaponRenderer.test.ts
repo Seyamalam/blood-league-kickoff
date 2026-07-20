@@ -24,10 +24,11 @@ describe('SecondaryWeaponRenderer', () => {
     expect(meshes.every((mesh) => mesh.count === 0 && !mesh.visible)).toBe(true);
     expect(meshes.every((mesh) => mesh.instanceMatrix.usage === THREE.DynamicDrawUsage)).toBe(true);
     expect(meshes.every((mesh) => !mesh.frustumCulled)).toBe(true);
-    expect(new Set(meshes.map((mesh) => mesh.geometry))).toHaveLength(3);
+    expect(new Set(meshes.map((mesh) => mesh.geometry))).toHaveLength(5);
     expect(new Set(meshes.map((mesh) => mesh.material))).toHaveLength(5);
-    expect(meshesByFamily(meshes).orbit.geometry).toBe(meshesByFamily(meshes)['ghost-pass'].geometry);
-    expect(meshesByFamily(meshes).orbit.geometry).toBe(meshesByFamily(meshes)['multi-ball'].geometry);
+    expect(
+      meshes.every((mesh) => mesh.geometry.userData.visualStyle === 'authored-voxel-football-prop'),
+    ).toBe(true);
 
     const transparentFamilies = ['garlic', 'ghost-pass', 'multi-ball', 'black-hole'] as const;
     for (const semanticFamily of transparentFamilies) {
@@ -94,19 +95,22 @@ describe('SecondaryWeaponRenderer', () => {
     expect(firstGarlic.position.x).toBeCloseTo(1);
     expect(firstGarlic.position.y).toBeCloseTo(0.04);
     expect(firstGarlic.position.z).toBeCloseTo(3);
-    expect(firstGarlic.scale).toMatchObject({ x: 1, y: 1, z: 1 });
+    expect(firstGarlic.scale.x).toBeCloseTo(0.62);
+    expect(firstGarlic.scale.y).toBeCloseTo(0.62);
+    expect(firstGarlic.scale.z).toBeCloseTo(0.62);
     expect(readTransform(byFamily.garlic, 1).position.x).toBe(5);
-    expect(readTransform(byFamily.orbit, 0)).toMatchObject({
-      position: { x: 2, y: 3, z: 4 },
-      scale: { x: 2, y: 2, z: 2 },
-    });
+    const orbit = readTransform(byFamily.orbit, 0);
+    expect(orbit.position).toMatchObject({ x: 2, y: 3, z: 4 });
+    expect(orbit.scale.x).toBeCloseTo(2);
+    expect(orbit.scale.y).toBeCloseTo(2);
+    expect(orbit.scale.z).toBeCloseTo(2);
     expect(readTransform(byFamily['multi-ball'], 0).scale.x).toBeCloseTo(0.5);
     const blackHole = readTransform(byFamily['black-hole'], 0);
     expect(blackHole.position.x).toBeCloseTo(-7);
     expect(blackHole.position.y).toBeCloseTo(0.04);
     expect(blackHole.position.z).toBeCloseTo(2);
-    expect(blackHole.scale.x).toBeCloseTo(5);
-    const expectedRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 4.92));
+    expect(blackHole.scale.x).toBeCloseTo(1);
+    const expectedRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 3.18, 0));
     expect(Math.abs(blackHole.rotation.dot(expectedRotation))).toBeCloseTo(1, 5);
 
     state.garlicZones[1]!.active = false;

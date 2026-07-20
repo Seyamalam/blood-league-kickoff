@@ -97,6 +97,8 @@ export class PlayerCharacterAsset {
     private readonly options: PlayerCharacterAssetOptions = {},
   ) {
     this.animationController = new VoxelAnimationController(rig);
+    this.animationController.setPersonality('maestro');
+    this.animationController.setGrounding(0, 0);
     this.variants = createVoxelPlayerVariantController(rig);
     this.variants.apply('maestro');
   }
@@ -123,6 +125,8 @@ export class PlayerCharacterAsset {
       player.velocity.x * Math.sin(player.facing) + player.velocity.z * Math.cos(player.facing);
     const lateralSpeed =
       player.velocity.x * Math.cos(player.facing) - player.velocity.z * Math.sin(player.facing);
+    const locomotion = speed > 7.5 ? 'sprint' : locomotionStateFor(speed, forwardSpeed, lateralSpeed);
+    this.animationController.setLocomotion(locomotion);
     const dashStarted = player.dashTime > 0 && this.previousDashTime <= 0;
     this.previousDashTime = player.dashTime;
     const tookDamage = this.previousHealth !== undefined && player.health < this.previousHealth;
@@ -133,10 +137,6 @@ export class PlayerCharacterAsset {
     } else if (!this.terminalState && dashStarted) {
       this.playFootballAnimation('slideTackle');
     }
-    if (!this.terminalState && !this.animationController.isLocked) {
-      if (speed > 7.5) this.animationController.play('sprint');
-      else this.animationController.play(locomotionStateFor(speed, forwardSpeed, lateralSpeed));
-    }
     for (const helper of this.diagnosticHelpers) helper.update();
   }
 
@@ -146,6 +146,7 @@ export class PlayerCharacterAsset {
 
   setCharacter(id: CharacterId): void {
     this.variants.apply(id);
+    this.animationController.setPersonality(id);
   }
 
   playReaction(reaction: PlayerReaction): FootballAnimationResolution | undefined {

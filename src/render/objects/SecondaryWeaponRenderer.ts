@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { SecondaryWeaponRenderState } from '../../game/combat';
+import { voxelFootballPropGeometry } from './VoxelFootballProps';
 
 const GARLIC_CAPACITY = 24;
 const ORBIT_CAPACITY = 3;
@@ -32,9 +33,11 @@ export class SecondaryWeaponRenderer {
   private disposed = false;
 
   constructor(scene: THREE.Scene) {
-    const garlicGeometry = this.trackGeometry(new THREE.CylinderGeometry(0.8, 0.8, 0.035, 16));
-    const orbGeometry = this.trackGeometry(new THREE.SphereGeometry(ORB_BASE_RADIUS, 10, 8));
-    const blackHoleGeometry = this.trackGeometry(new THREE.TorusGeometry(0.32, 0.1, 8, 20));
+    const garlicGeometry = this.trackGeometry(voxelFootballPropGeometry('cleatedBoot').clone());
+    const orbitGeometry = this.trackGeometry(voxelFootballPropGeometry('spectralBall').clone());
+    const ghostGeometry = this.trackGeometry(voxelFootballPropGeometry('whistle').clone());
+    const multiBallGeometry = this.trackGeometry(voxelFootballPropGeometry('bloodBall').clone());
+    const blackHoleGeometry = this.trackGeometry(voxelFootballPropGeometry('goalNet').clone());
     const garlicMaterial = this.trackMaterial(
       new THREE.MeshBasicMaterial({ color: 0x7fe0a2, transparent: true, opacity: 0.2, depthWrite: false }),
     );
@@ -52,9 +55,15 @@ export class SecondaryWeaponRenderer {
     );
 
     this.garlic = this.add(scene, 'garlic', garlicGeometry, garlicMaterial, GARLIC_CAPACITY);
-    this.orbits = this.add(scene, 'orbit', orbGeometry, orbitMaterial, ORBIT_CAPACITY);
-    this.ghosts = this.add(scene, 'ghost-pass', orbGeometry, ghostMaterial, GHOST_CAPACITY);
-    this.multiBalls = this.add(scene, 'multi-ball', orbGeometry, multiBallMaterial, MULTI_BALL_CAPACITY);
+    this.orbits = this.add(scene, 'orbit', orbitGeometry, orbitMaterial, ORBIT_CAPACITY);
+    this.ghosts = this.add(scene, 'ghost-pass', ghostGeometry, ghostMaterial, GHOST_CAPACITY);
+    this.multiBalls = this.add(
+      scene,
+      'multi-ball',
+      multiBallGeometry,
+      multiBallMaterial,
+      MULTI_BALL_CAPACITY,
+    );
     this.blackHoles = this.add(
       scene,
       'black-hole',
@@ -66,10 +75,10 @@ export class SecondaryWeaponRenderer {
   }
 
   sync(state: SecondaryWeaponRenderState): void {
-    this.syncPool(this.garlic, state.garlicZones, false);
-    this.syncPool(this.orbits, state.orbitingBalls, true);
-    this.syncPool(this.ghosts, state.ghostPasses, true);
-    this.syncPool(this.multiBalls, state.multiBallShots, true);
+    this.syncPool(this.garlic, state.garlicZones, 0.62, 'ground');
+    this.syncPool(this.orbits, state.orbitingBalls, 1 / ORB_BASE_RADIUS, 'spin');
+    this.syncPool(this.ghosts, state.ghostPasses, 1.25, 'whistle');
+    this.syncPool(this.multiBalls, state.multiBallShots, 1 / ORB_BASE_RADIUS, 'spin');
     this.syncBlackHoles(state.blackHoleZones);
   }
 
@@ -88,14 +97,22 @@ export class SecondaryWeaponRenderer {
     for (const material of this.materials) material.dispose();
   }
 
-  private syncPool(mesh: THREE.InstancedMesh, states: RenderPoolState, scaleToRadius: boolean): void {
+  private syncPool(
+    mesh: THREE.InstancedMesh,
+    states: RenderPoolState,
+    scaleFactor: number,
+    orientation: 'ground' | 'spin' | 'whistle',
+  ): void {
     let visible = 0;
     for (let index = 0; index < states.length && visible < mesh.instanceMatrix.count; index += 1) {
       const state = states[index];
       if (!state?.active) continue;
       this.position.set(state.position.x, Math.max(0.04, state.position.y), state.position.z);
-      this.rotation.identity();
-      const scale = scaleToRadius ? state.radius / ORB_BASE_RADIUS : 1;
+      if (orientation === 'ground') this.euler.set(0, index * 0.63, 0);
+      else if (orientation === 'whistle') this.euler.set(0, Math.PI / 2 + index * 0.24, -0.18);
+      else this.euler.set(index * 0.31, index * 0.57, index * 0.19);
+      this.rotation.setFromEuler(this.euler);
+      const scale = orientation === 'ground' ? scaleFactor : Math.max(0.38, state.radius * scaleFactor);
       this.scale.setScalar(scale);
       this.matrix.compose(this.position, this.rotation, this.scale);
       mesh.setMatrixAt(visible, this.matrix);
@@ -112,9 +129,9 @@ export class SecondaryWeaponRenderer {
       const state = states[index];
       if (!state?.active) continue;
       this.position.set(state.position.x, Math.max(0.04, state.position.y), state.position.z);
-      this.euler.set(-Math.PI / 2, 0, state.age * (2.1 + index * 0.12));
+      this.euler.set(0, state.age * (1.35 + index * 0.08), 0);
       this.rotation.setFromEuler(this.euler);
-      this.scale.setScalar(state.radius / ORB_BASE_RADIUS);
+      this.scale.setScalar(Math.max(0.55, state.radius / 1.6));
       this.matrix.compose(this.position, this.rotation, this.scale);
       this.blackHoles.setMatrixAt(visible, this.matrix);
       visible += 1;

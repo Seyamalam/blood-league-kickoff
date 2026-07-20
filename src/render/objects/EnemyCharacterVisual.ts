@@ -6,6 +6,7 @@ import type { RenderQuality } from '../../settings/SettingsStore';
 export type EnemyVisualLod = 'near' | 'mid' | 'far';
 
 export interface EnemyCharacterPresentation {
+  readonly archetype: EnemyArchetype;
   readonly lodRoot: THREE.Group;
   readonly proceduralBody: THREE.Group;
   readonly near: THREE.Group;
@@ -37,6 +38,10 @@ interface ArchetypeStyle {
   readonly accent: number;
   readonly scale: readonly [number, number, number];
   readonly stance: 'normal' | 'fast' | 'heavy' | 'hunched';
+  readonly cadence: number;
+  readonly stride: number;
+  readonly bob: number;
+  readonly posture: number;
 }
 
 export interface EnemyVisualIdentity {
@@ -63,17 +68,116 @@ type EnemyCharacterBuilder = {
 };
 
 const STYLES: Readonly<Record<EnemyArchetype, ArchetypeStyle>> = {
-  bloodFan: { kit: 0x4a153e, accent: 0xd92d62, scale: [0.94, 0.96, 0.94], stance: 'normal' },
-  winger: { kit: 0x99153e, accent: 0xff547b, scale: [0.82, 1.06, 0.84], stance: 'fast' },
-  defender: { kit: 0x372052, accent: 0x9a5db0, scale: [1.18, 1.02, 1.12], stance: 'heavy' },
-  coach: { kit: 0x5f172d, accent: 0xd6af39, scale: [1.02, 1.07, 1], stance: 'normal' },
-  batSwarm: { kit: 0x21152f, accent: 0xa72c67, scale: [0.88, 0.76, 0.9], stance: 'fast' },
-  leechStriker: { kit: 0x54203d, accent: 0xe25276, scale: [1.08, 0.94, 1.12], stance: 'hunched' },
-  corruptReferee: { kit: 0x222126, accent: 0xe7dfcd, scale: [0.92, 1.03, 0.9], stance: 'normal' },
-  bloodArcher: { kit: 0x56152f, accent: 0xc7a13a, scale: [0.88, 1.04, 0.9], stance: 'normal' },
-  shadowRunner: { kit: 0x12101f, accent: 0x7658ba, scale: [0.78, 1.08, 0.82], stance: 'fast' },
-  corpseBomber: { kit: 0x563026, accent: 0xff873c, scale: [1.16, 0.95, 1.14], stance: 'hunched' },
-  goalkeeperBrute: { kit: 0x271d43, accent: 0xc7b5dd, scale: [1.36, 1.12, 1.26], stance: 'heavy' },
+  bloodFan: {
+    kit: 0x4a153e,
+    accent: 0xd92d62,
+    scale: [0.94, 0.96, 0.94],
+    stance: 'normal',
+    cadence: 7.4,
+    stride: 0.58,
+    bob: 0.035,
+    posture: 0.02,
+  },
+  winger: {
+    kit: 0x99153e,
+    accent: 0xff547b,
+    scale: [0.82, 1.06, 0.84],
+    stance: 'fast',
+    cadence: 11.5,
+    stride: 0.92,
+    bob: 0.065,
+    posture: -0.16,
+  },
+  defender: {
+    kit: 0x372052,
+    accent: 0x9a5db0,
+    scale: [1.18, 1.02, 1.12],
+    stance: 'heavy',
+    cadence: 5.3,
+    stride: 0.42,
+    bob: 0.018,
+    posture: 0.05,
+  },
+  coach: {
+    kit: 0x5f172d,
+    accent: 0xd6af39,
+    scale: [1.02, 1.07, 1],
+    stance: 'normal',
+    cadence: 6.2,
+    stride: 0.4,
+    bob: 0.022,
+    posture: 0.08,
+  },
+  batSwarm: {
+    kit: 0x21152f,
+    accent: 0xa72c67,
+    scale: [0.88, 0.76, 0.9],
+    stance: 'fast',
+    cadence: 15,
+    stride: 0.95,
+    bob: 0.12,
+    posture: -0.1,
+  },
+  leechStriker: {
+    kit: 0x54203d,
+    accent: 0xe25276,
+    scale: [1.08, 0.94, 1.12],
+    stance: 'hunched',
+    cadence: 7.8,
+    stride: 0.68,
+    bob: 0.032,
+    posture: -0.28,
+  },
+  corruptReferee: {
+    kit: 0x222126,
+    accent: 0xe7dfcd,
+    scale: [0.92, 1.03, 0.9],
+    stance: 'normal',
+    cadence: 7,
+    stride: 0.5,
+    bob: 0.025,
+    posture: 0.02,
+  },
+  bloodArcher: {
+    kit: 0x56152f,
+    accent: 0xc7a13a,
+    scale: [0.88, 1.04, 0.9],
+    stance: 'normal',
+    cadence: 6.8,
+    stride: 0.48,
+    bob: 0.02,
+    posture: -0.08,
+  },
+  shadowRunner: {
+    kit: 0x12101f,
+    accent: 0x7658ba,
+    scale: [0.78, 1.08, 0.82],
+    stance: 'fast',
+    cadence: 13.2,
+    stride: 1.05,
+    bob: 0.055,
+    posture: -0.22,
+  },
+  corpseBomber: {
+    kit: 0x563026,
+    accent: 0xff873c,
+    scale: [1.16, 0.95, 1.14],
+    stance: 'hunched',
+    cadence: 5.8,
+    stride: 0.5,
+    bob: 0.028,
+    posture: -0.24,
+  },
+  goalkeeperBrute: {
+    kit: 0x271d43,
+    accent: 0xc7b5dd,
+    scale: [1.36, 1.12, 1.26],
+    stance: 'heavy',
+    cadence: 4.8,
+    stride: 0.36,
+    bob: 0.014,
+    posture: 0.1,
+  },
 };
 
 const geometry = {
@@ -111,7 +215,10 @@ const geometry = {
   silhouetteWing: new THREE.ConeGeometry(0.24, 0.9, 3),
   silhouetteCape: new THREE.ConeGeometry(0.5, 1.35, 7),
   tacticalBoard: new THREE.BoxGeometry(0.36, 0.48, 0.07),
-  bombPack: new THREE.SphereGeometry(0.34, 7, 5),
+  bombPack: new THREE.BoxGeometry(0.58, 0.62, 0.38),
+  hood: new THREE.BoxGeometry(0.64, 0.28, 0.62),
+  cap: new THREE.BoxGeometry(0.58, 0.14, 0.62),
+  capBrim: new THREE.BoxGeometry(0.46, 0.07, 0.28),
 };
 
 const material = {
@@ -320,6 +427,17 @@ function addFace(near: THREE.Group, archetype: EnemyArchetype): void {
     fang.userData.anatomyPrimitive = 'box';
     near.add(fang);
   }
+  if (archetype === 'bloodArcher' || archetype === 'shadowRunner') {
+    const hood = mesh(geometry.hood, accentMaterial(archetype), `${prefixFor(archetype)}-voxel-hood`);
+    hood.position.set(0, 2.08, -0.03);
+    near.add(hood);
+  } else if (archetype === 'coach' || archetype === 'corruptReferee') {
+    const cap = mesh(geometry.cap, accentMaterial(archetype), `${prefixFor(archetype)}-voxel-cap`);
+    cap.position.set(0, 2.2, -0.02);
+    const brim = mesh(geometry.capBrim, material.dark, `${prefixFor(archetype)}-cap-brim`);
+    brim.position.set(0, 2.14, 0.28);
+    near.add(cap, brim);
+  }
 }
 
 function prefixFor(archetype: EnemyArchetype): string {
@@ -428,11 +546,12 @@ function addArchetypeEquipment(
     near.add(shield);
   } else if (archetype === 'coach') {
     const board = mesh(geometry.tacticalBoard, accentMaterial(archetype), 'coach-tactical-board');
-    board.position.set(0.46, 1.22, 0.25);
+    board.position.set(0, -0.38, 0.25);
     board.rotation.z = -0.12;
     const aura = cue(geometry.aura, material.aura, 'coach-aura', 0.035);
     result.aura = aura;
-    near.add(board, aura);
+    (result.rightArm ?? near).add(board);
+    near.add(aura);
   } else if (archetype === 'leechStriker') {
     const mouth = mesh(geometry.mouth, material.pale, 'leech-mouth');
     mouth.position.set(0, 1.79, 0.25);
@@ -470,10 +589,10 @@ function addArchetypeEquipment(
     near.add(left, right, ring);
   } else if (archetype === 'bloodArcher') {
     const bow = mesh(geometry.bow, material.gold, 'archer-bow');
-    bow.position.set(0.48, 1.17, 0.24);
+    bow.position.set(0, -0.36, 0.24);
     bow.rotation.set(Math.PI / 2, 0, -0.15);
     result.weapon = bow;
-    near.add(bow);
+    (result.rightArm ?? near).add(bow);
   } else if (archetype === 'shadowRunner') {
     const veil = mesh(geometry.veil, material.cueViolet, 'shadow-veil');
     veil.position.y = 1.12;
@@ -482,13 +601,15 @@ function addArchetypeEquipment(
     result.specialRing = ring;
     near.add(veil, ring);
   } else if (archetype === 'corpseBomber') {
+    const pack = mesh(geometry.bombPack, accentMaterial(archetype), 'bomber-voxel-pack');
+    pack.position.set(0, 1.18, -0.44);
     const fuse = mesh(geometry.fuse, material.cueDanger, 'bomber-fuse');
     fuse.position.set(0.22, 1.7, 0);
     const ring = cue(geometry.bomberRing, material.cueDanger, 'bomber-blast-ring', 0.055);
     ring.visible = false;
     result.weapon = fuse;
     result.specialRing = ring;
-    near.add(fuse, ring);
+    near.add(pack, fuse, ring);
   }
 }
 
@@ -568,6 +689,7 @@ export function createEnemyCharacterPresentation(archetype: EnemyArchetype): Ene
 
   const presentation: EnemyCharacterPresentation = {
     ...result,
+    archetype,
     lodRoot,
     proceduralBody,
     near,
@@ -615,16 +737,20 @@ export function updateEnemyCharacterPose(
   const interval = presentation.lod === 'near' ? 1 / 30 : 1 / 12;
   if (elapsed - presentation.lastPoseAt < interval) return;
   presentation.lastPoseAt = elapsed;
-  const stride = moving ? Math.sin((elapsed + enemyId * 0.37) * 8) : 0;
+  const style = STYLES[presentation.archetype];
+  const stride = moving ? Math.sin((elapsed + enemyId * 0.37) * style.cadence) * style.stride : 0;
   const strike = attackAmount(attackState);
   const recoil = hit ? -0.75 : 0;
-  if (presentation.leftArm) presentation.leftArm.rotation.x = -stride * 0.65 + recoil;
-  if (presentation.rightArm) presentation.rightArm.rotation.x = stride * 0.65 - strike * 1.05 + recoil;
+  if (presentation.leftArm) presentation.leftArm.rotation.x = -stride * 0.65 + recoil + style.posture;
+  if (presentation.rightArm) {
+    presentation.rightArm.rotation.x = stride * 0.65 - strike * 1.05 + recoil + style.posture;
+  }
   if (presentation.leftLeg) presentation.leftLeg.rotation.x = stride * 0.72;
   if (presentation.rightLeg) presentation.rightLeg.rotation.x = -stride * 0.72 + strike * 0.28;
   presentation.near.position.y = moving
-    ? Math.abs(stride) * 0.035
+    ? Math.abs(stride) * style.bob
     : Math.sin(elapsed * 2.1 + enemyId) * 0.012;
+  presentation.proceduralBody.rotation.x = style.posture + (hit ? 0.18 : 0);
   presentation.mid.rotation.z = moving ? stride * 0.02 : 0;
 }
 

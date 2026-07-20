@@ -1,4 +1,6 @@
 import type * as THREE from 'three';
+import type { CharacterId } from '../../game/characters';
+import { VOXEL_PERSONALITIES, type VoxelPersonalityProfile } from './VoxelCharacterPresentation';
 import type { VoxelHumanoid } from './VoxelHumanoid';
 
 export type VoxelAnimationState =
@@ -47,6 +49,8 @@ interface Pose {
   pelvisX: number;
   pelvisY: number;
   pelvisZ: number;
+  leftFootY: number;
+  rightFootY: number;
 }
 
 const TAU = Math.PI * 2;
@@ -83,7 +87,19 @@ const STATE_DEFINITIONS: Readonly<Record<VoxelAnimationState, StateDefinition>> 
 export class VoxelAnimationController {
   private readonly bindPose = new Map<JointName, TransformSnapshot>();
   private active?: VoxelAnimationState;
+  private locomotion: VoxelAnimationState = 'idle';
   private elapsed = 0;
+  private locomotionElapsed = 0;
+  private blendElapsed = 1;
+  private blendDuration = 0.12;
+  private displayedPose = emptyPose();
+  private blendFromPose = emptyPose();
+  private personality: VoxelPersonalityProfile = VOXEL_PERSONALITIES.maestro;
+  private aimYaw = 0;
+  private leftGroundHeight = 0;
+  private rightGroundHeight = 0;
+  private groundPitch = 0;
+  private groundRoll = 0;
   private disposed = false;
 
   constructor(private readonly rig: VoxelHumanoid) {
@@ -113,6 +129,47 @@ export class VoxelAnimationController {
     return this.active ? STATE_DEFINITIONS[this.active].terminal === true : false;
   }
 
+  /** Selects the authored motion cadence while preserving the shared skeleton. */
+  setPersonality(characterId: CharacterId): void {
+    this.personality = VOXEL_PERSONALITIES[characterId];
+  }
+
+  /** Keeps locomotion advancing underneath compatible upper-body actions. */
+  setLocomotion(
+    state: Extract<
+      VoxelAnimationState,
+      'idle' | 'dribble' | 'sprint' | 'strafeLeft' | 'strafeRight' | 'chase'
+    >,
+  ): void {
+    if (this.disposed) return;
+    if (this.locomotion !== state) {
+      this.locomotion = state;
+      this.locomotionElapsed = 0;
+    }
+    if (!this.isLocked && this.active !== state) this.transitionTo(state);
+  }
+
+  /** Rotates the upper body toward aim while the pelvis and legs keep moving. */
+  setAimYaw(radians: number): void {
+    this.aimYaw = Number.isFinite(radians) ? Math.max(-0.8, Math.min(0.8, radians)) : 0;
+  }
+
+  /**
+   * Receives render-only ground samples. Heights are relative to the rig root;
+   * pitch and roll keep planted feet level on authored slopes.
+   */
+  setGrounding(
+    leftHeight: number,
+    rightHeight: number,
+    normal: Readonly<{ x: number; y: number; z: number }> = { x: 0, y: 1, z: 0 },
+  ): void {
+    this.leftGroundHeight = Number.isFinite(leftHeight) ? leftHeight : 0;
+    this.rightGroundHeight = Number.isFinite(rightHeight) ? rightHeight : 0;
+    const safeY = Math.max(0.001, Math.abs(normal.y));
+    this.groundPitch = Math.atan2(normal.z, safeY);
+    this.groundRoll = -Math.atan2(normal.x, safeY);
+  }
+
   /**
    * Requests a visual state. A locked one-shot can only be interrupted by a
    * higher-priority state; terminal states hold until reset.
@@ -126,9 +183,11 @@ export class VoxelAnimationController {
     if (this.active === state) return true;
     if (current?.oneShot && next.priority < current.priority) return false;
 
-    this.active = state;
-    this.elapsed = 0;
-    this.applyPose(samplePose(state, 0));
+    if (isLocomotionState(state)) {
+      this.locomotion = state;
+      this.locomotionElapsed = 0;
+    }
+    this.transitionTo(state);
     return true;
   }
 
@@ -138,29 +197,39 @@ export class VoxelAnimationController {
     const step = Number.isFinite(dt) ? Math.max(0, dt) : 0;
     const definition = STATE_DEFINITIONS[this.active];
     this.elapsed += step;
+    this.locomotionElapsed += step * this.personality.actionSpeed;
+    this.blendElapsed += step;
+    this.rig.updateFace?.(step);
 
     if (definition.terminal) {
       const progress = clamp01(this.elapsed / definition.duration);
-      this.applyPose(samplePose(this.active, progress));
+      this.applySample(this.active, progress);
       return;
     }
 
     if (definition.oneShot && this.elapsed >= definition.duration) {
       this.active = 'idle';
+      this.locomotion = 'idle';
       this.elapsed = 0;
-      this.applyPose(samplePose('idle', 0));
+      this.beginBlend();
+      this.applySample('idle', 0);
       return;
     }
 
     const progress = definition.oneShot
       ? clamp01(this.elapsed / definition.duration)
       : (this.elapsed % definition.duration) / definition.duration;
-    this.applyPose(samplePose(this.active, progress));
+    this.applySample(this.active, progress);
   }
 
   reset(): void {
     this.active = undefined;
+    this.locomotion = 'idle';
     this.elapsed = 0;
+    this.locomotionElapsed = 0;
+    this.displayedPose = emptyPose();
+    this.blendFromPose = emptyPose();
+    this.rig.setExpression?.('neutral');
     this.restoreBindPose();
   }
 
@@ -194,6 +263,56 @@ export class VoxelAnimationController {
         bindPelvis.position.z + pose.pelvisZ,
       );
     }
+    const leftFoot = this.rig.joints.leftFoot;
+    const rightFoot = this.rig.joints.rightFoot;
+    const bindLeftFoot = this.bindPose.get('leftFoot');
+    const bindRightFoot = this.bindPose.get('rightFoot');
+    if (bindLeftFoot) leftFoot.position.y = bindLeftFoot.position.y + pose.leftFootY;
+    if (bindRightFoot) rightFoot.position.y = bindRightFoot.position.y + pose.rightFootY;
+  }
+
+  private transitionTo(state: VoxelAnimationState): void {
+    this.beginBlend();
+    this.active = state;
+    this.elapsed = 0;
+    this.blendDuration =
+      state === 'damage' || state === 'hit'
+        ? 0.055
+        : state === 'knockdown'
+          ? 0.075
+          : isLocomotionState(state)
+            ? 0.14
+            : 0.09;
+    this.applySample(state, 0);
+  }
+
+  private beginBlend(): void {
+    this.blendFromPose = clonePose(this.displayedPose);
+    this.blendElapsed = 0;
+  }
+
+  private applySample(state: VoxelAnimationState, progress: number): void {
+    let sampled = samplePose(state, progress);
+    if (shouldLayerLocomotion(state)) {
+      const locomotionDefinition = STATE_DEFINITIONS[this.locomotion];
+      const locomotionProgress =
+        (this.locomotionElapsed % locomotionDefinition.duration) / locomotionDefinition.duration;
+      sampled = layerUpperBody(samplePose(this.locomotion, locomotionProgress), sampled, state);
+    }
+    applyPersonality(sampled, this.personality, state);
+    applyAimLayer(sampled, this.aimYaw, state);
+    applyFootPlanting(
+      sampled,
+      state,
+      this.leftGroundHeight,
+      this.rightGroundHeight,
+      this.groundPitch,
+      this.groundRoll,
+    );
+    const blend = smoothstep(clamp01(this.blendElapsed / Math.max(0.001, this.blendDuration)));
+    this.displayedPose = interpolatePose(this.blendFromPose, sampled, blend);
+    this.applyPose(this.displayedPose);
+    this.rig.setExpression?.(expressionForState(state));
   }
 
   private restoreBindPose(): void {
@@ -368,7 +487,7 @@ function footballKick(pose: Pose, progress: number, strength: number, lift: numb
 }
 
 function emptyPose(): Pose {
-  return { rotations: {}, pelvisX: 0, pelvisY: 0, pelvisZ: 0 };
+  return { rotations: {}, pelvisX: 0, pelvisY: 0, pelvisZ: 0, leftFootY: 0, rightFootY: 0 };
 }
 
 function rotate(pose: Pose, joint: JointName, x: number, y: number, z: number): void {
@@ -393,4 +512,176 @@ function easeInOutCubic(value: number): number {
 
 function easeOutCubic(value: number): number {
   return 1 - Math.pow(1 - clamp01(value), 3);
+}
+
+function isLocomotionState(
+  state: VoxelAnimationState,
+): state is Extract<
+  VoxelAnimationState,
+  'idle' | 'dribble' | 'sprint' | 'strafeLeft' | 'strafeRight' | 'chase'
+> {
+  return (
+    state === 'idle' ||
+    state === 'dribble' ||
+    state === 'sprint' ||
+    state === 'strafeLeft' ||
+    state === 'strafeRight' ||
+    state === 'chase'
+  );
+}
+
+function shouldLayerLocomotion(state: VoxelAnimationState): boolean {
+  return (
+    state === 'attack' ||
+    state === 'damage' ||
+    state === 'hit' ||
+    state === 'groundPass' ||
+    state === 'lobPass' ||
+    state === 'celebration'
+  );
+}
+
+function layerUpperBody(base: Pose, action: Pose, state: VoxelAnimationState): Pose {
+  const result = clonePose(base);
+  const upperJoints: JointName[] = [
+    'torso',
+    'head',
+    'leftUpperArm',
+    'leftLowerArm',
+    'leftHand',
+    'rightUpperArm',
+    'rightLowerArm',
+    'rightHand',
+  ];
+  for (const joint of upperJoints) {
+    const actionRotation = action.rotations[joint];
+    if (actionRotation) result.rotations[joint] = { ...actionRotation };
+  }
+  if (state === 'groundPass' || state === 'lobPass') {
+    for (const joint of ['rightUpperLeg', 'rightLowerLeg', 'rightFoot'] as const) {
+      const actionRotation = action.rotations[joint];
+      if (actionRotation) result.rotations[joint] = { ...actionRotation };
+    }
+    result.pelvisY = base.pelvisY * 0.45 + action.pelvisY;
+  } else {
+    result.pelvisX += action.pelvisX;
+    result.pelvisY += action.pelvisY;
+    result.pelvisZ += action.pelvisZ;
+  }
+  return result;
+}
+
+function applyPersonality(
+  pose: Pose,
+  personality: VoxelPersonalityProfile,
+  state: VoxelAnimationState,
+): void {
+  if (isLocomotionState(state)) {
+    for (const joint of ['leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg'] as const) {
+      scaleRotation(pose, joint, personality.strideScale);
+    }
+    for (const joint of ['leftUpperArm', 'rightUpperArm', 'leftLowerArm', 'rightLowerArm'] as const) {
+      scaleRotation(pose, joint, personality.armSwing);
+    }
+    pose.pelvisY *= personality.bounceScale;
+    rotate(pose, 'torso', personality.torsoLean * 0.045, 0, personality.lateralSwagger * 0.018);
+  } else if (state !== 'damage' && state !== 'hit' && state !== 'knockdown') {
+    scaleRotation(pose, 'torso', 0.82 + personality.movementWeight * 0.18);
+  }
+}
+
+function applyAimLayer(pose: Pose, aimYaw: number, state: VoxelAnimationState): void {
+  if (Math.abs(aimYaw) < 0.001 || state === 'knockdown' || state === 'defeat') return;
+  rotate(pose, 'torso', 0, aimYaw * 0.62, 0);
+  rotate(pose, 'head', 0, aimYaw * 0.38, 0);
+}
+
+function applyFootPlanting(
+  pose: Pose,
+  state: VoxelAnimationState,
+  leftHeight: number,
+  rightHeight: number,
+  groundPitch: number,
+  groundRoll: number,
+): void {
+  const plant =
+    state === 'idle' || state === 'groundPass' || state === 'lobPass' || state === 'shoot' ? 1 : 0.32;
+  const leftLeg = (pose.rotations.leftUpperLeg?.x ?? 0) + (pose.rotations.leftLowerLeg?.x ?? 0);
+  const rightLeg = (pose.rotations.rightUpperLeg?.x ?? 0) + (pose.rotations.rightLowerLeg?.x ?? 0);
+  rotate(pose, 'leftFoot', (-leftLeg + groundPitch) * plant, 0, groundRoll * plant);
+  rotate(pose, 'rightFoot', (-rightLeg + groundPitch) * plant, 0, groundRoll * plant);
+  pose.leftFootY = leftHeight;
+  pose.rightFootY = rightHeight;
+  pose.pelvisY += Math.min(leftHeight, rightHeight) * 0.75;
+  rotate(pose, 'pelvis', groundPitch * 0.22, 0, groundRoll * 0.28);
+}
+
+function expressionForState(state: VoxelAnimationState) {
+  if (state === 'damage' || state === 'hit' || state === 'knockdown') return 'hurt' as const;
+  if (state === 'defeat') return 'defeated' as const;
+  if (state === 'celebration' || state === 'victory') return 'celebrate' as const;
+  if (
+    state === 'shoot' ||
+    state === 'groundPass' ||
+    state === 'lobPass' ||
+    state === 'header' ||
+    state === 'slideTackle' ||
+    state === 'bicycleKick' ||
+    state === 'attack'
+  ) {
+    return 'attack' as const;
+  }
+  if (state === 'sprint' || state === 'chase' || state === 'strafeLeft' || state === 'strafeRight') {
+    return 'focused' as const;
+  }
+  return 'neutral' as const;
+}
+
+function scaleRotation(pose: Pose, joint: JointName, amount: number): void {
+  const rotation = pose.rotations[joint];
+  if (!rotation) return;
+  rotation.x *= amount;
+  rotation.y *= amount;
+  rotation.z *= amount;
+}
+
+function clonePose(source: Pose): Pose {
+  const result = emptyPose();
+  result.pelvisX = source.pelvisX;
+  result.pelvisY = source.pelvisY;
+  result.pelvisZ = source.pelvisZ;
+  result.leftFootY = source.leftFootY;
+  result.rightFootY = source.rightFootY;
+  for (const [joint, rotation] of Object.entries(source.rotations) as [JointName, JointRotation][]) {
+    result.rotations[joint] = { ...rotation };
+  }
+  return result;
+}
+
+function interpolatePose(from: Pose, to: Pose, amount: number): Pose {
+  const result = emptyPose();
+  const joints = new Set<JointName>([
+    ...(Object.keys(from.rotations) as JointName[]),
+    ...(Object.keys(to.rotations) as JointName[]),
+  ]);
+  for (const joint of joints) {
+    const a = from.rotations[joint] ?? { x: 0, y: 0, z: 0 };
+    const b = to.rotations[joint] ?? { x: 0, y: 0, z: 0 };
+    result.rotations[joint] = {
+      x: a.x + (b.x - a.x) * amount,
+      y: a.y + (b.y - a.y) * amount,
+      z: a.z + (b.z - a.z) * amount,
+    };
+  }
+  result.pelvisX = from.pelvisX + (to.pelvisX - from.pelvisX) * amount;
+  result.pelvisY = from.pelvisY + (to.pelvisY - from.pelvisY) * amount;
+  result.pelvisZ = from.pelvisZ + (to.pelvisZ - from.pelvisZ) * amount;
+  result.leftFootY = from.leftFootY + (to.leftFootY - from.leftFootY) * amount;
+  result.rightFootY = from.rightFootY + (to.rightFootY - from.rightFootY) * amount;
+  return result;
+}
+
+function smoothstep(value: number): number {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
 }

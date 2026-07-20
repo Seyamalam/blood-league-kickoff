@@ -73,10 +73,8 @@ export class CountGoalkeeperVisual {
   constructor(scene: THREE.Scene) {
     this.group.name = 'count-goalkeeper-visual';
     this.group.userData.visualRole = 'vampire-goalkeeper-boss';
-    this.body = new THREE.Mesh(
-      this.track(new THREE.CylinderGeometry(0.62, 0.74, 1.3, 12)),
-      this.bodyMaterial,
-    );
+    this.group.userData.visualStyle = 'articulated-voxel-boss';
+    this.body = new THREE.Mesh(this.track(new THREE.BoxGeometry(1.28, 1.3, 0.82)), this.bodyMaterial);
     this.body.name = 'count-goalkeeper-body';
     this.body.position.y = 1.68;
 
@@ -88,14 +86,14 @@ export class CountGoalkeeperVisual {
     crest.position.set(0, 1.85, 0.77);
     crest.scale.setScalar(0.48);
 
-    const head = new THREE.Mesh(this.track(new THREE.SphereGeometry(0.5, 12, 8)), this.gloveMaterial);
+    const head = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.78, 0.92, 0.76)), this.gloveMaterial);
     head.name = 'count-goalkeeper-head';
     head.position.y = 2.5;
     head.scale.set(0.86, 1.08, 0.9);
     const faceMask = new THREE.Mesh(this.track(createGoalkeeperMaskGeometry()), this.armorMaterial);
     faceMask.name = 'count-goalkeeper-mask';
     faceMask.position.set(0, 2.5, 0.42);
-    const leftEye = new THREE.Mesh(this.track(new THREE.SphereGeometry(0.055, 7, 5)), this.eyeMaterial);
+    const leftEye = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.11, 0.075, 0.045)), this.eyeMaterial);
     leftEye.name = 'count-goalkeeper-eye-left';
     leftEye.position.set(-0.16, 2.57, 0.52);
     const rightEye = leftEye.clone();
@@ -103,7 +101,7 @@ export class CountGoalkeeperVisual {
     rightEye.position.x *= -1;
 
     const leftPauldron = new THREE.Mesh(
-      this.track(new THREE.SphereGeometry(0.46, 10, 7, 0, Math.PI)),
+      this.track(new THREE.BoxGeometry(0.74, 0.28, 0.7)),
       this.armorMaterial,
     );
     leftPauldron.name = 'count-goalkeeper-pauldron-left';
@@ -355,20 +353,17 @@ export class CountGoalkeeperVisual {
   private createGoalkeeperArm(arm: THREE.Group, side: -1 | 1): THREE.Group {
     arm.name = side < 0 ? 'count-goalkeeper-arm-left' : 'count-goalkeeper-arm-right';
     arm.position.set(side * 0.78, 1.98, 0);
-    const limb = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.18, 0.75, 5, 7)), this.bodyMaterial);
+    const limb = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.36, 0.92, 0.38)), this.bodyMaterial);
     limb.position.y = -0.43;
     limb.rotation.z = side * -0.08;
     const glove = new THREE.Group();
     glove.name = side < 0 ? 'count-goalkeeper-glove-left' : 'count-goalkeeper-glove-right';
     glove.position.set(side * 0.05, -1.02, 0.09);
-    const palm = new THREE.Mesh(this.track(new THREE.SphereGeometry(0.32, 9, 7)), this.gloveMaterial);
+    const palm = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.64, 0.58, 0.42)), this.gloveMaterial);
     palm.scale.set(1.25, 1.05, 0.65);
     palm.name = `${glove.name}-palm`;
     for (let finger = 0; finger < 4; finger += 1) {
-      const digit = new THREE.Mesh(
-        this.track(new THREE.CapsuleGeometry(0.045, 0.26, 3, 5)),
-        this.gloveMaterial,
-      );
+      const digit = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.09, 0.32, 0.11)), this.gloveMaterial);
       digit.name = `${glove.name}-finger-${finger}`;
       digit.position.set(side * (finger - 1.5) * 0.09, -0.26, 0.02);
       digit.rotation.z = side * (finger - 1.5) * 0.07;
@@ -382,10 +377,10 @@ export class CountGoalkeeperVisual {
   private createGoalkeeperLeg(leg: THREE.Group, side: -1 | 1): void {
     leg.name = side < 0 ? 'count-goalkeeper-leg-left' : 'count-goalkeeper-leg-right';
     leg.position.set(side * 0.31, 1.08, 0);
-    const thigh = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.2, 0.48, 5, 8)), this.bodyMaterial);
+    const thigh = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.4, 0.72, 0.42)), this.bodyMaterial);
     thigh.name = `${leg.name}-thigh`;
     thigh.position.y = -0.38;
-    const boot = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(0.19, 0.34, 5, 8)), this.armorMaterial);
+    const boot = new THREE.Mesh(this.track(new THREE.BoxGeometry(0.42, 0.28, 0.62)), this.armorMaterial);
     boot.name = `${leg.name}-boot`;
     boot.position.set(0, -0.92, 0.09);
     boot.rotation.x = Math.PI / 2;

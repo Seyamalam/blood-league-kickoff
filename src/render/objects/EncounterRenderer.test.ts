@@ -86,7 +86,12 @@ describe('encounter renderer', () => {
           visibleBoxes.push(object);
         }
       });
-      expect(visibleBoxes).toHaveLength(0);
+      if (interaction.kind === 'momentumGate') {
+        expect(visibleBoxes.length).toBeGreaterThanOrEqual(1);
+        expect(interactionGroup.getObjectByName('cursed-football-shell')).toBeInstanceOf(THREE.Mesh);
+      } else {
+        expect(visibleBoxes).toHaveLength(0);
+      }
     }
     renderer.dispose();
   });

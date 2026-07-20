@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OPPONENT_GOAL_LINE_Z } from '../../game/field';
+import { voxelFootballPropGeometry } from './VoxelFootballProps';
 
 /** Lightweight world-space marker for the limited goal-scoring window. */
 export class GoalBeacon {
@@ -27,6 +28,7 @@ export class GoalBeacon {
   private readonly light = new THREE.PointLight(0xffcf40, 0, 11, 2);
   private readonly halo: THREE.Mesh;
   private readonly arrow: THREE.Mesh;
+  private readonly goalSigil: THREE.Mesh;
   private readonly geometries: THREE.BufferGeometry[] = [];
   private elapsed = 0;
   private active = false;
@@ -39,12 +41,16 @@ export class GoalBeacon {
     const haloGeometry = this.track(new THREE.TorusGeometry(1.3, 0.12, 8, 28));
     const arrowGeometry = this.track(new THREE.ConeGeometry(0.4, 0.9, 5));
     const beamGeometry = this.track(new THREE.CylinderGeometry(1.45, 2.35, 5.5, 16, 1, true));
+    const goalGeometry = this.track(voxelFootballPropGeometry('goalNet').clone());
 
     this.halo = this.makeMesh(haloGeometry, this.crimsonMaterial, 0, 3.55, 0.08);
     this.halo.name = 'goal-beacon-halo';
     this.arrow = this.makeMesh(arrowGeometry, this.goldMaterial, 0, 4.75, 0.08);
     this.arrow.name = 'goal-beacon-arrow';
     this.arrow.rotation.z = Math.PI;
+    this.goalSigil = this.makeMesh(goalGeometry, this.goldMaterial, 0, 2.2, 0.08);
+    this.goalSigil.name = 'goal-beacon-voxel-goal';
+    this.goalSigil.scale.setScalar(0.86);
 
     const beam = this.makeMesh(beamGeometry, this.beamMaterial, 0, 2.75, -0.12);
     beam.name = 'goal-beacon-beam';
@@ -54,7 +60,7 @@ export class GoalBeacon {
     this.light.position.set(0, 2.3, 0.8);
     this.light.name = 'goal-beacon-light';
     this.light.castShadow = false;
-    this.group.add(beam, this.halo, this.arrow, this.light);
+    this.group.add(beam, this.halo, this.arrow, this.goalSigil, this.light);
     this.group.visible = false;
     scene.add(this.group);
   }
@@ -75,6 +81,8 @@ export class GoalBeacon {
     this.halo.scale.setScalar(scale);
     this.halo.rotation.z = this.elapsed * 0.65;
     this.arrow.position.y = 4.75 + Math.sin(this.elapsed * 4.2) * 0.16;
+    this.goalSigil.rotation.y = Math.sin(this.elapsed * 1.8) * 0.16;
+    this.goalSigil.scale.setScalar(0.86 + pulse * 0.05);
     this.goldMaterial.emissiveIntensity = 0.62 + pulse * 0.52;
     this.crimsonMaterial.emissiveIntensity = 0.9 + pulse * 1.1;
     this.beamMaterial.opacity = 0.05 + pulse * 0.05;

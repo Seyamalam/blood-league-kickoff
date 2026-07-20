@@ -71,6 +71,27 @@ describe('voxel humanoid', () => {
     athlete.dispose();
   });
 
+  it('animates brows, mouth, fangs, and deterministic blinking expressions', () => {
+    const athlete = createVoxelHumanoid({ facialStyle: 'focused' });
+    const leftEye = athlete.root.getObjectByName('voxel-athlete-left-eye-mesh') as THREE.Mesh;
+    const leftBrow = athlete.root.getObjectByName('voxel-athlete-left-brow-mesh') as THREE.Mesh;
+    const mouth = athlete.root.getObjectByName('voxel-athlete-mouth-mesh') as THREE.Mesh;
+    const fang = athlete.root.getObjectByName('voxel-athlete-left-fang-mesh') as THREE.Mesh;
+
+    athlete.setExpression('attack');
+    expect(athlete.expression).toBe('attack');
+    expect(leftBrow.rotation.z).toBeLessThan(-0.25);
+    expect(mouth.scale.y).toBeGreaterThan(3);
+    expect(fang.visible).toBe(true);
+    athlete.updateFace(1);
+    athlete.updateFace(1);
+    expect(leftEye.scale.y).toBeLessThanOrEqual(1);
+
+    athlete.setExpression('celebrate');
+    expect(mouth.scale.x).toBeGreaterThan(1.2);
+    athlete.dispose();
+  });
+
   it('shares cached GPU resources and releases them only after the final owner', () => {
     const first = createVoxelHumanoid({ accessories: { hair: 'none' } });
     const second = createVoxelHumanoid({ accessories: { hair: 'none' } });

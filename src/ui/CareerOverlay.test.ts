@@ -36,6 +36,9 @@ describe('career overlay view model', () => {
       unlocked: true,
       selected: true,
       unlockLevel: 1,
+      difficulty: 4,
+      difficultyLabel: 'TACTICAL',
+      tagline: 'Sees the return before the first touch.',
     });
     expect(view.characters[1]).toMatchObject({ id: 'breakaway', unlocked: false, unlockLevel: 2 });
     expect(view.challenges).toHaveLength(Object.keys(CHALLENGE_DEFINITIONS).length);

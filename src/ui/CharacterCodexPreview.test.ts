@@ -3,7 +3,18 @@ import { CODEX_PREVIEW_STATES, isCodexPreviewState } from './CharacterCodexPrevi
 
 describe('CharacterCodexPreview contract', () => {
   it('offers locomotion, technique, tackle, and outcome samples', () => {
-    expect(CODEX_PREVIEW_STATES).toEqual(['idle', 'dribble', 'shoot', 'slideTackle', 'victory']);
+    expect(CODEX_PREVIEW_STATES).toEqual([
+      'idle',
+      'dribble',
+      'groundPass',
+      'lobPass',
+      'shoot',
+      'header',
+      'slideTackle',
+      'bicycleKick',
+      'celebration',
+      'victory',
+    ]);
   });
 
   it('rejects arbitrary animation names', () => {

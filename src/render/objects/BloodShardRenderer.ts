@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import type { PickupSystemState } from '../../game/pickups';
+import { voxelFootballPropGeometry } from './VoxelFootballProps';
 
 export class BloodShardRenderer {
-  private readonly geometry = new THREE.OctahedronGeometry(0.13, 0);
+  private readonly geometry = voxelFootballPropGeometry('bloodShard').clone();
   private readonly material = new THREE.MeshStandardMaterial({
     color: 0xd62d58,
     emissive: 0x7d0a2d,
@@ -21,6 +22,8 @@ export class BloodShardRenderer {
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.count = 0;
     this.mesh.frustumCulled = false;
+    this.mesh.name = 'voxel-blood-shard-pickups';
+    this.mesh.userData.visualStyle = 'authored-voxel-football-prop';
     scene.add(this.mesh);
   }
 
