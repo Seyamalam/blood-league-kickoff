@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { EnemyState, GameState, Vec3 } from '../../game/simulation/types';
 import { getEnemyArchetypeDefinition } from '../../game/simulation/enemyArchetypes';
-import { CHARACTER_DEFINITIONS, type CharacterId } from '../../game/characters';
+import type { CharacterId } from '../../game/characters';
 import { PlayerCharacterAsset } from '../objects/PlayerCharacterAsset';
 import type { RenderQuality } from '../../settings/SettingsStore';
 import {
@@ -12,12 +12,12 @@ import {
   updateEnemyCharacterPose,
   type EnemyCharacterPresentation,
 } from '../objects/EnemyCharacterVisual';
-import { EnemyCharacterAssetPool } from '../objects/EnemyCharacterAssetPool';
 import { createFootballVisual } from '../objects/FootballVisual';
 import { CombatVfxPool } from '../objects/CombatVfxPool';
 import { PitchSurfaceEffects } from '../objects/PitchSurfaceEffects';
 import { GoalNetResponse } from '../objects/GoalNetResponse';
 import { CharacterReadabilityLight } from '../objects/CharacterReadabilityLight';
+import { createVoxelHumanoid, type VoxelHumanoid } from '../objects/VoxelHumanoid';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -78,7 +78,6 @@ export class RenderBridge {
   private readonly goalNetResponse: GoalNetResponse;
   private readonly readabilityLight: CharacterReadabilityLight;
   private readonly enemies = new Map<number, EnemyVisual>();
-  private readonly enemyCharacterPool: EnemyCharacterAssetPool;
   private readonly liveEnemyIds = new Set<number>();
   private readonly enemyProjectiles = new Map<number, THREE.Mesh>();
   private readonly liveEnemyProjectileIds = new Set<number>();
@@ -97,10 +96,10 @@ export class RenderBridge {
 
   constructor(private readonly scene: THREE.Scene) {
     activeBridgeCount += 1;
-    this.player = createPlayer();
-    this.playerAsset = new PlayerCharacterAsset(this.player);
+    const playerPresentation = createPlayer();
+    this.player = playerPresentation.root;
+    this.playerAsset = new PlayerCharacterAsset(playerPresentation.rig);
     this.playerAsset.load();
-    this.enemyCharacterPool = new EnemyCharacterAssetPool();
     this.ball = createBall();
     this.ballMaterial = this.ball.material as THREE.MeshStandardMaterial;
     const trail = createBallTrail();
@@ -119,14 +118,6 @@ export class RenderBridge {
   }
 
   public setCharacter(characterId: CharacterId): void {
-    const style = CHARACTER_DEFINITIONS[characterId].visualStyle;
-    playerMaterial.jersey.color.setHex(style.primaryColor);
-    playerMaterial.crimson.color.setHex(style.accentColor);
-    playerMaterial.sole.color.setHex(style.bootColor);
-    for (const id of Object.keys(CHARACTER_DEFINITIONS) as CharacterId[]) {
-      const accessory = this.player.getObjectByName(`player-accessory-${id}`);
-      if (accessory) accessory.visible = id === characterId;
-    }
     this.playerAsset.setCharacter(characterId);
   }
 
@@ -152,7 +143,7 @@ export class RenderBridge {
         if (contact.state === 'slideTackle') this.groundBurst(contact.position, intensity);
         else this.bootContactBurst(contact.position, intensity);
       }
-    } else animatePlayer(this.player, state.elapsed, previousPlayer, p);
+    }
     if (importedPlayerReady && state.phase !== this.previousMatchPhase) {
       if (state.phase === 'won') this.playerAsset.playOutcome('victory');
       if (state.phase === 'dead') this.playerAsset.playOutcome('defeat');
@@ -184,7 +175,6 @@ export class RenderBridge {
       if (!visual) {
         visual = createEnemy(enemy);
         this.enemies.set(enemy.id, visual);
-        this.enemyCharacterPool.register(enemy.id, enemy.archetype, visual.character);
         this.scene.add(visual.group);
       }
       const mesh = visual.group;
@@ -209,26 +199,13 @@ export class RenderBridge {
       const eliteScale = enemy.elite ? 1.18 : 1;
       mesh.scale.setScalar(pulse * coachPulse * telegraphPulse * buffPulse * eliteScale);
       const enemyDistanceSquared = (p.x - mesh.position.x) ** 2 + (p.z - mesh.position.z) ** 2;
-      const enemyMoved =
-        (enemy.position.x - enemy.previousPosition.x) ** 2 +
-          (enemy.position.z - enemy.previousPosition.z) ** 2 >
-        0.000001;
-      this.enemyCharacterPool.track(
-        enemy.id,
-        enemyDistanceSquared,
-        enemyMoved,
-        enemy.attackState,
-        enemy.hitFlash > 0,
-      );
       updateEnemyVisual(visual, enemy, state.elapsed, enemyDistanceSquared, this.renderQuality);
     }
     for (const [id, visual] of this.enemies) {
       if (this.liveEnemyIds.has(id)) continue;
-      this.enemyCharacterPool.unregister(id);
       this.scene.remove(visual.group);
       this.enemies.delete(id);
     }
-    this.enemyCharacterPool.update(dt, this.renderQuality);
     this.liveEnemyProjectileIds.clear();
     for (const projectile of state.enemyProjectiles) {
       this.liveEnemyProjectileIds.add(projectile.id);
@@ -258,7 +235,6 @@ export class RenderBridge {
   reset(): void {
     this.previousMatchPhase = undefined;
     this.playerAsset.resetPresentation();
-    this.enemyCharacterPool.clear();
     for (const visual of this.enemies.values()) {
       this.scene.remove(visual.group);
     }
@@ -394,7 +370,6 @@ export class RenderBridge {
     this.disposed = true;
     this.reset();
     this.playerAsset.dispose();
-    this.enemyCharacterPool.dispose();
     this.signatureVfx.dispose();
     this.surfaceEffects.dispose();
     this.goalNetResponse.dispose();
@@ -605,261 +580,25 @@ function createImpactRing(index: number): ImpactRing {
   return { mesh, age: 1, duration: 1, startScale: 1, endScale: 1 };
 }
 
-const playerGeometry = {
-  torso: new THREE.CapsuleGeometry(0.38, 0.46, 4, 12),
-  sash: new THREE.BoxGeometry(0.115, 0.76, 0.032, 1, 3, 1),
-  collar: new THREE.TorusGeometry(0.2, 0.035, 6, 18, Math.PI * 1.55),
-  shorts: new THREE.CapsuleGeometry(0.34, 0.12, 3, 10),
-  head: new THREE.SphereGeometry(0.29, 16, 12),
-  hair: new THREE.SphereGeometry(0.298, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.46),
-  ear: new THREE.SphereGeometry(0.06, 8, 6),
-  nose: new THREE.ConeGeometry(0.045, 0.11, 8),
-  eye: new THREE.SphereGeometry(0.034, 8, 6),
-  brow: new THREE.BoxGeometry(0.095, 0.025, 0.022),
-  arm: new THREE.CapsuleGeometry(0.105, 0.47, 4, 8),
-  cuff: new THREE.CylinderGeometry(0.12, 0.11, 0.12, 10),
-  hand: new THREE.SphereGeometry(0.12, 10, 8),
-  leg: new THREE.CapsuleGeometry(0.125, 0.43, 4, 8),
-  sock: new THREE.CapsuleGeometry(0.135, 0.26, 3, 8),
-  supportBoot: new THREE.CapsuleGeometry(0.16, 0.22, 3, 8),
-  bootUpper: new THREE.CapsuleGeometry(0.25, 0.4, 4, 10),
-  bootToe: new THREE.SphereGeometry(0.3, 12, 8),
-  bootSole: new THREE.BoxGeometry(0.54, 0.085, 1.06, 2, 1, 4),
-  stud: new THREE.CylinderGeometry(0.035, 0.045, 0.055, 7),
-  badge: new THREE.CircleGeometry(0.085, 12),
-  maestroScarf: new THREE.BoxGeometry(0.17, 0.85, 0.06),
-  breakawayFin: new THREE.ConeGeometry(0.12, 0.58, 4),
-  towerPad: new THREE.BoxGeometry(0.42, 0.2, 0.54),
-  finisherCollar: new THREE.TorusGeometry(0.36, 0.055, 5, 16),
-  engineRing: new THREE.TorusGeometry(0.58, 0.045, 5, 20),
-  guardianPlate: new THREE.BoxGeometry(0.72, 0.54, 0.08),
-};
-
-const playerMaterial = {
-  jersey: new THREE.MeshStandardMaterial({ color: 0xe1ded0, roughness: 0.72 }),
-  skin: new THREE.MeshStandardMaterial({ color: 0xc8b9ae, roughness: 0.82 }),
-  shorts: new THREE.MeshStandardMaterial({ color: 0x251a30, roughness: 0.84 }),
-  crimson: new THREE.MeshStandardMaterial({ color: 0xb5123f, roughness: 0.4, metalness: 0.12 }),
-  sole: new THREE.MeshStandardMaterial({ color: 0x4b1029, roughness: 0.7 }),
-  eyes: new THREE.MeshBasicMaterial({ color: 0xffd66b }),
-  hair: new THREE.MeshStandardMaterial({ color: 0x170d1d, roughness: 0.9 }),
-  white: new THREE.MeshStandardMaterial({ color: 0xf2ead8, roughness: 0.66 }),
-};
-
-function playerMesh(geometry: THREE.BufferGeometry, material: THREE.Material, name: string): THREE.Mesh {
-  const result = new THREE.Mesh(geometry, material);
-  result.name = name;
-  result.castShadow = true;
-  return result;
+interface PlayerPresentation {
+  readonly root: THREE.Group;
+  readonly rig: VoxelHumanoid;
 }
 
-function createPlayer(): THREE.Group {
+function createPlayer(): PlayerPresentation {
+  const rig = createVoxelHumanoid({
+    namePrefix: 'player',
+    facialStyle: 'focused',
+    accessories: { hair: 'crop', wristbands: true, shinGuards: true },
+  });
   const group = new THREE.Group();
   group.name = 'player-striker';
-
-  const torso = playerMesh(playerGeometry.torso, playerMaterial.jersey, 'player-torso');
-  torso.position.y = 1.2;
-
-  const sash = playerMesh(playerGeometry.sash, playerMaterial.crimson, 'player-sash');
-  sash.position.set(0.12, 1.22, -0.37);
-  sash.rotation.z = -0.25;
-  sash.castShadow = false;
-
-  const collar = playerMesh(playerGeometry.collar, playerMaterial.crimson, 'player-collar');
-  collar.position.set(0, 1.61, -0.04);
-  collar.rotation.x = Math.PI / 2;
-
-  const badge = playerMesh(playerGeometry.badge, playerMaterial.crimson, 'player-club-badge');
-  badge.position.set(-0.19, 1.37, -0.355);
-  badge.rotation.y = Math.PI;
-  badge.castShadow = false;
-
-  const shorts = playerMesh(playerGeometry.shorts, playerMaterial.shorts, 'player-shorts');
-  shorts.position.y = 0.72;
-
-  const head = playerMesh(playerGeometry.head, playerMaterial.skin, 'player-head');
-  head.position.y = 1.9;
-  const hair = playerMesh(playerGeometry.hair, playerMaterial.hair, 'player-hair');
-  hair.position.set(0, 1.925, 0.005);
-  for (const side of [-1, 1]) {
-    const ear = playerMesh(
-      playerGeometry.ear,
-      playerMaterial.skin,
-      `player-ear-${side < 0 ? 'left' : 'right'}`,
-    );
-    ear.position.set(side * 0.285, 1.9, 0);
-    group.add(ear);
-    const eye = playerMesh(
-      playerGeometry.eye,
-      playerMaterial.eyes,
-      `player-eye-${side < 0 ? 'left' : 'right'}`,
-    );
-    eye.position.set(side * 0.105, 1.96, -0.267);
-    eye.castShadow = false;
-    group.add(eye);
-    const brow = playerMesh(
-      playerGeometry.brow,
-      playerMaterial.hair,
-      `player-brow-${side < 0 ? 'left' : 'right'}`,
-    );
-    brow.position.set(side * 0.105, 2.04, -0.273);
-    brow.rotation.z = side * -0.08;
-    group.add(brow);
-  }
-  const nose = playerMesh(playerGeometry.nose, playerMaterial.skin, 'player-nose');
-  nose.position.set(0, 1.91, -0.31);
-  nose.rotation.x = -Math.PI / 2;
-
-  const leftArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-left');
-  leftArm.position.set(-0.53, 1.18, 0);
-  leftArm.rotation.z = -0.18;
-  const leftCuff = playerMesh(playerGeometry.cuff, playerMaterial.crimson, 'player-cuff-left');
-  leftCuff.position.set(-0.58, 0.91, 0);
-  const leftHand = playerMesh(playerGeometry.hand, playerMaterial.skin, 'player-hand-left');
-  leftHand.position.set(-0.61, 0.76, -0.015);
-  const rightArm = playerMesh(playerGeometry.arm, playerMaterial.jersey, 'player-arm-right');
-  rightArm.position.set(0.53, 1.18, 0);
-  rightArm.rotation.z = 0.18;
-  const rightCuff = playerMesh(playerGeometry.cuff, playerMaterial.crimson, 'player-cuff-right');
-  rightCuff.position.set(0.58, 0.91, 0);
-  const rightHand = playerMesh(playerGeometry.hand, playerMaterial.skin, 'player-hand-right');
-  rightHand.position.set(0.61, 0.76, -0.015);
-
-  const supportLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-support-leg');
-  supportLeg.position.set(-0.2, 0.39, 0.05);
-  const supportSock = playerMesh(playerGeometry.sock, playerMaterial.white, 'player-support-sock');
-  supportSock.position.set(-0.2, 0.32, 0.03);
-  const supportBoot = playerMesh(playerGeometry.supportBoot, playerMaterial.sole, 'player-support-boot');
-  supportBoot.position.set(-0.2, 0.11, -0.18);
-  supportBoot.rotation.x = Math.PI / 2;
-
-  const kickingLeg = playerMesh(playerGeometry.leg, playerMaterial.skin, 'player-kicking-leg');
-  kickingLeg.position.set(0.2, 0.46, -0.23);
-  kickingLeg.rotation.x = -0.5;
-  const kickingSock = playerMesh(playerGeometry.sock, playerMaterial.white, 'player-kicking-sock');
-  kickingSock.position.set(0.2, 0.36, -0.39);
-  kickingSock.rotation.x = -0.35;
-
-  // Local -Z is gameplay-forward. The layered upper, toe and sole keep the
-  // signature boot readable from both the chase camera and lateral angles.
-  const bootUpper = playerMesh(playerGeometry.bootUpper, playerMaterial.crimson, 'player-crimson-boot');
-  bootUpper.position.set(0.2, 0.25, -0.75);
-  bootUpper.rotation.x = Math.PI / 2 - 0.09;
-  const bootToe = playerMesh(playerGeometry.bootToe, playerMaterial.crimson, 'player-crimson-boot-toe');
-  bootToe.position.set(0.2, 0.23, -1.15);
-  bootToe.scale.set(1.05, 0.58, 1.08);
-  const bootSole = playerMesh(playerGeometry.bootSole, playerMaterial.sole, 'player-crimson-boot-sole');
-  bootSole.position.set(0.2, 0.085, -0.83);
-
-  const studs: THREE.Mesh[] = [];
-  for (const x of [-0.17, 0.17]) {
-    for (const z of [-1.12, -0.63]) {
-      const stud = playerMesh(
-        playerGeometry.stud,
-        playerMaterial.sole,
-        `player-boot-stud-${studs.length + 1}`,
-      );
-      stud.position.set(0.2 + x, 0.01, z);
-      studs.push(stud);
-    }
-  }
-
-  group.add(
-    torso,
-    sash,
-    collar,
-    badge,
-    shorts,
-    head,
-    hair,
-    nose,
-    leftArm,
-    leftCuff,
-    leftHand,
-    rightArm,
-    rightCuff,
-    rightHand,
-    supportLeg,
-    supportSock,
-    supportBoot,
-    kickingLeg,
-    kickingSock,
-    bootUpper,
-    bootToe,
-    bootSole,
-    ...studs,
-  );
-  addCharacterAccessories(group);
-  return group;
-}
-
-function addCharacterAccessories(group: THREE.Group): void {
-  const maestro = playerMesh(playerGeometry.maestroScarf, playerMaterial.crimson, 'player-accessory-maestro');
-  maestro.position.set(-0.25, 1.38, 0.34);
-  maestro.rotation.z = 0.42;
-
-  const breakaway = new THREE.Group();
-  breakaway.name = 'player-accessory-breakaway';
-  for (const side of [-1, 1]) {
-    const fin = playerMesh(playerGeometry.breakawayFin, playerMaterial.crimson, 'breakaway-speed-fin');
-    fin.position.set(side * 0.4, 0.2, 0.25);
-    fin.rotation.z = side * 0.62;
-    breakaway.add(fin);
-  }
-
-  const tower = new THREE.Group();
-  tower.name = 'player-accessory-tower';
-  for (const side of [-1, 1]) {
-    const pad = playerMesh(playerGeometry.towerPad, playerMaterial.crimson, 'tower-shoulder-pad');
-    pad.position.set(side * 0.62, 1.5, 0);
-    tower.add(pad);
-  }
-
-  const finisher = playerMesh(
-    playerGeometry.finisherCollar,
-    playerMaterial.crimson,
-    'player-accessory-finisher',
-  );
-  finisher.position.y = 1.65;
-  finisher.rotation.x = Math.PI / 2;
-
-  const engine = playerMesh(playerGeometry.engineRing, playerMaterial.crimson, 'player-accessory-engine');
-  engine.position.y = 0.08;
-  engine.rotation.x = -Math.PI / 2;
-
-  const guardian = playerMesh(
-    playerGeometry.guardianPlate,
-    playerMaterial.crimson,
-    'player-accessory-guardian',
-  );
-  guardian.position.set(0, 1.18, -0.44);
-
-  for (const accessory of [maestro, breakaway, tower, finisher, engine, guardian]) accessory.visible = false;
-  group.add(maestro, breakaway, tower, finisher, engine, guardian);
-}
-
-function animatePlayer(group: THREE.Group, elapsed: number, previous: Vec3, current: Vec3): void {
-  const moving = (current.x - previous.x) ** 2 + (current.z - previous.z) ** 2 > 0.000001;
-  const stride = moving ? Math.sin(elapsed * 11) : Math.sin(elapsed * 2.4) * 0.08;
-  const leftArm = group.getObjectByName('player-arm-left');
-  const rightArm = group.getObjectByName('player-arm-right');
-  const supportLeg = group.getObjectByName('player-support-leg');
-  const kickingLeg = group.getObjectByName('player-kicking-leg');
-  const torso = group.getObjectByName('player-torso');
-  const head = group.getObjectByName('player-head');
-  if (leftArm) leftArm.rotation.x = stride * 0.42;
-  if (rightArm) rightArm.rotation.x = -stride * 0.42;
-  if (supportLeg) supportLeg.rotation.x = -stride * 0.28;
-  if (kickingLeg) kickingLeg.rotation.x = -0.5 + stride * 0.22;
-  if (torso) {
-    torso.rotation.z = moving ? stride * 0.025 : 0;
-    torso.scale.y = 1 + Math.sin(elapsed * 2.4) * 0.012;
-  }
-  if (head) head.rotation.y = Math.sin(elapsed * 1.25) * (moving ? 0.025 : 0.06);
-  const engine = group.getObjectByName('player-accessory-engine');
-  if (engine) engine.rotation.z = elapsed * 1.8;
-  const scarf = group.getObjectByName('player-accessory-maestro');
-  if (scarf) scarf.rotation.x = Math.sin(elapsed * 5) * 0.16;
+  // VoxelHumanoid is authored facing +Z while gameplay-forward is local -Z.
+  rig.root.rotation.y = Math.PI;
+  group.add(rig.root);
+  group.userData.visualStyle = 'original-block-football';
+  group.userData.rigType = 'voxel-humanoid-v1';
+  return { root: group, rig };
 }
 
 function createBall(): THREE.Mesh {
@@ -1061,8 +800,6 @@ const enemyMaterial = {
 };
 
 function disposeSharedRenderResources(): void {
-  for (const geometry of Object.values(playerGeometry)) geometry.dispose();
-  for (const material of Object.values(playerMaterial)) material.dispose();
   for (const geometry of Object.values(enemyGeometry)) geometry.dispose();
   for (const material of Object.values(enemyMaterial)) material.dispose();
 }

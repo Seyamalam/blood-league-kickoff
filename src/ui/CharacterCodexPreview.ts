@@ -1,18 +1,15 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { CharacterId } from '../game/characters';
 import {
-  createImportedCharacterVariantController,
-  type ImportedCharacterVariantController,
-} from '../render/objects/PlayerCharacterVariants';
+  VoxelAnimationController,
+  type VoxelAnimationState,
+} from '../render/objects/VoxelAnimationController';
+import { createVoxelHumanoid, type VoxelHumanoid } from '../render/objects/VoxelHumanoid';
 import {
-  resolveFootballAnimationContract,
-  type FootballAnimationState,
-} from '../render/objects/FootballAnimationContract';
-import { createWebAuthoredFootballClips } from '../render/objects/WebAuthoredFootballClips';
-
-const CHARACTER_URL = '/assets/vendor/quaternius/night-striker.glb';
-const ANIMATION_URL = '/assets/vendor/quaternius/universal-animation-library.glb';
+  createVoxelPlayerVariantController,
+  type VoxelPlayerVariantController,
+} from '../render/objects/VoxelPlayerVariants';
+import type { FootballAnimationState } from '../render/objects/FootballAnimationContract';
 
 export const CODEX_PREVIEW_STATES = Object.freeze([
   'idle',
@@ -28,7 +25,7 @@ export function isCodexPreviewState(value: unknown): value is CodexPreviewState 
   return typeof value === 'string' && CODEX_PREVIEW_STATES.includes(value as CodexPreviewState);
 }
 
-/** Lightweight, on-demand WebGL viewer for the Career Codex character section. */
+/** Lightweight, synchronous WebGL viewer for the original voxel roster. */
 export class CharacterCodexPreview {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
@@ -36,11 +33,9 @@ export class CharacterCodexPreview {
   private readonly stage = new THREE.Group();
   private readonly clock = new THREE.Clock();
   private readonly resizeObserver?: ResizeObserver;
-  private model?: THREE.Group;
-  private mixer?: THREE.AnimationMixer;
-  private variants?: ImportedCharacterVariantController;
-  private readonly actions = new Map<CodexPreviewState, THREE.AnimationAction>();
-  private activeAction?: THREE.AnimationAction;
+  private readonly rig: VoxelHumanoid;
+  private readonly animations: VoxelAnimationController;
+  private readonly variants: VoxelPlayerVariantController;
   private selectedCharacter: CharacterId = 'maestro';
   private active = false;
   private disposed = false;
@@ -57,11 +52,11 @@ export class CharacterCodexPreview {
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = false;
     this.renderer.domElement.className = 'codex-character-preview__canvas';
-    this.renderer.domElement.setAttribute('aria-label', 'Animated 3D character preview');
+    this.renderer.domElement.setAttribute('aria-label', 'Animated original voxel character preview');
     this.host.prepend(this.renderer.domElement);
 
-    this.camera.position.set(0, 1.08, 5.45);
-    this.camera.lookAt(0, 0.98, 0);
+    this.camera.position.set(0, 1.18, 5.8);
+    this.camera.lookAt(0, 1.18, 0);
     this.scene.add(this.stage);
     this.scene.add(new THREE.HemisphereLight(0xdde8ff, 0x170c20, 2.35));
     const key = new THREE.DirectionalLight(0xffd6bd, 4.2);
@@ -78,12 +73,26 @@ export class CharacterCodexPreview {
     platform.position.y = -0.06;
     this.stage.add(platform);
 
+    this.rig = createVoxelHumanoid({
+      namePrefix: 'codex-player',
+      castShadow: false,
+      accessories: { hair: 'crop', wristbands: true, shinGuards: true },
+    });
+    this.rig.root.name = 'codex-preview-character';
+    this.stage.add(this.rig.root);
+    this.variants = createVoxelPlayerVariantController(this.rig);
+    this.variants.apply(this.selectedCharacter);
+    this.animations = new VoxelAnimationController(this.rig);
+    this.animations.play('idle');
+    this.stage.userData.previewCharacter = this.selectedCharacter;
+    this.stage.userData.previewAnimation = 'idle';
+    this.host.classList.add('codex-character-preview--ready');
+
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.resize());
       this.resizeObserver.observe(this.host);
     }
     this.resize();
-    void this.load();
   }
 
   public setActive(active: boolean): void {
@@ -96,18 +105,17 @@ export class CharacterCodexPreview {
 
   public setCharacter(id: CharacterId): void {
     this.selectedCharacter = id;
-    this.variants?.apply(id);
+    this.variants.apply(id);
     this.stage.userData.previewCharacter = id;
   }
 
   public play(state: CodexPreviewState): boolean {
-    const next = this.actions.get(state);
-    if (!next) return false;
-    if (this.activeAction !== next) this.activeAction?.fadeOut(0.12);
-    next.reset().fadeIn(0.12).play();
-    this.activeAction = next;
-    this.stage.userData.previewAnimation = state;
-    return true;
+    // Preview controls are direct scrubbing commands, not gameplay arbitration.
+    // Reset first so a held victory pose cannot trap the kit-room controls.
+    this.animations.reset();
+    const played = this.animations.play(state as VoxelAnimationState);
+    if (played) this.stage.userData.previewAnimation = state;
+    return played;
   }
 
   public dispose(): void {
@@ -115,67 +123,19 @@ export class CharacterCodexPreview {
     this.setActive(false);
     this.disposed = true;
     this.resizeObserver?.disconnect();
-    this.variants?.dispose();
-    this.mixer?.stopAllAction();
-    this.actions.clear();
+    this.animations.dispose();
+    this.variants.dispose();
+    this.rig.dispose();
+    this.rig.root.removeFromParent();
     disposeObject(this.scene);
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
 
-  private async load(): Promise<void> {
-    const loader = new GLTFLoader();
-    try {
-      const [character, library] = await Promise.all([
-        loader.loadAsync(CHARACTER_URL),
-        loader.loadAsync(ANIMATION_URL),
-      ]);
-      if (this.disposed) {
-        disposeObject(character.scene);
-        disposeObject(library.scene);
-        return;
-      }
-      this.model = character.scene;
-      this.model.name = 'codex-preview-character';
-      this.model.rotation.y = Math.PI;
-      this.model.traverse((node) => {
-        if (node instanceof THREE.Mesh) {
-          node.castShadow = false;
-          node.receiveShadow = false;
-          node.frustumCulled = false;
-        }
-      });
-      this.stage.add(this.model);
-      this.variants = createImportedCharacterVariantController(this.model);
-      this.variants.apply(this.selectedCharacter);
-      this.mixer = new THREE.AnimationMixer(this.model);
-      const clips = new Map(library.animations.map((clip) => [clip.name, clip]));
-      for (const clip of createWebAuthoredFootballClips(this.model)) clips.set(clip.name, clip);
-      const contract = resolveFootballAnimationContract(clips.keys());
-      for (const state of CODEX_PREVIEW_STATES) {
-        const resolution = contract.get(state);
-        const clip = resolution?.clipName ? clips.get(resolution.clipName) : undefined;
-        if (!clip) continue;
-        const action = this.mixer.clipAction(clip);
-        if (resolution?.playback !== 'loop') {
-          action.setLoop(THREE.LoopOnce, 1);
-          action.clampWhenFinished = true;
-        }
-        this.actions.set(state, action);
-      }
-      disposeObject(library.scene);
-      this.host.classList.add('codex-character-preview--ready');
-      this.play('idle');
-    } catch (error: unknown) {
-      this.host.classList.add('codex-character-preview--fallback');
-      console.warn('Codex character preview unavailable.', error);
-    }
-  }
-
   private readonly render = (): void => {
     if (!this.active || this.disposed) return;
     const dt = Math.min(0.05, this.clock.getDelta());
-    this.mixer?.update(dt);
+    this.animations.update(dt);
     this.stage.rotation.y = Math.sin(performance.now() * 0.00032) * 0.16;
     this.renderer.render(this.scene, this.camera);
     this.frame = window.requestAnimationFrame(this.render);
@@ -192,15 +152,10 @@ export class CharacterCodexPreview {
 }
 
 function disposeObject(root: THREE.Object3D): void {
-  const textures = new Set<THREE.Texture>();
   root.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return;
     node.geometry?.dispose();
     const materials = Array.isArray(node.material) ? node.material : [node.material];
-    for (const material of materials) {
-      for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value);
-      material.dispose();
-    }
+    for (const material of materials) material.dispose();
   });
-  for (const texture of textures) texture.dispose();
 }

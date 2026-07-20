@@ -25,13 +25,13 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Current v0.16 kickoff with the shared-rig football kit and live aim guide](docs/screenshots/gameplay-v016.png)
+![Current kickoff with the original voxel football hero and live aim guide](docs/screenshots/gameplay-voxel.png)
 
-![Current 72-enemy visual-roster acceptance scene](docs/screenshots/dense-roster-v016.png)
+![Current 72-enemy voxel-roster acceptance scene](docs/screenshots/dense-roster-voxel.png)
 
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
-The placeholder-replacement pass gives nearby ordinary enemies real skinned and animated CC0 characters, capped at 8–16 imported models by quality preset. All eleven archetypes remain identifiable through their own color treatment, equipment, attack pose, and silhouette; articulated rounded humanoids and merged crowd LODs take over at distance. The football now has a one-draw-call ivory, charcoal, and crimson panel treatment. Goals, nets, dugouts, floodlights, advertising boards, encounter props, minibosses, and Count Goalkeeper have also been rebuilt as authored football-horror forms instead of anonymous blocks.
+The character overhaul now uses an original block-football visual language built entirely in TypeScript and Three.js. The player has a reusable articulated voxel skeleton with segmented arms and legs, readable face, layered kit, boots, sockets, and six distinct hero silhouettes. Ordinary enemies use matching block anatomy from near view through merged crowd LODs while retaining archetype-specific shields, wings, scarves, bows, gloves, and supernatural cues. No runtime character download is required. The football keeps its one-draw-call ivory, charcoal, and crimson panel treatment, while goals, nets, dugouts, floodlights, advertising boards, minibosses, and Count Goalkeeper retain their authored football-horror forms.
 
 ### Cursed contracts and live telemetry
 
@@ -59,7 +59,7 @@ The placeholder-replacement pass gives nearby ordinary enemies real skinned and 
 
 ![Current league difficulty and optional match modifiers](docs/screenshots/difficulty-v016.png)
 
-![Current live shared-rig character preview and original portrait roster](docs/screenshots/character-codex-v016.png)
+![Current live voxel-rig character preview and original portrait roster](docs/screenshots/character-codex-voxel.png)
 
 ### Settings
 
@@ -105,13 +105,13 @@ The next replayability layer uses six original football-style archetypes. They d
 | The Engine    | Relentless runner       | Pickup range and pitch coverage     | Lower starting damage    |
 | The Guardian  | Defensive anchor        | Damage resistance                   | Lower kick power         |
 
-Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The player now uses an optimized, skinned Quaternius CC0 humanoid and compatible authored animation library for idle, jog, sprint, roll, tackles, and kick techniques. The 36-part original procedural humanoid remains an automatic fallback.
+Typed, immutable character definitions and modifier plumbing are implemented. The Career screen persists unlocks and selection, and each live run starts with the chosen character's gameplay traits. The shipping player is now a lightweight original voxel athlete generated locally at startup—there is no model fetch, skinning dependency, or loading fallback during kickoff.
 
-All six selections now share that one validated 65-joint skeleton while receiving animation-safe proportions, full joint-mounted football kits, unique hair/head forms, boots, palette accents, and socketed silhouette equipment: armband/rune, calf fins, shoulder plates, fang collar, wrist wraps/canister, or forearm guards. Fifteen browser-authored shared-skeleton clips cover idle, dribble, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, and defeat; the licensed library continues to supply its audited jog and sprint. Every semantic state exposes normalized contact/recovery timing and a root, foot, hand, or head socket so ball physics remain immediate while impact presentation lands on the visible contact frame.
+All six selections share one articulated voxel skeleton while receiving animation-safe proportions, full football kits, unique block-built head and equipment silhouettes, boots, and palette accents: captain band and scarf, speed crest and calf fins, shoulder armor, fang collar, wrist wraps and canister, or keeper helm and forearm guards. Nineteen deterministic code-driven states cover idle, dribble, sprint, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, defeat, and enemy chase/attack/hit motion. Priority locks prevent locomotion from cancelling techniques or reactions. Semantic contact timing and root, foot, hand, and head sockets keep ball physics immediate while impact presentation lands on the visible contact frame.
 
 The Career Codex now includes an on-demand WebGL kit room using the shipping model and animations, plus 25 original generated portraits covering all six heroes, eleven ordinary enemies, four rival captains, two minibosses, the goal-line blocker, and Count Goalkeeper. Their generation briefs, preserved masters, crop history, and hashes are recorded in the [portrait generation record](docs/art/PORTRAIT_GENERATION_RECORD.md).
 
-The imported Quaternius character is human-authored and CC0, not AI-generated. Exact sources, bundled licenses, hashes, and optimization steps are in the [asset credits](docs/ASSET_CREDITS.md). The pinned Node-only asset workflow can validate, inspect, and conservatively optimize downloaded GLBs without Blender; `npm run assets:gltf:validate` checks both canonical assets with the Khronos validator. The [original hero visual bible](docs/HERO_VISUAL_BIBLE.md), [turnaround prompt](docs/HERO_CONCEPT_PROMPT.md), [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md), and [measured rig audit](docs/CHARACTER_RIG_AUDIT.md) define the original replacement without using a real-player likeness. A model will only be labeled AI-generated after its generator, prompt/task, license, cleanup, and optimization record exist.
+The previous Quaternius CC0 files remain preserved as audited reference assets but are no longer loaded by the player, Career preview, or ordinary-enemy renderer. Exact sources, bundled licenses, hashes, and optimization steps remain in the [asset credits](docs/ASSET_CREDITS.md). The [original hero visual bible](docs/HERO_VISUAL_BIBLE.md), [character asset pipeline](docs/CHARACTER_ASSET_PIPELINE.md), and [measured rig audit](docs/CHARACTER_RIG_AUDIT.md) document both the shipping voxel route and the optional future GLB route without using a real-player likeness.
 
 Five passive upgrades now join twenty-one active weapon paths. Alongside health, pickup, damage, and life-steal passives, **Blood Barrier** blocks incoming hits and recharges during combat. The football armory adds Header Cannon, Corner Storm, Red Card, Spectral Teammate, Penalty Mine, and Boot Cyclone. Four new combinations—**Royal Header**, **Tempest Set Piece**, **Phantom Formation**, and **Referee's Reckoning**—expand the evolution roster to eleven. Six optional cursed contracts trade safety for stronger rewards and a more aggressive encounter director.
 
@@ -209,7 +209,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Eight enemy archetypes through Bat Swarm, Leech Striker, Corrupt Referee, and Goalkeeper Brute
 - [x] Coach speed aura, durable Defender silhouette, and allocation-conscious crowd separation
 - [x] Direct-reference enemy rendering with state-driven attack/defense poses and a five-mesh silhouette budget for every ordinary archetype
-- [x] Replace ordinary enemy blocks with a bounded real-GLB character pool, seven shared animation actions, eleven equipment identities, and merged distance LODs
+- [x] Replace smooth ordinary-enemy bodies with articulated voxel anatomy, eleven equipment identities, and merged block-built distance LODs
 - [x] Enemy damage/death, scoring/combo, player damage/death, and restart
 - [x] Procedural Web Audio for kicks, volleys, recalls, hits, kills, and player damage
 - [x] Blood XP levels and a paused three-card upgrade choice flow
@@ -219,14 +219,14 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add character selection/profile UI, live selected-character startup, and unlock presentation
 - [x] Give every character a unique starting loadout, signature ultimate, HUD meter, icon, audio/VFX response, and rebindable control
 - [x] Add a no-likeness hero visual bible, production turnaround prompt, exact shared-skeleton manifest, and reproducible GLB validator
-- [x] Add six shared-rig runtime silhouettes with distinct proportions, palettes, and bone-socketed equipment
+- [x] Replace the runtime GLB player with an original articulated voxel rig, six block-built identities, and zero-load startup
 - [x] Add a fifteen-state semantic football animation contract with explicit dedicated/alias/unavailable status
 - [x] Drive semantic dribble/strafe/reaction/outcome animation states and add contact, recovery, and socket metadata
-- [x] Add priority-safe animation crossfades, completion recovery, strict additive overlays, and development-only web rig inspection
+- [x] Add priority-safe code-driven voxel motion, deterministic completion recovery, and development-only joint inspection
 - [x] Add deterministic pooled boot-contact, ground-impact, and goal-ring VFX with quality and reduced-flash scaling
 - [x] Add grass footsteps, body impacts, goalkeeper-save layers, UI navigation cues, and strict procedural voice limits
 - [x] Improve HUD ready-state feedback, menu icons/tooltips, keyboard focus, reduced motion, and short-viewport scrolling
-- [x] Add original character portraits, six shared-rig kit variants, and a live model/animation Codex preview
+- [x] Add original character portraits, six voxel-rig kit variants, and a live model/animation Codex preview
 - [x] Silver Ball, Power Kick, and Rapid Recall immediately affect live combat
 - [x] Pooled physical blood shards burst from kills, magnet to the player, and grant XP on collection
 - [x] Piercing Studs, Garlic Trail, Orbiting Spectral Ball, Blood Bomb, and Ghost Pass work in live combat
@@ -240,7 +240,7 @@ The game uses no AI service at runtime. Browser and desktop releases share the s
 - [x] Add three reusable Momentum Gates with speed bursts, dash refunds, cooldown presentation, and ball-safe collision rules
 - [x] Add a touchline-spanning Wide Overload Blood Moon formation and authored event-spacing protection
 - [x] Replace the player placeholder with a detailed 36-part original humanoid, articulated animation, six character identities, resource budgets, and a documented GLB upgrade path
-- [x] Import, optimize, license, and integrate a real skinned CC0 humanoid plus authored animation library with automatic fallback
+- [x] Retire runtime skinned-character loading after preserving the audited CC0 assets and validation route
 - [x] Add stadium-specific weather, reactive crowds, pulsing rails, flags, banners, and floodlights
 - [x] Add always-available slide tackles and charge-scaled bicycle-kick impact lanes
 - [x] Add four seeded rival vampire clubs, Blood Multiball windows, and possession objectives
@@ -372,9 +372,9 @@ npm run desktop:dev
 npm run package:mac
 ```
 
-Open `/?rigDebug=1` in a development build to inspect the live 65-joint skeleton. Open
+Open `/?rigDebug=1` in a development build to inspect the live articulated voxel joints. Open
 `/?diagnostics=1` and call `window.__bloodLeagueDiagnostics()` from the browser console for a frozen performance
-snapshot. Both routes are disabled in production builds. GLB optimization writes a candidate under the ignored
+snapshot. Both routes are disabled in production builds. The optional GLB optimization route writes a candidate under the ignored
 `artifacts/asset-candidates/` directory and never replaces a canonical runtime asset.
 
 The web build is emitted to `dist/`. Copy `.env.example` to ignored `.env.local`, set `BUTLER_API_KEY`, and run `npm run deploy:itch:web` for a verified local upload. Pushes to `main` run the same full check and automatically update the `seyamalam/blood-league-kickoff:html5` itch.io channel through the encrypted GitHub secret. Manual dispatches are also restricted to `main`; pull requests never deploy. On itch.io, the project is configured as HTML and only the Butler-managed `html5` upload is marked playable in the browser.
