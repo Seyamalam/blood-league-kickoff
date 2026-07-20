@@ -19,6 +19,7 @@ import { GoalNetResponse } from '../objects/GoalNetResponse';
 import { CharacterReadabilityLight } from '../objects/CharacterReadabilityLight';
 import { createVoxelHumanoid, type VoxelHumanoid } from '../objects/VoxelHumanoid';
 import { voxelFootballPropGeometry } from '../objects/VoxelFootballProps';
+import type { CustomCharacterAppearance } from '../../profile/CharacterCustomizationStore';
 
 const TRAIL_POINTS = 16;
 const BURST_POOL_SIZE = 4;
@@ -120,6 +121,10 @@ export class RenderBridge {
 
   public setCharacter(characterId: CharacterId): void {
     this.playerAsset.setCharacter(characterId);
+  }
+
+  public setCharacterCustomization(appearance: Readonly<CustomCharacterAppearance>): void {
+    this.playerAsset.setCustomization(appearance);
   }
 
   sync(state: GameState, ballPosition: Vec3, ballSpeed: number, dt: number, alpha: number): void {

@@ -184,6 +184,9 @@ export class SettingsOverlay {
           <div class="settings-controller-map" aria-label="Standard gamepad controls">
             <strong>GAMEPAD</strong><span>Left stick move · Right stick aim · RT kick · LT recall · A dash · X ultimate · Y Focus Kick · Menu pause · View restart</span>
           </div>
+          <div class="settings-controller-map" aria-label="Audio credits">
+            <strong>AUDIO</strong><span>Original Huntrix soundtrack created with Gemini/Lyria · CC0 menu effects by Kenney · Procedural football and combat mix by Huntrix</span>
+          </div>
           <fieldset class="settings-controls" aria-describedby="settings-binding-help settings-binding-status">
             <legend>KEYBOARD CONTROLS</legend>
             <p id="settings-binding-help">Choose a control, then press a keyboard key. Escape cancels. Mouse buttons cannot be assigned.</p>

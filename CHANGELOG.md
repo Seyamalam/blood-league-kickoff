@@ -2,6 +2,15 @@
 
 Notable project changes are recorded here. Versions follow semantic milestone numbering during the jam.
 
+## v0.17.0 — 2026-07-20
+
+- Added a persistent custom-player creator with a live animated voxel preview, six base silhouettes, three body builds, four kit patterns, four aura treatments, eight color channels, named presets, randomization, and saved match integration.
+- Added three original 30-second menu, match, and boss soundtracks created by Huntrix with Gemini/Lyria and blended them through the existing adaptive Web Audio state machine.
+- Added seven CC0 Kenney UI samples for confirmation, selection, navigation, opening, closing, toggling, and error feedback while retaining procedural fallbacks.
+- Expanded menu audio wiring, first-interaction audio unlock, soundtrack crossfades, in-game attribution, and offline packaged-asset loading.
+- Refreshed the production title, custom-player, and customized-gameplay capture set.
+- Prepared verified web, macOS, Windows, and Linux production packages for the stable release.
+
 ## v0.16.0 — 2026-07-15
 
 - Added complete joint-mounted football kits, distinct proportions, heads/hair, boots, equipment, and material treatment for all six shared-rig heroes.

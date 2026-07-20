@@ -227,6 +227,8 @@ Asset directories, automated tests, data definitions, and specialized gameplay m
 - `boss`: deterministic Count Goalkeeper and final-elite encounter simulation with typed events
 - `CountGoalkeeperVisual`: interpolated multi-phase boss presentation
 - `SettingsStore` / `SettingsOverlay`: validated persistent player preferences and accessible configuration UI
+- `CharacterCustomizationStore` / `CharacterCreatorOverlay`: versioned local custom-player appearance with a live animated preview and match integration
+- `AudioAssets` / `AudioManager`: offline menu/match/boss soundtrack routing, CC0 UI samples, adaptive crossfades, and procedural fallbacks
 - `desktopRuntime`: fixed-channel Electron IPC for window state, safe size presets, fullscreen, and explicit quit
 - `InputController`: keyboard/mouse state, pointer lock, charged-kick edges, recall, and dash input
 - `gameState.ts`: player simulation, eight director-selected archetypes, elite variants, kickoff resets, crowd separation, special attacks, damage, death, combo, and score
@@ -304,7 +306,7 @@ Audio priority is kick impact, ball flight/recall, player danger, goalkeeper res
 
 Persistent HUD: health, blood XP/level, clock/phase, ball state, ultimate charge, current objective, and boss health when relevant.
 
-Modal surfaces: upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, persisted vertical-look inversion, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Desktop Quit belongs only on the title screen. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
+Modal surfaces: custom-player creation, upgrade selection, halftime choice, pause/settings, and results. Required settings are master/music/effects volume, mouse sensitivity, persisted vertical-look inversion, resolution/fullscreen in desktop, quality preset, and 60/120/unlimited frame-rate choice. Desktop Quit belongs only on the title screen. Target options include shake strength, aim assist, rebinding, and color-independent indicators.
 
 ## 11. Build and Release Strategy
 

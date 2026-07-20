@@ -6,7 +6,7 @@
 
 | Project   | Value                                        |
 | --------- | -------------------------------------------- |
-| Status    | Voxel animation and visual-polish milestone  |
+| Status    | Custom-player and original-audio milestone   |
 | Theme     | Kickoff                                      |
 | Team      | Huntrix — 2 participants                     |
 | Platforms | Web, macOS, Windows, and Linux               |
@@ -15,7 +15,7 @@
 
 ### Current title screen
 
-![Blood League: Kickoff v0.16 title screen](docs/screenshots/title-screen-v016.png)
+![Blood League: Kickoff v0.17 title screen](docs/screenshots/title-screen-v017.png)
 
 ## The Game
 
@@ -25,13 +25,23 @@ The ball is the player's main weapon, defensive tool, positional risk, and key t
 
 ### Current gameplay
 
-![Current kickoff with the original voxel football hero and live aim guide](docs/screenshots/gameplay-voxel.png)
+![Current kickoff with a custom voxel football hero and live aim guide](docs/screenshots/gameplay-v017.png)
 
 ![Current 72-enemy voxel-roster acceptance scene](docs/screenshots/dense-roster-voxel.png)
 
 The playable pitch is now 136×88 world metres—roughly 68% more surface than the original field. Audited ambientCG CC0 color, normal, and roughness maps add genuine PBR turf detail beneath five live-switchable stadium palettes. Blood Court carries embers, Moonlit Classic uses drizzle, Emerald Cathedral glows with fireflies, Royal Amethyst throws arcane sparks, and Frostbound Arena snows. Crowds, rails, banners, flags, floodlights, and architecture-specific props react to match events. Select a stadium or random rotation from Settings.
 
 The character overhaul now uses an original block-football visual language built entirely in TypeScript and Three.js. The player has a reusable articulated voxel skeleton with segmented arms and legs, readable face, layered kit, boots, sockets, and six distinct hero silhouettes. Ordinary enemies use matching block anatomy from near view through merged crowd LODs while retaining archetype-specific shields, wings, scarves, bows, gloves, and supernatural cues. No runtime character download is required. The football keeps its one-draw-call ivory, charcoal, and crimson panel treatment, while goals, nets, dugouts, floodlights, advertising boards, minibosses, and Count Goalkeeper retain their authored football-horror forms.
+
+### Create your player
+
+![Persistent live custom-player creator](docs/screenshots/character-creator-v017.png)
+
+Create an original Night Striker without using a real-player likeness. Choose one of six animation-compatible silhouettes, agile/balanced/powerful proportions, four voxel kit patterns, an optional crimson/violet/gold aura, and separate skin, kit, accent, shorts, socks, boots, hair, and eye colors. The live WebGL preview supports idle, dribble, shot, and victory animations. The design is saved locally and follows the player into future matches, while the selected Career hero continues to control gameplay traits and balance.
+
+### Original soundtrack and sound effects
+
+Three original offline soundtrack files cover the title/menu, standard match, and Count Goalkeeper/final-wave states. The runtime crossfades between them through the existing adaptive mix and retains procedural layers and procedural fallbacks. Seven bundled Kenney UI Audio samples add confirmation, navigation, opening, closing, toggling, selection, and error feedback. Music and effects remain independently adjustable in Settings, and the release never contacts an AI or audio service at runtime.
 
 ### Cursed contracts and live telemetry
 
@@ -115,7 +125,7 @@ Typed, immutable character definitions and modifier plumbing are implemented. Th
 
 All six selections share one articulated voxel skeleton while receiving animation-safe proportions, full football kits, unique block-built head and equipment silhouettes, boots, and palette accents: captain band and scarf, speed crest and calf fins, shoulder armor, fang collar, wrist wraps and canister, or keeper helm and forearm guards. Nineteen deterministic code-driven states cover idle, dribble, sprint, directional strafes, ground/lob passes, shooting, heading, slide tackle, bicycle kick, damage, knockdown, celebration, victory, defeat, and enemy chase/attack/hit motion. Transitions now blend instead of snapping, compatible techniques layer over continuing locomotion, upper-body aim remains independent from the legs, and render-only ground samples plant each foot against slopes. Six motion profiles give Maestro controlled elegance, Breakaway explosive cadence, Tower deliberate weight, Finisher aggression, Engine endurance, and Guardian stability. Brows, mouths, fangs, eye squint, reactions, celebrations, and deterministic blinking follow the active state.
 
-The visual armory replaces plain combat primitives with cached compound voxel footballs, blood bolts, blood shards, cleated boots, spectral whistles, cursed goal frames, cards, trophies, and banners. Secondary-weapon families use authored per-model scale and orientation so they remain identifiable without becoming giant blocks. Ordinary opponents, both minibosses, and Count Goalkeeper now share the block-built anatomy language while preserving distinct equipment, posture, cadence, attack cues, and distance LODs.
+The visual armory replaces plain combat primitives with cached compound voxel footballs, blood bolts, blood shards, cleated boots, spectral whistles, cursed goal frames, cards, trophies, and banners. Secondary-weapon families use authored per-model scale and orientation so they remain identifiable without becoming giant blocks. Ordinary opponents, both minibosses, and Count Goalkeeper now share the block-built anatomy language while preserving distinct equipment, posture, cadence, attack cues, and distance LODs. A saved custom-player appearance layers onto the same skeleton without changing simulation or animation semantics.
 
 The Career Codex now includes an on-demand WebGL kit room using the shipping model and animations, plus 25 original generated portraits covering all six heroes, eleven ordinary enemies, four rival captains, two minibosses, the goal-line blocker, and Count Goalkeeper. Their generation briefs, preserved masters, crop history, and hashes are recorded in the [portrait generation record](docs/art/PORTRAIT_GENERATION_RECORD.md).
 
@@ -195,7 +205,7 @@ Target features remain gated until the guaranteed vertical slice is fun, stable,
 - **TypeScript + Vite:** code-first development and browser builds
 - **Rapier:** fixed-step WASM physics for the player, ball, arena, and important collisions
 - **HTML/CSS:** menus, HUD, upgrade cards, and settings
-- **Web Audio:** layered procedural music, protected effects, football impacts, progression cues, and phase transitions
+- **Web Audio:** original offline soundtrack playback, adaptive crossfades, CC0 UI samples, layered procedural effects, football impacts, progression cues, and phase transitions
 - **Electron:** self-contained GPU-accelerated desktop builds sharing the web gameplay code
 - **electron-builder:** portable Windows, macOS, and Linux packaging
 - **GitHub Actions:** native-runner web/desktop builds attached automatically to tagged releases

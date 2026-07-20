@@ -195,7 +195,7 @@ During scoring opportunities, the special goalkeeper blocker is separate from Co
 5. Goal/kickoff transition
 6. Evolution and boss presentation
 
-The procedural audio foundation includes kick/volley/combat feedback plus distinct wall, post, crossbar, net, recall-catch, dash, heal, life-steal, pickup, level, upgrade, unlock, personal-record, goalkeeper, kickoff, missed-goal, halftime, Blood Moon, final-wave, outcome, and UI cues. Retrigger windows protect the shared graph during dense events. Adaptive music blends drone, tension, pulse, choir, and percussion-style layers by match intensity. The system stays asset-free and offline; connecting every new cue to authoritative gameplay/UI events and final mix validation remain in progress.
+The audio foundation includes kick/volley/combat feedback plus distinct wall, post, crossbar, net, recall-catch, dash, heal, life-steal, pickup, level, upgrade, unlock, personal-record, goalkeeper, kickoff, missed-goal, halftime, Blood Moon, final-wave, outcome, and UI cues. Retrigger windows protect the shared graph during dense events. Three original offline tracks cover menu, match, and boss states; CC0 Kenney samples reinforce menu interactions; procedural layers remain available for responsive event feedback and fallback. No runtime network request or generative service is required.
 
 Camera shake, hit pause, chromatic effects, and particles must be restrained and scalable. Ball, threats, goal, and upgrade text must remain readable at 1080p and lower quality settings.
 

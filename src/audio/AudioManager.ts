@@ -1,4 +1,5 @@
 import type { MatchStage } from '../game/match';
+import { SOUNDTRACK_URLS, UI_SAMPLE_URLS, type SoundtrackId, type UiSampleId } from './AudioAssets';
 
 /** Options for the game's procedural audio bus. */
 export interface AudioManagerOptions {
@@ -114,6 +115,12 @@ export class AudioManager {
   private effectsBusGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private musicGraph: ProceduralMusicGraph | null = null;
+  private readonly sampledBuffers = new Map<string, AudioBuffer>();
+  private soundtrackSource: AudioBufferSourceNode | null = null;
+  private soundtrackGain: GainNode | null = null;
+  private soundtrackId: SoundtrackId | null = null;
+  private requestedSoundtrack: SoundtrackId | null = 'menu';
+  private assetsLoading: Promise<void> | null = null;
   private readonly activeSources = new Set<AudioScheduledSourceNode>();
   private readonly lastEventTimes = new Map<string, number>();
   private volume: number;
@@ -152,6 +159,7 @@ export class AudioManager {
       if (!this.context) this.createAudioGraph();
       if (!this.context) return false;
       if (this.context.state === 'suspended') await this.context.resume();
+      void this.loadSampledAudio();
       return this.context.state === 'running';
     } catch {
       return false;
@@ -200,7 +208,13 @@ export class AudioManager {
    */
   public setMatchIntensity(intensity: MatchMusicIntensity): void {
     this.matchIntensity = resolveMatchIntensity(intensity);
+    this.requestedSoundtrack = resolveSoundtrack(intensity, this.matchIntensity);
     this.updateMusicIntensity();
+    this.syncSoundtrack();
+  }
+
+  public get currentSoundtrack(): SoundtrackId | null {
+    return this.requestedSoundtrack;
   }
 
   /** Low impact plus a metallic snap. Charge is normalized to 0–1. */
@@ -747,6 +761,7 @@ export class AudioManager {
   public playUiSelect(): void {
     const now = this.eventNow('ui-select', 0.035);
     if (now === null) return;
+    this.playSample('select', 0.42, 0.98 + this.nextCueVariation() * 0.02);
     this.tone({ frequency: 440, endFrequency: 620, duration: 0.055, gain: 0.04, start: now, type: 'sine' });
   }
 
@@ -754,6 +769,7 @@ export class AudioManager {
   public playUiNavigate(): void {
     const now = this.eventNow('ui-navigate', 0.025);
     if (now === null) return;
+    this.playSample('navigate', 0.26, this.nextCueVariation());
     const variation = this.nextCueVariation();
     this.tone({
       frequency: 340 * variation,
@@ -769,6 +785,7 @@ export class AudioManager {
   public playUiBack(): void {
     const now = this.eventNow('ui-back', 0.06);
     if (now === null) return;
+    this.playSample('close', 0.38, 0.92);
     this.tone({
       frequency: 420,
       endFrequency: 260,
@@ -783,6 +800,7 @@ export class AudioManager {
   public playUiError(): void {
     const now = this.eventNow('ui-error', 0.15);
     if (now === null) return;
+    this.playSample('error', 0.44, 0.82);
     this.tone({ frequency: 180, endFrequency: 150, duration: 0.16, gain: 0.065, start: now, type: 'square' });
     this.tone({
       frequency: 191,
@@ -792,6 +810,59 @@ export class AudioManager {
       start: now,
       type: 'square',
       detune: -7,
+    });
+  }
+
+  /** Layered menu entrance with an authored CC0 switch sound. */
+  public playUiOpen(): void {
+    const now = this.eventNow('ui-open', 0.09);
+    if (now === null) return;
+    this.playSample('open', 0.42, 1);
+    this.tone({ frequency: 196, endFrequency: 392, duration: 0.12, gain: 0.035, start: now, type: 'sine' });
+  }
+
+  /** Layered menu dismissal, separate from ordinary focus navigation. */
+  public playUiClose(): void {
+    const now = this.eventNow('ui-close', 0.09);
+    if (now === null) return;
+    this.playSample('close', 0.42, 0.96);
+    this.tone({
+      frequency: 330,
+      endFrequency: 165,
+      duration: 0.1,
+      gain: 0.035,
+      start: now,
+      type: 'triangle',
+    });
+  }
+
+  /** Physical switch response for settings, modifiers, and creator controls. */
+  public playUiToggle(enabled = true): void {
+    const now = this.eventNow('ui-toggle', 0.045);
+    if (now === null) return;
+    this.playSample('toggle', 0.38, enabled ? 1.04 : 0.88);
+    this.tone({
+      frequency: enabled ? 390 : 310,
+      endFrequency: enabled ? 520 : 220,
+      duration: 0.065,
+      gain: 0.028,
+      start: now,
+      type: 'sine',
+    });
+  }
+
+  /** Stronger confirmation for saving a character or committing a ruleset. */
+  public playUiConfirm(): void {
+    const now = this.eventNow('ui-confirm', 0.11);
+    if (now === null) return;
+    this.playSample('confirm', 0.5, 1);
+    this.tone({
+      frequency: 294,
+      endFrequency: 588,
+      duration: 0.14,
+      gain: 0.05,
+      start: now,
+      type: 'triangle',
     });
   }
 
@@ -1174,6 +1245,9 @@ export class AudioManager {
     }
     this.activeSources.clear();
     this.lastEventTimes.clear();
+    this.stopSoundtrack();
+    this.sampledBuffers.clear();
+    this.assetsLoading = null;
     this.disposeMusicGraph();
     this.musicBusGain?.disconnect();
     this.effectsBusGain?.disconnect();
@@ -1215,6 +1289,7 @@ export class AudioManager {
     this.updateMasterGain();
     this.updateBusGains();
     this.updateMusicIntensity();
+    this.syncSoundtrack();
   }
 
   private updateMasterGain(): void {
@@ -1336,7 +1411,8 @@ export class AudioManager {
     const now = context.currentTime;
     const intensity = this.matchIntensity;
     const active = intensity > 0.001 ? 1 : 0;
-    rampTarget(music.output.gain, active * (0.58 + intensity * 0.12), now, 0.32);
+    const sampledScoreLoaded = this.soundtrackId !== null;
+    rampTarget(music.output.gain, active * (sampledScoreLoaded ? 0.18 : 0.58 + intensity * 0.12), now, 0.32);
     rampTarget(music.droneGain.gain, active * (0.018 + intensity * 0.018), now, 0.38);
     rampTarget(music.tensionGain.gain, active * Math.max(0, intensity - 0.22) * 0.027, now, 0.38);
     const pulseLevel = active * Math.max(0, intensity - 0.34) * 0.022;
@@ -1350,6 +1426,104 @@ export class AudioManager {
     rampTarget(music.filter.frequency, 260 + intensity * 940, now, 0.42);
     rampTarget(music.pulseLfo.frequency, 1.55 + intensity * 2.45, now, 0.35);
     rampTarget(music.percussionLfo.frequency, 1.8 + intensity * 3.2, now, 0.24);
+  }
+
+  private async loadSampledAudio(): Promise<void> {
+    if (this.assetsLoading || !this.context || this.disposed) return this.assetsLoading ?? Promise.resolve();
+    const context = this.context;
+    const entries = [
+      ...Object.entries(SOUNDTRACK_URLS).map(([id, url]) => [`music:${id}`, url] as const),
+      ...Object.entries(UI_SAMPLE_URLS).map(([id, url]) => [`ui:${id}`, url] as const),
+    ];
+    this.assetsLoading = Promise.all(
+      entries.map(async ([id, url]) => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) return;
+          const buffer = await context.decodeAudioData(await response.arrayBuffer());
+          if (!this.disposed) this.sampledBuffers.set(id, buffer);
+        } catch {
+          // Procedural score and cues remain a complete offline fallback.
+        }
+      }),
+    ).then(() => {
+      if (!this.disposed) this.syncSoundtrack();
+    });
+    return this.assetsLoading;
+  }
+
+  private syncSoundtrack(): void {
+    const context = this.context;
+    const output = this.musicBusGain;
+    const requested = this.requestedSoundtrack;
+    if (!context || !output || context.state === 'closed' || requested === this.soundtrackId) return;
+    if (!requested) {
+      this.stopSoundtrack();
+      this.updateMusicIntensity();
+      return;
+    }
+    const buffer = this.sampledBuffers.get(`music:${requested}`);
+    if (!buffer) return;
+    const now = context.currentTime;
+    const previousSource = this.soundtrackSource;
+    const previousGain = this.soundtrackGain;
+    if (previousGain) {
+      previousGain.gain.cancelScheduledValues(now);
+      previousGain.gain.setTargetAtTime(0.0001, now, 0.18);
+    }
+    if (previousSource) {
+      try {
+        previousSource.stop(now + 0.75);
+      } catch {
+        // A prior crossfade may already be ending.
+      }
+    }
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.setTargetAtTime(soundtrackGainFor(requested), now, 0.28);
+    source.connect(gain);
+    gain.connect(output);
+    source.onended = (): void => {
+      source.disconnect();
+      gain.disconnect();
+    };
+    source.start(now);
+    this.soundtrackSource = source;
+    this.soundtrackGain = gain;
+    this.soundtrackId = requested;
+    this.updateMusicIntensity();
+  }
+
+  private stopSoundtrack(): void {
+    const source = this.soundtrackSource;
+    this.soundtrackSource = null;
+    this.soundtrackGain = null;
+    this.soundtrackId = null;
+    if (!source) return;
+    try {
+      source.stop();
+    } catch {
+      // The source may already have ended during shutdown.
+    }
+  }
+
+  private playSample(id: UiSampleId, gainAmount: number, playbackRate = 1): void {
+    const context = this.context;
+    const output = this.effectsBusGain;
+    const buffer = this.sampledBuffers.get(`ui:${id}`);
+    if (!context || !output || !buffer || context.state !== 'running') return;
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = Math.max(0.5, Math.min(1.6, playbackRate));
+    gain.gain.value = clamp01(gainAmount);
+    source.connect(gain);
+    gain.connect(output);
+    const end = context.currentTime + buffer.duration / source.playbackRate.value;
+    this.scheduleSource(source, context.currentTime, end, [source, gain]);
   }
 
   private disposeMusicGraph(): void {
@@ -1523,6 +1697,19 @@ function resolveMatchIntensity(intensity: MatchMusicIntensity): number {
     case 'dead':
       return 0;
   }
+}
+
+function resolveSoundtrack(input: MatchMusicIntensity, normalizedIntensity: number): SoundtrackId | null {
+  if (input === 'dead') return null;
+  if (input === 'menu' || input === 'paused' || input === 'victory') return 'menu';
+  if (input === 'finalWave' || normalizedIntensity >= 0.88) return 'boss';
+  return 'match';
+}
+
+function soundtrackGainFor(id: SoundtrackId): number {
+  if (id === 'menu') return 0.31;
+  if (id === 'boss') return 0.4;
+  return 0.36;
 }
 
 function resolveBossPhaseIntensity(phase: BossAudioPhase): number {
