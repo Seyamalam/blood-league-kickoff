@@ -31,6 +31,7 @@
     "desktop:trailer": "npm run build && electron . --trailer",
     "trailer:cards": "bash scripts/render-pitch-cards.sh",
     "trailer:guide-voice": "bash scripts/build-pitch-guide-voice.sh",
+    "trailer:previs": "npm run trailer:cards && npm run trailer:guide-voice && bash scripts/render-pitch-previs.sh",
     "desktop:dev": "concurrently --kill-others --success first \"npm:dev\" \"npm:desktop:dev:app\"",
     "desktop:dev:app": "wait-on http://127.0.0.1:5173 && cross-env ELECTRON_DEV_URL=http://127.0.0.1:5173 electron .",
     "package:win": "electron-builder --config electron-builder.yml --win --x64 --publish never",
