@@ -13,3 +13,9 @@ The production briefs below preserve the creative direction used in the session.
 Human modifications were limited to renaming the downloaded files and assigning menu, match, and boss runtime roles. The audio content was not edited, resampled, normalized, or combined with third-party recordings.
 
 Gemini's [music-generation help](https://support.google.com/gemini/answer/16901237?hl=en-GA) documents MP3 download and embedded SynthID watermarking. These files are recorded as team-directed AI-generated assets, not as CC0 or open-source music.
+
+## Pitch-video narration
+
+The GameJam pitch narration was generated on 2026-07-21 using ElevenLabs' free default voice **Brian — Deep, Resonant and Comforting** with the **Eleven Multilingual v2** model. The approved narration was generated as eight independent editorial sections so pauses could be timed around genuine gameplay. No real person's voice was cloned or imitated.
+
+The downloaded MP3 sections and assembled WAV remain local production inputs and are excluded from Git. They are not loaded or distributed by the game runtime. The repository records the narration text, timing plan, subtitles and deterministic assembly script.

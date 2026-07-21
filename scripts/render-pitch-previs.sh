@@ -2,11 +2,15 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VOICE="$ROOT_DIR/trailer/input/narration-guide-timed.wav"
+ELEVENLABS_VOICE="$ROOT_DIR/trailer/input/narration-elevenlabs-brian-timed.wav"
+GUIDE_VOICE="$ROOT_DIR/trailer/input/narration-guide-timed.wav"
 OUTPUT="$ROOT_DIR/trailer/output/Blood-League-Kickoff-Pitch-PREVIS.mp4"
 
-if [[ ! -f "$VOICE" ]]; then
+if [[ -f "$ELEVENLABS_VOICE" ]]; then
+  VOICE="$ELEVENLABS_VOICE"
+else
   "$ROOT_DIR/scripts/build-pitch-guide-voice.sh"
+  VOICE="$GUIDE_VOICE"
 fi
 
 mkdir -p "$(dirname "$OUTPUT")"
