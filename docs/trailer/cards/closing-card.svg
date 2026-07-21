@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="void" cx="50%" cy="48%" r="76%">
+      <stop offset="0" stop-color="#171d27"/>
+      <stop offset="0.6" stop-color="#07090d"/>
+      <stop offset="1" stop-color="#020304"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop stop-color="#ff345d"/>
+      <stop offset="1" stop-color="#b70f34"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#void)"/>
+  <path d="M0 0 L560 0 L280 1080 L0 1080 Z" fill="#ff244f" opacity="0.035"/>
+  <path d="M1920 0 L1360 0 L1640 1080 L1920 1080 Z" fill="#ff244f" opacity="0.035"/>
+  <text x="960" y="250" fill="#ff345d" font-family="Arial, sans-serif" font-size="23" font-weight="700" letter-spacing="12" text-anchor="middle">THE FINAL MATCH BEGINS</text>
+  <text x="960" y="410" fill="#f4efe8" font-family="Impact, Arial Black, sans-serif" font-size="132" text-anchor="middle">BLOOD LEAGUE</text>
+  <text x="960" y="535" fill="url(#accent)" font-family="Impact, Arial Black, sans-serif" font-size="146" text-anchor="middle">KICKOFF</text>
+  <rect x="625" y="602" width="670" height="4" fill="#ff345d" opacity="0.75"/>
+  <text x="960" y="684" fill="#f4efe8" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="4" text-anchor="middle">KICK HARD · CALL IT HOME</text>
+  <text x="960" y="782" fill="#c8cfd6" font-family="Arial, sans-serif" font-size="25" text-anchor="middle">Created by Team Huntrix</text>
+  <text x="960" y="828" fill="#8e99a4" font-family="Arial, sans-serif" font-size="21" text-anchor="middle">Touhidul Alam Seyam · MD. Abtahee Kabir</text>
+  <text x="960" y="927" fill="#ff345d" font-family="Arial, sans-serif" font-size="27" font-weight="700" text-anchor="middle">seyamalam.itch.io/blood-league-kickoff</text>
+</svg>

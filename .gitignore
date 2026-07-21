@@ -27,3 +27,8 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+# Local pitch-video footage and renders
+trailer/input/*
+!trailer/input/.gitkeep
+trailer/output/*
+!trailer/output/.gitkeep

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="field" cx="50%" cy="70%" r="80%">
+      <stop offset="0" stop-color="#17261f"/>
+      <stop offset="0.48" stop-color="#090d12"/>
+      <stop offset="1" stop-color="#020305"/>
+    </radialGradient>
+    <linearGradient id="blood" x1="0" x2="1">
+      <stop stop-color="#ff345d"/>
+      <stop offset="1" stop-color="#b70f34"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#field)"/>
+  <ellipse cx="960" cy="900" rx="720" ry="240" fill="none" stroke="#d9e7df" stroke-opacity="0.12" stroke-width="5"/>
+  <line x1="960" y1="700" x2="960" y2="1080" stroke="#d9e7df" stroke-opacity="0.1" stroke-width="5"/>
+  <circle cx="960" cy="858" r="115" fill="none" stroke="#d9e7df" stroke-opacity="0.1" stroke-width="5"/>
+  <ellipse cx="960" cy="500" rx="420" ry="110" fill="#ff174d" opacity="0.12" filter="url(#glow)"/>
+  <rect x="898" y="180" width="124" height="54" rx="4" fill="#151a22" stroke="#ff345d" stroke-width="3"/>
+  <text x="960" y="219" fill="#f4efe8" font-family="Arial, sans-serif" font-size="31" font-weight="800" text-anchor="middle">BL</text>
+  <text x="960" y="312" fill="#ff345d" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="10" text-anchor="middle">THE FINAL MATCH BEGINS</text>
+  <text x="960" y="460" fill="#f4efe8" font-family="Impact, Arial Black, sans-serif" font-size="142" letter-spacing="2" text-anchor="middle">BLOOD LEAGUE</text>
+  <text x="960" y="590" fill="url(#blood)" font-family="Impact, Arial Black, sans-serif" font-size="156" letter-spacing="3" text-anchor="middle">KICKOFF</text>
+  <text x="960" y="660" fill="#d4d9dd" font-family="Arial, sans-serif" font-size="27" letter-spacing="4" text-anchor="middle">YOUR BALL IS YOUR WEAPON</text>
+  <text x="960" y="975" fill="#8e99a4" font-family="Arial, sans-serif" font-size="20" letter-spacing="4" text-anchor="middle">A GAME BY TEAM HUNTRIX</text>
+</svg>
